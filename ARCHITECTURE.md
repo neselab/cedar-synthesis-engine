@@ -199,5 +199,3 @@ This closes the loop on the **Verifiable Synthesis Paradox** from our previous r
 - The security admin never needs to read Cedar — they review NL summaries of *formally verified* specs
 
 The LLM is used where it's strong (NL ↔ NL translation, code generation with feedback) and the formal methods handle what it's weak at (correctness guarantees). That's a much cleaner division of labor than either pure LLM synthesis or pure manual policy writing.
-
-Would you want to actually build that translation layer into the engine?
