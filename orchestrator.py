@@ -25,6 +25,7 @@ from solver_wrapper import (
 WORKSPACE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "workspace")
 SCHEMA_PATH = os.path.join(WORKSPACE, "schema.cedarschema")
 CANDIDATE_PATH = os.path.join(WORKSPACE, "candidate.cedar")
+POLICY_STORE_PATH = os.path.join(WORKSPACE, "policy_store.cedar")
 
 
 def main():
@@ -133,6 +134,13 @@ def main():
     if loss == 0:
         print("\nRESULT: ALL CHECKS PASSED ✓")
         print("The candidate policy is formally verified.")
+
+        # Append verified candidate to policy store
+        with open(CANDIDATE_PATH) as f:
+            verified = f.read()
+        with open(POLICY_STORE_PATH, "a") as f:
+            f.write(f"\n// --- Verified and appended ---\n{verified}")
+        print(f"Policy appended to {os.path.basename(POLICY_STORE_PATH)}.")
     else:
         print(f"\nRESULT: {loss} CHECK(S) FAILED ✗")
         print("\nFailures:")
