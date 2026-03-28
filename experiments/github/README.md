@@ -92,3 +92,43 @@ experiments/github/
 ```bash
 CVC5=~/.local/bin/cvc5 python orchestrator.py --workspace experiments/github
 ```
+
+
+The user is asking if we can programmatically generate mutations of the GitHub scenario to create a larger dataset. This is a great idea - we can systematically vary the schema and policy requirements to create many variants. Let me think about how to do this.
+
+Mutation axes for the GitHub scenario:
+
+Add/remove roles (e.g., add "contributor" between writer and maintainer)
+
+Add/remove actions (e.g., add "close_issue", "reopen_issue", "transfer_repo")
+
+Add/remove entity types (e.g., add "PullRequest", "Release", "Wiki")
+
+Add/remove attributes (e.g., "isPrivate", "visibility", "maxCollaborators")
+
+Add/remove constraints (e.g., time-based restrictions, 2FA requirements for sensitive actions)
+
+Vary the forbid rules (e.g., suspended user denials, read-only modes)
+
+Adjust dual-path complexity by introducing additional authorization routes
+
+I could build a generator that takes the base GitHub scenario, applies random mutation combinations, and outputs the full set of artifacts - schema, natural language spec, ground-truth policy, and verification plans. This is definitely doable.
+
+Absolutely — that's the right approach. We can systematically mutate along these axes:
+
+Mutation axis	Examples	How many variants
+Add/remove roles	Add "contributor" between writer and maintainer, add "security_admin"	~5
+Add/remove entity types	Add PullRequest, Release, Wiki, Discussion	~4
+Add/remove boolean attributes	isPrivate, isFork, requiresReview, isLocked	~5
+Add/remove actions	close_issue, merge_pr, create_release, transfer_repo	~6
+Vary forbid rules	Suspended users denied all, private repo blocks fork, locked issues block edit	~4
+Add numeric constraints	maxCollaborators, issueAge, repoSize (with >, <, >=)	~3
+Combinatorially, even picking 2-3 mutations per variant gives you 50-100+ unique scenarios, each with a ground-truth policy, schema, NL spec, and ceiling/floor policies. They'd all be structurally related but test different verification properties.
+
+A generator script could output a complete experiment directory for each variant — schema, NL spec, ground truth, reference policies, and verification plan — ready to feed to the orchestrator.
+
+Combinatorially, even picking 2-3 mutations per variant gives you 50-100+ unique scenarios, each with a ground-truth policy, schema, NL spec, and ceiling/floor policies. They'd all be structurally related but test different verification properties.
+
+A generator script could output a complete experiment directory for each variant — schema, NL spec, ground truth, reference policies, and verification plan — ready to feed to the orchestrator.
+
+Want me to build that generator?
