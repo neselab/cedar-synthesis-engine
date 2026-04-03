@@ -32,6 +32,7 @@ class VerificationResult:
     """Aggregated result of all checks."""
     loss: int                        # Number of failed checks
     results: list[CheckResult]       # Individual check results
+    solver_time_s: float = 0.0       # Wall-clock time for all solver calls
 
     @property
     def passed(self) -> bool:
