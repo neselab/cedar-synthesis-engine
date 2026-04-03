@@ -40,7 +40,7 @@ import re
 import shutil
 import sys
 import time
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, asdict
 from datetime import datetime, timezone
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -541,7 +541,6 @@ def run_scenario(
     # ── Phase 1: Reference Generation ─────────────────────────────────────
     phase1_time = 0.0
     vp_exists = os.path.exists(os.path.join(workspace, "verification_plan.py"))
-    phase1_ran = False
     plan_data = None
 
     if gen_references or not vp_exists:
@@ -565,7 +564,6 @@ def run_scenario(
             plan_data = generate_references(client, model, schema, policy_spec, example_plan)
             write_phase1_artifacts(workspace, plan_data)
             phase1_time = time.monotonic() - t1
-            phase1_ran = True
             n_checks = len(plan_data["checks"])
             n_refs = len(plan_data.get("references", {}))
             print(f"  Generated {n_checks} checks, {n_refs} reference policies ({phase1_time:.1f}s)")
