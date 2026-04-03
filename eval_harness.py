@@ -76,7 +76,9 @@ class IterationLog:
 @dataclass
 class ScenarioResult:
     scenario: str
-    model: str
+    model: str              # phase2 model (primary — used for comparison runs)
+    phase1_model: str
+    phase2_model: str
     converged: bool
     iterations: int
     max_iterations: int
@@ -399,16 +401,73 @@ def _format_initial_prompt(schema: str, policy_spec: str, checks: list[dict]) ->
     return "\n".join(parts)
 
 
-def _format_feedback(vr: VerificationResult) -> str:
-    """Build a feedback message from verification results."""
+def _format_feedback(
+    vr: VerificationResult,
+    checks: list[dict],
+    prev_failed: set[str] | None = None,
+) -> str:
+    """
+    Build a rich feedback message from verification results.
+
+    Includes:
+    - The reference policy for each failed check (so the model can see the bound)
+    - Directional explanation (too permissive vs too restrictive)
+    - Oscillation warnings when a fix regresses previously-passing checks
+    """
+    # Map check names to their definitions
+    check_map = {c["name"]: c for c in checks}
+
+    failed_now = {r.check_name for r in vr.results if not r.passed}
     parts = [f"## Verification Results — {vr.loss} check(s) FAILED\n"]
+
+    # Oscillation detection
+    if prev_failed is not None:
+        fixed = prev_failed - failed_now
+        regressed = failed_now - prev_failed
+        if fixed and regressed:
+            parts.append(f"**WARNING — OSCILLATION DETECTED**")
+            parts.append(f"You fixed: {', '.join(sorted(fixed))}")
+            parts.append(f"But broke: {', '.join(sorted(regressed))}")
+            parts.append(f"ALL checks must pass simultaneously. "
+                         f"Do not sacrifice one bound to satisfy another.\n")
+
     for r in vr.results:
         mark = "PASS" if r.passed else "FAIL"
         parts.append(f"- {r.check_name} ({r.check_type}): **{mark}**")
-        if not r.passed and r.counterexample:
-            parts.append(f"  Counterexample:\n  ```\n  {r.counterexample}\n  ```")
+
+        if r.passed:
+            continue
+
+        check_def = check_map.get(r.check_name, {})
+        ctype = check_def.get("type", r.check_type)
+
+        # Directional explanation + reference policy
+        if ctype == "implies":
+            ref_path = check_def.get("reference_path", "")
+            parts.append(f"  **Your policy is MORE permissive than the ceiling.**")
+            parts.append(f"  It allows something the ceiling forbids. Tighten conditions.")
+            if ref_path and os.path.exists(ref_path):
+                with open(ref_path) as f:
+                    parts.append(f"  Ceiling policy (your policy must not exceed this):")
+                    parts.append(f"  ```cedar\n  {f.read().strip()}\n  ```")
+        elif ctype == "floor":
+            floor_path = check_def.get("floor_path", "")
+            parts.append(f"  **Your policy is MORE restrictive than the floor.**")
+            parts.append(f"  It denies something that MUST be allowed. Loosen conditions.")
+            if floor_path and os.path.exists(floor_path):
+                with open(floor_path) as f:
+                    parts.append(f"  Floor policy (your policy must allow at least this):")
+                    parts.append(f"  ```cedar\n  {f.read().strip()}\n  ```")
+        elif "liveness" in ctype:
+            parts.append(f"  **Your policy denies ALL requests for this action.**")
+            parts.append(f"  At least one scenario must be permitted.")
+
+        if r.counterexample:
+            parts.append(f"  Counterexample from solver:\n  ```\n  {r.counterexample}\n  ```")
+
     parts.append(
-        "\nFix the policy to address every failure. Output the COMPLETE updated policy."
+        "\nFix the policy to address EVERY failure without breaking passing checks. "
+        "Output the COMPLETE updated policy."
     )
     return "\n".join(parts)
 
@@ -496,7 +555,8 @@ def _load_plan_data_from_workspace(workspace: str) -> dict:
 def run_scenario(
     scenario_path: str,
     run_dir: str,
-    model: str,
+    phase1_model: str,
+    phase2_model: str,
     max_iters: int,
     gen_references: bool,
     no_review: bool = False,
@@ -508,12 +568,15 @@ def run_scenario(
 
     print(f"\n{'=' * 60}")
     print(f"SCENARIO: {scenario_name}")
-    print(f"Model:    {model}")
+    print(f"Phase 1:  {phase1_model}")
+    print(f"Phase 2:  {phase2_model}")
     print(f"{'=' * 60}")
 
     def _err(msg: str, **kw) -> ScenarioResult:
         return ScenarioResult(
-            scenario=scenario_name, model=model, converged=False,
+            scenario=scenario_name, model=phase2_model,
+            phase1_model=phase1_model, phase2_model=phase2_model,
+            converged=False,
             iterations=0, max_iterations=max_iters,
             total_time_s=round(time.monotonic() - t_start, 2),
             phase1_time_s=kw.get("p1", 0.0), phase2_time_s=0.0,
@@ -561,7 +624,7 @@ def run_scenario(
                 example_plan = f.read()
 
         try:
-            plan_data = generate_references(client, model, schema, policy_spec, example_plan)
+            plan_data = generate_references(client, phase1_model, schema, policy_spec, example_plan)
             write_phase1_artifacts(workspace, plan_data)
             phase1_time = time.monotonic() - t1
             n_checks = len(plan_data["checks"])
@@ -596,7 +659,7 @@ def run_scenario(
             t1 = time.monotonic()
             try:
                 plan_data = generate_references(
-                    client, model, schema, policy_spec,
+                    client, phase1_model, schema, policy_spec,
                     feedback=feedback,
                     previous_plan=plan_data,
                 )
@@ -631,6 +694,7 @@ def run_scenario(
 
     iteration_log = []
     candidate_text = None
+    prev_failed: set[str] | None = None     # for oscillation detection
 
     for iteration in range(1, max_iters + 1):
         print(f"\n  --- Iteration {iteration}/{max_iters} ---")
@@ -638,7 +702,7 @@ def run_scenario(
         # ── LLM synthesis call ──
         try:
             response = client.messages.create(
-                model=model,
+                model=phase2_model,
                 max_tokens=4096,
                 system=PHASE2_SYSTEM,
                 messages=messages,
@@ -708,7 +772,8 @@ def run_scenario(
             break
 
         # ── Feedback for next iteration ──
-        feedback = _format_feedback(vr)
+        feedback = _format_feedback(vr, checks, prev_failed)
+        prev_failed = {r.check_name for r in vr.results if not r.passed}
         messages.append({"role": "user", "content": feedback})
 
         # Trim conversation to avoid context limits: keep first message + last 8
@@ -721,7 +786,9 @@ def run_scenario(
 
     result = ScenarioResult(
         scenario=scenario_name,
-        model=model,
+        model=phase2_model,
+        phase1_model=phase1_model,
+        phase2_model=phase2_model,
         converged=(final_loss == 0),
         iterations=len(iteration_log),
         max_iterations=max_iters,
@@ -789,9 +856,8 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""\
 Examples:
-  python eval_harness.py --scenario experiments/github
   python eval_harness.py --scenario experiments/github --no-review
-  python eval_harness.py --scenario experiments/github --model claude-sonnet-4-20250514 claude-haiku-4-5-20251001 --no-review
+  python eval_harness.py --scenario experiments/github --phase1-model claude-sonnet-4-20250514 --phase2-model claude-haiku-4-5-20251001 --gen-references --no-review
   python eval_harness.py --all --gen-references --no-review --max-iters 20
   python eval_harness.py --scenario workspace --run-id my_test_run""",
     )
@@ -804,8 +870,16 @@ Examples:
         help="Discover and run all available scenarios",
     )
     parser.add_argument(
-        "--model", nargs="+", default=[DEFAULT_MODEL],
-        help=f"LLM model(s) for synthesis (default: {DEFAULT_MODEL})",
+        "--model", default=None,
+        help=f"LLM model for both phases (convenience shorthand, default: {DEFAULT_MODEL})",
+    )
+    parser.add_argument(
+        "--phase1-model", default=None,
+        help="LLM model for Phase 1 reference generation (overrides --model)",
+    )
+    parser.add_argument(
+        "--phase2-model", nargs="+", default=None,
+        help="LLM model(s) for Phase 2 synthesis; pass multiple to compare (overrides --model)",
     )
     parser.add_argument(
         "--max-iters", type=int, default=MAX_ITERATIONS,
@@ -837,7 +911,10 @@ Examples:
         print("No scenarios found.")
         sys.exit(1)
 
-    models = args.model
+    # Resolve models: --phase1-model / --phase2-model override --model
+    base_model = args.model or DEFAULT_MODEL
+    phase1_model = args.phase1_model or base_model
+    phase2_models = args.phase2_model or [base_model]
 
     # Create run directory
     run_id = args.run_id or datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
@@ -848,7 +925,8 @@ Examples:
     print("CEDAR SYNTHESIS ENGINE — EVALUATION HARNESS")
     print("=" * 60)
     print(f"Run ID:     {run_id}")
-    print(f"Model(s):   {', '.join(models)}")
+    print(f"Phase 1:    {phase1_model}")
+    print(f"Phase 2:    {', '.join(phase2_models)}")
     print(f"Max iters:  {args.max_iters}")
     print(f"Review:     {'disabled' if args.no_review else 'enabled (human-in-the-loop)'}")
     print(f"Scenarios:  {len(scenarios)}")
@@ -856,12 +934,12 @@ Examples:
         print(f"  - {os.path.relpath(s, ROOT_DIR)}")
     print(f"Output:     {os.path.relpath(run_dir, ROOT_DIR)}")
 
-    # Run each (scenario, model) combination
+    # Run each (scenario, phase2_model) combination
     all_results = []
-    for model in models:
+    for p2_model in phase2_models:
         # When comparing models, namespace run dirs by model
-        if len(models) > 1:
-            model_run_dir = os.path.join(run_dir, model.replace("/", "_"))
+        if len(phase2_models) > 1:
+            model_run_dir = os.path.join(run_dir, p2_model.replace("/", "_"))
             os.makedirs(model_run_dir, exist_ok=True)
         else:
             model_run_dir = run_dir
@@ -870,7 +948,8 @@ Examples:
             result = run_scenario(
                 scenario_path=scenario_path,
                 run_dir=model_run_dir,
-                model=model,
+                phase1_model=phase1_model,
+                phase2_model=p2_model,
                 max_iters=args.max_iters,
                 gen_references=args.gen_references,
                 no_review=args.no_review,
@@ -880,7 +959,8 @@ Examples:
     # Save summary
     summary = {
         "run_id": run_id,
-        "models": models,
+        "phase1_model": phase1_model,
+        "phase2_models": phase2_models,
         "max_iterations": args.max_iters,
         "gen_references": args.gen_references,
         "human_review": not args.no_review,
@@ -896,7 +976,7 @@ Examples:
     print("SUMMARY")
     print(f"{'=' * 70}")
 
-    header = f"{'Scenario':<22} {'Model':<28} {'Result':<8} {'Iters':<7} {'Loss':<5} {'Time':<7}"
+    header = f"{'Scenario':<22} {'Phase 2 Model':<28} {'Result':<8} {'Iters':<7} {'Loss':<5} {'Time':<7}"
     print(header)
     print("-" * 70)
 
@@ -908,7 +988,7 @@ Examples:
         else:
             status = "FAIL"
 
-        model_short = r["model"].split("/")[-1]
+        model_short = r["phase2_model"].split("/")[-1]
         if len(model_short) > 26:
             model_short = model_short[:24] + ".."
 
