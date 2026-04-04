@@ -1,0 +1,1402 @@
+{
+  "version": "1.0",
+  "generated": "2026-04-04T13:44:56.039883+00:00",
+  "total_scenarios": 79,
+  "by_difficulty": {
+    "base": 8,
+    "medium": 28,
+    "easy": 24,
+    "hard": 19
+  },
+  "by_domain": {
+    "github": 14,
+    "doccloud": 10,
+    "hotel": 9,
+    "sales": 9,
+    "streaming": 10,
+    "tags": 8,
+    "tax": 8,
+    "clinical": 11
+  },
+  "scenarios": [
+    {
+      "id": "github_base",
+      "domain": "github",
+      "base_scenario": null,
+      "difficulty": "base",
+      "mutation_description": "Unmodified GitHub repository permissions with 5 role tiers, dual-path issue edit/delete, and archive blocking",
+      "operators_applied": [],
+      "features_tested": [],
+      "path": "scenarios/github_base/"
+    },
+    {
+      "id": "doccloud_base",
+      "domain": "doccloud",
+      "base_scenario": null,
+      "difficulty": "base",
+      "mutation_description": "Unmodified Cloud document sharing with ACLs, public access, and mutual blocking",
+      "operators_applied": [],
+      "features_tested": [],
+      "path": "scenarios/doccloud_base/"
+    },
+    {
+      "id": "hotel_base",
+      "domain": "hotel",
+      "base_scenario": null,
+      "difficulty": "base",
+      "mutation_description": "Unmodified Hotel chain hierarchical permissions with viewer/member/admin roles",
+      "operators_applied": [],
+      "features_tested": [],
+      "path": "scenarios/hotel_base/"
+    },
+    {
+      "id": "sales_base",
+      "domain": "sales",
+      "base_scenario": null,
+      "difficulty": "base",
+      "mutation_description": "Unmodified Sales organization with job-based segmentation and market grouping",
+      "operators_applied": [],
+      "features_tested": [],
+      "path": "scenarios/sales_base/"
+    },
+    {
+      "id": "streaming_base",
+      "domain": "streaming",
+      "base_scenario": null,
+      "difficulty": "base",
+      "mutation_description": "Unmodified Streaming service with subscription tiers and datetime-based rules",
+      "operators_applied": [],
+      "features_tested": [],
+      "path": "scenarios/streaming_base/"
+    },
+    {
+      "id": "tags_base",
+      "domain": "tags",
+      "base_scenario": null,
+      "difficulty": "base",
+      "mutation_description": "Unmodified Tag-based access control with role-scoped tag namespaces",
+      "operators_applied": [],
+      "features_tested": [],
+      "path": "scenarios/tags_base/"
+    },
+    {
+      "id": "tax_base",
+      "domain": "tax",
+      "base_scenario": null,
+      "difficulty": "base",
+      "mutation_description": "Unmodified Tax preparer org-matching with consent and ad-hoc template access",
+      "operators_applied": [],
+      "features_tested": [],
+      "path": "scenarios/tax_base/"
+    },
+    {
+      "id": "clinical_base",
+      "domain": "clinical",
+      "base_scenario": null,
+      "difficulty": "base",
+      "mutation_description": "Unmodified Clinical trial platform with multi-role, numeric constraints, and auditor loophole",
+      "operators_applied": [],
+      "features_tested": [],
+      "path": "scenarios/clinical_base/"
+    },
+    {
+      "id": "clinical_add_consent",
+      "domain": "clinical",
+      "base_scenario": "clinical_base",
+      "difficulty": "medium",
+      "mutation_description": "Add hasPatientConsent to context; forbid Edit without consent, View still allowed",
+      "operators_applied": [
+        "S5",
+        "P1"
+      ],
+      "features_tested": [
+        "context_guard",
+        "action_specific_forbid"
+      ],
+      "path": "scenarios/clinical_add_consent/"
+    },
+    {
+      "id": "clinical_add_datamanager",
+      "domain": "clinical",
+      "base_scenario": "clinical_base",
+      "difficulty": "medium",
+      "mutation_description": "Add DataManager role; can Edit HighlyRestricted docs if clearanceLevel > 5",
+      "operators_applied": [
+        "S9",
+        "P2",
+        "P5"
+      ],
+      "features_tested": [
+        "new_role",
+        "classification_access",
+        "third_path"
+      ],
+      "path": "scenarios/clinical_add_datamanager/"
+    },
+    {
+      "id": "clinical_add_export",
+      "domain": "clinical",
+      "base_scenario": "clinical_base",
+      "difficulty": "easy",
+      "mutation_description": "Add Export action; same as View but additionally requires isCompliantDevice for all roles",
+      "operators_applied": [
+        "S7",
+        "P2",
+        "P5"
+      ],
+      "features_tested": [
+        "new_action",
+        "universal_constraint"
+      ],
+      "path": "scenarios/clinical_add_export/"
+    },
+    {
+      "id": "clinical_add_sponsor",
+      "domain": "clinical",
+      "base_scenario": "clinical_base",
+      "difficulty": "hard",
+      "mutation_description": "Add SponsorRepresentative role; can View (not Edit) cross-department but only Active Phase-3",
+      "operators_applied": [
+        "S1",
+        "S9",
+        "P2",
+        "P4",
+        "P5"
+      ],
+      "features_tested": [
+        "new_role",
+        "action_restriction",
+        "cross_dept_exception",
+        "multi_condition"
+      ],
+      "path": "scenarios/clinical_add_sponsor/"
+    },
+    {
+      "id": "clinical_add_study_phase",
+      "domain": "clinical",
+      "base_scenario": "clinical_base",
+      "difficulty": "medium",
+      "mutation_description": "Add studyPhase to Document; Phase-3 docs restricted to PrincipalInvestigator only",
+      "operators_applied": [
+        "S1",
+        "P1",
+        "P5"
+      ],
+      "features_tested": [
+        "string_guard",
+        "role_restriction"
+      ],
+      "path": "scenarios/clinical_add_study_phase/"
+    },
+    {
+      "id": "clinical_dual_forbid",
+      "domain": "clinical",
+      "base_scenario": "clinical_base",
+      "difficulty": "medium",
+      "mutation_description": "Add second forbid: HighlyRestricted on non-compliant devices forbidden; auditor exempt from dept block but NOT device check",
+      "operators_applied": [
+        "P1",
+        "P1",
+        "P4"
+      ],
+      "features_tested": [
+        "multi_forbid",
+        "selective_exemption"
+      ],
+      "path": "scenarios/clinical_dual_forbid/"
+    },
+    {
+      "id": "clinical_full_expansion",
+      "domain": "clinical",
+      "base_scenario": "clinical_base",
+      "difficulty": "hard",
+      "mutation_description": "DataManager + study phase + consent + device forbid for HighlyRestricted; four simultaneous constraints",
+      "operators_applied": [
+        "S1",
+        "S5",
+        "S9",
+        "P1",
+        "P1",
+        "P2",
+        "P5"
+      ],
+      "features_tested": [
+        "multi_mutation",
+        "complexity",
+        "multi_forbid",
+        "new_role"
+      ],
+      "path": "scenarios/clinical_full_expansion/"
+    },
+    {
+      "id": "clinical_relax_clearance",
+      "domain": "clinical",
+      "base_scenario": "clinical_base",
+      "difficulty": "easy",
+      "mutation_description": "Change clearanceLevel > 3 to >= 3; tests numeric boundary precision",
+      "operators_applied": [
+        "P7"
+      ],
+      "features_tested": [
+        "numeric_boundary",
+        "operator_change"
+      ],
+      "path": "scenarios/clinical_relax_clearance/"
+    },
+    {
+      "id": "clinical_remove_auditor",
+      "domain": "clinical",
+      "base_scenario": "clinical_base",
+      "difficulty": "easy",
+      "mutation_description": "Remove GlobalAuditor loophole; strict department matching with no exceptions",
+      "operators_applied": [
+        "P3",
+        "P8"
+      ],
+      "features_tested": [
+        "remove_unless",
+        "strict_forbid"
+      ],
+      "path": "scenarios/clinical_remove_auditor/"
+    },
+    {
+      "id": "clinical_temporal_embargo",
+      "domain": "clinical",
+      "base_scenario": "clinical_base",
+      "difficulty": "hard",
+      "mutation_description": "Add embargoUntil datetime to Document, requestTime datetime to context; forbid access before embargo except PI",
+      "operators_applied": [
+        "S2",
+        "S5",
+        "P1",
+        "P4",
+        "P10"
+      ],
+      "features_tested": [
+        "datetime",
+        "temporal_constraint",
+        "forbid_with_exception"
+      ],
+      "path": "scenarios/clinical_temporal_embargo/"
+    },
+    {
+      "id": "doccloud_add_admin_group",
+      "domain": "doccloud",
+      "base_scenario": "doccloud_base",
+      "difficulty": "medium",
+      "mutation_description": "manageACL members bypass blocking rules (unless exception on blocking forbid)",
+      "operators_applied": [
+        "P4"
+      ],
+      "features_tested": [
+        "unless_exception",
+        "forbid_bypass"
+      ],
+      "path": "scenarios/doccloud_add_admin_group/"
+    },
+    {
+      "id": "doccloud_add_comment_acl",
+      "domain": "doccloud",
+      "base_scenario": "doccloud_base",
+      "difficulty": "easy",
+      "mutation_description": "Add commentACL to Document and CommentOnDocument action; viewers cannot comment",
+      "operators_applied": [
+        "S1",
+        "S7",
+        "P2"
+      ],
+      "features_tested": [
+        "new_attribute",
+        "new_action",
+        "acl_pattern"
+      ],
+      "path": "scenarios/doccloud_add_comment_acl/"
+    },
+    {
+      "id": "doccloud_add_expiry",
+      "domain": "doccloud",
+      "base_scenario": "doccloud_base",
+      "difficulty": "medium",
+      "mutation_description": "Add expiryDate to Document; forbid all access (except owner DeleteDocument) after expiry",
+      "operators_applied": [
+        "S2",
+        "P1",
+        "P4"
+      ],
+      "features_tested": [
+        "datetime_comparison",
+        "forbid_with_exception"
+      ],
+      "path": "scenarios/doccloud_add_expiry/"
+    },
+    {
+      "id": "doccloud_add_version_lock",
+      "domain": "doccloud",
+      "base_scenario": "doccloud_base",
+      "difficulty": "medium",
+      "mutation_description": "Add isLocked boolean to Document; forbid ModifyDocument on locked docs; owner can still delete",
+      "operators_applied": [
+        "S1",
+        "P1"
+      ],
+      "features_tested": [
+        "boolean_guard",
+        "forbid_rule"
+      ],
+      "path": "scenarios/doccloud_add_version_lock/"
+    },
+    {
+      "id": "doccloud_graduated_sharing",
+      "domain": "doccloud",
+      "base_scenario": "doccloud_base",
+      "difficulty": "medium",
+      "mutation_description": "Add \"preview\" publicAccess option and ViewMetadata action; preview allows metadata only",
+      "operators_applied": [
+        "S7",
+        "P2",
+        "P7"
+      ],
+      "features_tested": [
+        "new_action",
+        "string_enum",
+        "fine_grained_access"
+      ],
+      "path": "scenarios/doccloud_graduated_sharing/"
+    },
+    {
+      "id": "doccloud_org_isolation",
+      "domain": "doccloud",
+      "base_scenario": "doccloud_base",
+      "difficulty": "hard",
+      "mutation_description": "Add Organization entity; forbid cross-org document access; manageACL can share cross-org",
+      "operators_applied": [
+        "S6",
+        "S1",
+        "P1",
+        "P4"
+      ],
+      "features_tested": [
+        "new_entity",
+        "cross_entity_comparison",
+        "forbid_with_exception"
+      ],
+      "path": "scenarios/doccloud_org_isolation/"
+    },
+    {
+      "id": "doccloud_remove_blocking",
+      "domain": "doccloud",
+      "base_scenario": "doccloud_base",
+      "difficulty": "easy",
+      "mutation_description": "Remove the blocked attribute from User and all blocking forbid rules",
+      "operators_applied": [
+        "S10",
+        "P3"
+      ],
+      "features_tested": [
+        "attribute_removal",
+        "forbid_removal"
+      ],
+      "path": "scenarios/doccloud_remove_blocking/"
+    },
+    {
+      "id": "doccloud_remove_public",
+      "domain": "doccloud",
+      "base_scenario": "doccloud_base",
+      "difficulty": "easy",
+      "mutation_description": "Remove Public entity and all public access rules; only authenticated Users",
+      "operators_applied": [
+        "S10",
+        "P3",
+        "P8"
+      ],
+      "features_tested": [
+        "entity_removal",
+        "principal_narrowing"
+      ],
+      "path": "scenarios/doccloud_remove_public/"
+    },
+    {
+      "id": "doccloud_temporal_sharing",
+      "domain": "doccloud",
+      "base_scenario": "doccloud_base",
+      "difficulty": "hard",
+      "mutation_description": "ACL-based access expires after shareExpiry; owner access persists; plus version lock",
+      "operators_applied": [
+        "S2",
+        "S1",
+        "P1",
+        "P1",
+        "P4"
+      ],
+      "features_tested": [
+        "datetime_comparison",
+        "multi_forbid",
+        "owner_exception",
+        "boolean_guard"
+      ],
+      "path": "scenarios/doccloud_temporal_sharing/"
+    },
+    {
+      "id": "github_add_close_issue",
+      "domain": "github",
+      "base_scenario": "github_base",
+      "difficulty": "easy",
+      "mutation_description": "Add close_issue action; Writer+ can close any, Reader can close own",
+      "operators_applied": [
+        "S7",
+        "P2",
+        "P5"
+      ],
+      "features_tested": [
+        "new_action",
+        "dual_path"
+      ],
+      "path": "scenarios/github_add_close_issue/"
+    },
+    {
+      "id": "github_add_contributor",
+      "domain": "github",
+      "base_scenario": "github_base",
+      "difficulty": "medium",
+      "mutation_description": "Add Contributor role between Triager and Writer; can push but not edit issues",
+      "operators_applied": [
+        "S9",
+        "P2",
+        "P7"
+      ],
+      "features_tested": [
+        "role_hierarchy",
+        "fine_grained_roles"
+      ],
+      "path": "scenarios/github_add_contributor/"
+    },
+    {
+      "id": "github_add_locked_issue",
+      "domain": "github",
+      "base_scenario": "github_base",
+      "difficulty": "easy",
+      "mutation_description": "Add isLocked boolean to Issue; forbid edit_issue on locked issues",
+      "operators_applied": [
+        "S1",
+        "P1"
+      ],
+      "features_tested": [
+        "boolean_guard",
+        "forbid_permit_interaction"
+      ],
+      "path": "scenarios/github_add_locked_issue/"
+    },
+    {
+      "id": "github_add_private",
+      "domain": "github",
+      "base_scenario": "github_base",
+      "difficulty": "easy",
+      "mutation_description": "Add isPrivate boolean to Repository; forbid fork on private repos",
+      "operators_applied": [
+        "S1",
+        "P1"
+      ],
+      "features_tested": [
+        "boolean_guard",
+        "forbid_rule"
+      ],
+      "path": "scenarios/github_add_private/"
+    },
+    {
+      "id": "github_add_pullrequest",
+      "domain": "github",
+      "base_scenario": "github_base",
+      "difficulty": "medium",
+      "mutation_description": "Add PullRequest entity with merge_pr and approve_pr actions; author cannot approve own PR",
+      "operators_applied": [
+        "S6",
+        "S7",
+        "S7",
+        "P2",
+        "P2",
+        "P1"
+      ],
+      "features_tested": [
+        "new_entity",
+        "cross_entity_traversal",
+        "self_exclusion"
+      ],
+      "path": "scenarios/github_add_pullrequest/"
+    },
+    {
+      "id": "github_add_security_admin",
+      "domain": "github",
+      "base_scenario": "github_base",
+      "difficulty": "medium",
+      "mutation_description": "Add SecurityAdmin role that can push to archived repos (unless exception on forbid)",
+      "operators_applied": [
+        "S9",
+        "P4"
+      ],
+      "features_tested": [
+        "unless_exception",
+        "role_forbid_bypass"
+      ],
+      "path": "scenarios/github_add_security_admin/"
+    },
+    {
+      "id": "github_add_visibility",
+      "domain": "github",
+      "base_scenario": "github_base",
+      "difficulty": "medium",
+      "mutation_description": "Replace isArchived with visibility string (public/private/internal); multi-value conditions",
+      "operators_applied": [
+        "S3",
+        "P1",
+        "P7"
+      ],
+      "features_tested": [
+        "string_enum",
+        "multi_value_condition"
+      ],
+      "path": "scenarios/github_add_visibility/"
+    },
+    {
+      "id": "github_full_expansion",
+      "domain": "github",
+      "base_scenario": "github_base",
+      "difficulty": "hard",
+      "mutation_description": "Add PullRequest, isPrivate, isLocked, Contributor role, close_issue; 5 mutations",
+      "operators_applied": [
+        "S6",
+        "S1",
+        "S1",
+        "S9",
+        "S7",
+        "P2",
+        "P2",
+        "P1",
+        "P1"
+      ],
+      "features_tested": [
+        "multi_mutation",
+        "complexity"
+      ],
+      "path": "scenarios/github_full_expansion/"
+    },
+    {
+      "id": "github_no_archive",
+      "domain": "github",
+      "base_scenario": "github_base",
+      "difficulty": "easy",
+      "mutation_description": "Remove isArchived and archive forbid rule; pure RBAC baseline",
+      "operators_applied": [
+        "S1",
+        "P3"
+      ],
+      "features_tested": [
+        "pure_rbac",
+        "simplification"
+      ],
+      "path": "scenarios/github_no_archive/"
+    },
+    {
+      "id": "github_numeric_constraints",
+      "domain": "github",
+      "base_scenario": "github_base",
+      "difficulty": "hard",
+      "mutation_description": "Add maxCollaborators on Repo and accountAge on User; numeric threshold forbids",
+      "operators_applied": [
+        "S2",
+        "S2",
+        "P1",
+        "P1",
+        "P10"
+      ],
+      "features_tested": [
+        "numeric_comparison",
+        "multi_constraint"
+      ],
+      "path": "scenarios/github_numeric_constraints/"
+    },
+    {
+      "id": "github_pr_review_workflow",
+      "domain": "github",
+      "base_scenario": "github_base",
+      "difficulty": "hard",
+      "mutation_description": "Add PullRequest + Review entities; merge requires approval, self-approval forbidden, archive blocks merge",
+      "operators_applied": [
+        "S6",
+        "S6",
+        "S7",
+        "S7",
+        "S7",
+        "P2",
+        "P2",
+        "P2",
+        "P1",
+        "P1"
+      ],
+      "features_tested": [
+        "multi_entity",
+        "cross_traversal",
+        "self_exclusion",
+        "forbid"
+      ],
+      "path": "scenarios/github_pr_review_workflow/"
+    },
+    {
+      "id": "github_private_and_locked",
+      "domain": "github",
+      "base_scenario": "github_base",
+      "difficulty": "medium",
+      "mutation_description": "Add isPrivate on Repo (forbid fork) + isLocked on Issue (forbid edit); two independent forbids",
+      "operators_applied": [
+        "S1",
+        "S1",
+        "P1",
+        "P1"
+      ],
+      "features_tested": [
+        "multi_forbid",
+        "boolean_guards"
+      ],
+      "path": "scenarios/github_private_and_locked/"
+    },
+    {
+      "id": "github_remove_triager",
+      "domain": "github",
+      "base_scenario": "github_base",
+      "difficulty": "easy",
+      "mutation_description": "Remove Triager role; assign_issue moves to Writer tier",
+      "operators_applied": [
+        "S10",
+        "P3",
+        "P8"
+      ],
+      "features_tested": [
+        "role_redistribution"
+      ],
+      "path": "scenarios/github_remove_triager/"
+    },
+    {
+      "id": "hotel_add_cancel",
+      "domain": "hotel",
+      "base_scenario": "hotel_base",
+      "difficulty": "easy",
+      "mutation_description": "Add cancelReservation action; member or admin only",
+      "operators_applied": [
+        "S7",
+        "P2"
+      ],
+      "features_tested": [
+        "new_action",
+        "tiered_access"
+      ],
+      "path": "scenarios/hotel_add_cancel/"
+    },
+    {
+      "id": "hotel_add_franchise",
+      "domain": "hotel",
+      "base_scenario": "hotel_base",
+      "difficulty": "medium",
+      "mutation_description": "Add Franchise entity above Hotel; 4-level hierarchy with franchise-level actions",
+      "operators_applied": [
+        "S6",
+        "S7",
+        "S8",
+        "P2"
+      ],
+      "features_tested": [
+        "new_entity",
+        "deeper_hierarchy",
+        "new_actions"
+      ],
+      "path": "scenarios/hotel_add_franchise/"
+    },
+    {
+      "id": "hotel_add_guest",
+      "domain": "hotel",
+      "base_scenario": "hotel_base",
+      "difficulty": "easy",
+      "mutation_description": "Add Guest role: view-only reservations where guest is the reservation subject",
+      "operators_applied": [
+        "S6",
+        "S9",
+        "P2"
+      ],
+      "features_tested": [
+        "new_entity",
+        "self_access",
+        "view_only"
+      ],
+      "path": "scenarios/hotel_add_guest/"
+    },
+    {
+      "id": "hotel_add_loyalty_tier",
+      "domain": "hotel",
+      "base_scenario": "hotel_base",
+      "difficulty": "medium",
+      "mutation_description": "Add loyaltyTier Long on User; premium properties require tier >= 3",
+      "operators_applied": [
+        "S2",
+        "S1",
+        "P1",
+        "P10"
+      ],
+      "features_tested": [
+        "numeric_comparison",
+        "boolean_guard",
+        "cross_entity_constraint"
+      ],
+      "path": "scenarios/hotel_add_loyalty_tier/"
+    },
+    {
+      "id": "hotel_add_renovation_lock",
+      "domain": "hotel",
+      "base_scenario": "hotel_base",
+      "difficulty": "medium",
+      "mutation_description": "Add isUnderRenovation Bool on Property; forbid createReservation unless admin",
+      "operators_applied": [
+        "S1",
+        "P1",
+        "P4"
+      ],
+      "features_tested": [
+        "boolean_guard",
+        "forbid_with_exception",
+        "admin_bypass"
+      ],
+      "path": "scenarios/hotel_add_renovation_lock/"
+    },
+    {
+      "id": "hotel_franchise_loyalty",
+      "domain": "hotel",
+      "base_scenario": "hotel_base",
+      "difficulty": "hard",
+      "mutation_description": "Franchise hierarchy + loyalty tiers + renovation lock combined",
+      "operators_applied": [
+        "S6",
+        "S7",
+        "S8",
+        "S2",
+        "S1",
+        "S1",
+        "P1",
+        "P2",
+        "P4",
+        "P10"
+      ],
+      "features_tested": [
+        "multi_mutation",
+        "complex_hierarchy",
+        "numeric_guard",
+        "forbid_interaction"
+      ],
+      "path": "scenarios/hotel_franchise_loyalty/"
+    },
+    {
+      "id": "hotel_remove_hierarchy",
+      "domain": "hotel",
+      "base_scenario": "hotel_base",
+      "difficulty": "easy",
+      "mutation_description": "Remove Property in Hotel inheritance; flatten hierarchy",
+      "operators_applied": [
+        "S10",
+        "P3",
+        "P8"
+      ],
+      "features_tested": [
+        "hierarchy_removal",
+        "flattening"
+      ],
+      "path": "scenarios/hotel_remove_hierarchy/"
+    },
+    {
+      "id": "hotel_temporal_rates",
+      "domain": "hotel",
+      "base_scenario": "hotel_base",
+      "difficulty": "hard",
+      "mutation_description": "Add seasonStart/seasonEnd datetime on Property; rate viewing restricted to season window",
+      "operators_applied": [
+        "S4",
+        "S4",
+        "S7",
+        "P1",
+        "P2",
+        "P10"
+      ],
+      "features_tested": [
+        "datetime_comparison",
+        "temporal_window",
+        "new_action",
+        "context_time"
+      ],
+      "path": "scenarios/hotel_temporal_rates/"
+    },
+    {
+      "id": "sales_add_approval",
+      "domain": "sales",
+      "base_scenario": "sales_base",
+      "difficulty": "medium",
+      "mutation_description": "Add isApproved Bool on Template; unapproved templates are view-only for non-internal",
+      "operators_applied": [
+        "S1",
+        "P1",
+        "P5"
+      ],
+      "features_tested": [
+        "boolean_guard",
+        "job_conditional_forbid",
+        "template_restriction"
+      ],
+      "path": "scenarios/sales_add_approval/"
+    },
+    {
+      "id": "sales_add_archive",
+      "domain": "sales",
+      "base_scenario": "sales_base",
+      "difficulty": "easy",
+      "mutation_description": "Add isArchived Bool on Presentation; forbid edit actions on archived presentations",
+      "operators_applied": [
+        "S1",
+        "P1"
+      ],
+      "features_tested": [
+        "boolean_guard",
+        "forbid_rule"
+      ],
+      "path": "scenarios/sales_add_archive/"
+    },
+    {
+      "id": "sales_add_delete",
+      "domain": "sales",
+      "base_scenario": "sales_base",
+      "difficulty": "easy",
+      "mutation_description": "Add deletePresentation action; owner-only",
+      "operators_applied": [
+        "S7",
+        "P2"
+      ],
+      "features_tested": [
+        "new_action",
+        "owner_only"
+      ],
+      "path": "scenarios/sales_add_delete/"
+    },
+    {
+      "id": "sales_add_regional_manager",
+      "domain": "sales",
+      "base_scenario": "sales_base",
+      "difficulty": "medium",
+      "mutation_description": "Add RegionalManager job type; can edit templates across markets they manage",
+      "operators_applied": [
+        "S9",
+        "P2",
+        "P7"
+      ],
+      "features_tested": [
+        "new_job_type",
+        "cross_market_access",
+        "template_privilege"
+      ],
+      "path": "scenarios/sales_add_regional_manager/"
+    },
+    {
+      "id": "sales_add_team",
+      "domain": "sales",
+      "base_scenario": "sales_base",
+      "difficulty": "medium",
+      "mutation_description": "Add Team entity for team-based presentation sharing",
+      "operators_applied": [
+        "S6",
+        "S9",
+        "P2"
+      ],
+      "features_tested": [
+        "new_entity",
+        "group_membership",
+        "set_based_access"
+      ],
+      "path": "scenarios/sales_add_team/"
+    },
+    {
+      "id": "sales_full_expansion",
+      "domain": "sales",
+      "base_scenario": "sales_base",
+      "difficulty": "hard",
+      "mutation_description": "Regional manager + template approval + presentation archive + delete combined",
+      "operators_applied": [
+        "S9",
+        "S1",
+        "S1",
+        "S7",
+        "P1",
+        "P1",
+        "P2",
+        "P2",
+        "P5",
+        "P7"
+      ],
+      "features_tested": [
+        "multi_mutation",
+        "multi_forbid",
+        "new_action",
+        "complex_interaction"
+      ],
+      "path": "scenarios/sales_full_expansion/"
+    },
+    {
+      "id": "sales_remove_customer_restriction",
+      "domain": "sales",
+      "base_scenario": "sales_base",
+      "difficulty": "easy",
+      "mutation_description": "Remove forbid on customer sharing; anyone can grant view access to anyone",
+      "operators_applied": [
+        "P3"
+      ],
+      "features_tested": [
+        "forbid_removal",
+        "simplification"
+      ],
+      "path": "scenarios/sales_remove_customer_restriction/"
+    },
+    {
+      "id": "sales_temporal_campaign",
+      "domain": "sales",
+      "base_scenario": "sales_base",
+      "difficulty": "hard",
+      "mutation_description": "Add campaignStart/End Long on Presentation; non-internal limited to time window",
+      "operators_applied": [
+        "S2",
+        "S2",
+        "P1",
+        "P4",
+        "P10"
+      ],
+      "features_tested": [
+        "temporal_window",
+        "numeric_comparison",
+        "job_conditional_bypass"
+      ],
+      "path": "scenarios/sales_temporal_campaign/"
+    },
+    {
+      "id": "streaming_add_age_rating",
+      "domain": "streaming",
+      "base_scenario": "streaming_base",
+      "difficulty": "medium",
+      "mutation_description": "Add rating to Movie and Show; kid profiles restricted to G/PG only",
+      "operators_applied": [
+        "S3",
+        "P1"
+      ],
+      "features_tested": [
+        "string_enum",
+        "multi_value_guard",
+        "forbid_rule"
+      ],
+      "path": "scenarios/streaming_add_age_rating/"
+    },
+    {
+      "id": "streaming_add_download",
+      "domain": "streaming",
+      "base_scenario": "streaming_base",
+      "difficulty": "easy",
+      "mutation_description": "Add download action; Subscriber only, free content excluded",
+      "operators_applied": [
+        "S7",
+        "P2",
+        "P1"
+      ],
+      "features_tested": [
+        "new_action",
+        "principal_restriction",
+        "boolean_guard"
+      ],
+      "path": "scenarios/streaming_add_download/"
+    },
+    {
+      "id": "streaming_add_geo_restriction",
+      "domain": "streaming",
+      "base_scenario": "streaming_base",
+      "difficulty": "medium",
+      "mutation_description": "Add region to context, allowedRegions to content; forbid watch outside allowed regions",
+      "operators_applied": [
+        "S1",
+        "S4",
+        "P1"
+      ],
+      "features_tested": [
+        "set_contains",
+        "context_field",
+        "forbid_rule"
+      ],
+      "path": "scenarios/streaming_add_geo_restriction/"
+    },
+    {
+      "id": "streaming_add_trial_tier",
+      "domain": "streaming",
+      "base_scenario": "streaming_base",
+      "difficulty": "medium",
+      "mutation_description": "Add TrialMember entity with trialExpiry; can watch free + limited non-free until trial expires",
+      "operators_applied": [
+        "S6",
+        "P2",
+        "P5"
+      ],
+      "features_tested": [
+        "new_entity",
+        "temporal_expiry",
+        "conditional_access"
+      ],
+      "path": "scenarios/streaming_add_trial_tier/"
+    },
+    {
+      "id": "streaming_full_expansion",
+      "domain": "streaming",
+      "base_scenario": "streaming_base",
+      "difficulty": "hard",
+      "mutation_description": "Add download + geo-restriction + age rating; three new constraints simultaneously",
+      "operators_applied": [
+        "S7",
+        "S1",
+        "S3",
+        "S4",
+        "P2",
+        "P1",
+        "P1",
+        "P1"
+      ],
+      "features_tested": [
+        "multi_mutation",
+        "new_action",
+        "set_contains",
+        "string_enum",
+        "multi_forbid"
+      ],
+      "path": "scenarios/streaming_full_expansion/"
+    },
+    {
+      "id": "streaming_multidevice",
+      "domain": "streaming",
+      "base_scenario": "streaming_base",
+      "difficulty": "hard",
+      "mutation_description": "Add activeStreams to context; standard limited to 2, premium to 5 concurrent streams",
+      "operators_applied": [
+        "S2",
+        "P1",
+        "P10"
+      ],
+      "features_tested": [
+        "numeric_comparison",
+        "tier_based_limits",
+        "context_field"
+      ],
+      "path": "scenarios/streaming_multidevice/"
+    },
+    {
+      "id": "streaming_parental_controls",
+      "domain": "streaming",
+      "base_scenario": "streaming_base",
+      "difficulty": "hard",
+      "mutation_description": "Add age rating + maxRating on profile; forbid content above profile max rating, plus bedtime",
+      "operators_applied": [
+        "S3",
+        "S1",
+        "P1",
+        "P1",
+        "P10"
+      ],
+      "features_tested": [
+        "rating_hierarchy",
+        "cross_attribute_comparison",
+        "multi_forbid"
+      ],
+      "path": "scenarios/streaming_parental_controls/"
+    },
+    {
+      "id": "streaming_remove_bedtime",
+      "domain": "streaming",
+      "base_scenario": "streaming_base",
+      "difficulty": "easy",
+      "mutation_description": "Remove kid bedtime restriction; simpler temporal rules",
+      "operators_applied": [
+        "P3"
+      ],
+      "features_tested": [
+        "rule_removal",
+        "simplification"
+      ],
+      "path": "scenarios/streaming_remove_bedtime/"
+    },
+    {
+      "id": "streaming_remove_oscars",
+      "domain": "streaming",
+      "base_scenario": "streaming_base",
+      "difficulty": "easy",
+      "mutation_description": "Remove Oscar promo window; focus on early access + bedtime only",
+      "operators_applied": [
+        "P3",
+        "S10"
+      ],
+      "features_tested": [
+        "rule_removal",
+        "attribute_cleanup"
+      ],
+      "path": "scenarios/streaming_remove_oscars/"
+    },
+    {
+      "id": "tags_add_approval",
+      "domain": "tags",
+      "base_scenario": "tags_base",
+      "difficulty": "medium",
+      "mutation_description": "Add isApproved Bool on Workspace; unapproved workspaces are read-only",
+      "operators_applied": [
+        "S1",
+        "P1"
+      ],
+      "features_tested": [
+        "boolean_guard",
+        "action_restriction"
+      ],
+      "path": "scenarios/tags_add_approval/"
+    },
+    {
+      "id": "tags_add_fourth_dimension",
+      "domain": "tags",
+      "base_scenario": "tags_base",
+      "difficulty": "hard",
+      "mutation_description": "Add department tag dimension to both User and Workspace tag structures",
+      "operators_applied": [
+        "S9",
+        "S9",
+        "P2",
+        "P7"
+      ],
+      "features_tested": [
+        "schema_extension",
+        "tag_dimension_scaling",
+        "pattern_replication"
+      ],
+      "path": "scenarios/tags_add_fourth_dimension/"
+    },
+    {
+      "id": "tags_add_owner_bypass",
+      "domain": "tags",
+      "base_scenario": "tags_base",
+      "difficulty": "medium",
+      "mutation_description": "Add owner User on Workspace; owner always has read access regardless of tags",
+      "operators_applied": [
+        "S9",
+        "P2",
+        "P5"
+      ],
+      "features_tested": [
+        "owner_attribute",
+        "bypass_rule",
+        "dual_path"
+      ],
+      "path": "scenarios/tags_add_owner_bypass/"
+    },
+    {
+      "id": "tags_add_role_c",
+      "domain": "tags",
+      "base_scenario": "tags_base",
+      "difficulty": "easy",
+      "mutation_description": "Add Role-C with ArchiveWorkspace action; same tag-matching pattern",
+      "operators_applied": [
+        "S7",
+        "S9",
+        "P2"
+      ],
+      "features_tested": [
+        "new_role",
+        "new_action",
+        "pattern_extension"
+      ],
+      "path": "scenarios/tags_add_role_c/"
+    },
+    {
+      "id": "tags_add_sensitivity",
+      "domain": "tags",
+      "base_scenario": "tags_base",
+      "difficulty": "medium",
+      "mutation_description": "Add sensitivity Long on Workspace; Role-A sees <= 3, Role-B sees <= 1",
+      "operators_applied": [
+        "S2",
+        "P1",
+        "P10"
+      ],
+      "features_tested": [
+        "numeric_comparison",
+        "role_differentiated_threshold"
+      ],
+      "path": "scenarios/tags_add_sensitivity/"
+    },
+    {
+      "id": "tags_remove_all_wildcard",
+      "domain": "tags",
+      "base_scenario": "tags_base",
+      "difficulty": "easy",
+      "mutation_description": "Remove \"ALL\" special value wildcard from tag matching",
+      "operators_applied": [
+        "P3",
+        "P8"
+      ],
+      "features_tested": [
+        "simplification",
+        "strict_matching"
+      ],
+      "path": "scenarios/tags_remove_all_wildcard/"
+    },
+    {
+      "id": "tags_sensitivity_and_owner",
+      "domain": "tags",
+      "base_scenario": "tags_base",
+      "difficulty": "hard",
+      "mutation_description": "Combine sensitivity levels + owner bypass + approval gate",
+      "operators_applied": [
+        "S2",
+        "S9",
+        "S1",
+        "P1",
+        "P2",
+        "P5",
+        "P10"
+      ],
+      "features_tested": [
+        "multi_mutation",
+        "numeric_guard",
+        "owner_bypass",
+        "boolean_guard"
+      ],
+      "path": "scenarios/tags_sensitivity_and_owner/"
+    },
+    {
+      "id": "tax_add_auditor",
+      "domain": "tax",
+      "base_scenario": "tax_base",
+      "difficulty": "hard",
+      "mutation_description": "Add Auditor entity that bypasses org matching but still needs consent",
+      "operators_applied": [
+        "S6",
+        "P2",
+        "P4",
+        "P5"
+      ],
+      "features_tested": [
+        "new_entity",
+        "partial_bypass",
+        "consent_still_applies"
+      ],
+      "path": "scenarios/tax_add_auditor/"
+    },
+    {
+      "id": "tax_add_client_profile",
+      "domain": "tax",
+      "base_scenario": "tax_base",
+      "difficulty": "medium",
+      "mutation_description": "Add viewClientProfile action on Client; org-matching only, no consent needed",
+      "operators_applied": [
+        "S7",
+        "P2",
+        "P7"
+      ],
+      "features_tested": [
+        "new_action",
+        "different_resource_type",
+        "no_context"
+      ],
+      "path": "scenarios/tax_add_client_profile/"
+    },
+    {
+      "id": "tax_add_edit",
+      "domain": "tax",
+      "base_scenario": "tax_base",
+      "difficulty": "easy",
+      "mutation_description": "Add editDocument action with same constraints as viewDocument",
+      "operators_applied": [
+        "S7",
+        "P2"
+      ],
+      "features_tested": [
+        "new_action",
+        "constraint_replication"
+      ],
+      "path": "scenarios/tax_add_edit/"
+    },
+    {
+      "id": "tax_add_sensitivity",
+      "domain": "tax",
+      "base_scenario": "tax_base",
+      "difficulty": "medium",
+      "mutation_description": "Add isSensitive Bool on Document; sensitive docs require HQ in team_region_list",
+      "operators_applied": [
+        "S1",
+        "P1",
+        "P10"
+      ],
+      "features_tested": [
+        "boolean_guard",
+        "context_constraint",
+        "additional_forbid"
+      ],
+      "path": "scenarios/tax_add_sensitivity/"
+    },
+    {
+      "id": "tax_add_supervisor",
+      "domain": "tax",
+      "base_scenario": "tax_base",
+      "difficulty": "medium",
+      "mutation_description": "Add Supervisor entity that bypasses serviceline and location matching",
+      "operators_applied": [
+        "S6",
+        "P2",
+        "P4"
+      ],
+      "features_tested": [
+        "new_entity",
+        "privilege_escalation",
+        "partial_bypass"
+      ],
+      "path": "scenarios/tax_add_supervisor/"
+    },
+    {
+      "id": "tax_full_expansion",
+      "domain": "tax",
+      "base_scenario": "tax_base",
+      "difficulty": "hard",
+      "mutation_description": "Supervisor + sensitivity + editDocument + auditor all combined",
+      "operators_applied": [
+        "S6",
+        "S6",
+        "S7",
+        "S1",
+        "P1",
+        "P2",
+        "P2",
+        "P4",
+        "P5",
+        "P10"
+      ],
+      "features_tested": [
+        "multi_mutation",
+        "multi_entity",
+        "multi_action",
+        "complex_forbids"
+      ],
+      "path": "scenarios/tax_full_expansion/"
+    },
+    {
+      "id": "tax_remove_consent",
+      "domain": "tax",
+      "base_scenario": "tax_base",
+      "difficulty": "easy",
+      "mutation_description": "Remove consent forbid rule; org-matching and ad-hoc only",
+      "operators_applied": [
+        "P3"
+      ],
+      "features_tested": [
+        "simplification",
+        "forbid_removal"
+      ],
+      "path": "scenarios/tax_remove_consent/"
+    }
+  ]
+}

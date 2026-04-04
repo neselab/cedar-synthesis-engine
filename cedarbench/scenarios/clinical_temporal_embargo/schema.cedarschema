@@ -1,0 +1,47 @@
+// Clinical Trial Data Platform -- Cedar Schema
+//
+// Design note: Cedar cannot traverse entity hierarchies to access
+// parent attributes (e.g., no resource.parent.status). To reference
+// Project attributes in policies, projectStatus and projectManagingDepartment
+// are denormalized onto Document. The application ensures these stay in sync.
+
+entity Role;
+
+entity User in [Role] {
+    department: String,
+    clearanceLevel: Long,
+};
+
+entity Project {
+    status: String,
+    managingDepartment: String,
+};
+
+entity Document in [Project] {
+    classification: String,
+    projectStatus: String,
+    projectManagingDepartment: String,
+embargoUntil: Long,
+};
+
+action "View" appliesTo {
+    principal: [User],
+    resource: [Document],
+    context: {
+        networkRiskScore: Long,
+        isCompliantDevice: Bool,
+        requestTime: Long,
+    },
+
+};
+
+action "Edit" appliesTo {
+    principal: [User],
+    resource: [Document],
+    context: {
+        networkRiskScore: Long,
+        isCompliantDevice: Bool,
+        requestTime: Long,
+    },
+
+};

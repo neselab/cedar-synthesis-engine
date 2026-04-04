@@ -1,0 +1,46 @@
+// Hotel Chain Permissions -- Cedar Schema (with Temporal Rates)
+
+type PermissionsMap = {
+  hotelReservations: Set<Hotel>,
+  propertyReservations: Set<Property>,
+};
+entity User {
+  viewPermissions: PermissionsMap,
+  memberPermissions: PermissionsMap,
+  hotelAdminPermissions: Set<Hotel>,
+  propertyAdminPermissions: Set<Property>,
+};
+entity Property in [Hotel] {
+  seasonStart: Long,
+  seasonEnd: Long,
+};
+entity Hotel in [Hotel];
+entity Reservation in [Property];
+
+// ACTIONS: Reservations
+action viewReservation, updateReservation, grantAccessReservation
+  appliesTo {
+    principal: User,
+    resource: Reservation,
+  };
+
+// ACTIONS: Properties (plus, CreateReservation for a Property)
+action createReservation, viewProperty, updateProperty, grantAccessProperty
+  appliesTo {
+    principal: User,
+    resource: Property,
+  };
+
+// ACTIONS: Hotels (plus, CreateProperty for a Hotel)
+action createProperty, createHotel, viewHotel, updateHotel, grantAccessHotel
+  appliesTo {
+    principal: User,
+    resource: Hotel,
+  };
+
+// ACTION: View seasonal rates (requires time context)
+action viewRates appliesTo {
+    principal: User,
+    resource: Property,
+    context: { currentTime: Long },
+  };
