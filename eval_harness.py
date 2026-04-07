@@ -565,7 +565,38 @@ Cedar quick reference:
   forbid (principal, action == Action::"act", resource) when { cond } unless { exceptions };
   principal in Group::"name"    // group membership
   principal.attr == "value"     // attribute access
-  context.field                 // request context"""
+  context.field                 // request context
+
+Floor checks (your policy must PERMIT at least what a reference policy permits):
+- A floor failure means a specific (principal, action, resource) is permitted by
+  the floor but denied by your policy. Your policy is OVER-RESTRICTIVE.
+- The most common cause is an EXTRA condition in your permit rule that is not in
+  the floor, OR a forbid rule that fires for the floor's tuple.
+
+ROLE INTERSECTION TRAP — read this carefully, it is the most common floor failure:
+- Cedar entities can be in MULTIPLE roles simultaneously. A user can be both a
+  ClinicalResearcher and a PrincipalInvestigator, both an Auditor and a Manager.
+  Floor references generally constrain only ONE role and do not exclude others.
+- A SPEC LINE like "Role Y is blocked from action A on resource type R" is most
+  cleanly encoded by EXCLUDING R from Y's permit rule (e.g., adding
+  `resource.attr != "R"` to the Y permit rule). It is NOT cleanly encoded as
+  `forbid action A when principal in Role::"Y" && resource.attr == "R"`,
+  because that forbid will ALSO fire for any user who is in Y AND in some other
+  role X that the floor for X says must be allowed to perform A on R. The
+  forbid form will fail floor_x checks every time, and there is no way to
+  rewrite the X permit to satisfy the floor while the Y-keyed forbid exists.
+- Equivalent trap on the permit side: a permit `when principal in Role::"X" &&
+  !(principal in Role::"Y")` denies any user in BOTH X and Y. If the X-role
+  floor reference does not include `!(principal in Role::"Y")`, your permit is
+  over-restrictive. REMOVE the negation.
+- Rule of thumb: if a spec line says "role Y is blocked from R", do NOT write a
+  forbid keyed on `principal in Role::"Y"`. Instead, ensure the Y permit rule
+  itself excludes R. Then leave the X, Z, etc. permit rules alone — they will
+  correctly grant access to multi-role users.
+- This is the SINGLE most common cause of floor failures that oscillate with
+  ceiling failures. If you see floor_pi or floor_cr or floor_dm failing while
+  some `xxx_blocks_yyy_role` ceiling also fails, you are in this trap. Fix it
+  by moving the role restriction OUT of the forbid and INTO the role's permit."""
 
 
 def _strip_cedar_fencing(text: str) -> str:
@@ -807,6 +838,7 @@ def _format_feedback(
     checks: list[dict],
     prev_failed: set[str] | None = None,
     repeat_info: dict | None = None,
+    candidate_text: str | None = None,
 ) -> str:
     """
     Build a rich feedback message from verification results.
@@ -818,6 +850,8 @@ def _format_feedback(
     - Hash-based oscillation warnings when the same policy is resubmitted
       (often happens when the model cycles between gate categories)
     - Structured, deduplicated syntax error feedback
+    - Role-intersection diagnosis when candidate has forbid rules keyed on role
+      membership and a floor check fails (the most common floor-failure cause)
     - Type-check / validation feedback (distinct from parse errors) with
       targeted help for unguarded optional attributes
     """
@@ -903,10 +937,65 @@ def _format_feedback(
             floor_path = check_def.get("floor_path", "")
             parts.append(f"  **Your policy is MORE restrictive than the floor.**")
             parts.append(f"  It denies something that MUST be allowed. Loosen conditions.")
+            floor_text = ""
             if floor_path and os.path.exists(floor_path):
                 with open(floor_path) as f:
-                    parts.append(f"  Floor policy (your policy must allow at least this):")
-                    parts.append(f"  ```cedar\n  {f.read().strip()}\n  ```")
+                    floor_text = f.read().strip()
+                parts.append(f"  Floor policy (your policy must allow at least this):")
+                parts.append(f"  ```cedar\n  {floor_text}\n  ```")
+            # Structural hint: detect the role-intersection trap. The floor's
+            # permitted set may include users who are in multiple roles, but
+            # the candidate may have a forbid rule (or a permit-rule negation)
+            # keyed on role membership that fires for those multi-role users.
+            # Scan the candidate text for the smoking gun and call it out.
+            if candidate_text:
+                import re as _re
+                # Forbid rules that mention `principal in Role::"..."` (or Group)
+                forbid_role_hits: list[str] = []
+                for m in _re.finditer(
+                    r"forbid\s*\([^)]*\)\s*when\s*\{[^}]*?principal\s+in\s+(?:Role|Group)::\"([^\"]+)\"",
+                    candidate_text,
+                    _re.DOTALL,
+                ):
+                    forbid_role_hits.append(m.group(1))
+                # Permit rules with `!(principal in Role::"...")`
+                permit_neg_hits: list[str] = []
+                for m in _re.finditer(
+                    r"!\s*\(\s*principal\s+in\s+(?:Role|Group)::\"([^\"]+)\"",
+                    candidate_text,
+                ):
+                    permit_neg_hits.append(m.group(1))
+                if forbid_role_hits or permit_neg_hits:
+                    parts.append(
+                        "  ROLE-INTERSECTION DIAGNOSIS: your current candidate "
+                        "contains role-keyed restrictions that are the most "
+                        "common cause of floor failures."
+                    )
+                    if forbid_role_hits:
+                        uniq = sorted(set(forbid_role_hits))
+                        parts.append(
+                            f"    - You have `forbid` rule(s) keyed on "
+                            f"`principal in Role::\"{', '.join(uniq)}\"`. These "
+                            f"forbids fire for ANY user in that role, including "
+                            f"users who are ALSO in other roles that the floor "
+                            f"says must be permitted. If a spec line says "
+                            f"\"role X is blocked from R\", encode it by "
+                            f"excluding R from X's PERMIT rule, NOT with a "
+                            f"forbid keyed on `in Role::\"X\"`. Move the "
+                            f"restriction OUT of the forbid and INTO the X "
+                            f"permit rule's conditions."
+                        )
+                    if permit_neg_hits:
+                        uniq = sorted(set(permit_neg_hits))
+                        parts.append(
+                            f"    - You have permit rule(s) with "
+                            f"`!(principal in Role::\"{', '.join(uniq)}\")`. "
+                            f"REMOVE these negations — Cedar entities can be in "
+                            f"multiple roles, and the floor reference does not "
+                            f"contain this exclusion. The negation denies "
+                            f"floor-permitted users who happen to also be in "
+                            f"the excluded role."
+                        )
             if r.counterexample:
                 parts.append(f"  Counterexample from solver:\n  ```\n  {r.counterexample}\n  ```")
         elif "liveness" in ctype:
@@ -1342,7 +1431,11 @@ def run_scenario(
             seen_hashes[cand_hash] = (iteration, list(current_failed))
 
         # ── Feedback for next iteration ──
-        feedback = _format_feedback(vr, checks, prev_failed, repeat_info=repeat_info)
+        feedback = _format_feedback(
+            vr, checks, prev_failed,
+            repeat_info=repeat_info,
+            candidate_text=candidate_text,
+        )
         prev_failed = set(current_failed)
         messages.append({"role": "user", "content": feedback})
 
