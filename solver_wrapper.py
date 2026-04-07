@@ -11,6 +11,7 @@ from dataclasses import dataclass
 
 
 CVC5_PATH = os.environ.get("CVC5", os.path.expanduser("~/.local/bin/cvc5"))
+CEDAR_PATH = os.environ.get("CEDAR", os.path.expanduser("~/.cargo/bin/cedar"))
 
 
 # ---------------------------------------------------------------------------
@@ -43,24 +44,73 @@ class VerificationResult:
 # Gate 1: Syntax check (unchanged)
 # ---------------------------------------------------------------------------
 
-def run_syntax_check(schema_path: str, policy_path: str) -> tuple[bool, str]:
-    """Run `cedar validate` on the given policy against the schema."""
+def run_syntax_check(schema_path: str, policy_path: str) -> tuple[bool, str, str]:
+    """Run `cedar validate` on the given policy against the schema.
+
+    Returns (is_valid, error_msg, error_kind) where error_kind is one of:
+      - ""           : passed (is_valid=True)
+      - "parse"      : returncode 1 — Cedar grammar / parse error
+      - "validation" : returncode 3 — Cedar type-checker / validator rejected
+                       (e.g. unguarded optional attribute, type mismatch)
+      - "other"      : any other non-zero returncode or runtime failure
+
+    Parse errors and validation errors are very different beasts and need
+    very different feedback to the LLM, so we tell them apart here at the
+    source instead of pattern-matching the rendered text downstream.
+    """
     try:
         result = subprocess.run(
-            ["cedar", "validate", "--schema", schema_path, "--policies", policy_path],
+            [CEDAR_PATH, "validate", "--schema", schema_path, "--policies", policy_path],
             capture_output=True,
             text=True,
             timeout=10,
         )
         is_valid = result.returncode == 0
         error_msg = ""
+        error_kind = ""
         if not is_valid:
             error_msg = (result.stderr.strip() or result.stdout.strip())
-        return is_valid, error_msg
+            if result.returncode == 1:
+                error_kind = "parse"
+            elif result.returncode == 3:
+                error_kind = "validation"
+            else:
+                error_kind = "other"
+
+        # DEBUG: log invocation to a file for Bug #1 investigation
+        if os.environ.get("CEDAR_DEBUG"):
+            import hashlib
+            try:
+                with open(policy_path, "rb") as _f:
+                    _content = _f.read()
+                _sha = hashlib.sha256(_content).hexdigest()[:12]
+                _size = len(_content)
+            except Exception as _e:
+                _sha = f"read-err:{_e}"
+                _size = -1
+            dbg_path = os.path.join(os.path.dirname(policy_path), "_syntax_debug.log")
+            with open(dbg_path, "a") as _dbg:
+                _dbg.write(
+                    f"--- run_syntax_check ---\n"
+                    f"CEDAR_PATH={CEDAR_PATH}\n"
+                    f"policy_path={policy_path}\n"
+                    f"policy_size={_size} sha256={_sha}\n"
+                    f"returncode={result.returncode}\n"
+                    f"error_kind={error_kind!r}\n"
+                    f"stdout={result.stdout[:400]!r}\n"
+                    f"stderr={result.stderr[:400]!r}\n"
+                    f"is_valid={is_valid}\n\n"
+                )
+
+        return is_valid, error_msg, error_kind
     except subprocess.TimeoutExpired:
-        return False, "Cedar validate timed out."
+        return False, "Cedar validate timed out.", "other"
     except FileNotFoundError:
-        return False, "Cedar CLI not found. Install with: cargo install cedar-policy-cli"
+        return (
+            False,
+            "Cedar CLI not found. Install with: cargo install cedar-policy-cli",
+            "other",
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -80,7 +130,7 @@ def _run_symcc(
     Returns (passed, output_text).
     """
     cmd = [
-        "cedar", "symcc",
+        CEDAR_PATH, "symcc",
         "--cvc5-path", CVC5_PATH,
         "--principal-type", principal_type,
         "--action", action,

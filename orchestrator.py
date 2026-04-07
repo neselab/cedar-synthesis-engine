@@ -53,15 +53,27 @@ def run_verification(workspace: str) -> VerificationResult:
     schema_path = os.path.join(workspace, "schema.cedarschema")
     candidate_path = os.path.join(workspace, "candidate.cedar")
 
-    # Gate 1: syntax
-    is_valid, error_msg = run_syntax_check(schema_path, candidate_path)
+    # Gate 1: syntax (parse) + validation (type-check)
+    is_valid, error_msg, error_kind = run_syntax_check(schema_path, candidate_path)
     if not is_valid:
+        # Cedar's `validate` returns:
+        #   1 → parse error  → kind="parse"      → check_type="syntax"
+        #   3 → type-check   → kind="validation" → check_type="validation"
+        # The two need very different feedback, so we tag them distinctly.
+        if error_kind == "validation":
+            check_name = "validation"
+            check_type = "validation"
+            description = "Cedar type-check / schema validation"
+        else:
+            check_name = "syntax"
+            check_type = "syntax"
+            description = "Cedar parse / syntax validation"
         return VerificationResult(
             loss=1,
             results=[CheckResult(
-                check_name="syntax",
-                check_type="syntax",
-                description="Cedar syntax validation",
+                check_name=check_name,
+                check_type=check_type,
+                description=description,
                 passed=False,
                 counterexample=error_msg,
             )],
@@ -171,12 +183,17 @@ def main():
     # Run verification
     vr = run_verification(workspace)
 
-    # Check for syntax gate failure
-    if vr.results and vr.results[0].check_type == "syntax" and not vr.results[0].passed:
-        print("\n--- Gate 1: Syntax Check ---")
-        print(f"syntax:    FAIL")
+    # Check for syntax/validation gate failure
+    if (
+        vr.results
+        and vr.results[0].check_type in ("syntax", "validation")
+        and not vr.results[0].passed
+    ):
+        kind = vr.results[0].check_type
+        print("\n--- Gate 1: Syntax + Validation Check ---")
+        print(f"{kind}:    FAIL")
         print(f"error:     {vr.results[0].counterexample}")
-        print(f"\nloss:      SYNTAX_ERROR")
+        print(f"\nloss:      {kind.upper()}_ERROR")
         sys.exit(1)
 
     print("\n--- Gate 1: Syntax Check ---")
