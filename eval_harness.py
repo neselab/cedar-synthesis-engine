@@ -1164,6 +1164,37 @@ def run_scenario(
         with open(spec_path) as f:
             policy_spec = f.read()
 
+    # ── Phase 0.55: Spec sanity check ─────────────────────────────────────
+    # Some scenario directories were generated with a placeholder spec that
+    # just points at a separate ground-truth Cedar file ("See the ground-
+    # truth policy in dataset/.../policies.cedar for reference"). The
+    # synthesizer cannot read that file — it only sees policy_spec.md — so
+    # the scenario silently runs with no requirements at all and Haiku has
+    # to invent semantics from the schema. Detect this and abort cleanly.
+    #
+    # Heuristic: a real spec is at least ~10 substantive lines and does not
+    # contain the placeholder template phrase. Both checks are needed: the
+    # phrase alone could appear in a long real spec as a citation, and the
+    # length alone could be defeated by a short-but-real spec.
+    if policy_spec:
+        _spec_substantive_lines = sum(
+            1 for ln in policy_spec.splitlines() if ln.strip()
+        )
+        _placeholder_phrase = "see the ground-truth policy in"
+        if (
+            _placeholder_phrase in policy_spec.lower()
+            and _spec_substantive_lines < 10
+        ):
+            first_real = next(
+                (ln.strip() for ln in policy_spec.splitlines() if ln.strip()),
+                "",
+            )
+            return _err(
+                "Scenario spec is a placeholder, not a real requirements "
+                "document. The synthesizer would have to invent semantics "
+                "from the schema alone. First line: " + first_real[:120]
+            )
+
     client = Anthropic()
 
     # ── Phase 1: Reference Generation ─────────────────────────────────────
