@@ -177,7 +177,42 @@ Cedar gotchas you MUST avoid:
   positive `has` guard adjacent to every read. Do NOT rely on negation
   short-circuit propagation — Cedar's type-checker does not propagate it.
 - **Type constraints use `is`, not `:`**: write `principal is User`, never
-  `principal: User`."""
+  `principal: User`.
+
+CRITICAL: Floors must respect global forbids
+- A floor reference describes a SUFFICIENT condition for permitting an
+  action: "any request that satisfies these conditions MUST be permitted by
+  the candidate." It is the MINIMUM the candidate must allow.
+- A ceiling reference describes a NECESSARY condition for permitting an
+  action: "the candidate may permit only requests that satisfy these
+  conditions." It is the MAXIMUM the candidate may allow.
+- The floor and the ceiling must be JOINTLY satisfiable. Phase 2 cannot
+  succeed if you generate a floor and a ceiling that contradict each
+  other on any request.
+- The most common way to generate inconsistent bounds is to write a floor
+  that promises permission for some role/owner/ACL holder, while ALSO
+  having a global forbid (blocking, expiry, archive, consent, auth, etc.)
+  that would deny that same request in some corner case.
+- RULE: when you write a floor reference, look at every global forbid you
+  also generated, and ADD the negation of each global-forbid condition to
+  the floor's `when` clause. The floor describes the minimum that must be
+  permitted ASSUMING none of the global forbids fire.
+- Example: if the spec says "owner can always view their document" AND
+  "blocked users cannot view," the floor for owner-view should be:
+      permit when {
+          principal == resource.owner &&
+          context.is_authenticated &&
+          // global blocking forbid does NOT fire for this request:
+          !(principal in resource.owner.blocked) &&
+          !(resource.owner in principal.blocked)
+      };
+  NOT just `principal == resource.owner && context.is_authenticated`. The
+  bare floor is unsatisfiable in the corner case where the owner has
+  self-blocked, because the global forbid would deny it.
+- Apply the same discipline to every floor: walk every global forbid in
+  the spec, and confirm that the floor's permitted set is disjoint from
+  every forbid's denied set. If not, ADD the corresponding negation to
+  the floor's `when` clause."""
 
 
 def _extract_json(text: str) -> dict:
@@ -596,7 +631,34 @@ ROLE INTERSECTION TRAP — read this carefully, it is the most common floor fail
 - This is the SINGLE most common cause of floor failures that oscillate with
   ceiling failures. If you see floor_pi or floor_cr or floor_dm failing while
   some `xxx_blocks_yyy_role` ceiling also fails, you are in this trap. Fix it
-  by moving the role restriction OUT of the forbid and INTO the role's permit."""
+  by moving the role restriction OUT of the forbid and INTO the role's permit.
+
+GLOBAL CONSTRAINT PRINCIPLE — read this carefully, it is the second most
+common floor failure:
+- A "global constraint" is a rule that applies to every action or every role,
+  regardless of which permit grants access. Examples: "blocked users cannot
+  access anything," "expired documents cannot be viewed," "archived repos
+  cannot be written to," "consent must be present for any edit."
+- Global constraints belong in `forbid` rules. ONE forbid rule per global
+  constraint, scoped to the relevant actions, no conditions duplicated to
+  permits.
+- DO NOT also add the global constraint as a `&&` clause to every permit rule.
+  If you have a forbid `forbid Edit when context.consent == false`, the permit
+  rule for Edit should NOT also say `&& context.consent == true`. The forbid
+  handles it. Adding the conjunct to every permit creates floor failures
+  whenever the floor reference is silent on that condition (which it usually
+  is, because floors describe per-property bounds, not global constraints).
+- The most common offenders to look for in your candidate are:
+    !(principal in resource.owner.blocked)   // belongs in blocking forbid
+    !(resource.owner in principal.blocked)   // belongs in blocking forbid
+    context.is_authenticated == true         // belongs in auth forbid
+    resource.expiry > context.now            // belongs in expiry forbid
+    !resource.isArchived                     // belongs in archive forbid
+- Rule of thumb: write the forbid rules first; write each permit rule with
+  ONLY the positive conditions for that specific permission path (role,
+  ACL membership, ownership, etc.); trust the forbids to handle the global
+  constraints. Floor references are written this way and your permit rules
+  must match their shape."""
 
 
 def _strip_cedar_fencing(text: str) -> str:
@@ -995,6 +1057,46 @@ def _format_feedback(
                             f"contain this exclusion. The negation denies "
                             f"floor-permitted users who happen to also be in "
                             f"the excluded role."
+                        )
+                # Generalized over-restriction detector: any `!(<expr> in <expr>)`
+                # in the candidate that is NOT present in the floor reference.
+                # This catches the broader class of "defensive global-constraint
+                # checks duplicated into permit rules" (e.g.
+                # `!(principal in resource.owner.blocked)`,
+                # `!(resource in principal.expiredDocs)`, etc.) that the role-
+                # specific detector above does not match.
+                if floor_text and candidate_text:
+                    extra_negations: list[str] = []
+                    for m in _re.finditer(
+                        r"!\s*\(\s*([^()]+?\s+in\s+[^()]+?)\s*\)",
+                        candidate_text,
+                    ):
+                        clause = m.group(1).strip()
+                        # Skip if it's a Role/Group negation (already handled above)
+                        if "Role::" in clause or "Group::" in clause:
+                            continue
+                        # Skip if the floor reference also has this exact clause
+                        if clause in floor_text:
+                            continue
+                        if clause not in extra_negations:
+                            extra_negations.append(clause)
+                    if extra_negations:
+                        parts.append(
+                            "  GLOBAL-CONSTRAINT DIAGNOSIS: your candidate has "
+                            "negated set-membership clauses in permit rules "
+                            "that the floor reference does not have. These are "
+                            "almost always defensive duplicates of conditions "
+                            "that should live in a `forbid` rule, not in every "
+                            "permit. The forbid handles them; the duplicate in "
+                            "the permit just creates floor failures."
+                        )
+                        for clause in extra_negations[:5]:
+                            parts.append(f"    - `!({clause})` — REMOVE from permit rule(s)")
+                        parts.append(
+                            "    Move the corresponding constraint into a "
+                            "single `forbid` rule (if one does not already "
+                            "exist) and remove the duplicate `&&` clauses from "
+                            "every permit rule."
                         )
             if r.counterexample:
                 parts.append(f"  Counterexample from solver:\n  ```\n  {r.counterexample}\n  ```")
