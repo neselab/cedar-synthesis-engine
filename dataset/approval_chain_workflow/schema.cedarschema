@@ -1,0 +1,45 @@
+// Approval Chain Workflow — a document moves through a state machine and
+// requires N specific approvers to sign off before it can be finalized.
+//
+// Use case: legal / financial / compliance documents where every named
+// approver must sign off before the document is considered approved.
+
+entity User;
+
+// A compliance document that must be approved by a specific set of
+// reviewers before it can be finalized.
+entity Document = {
+    owner: User,
+    // The exact set of users whose approval is required. Drawn from a
+    // template at document-creation time.
+    requiredApprovers: Set<User>,
+    // The set of users who have signed off so far. This grows
+    // monotonically as approvals come in.
+    currentApprovals: Set<User>,
+    // The document's workflow state.
+    status: String,   // "draft" | "in_review" | "approved" | "rejected"
+};
+
+// Actions on the workflow:
+//   submit       — move draft → in_review (owner only)
+//   approve      — add the current principal to currentApprovals
+//                  (principal must be a member of requiredApprovers)
+//   finalize     — move in_review → approved
+//                  (only allowed when currentApprovals ⊇ requiredApprovers)
+//   reject       — move in_review → rejected (any required approver)
+//   read         — view the document
+
+action submit, finalize, reject appliesTo {
+    principal: [User],
+    resource: [Document],
+};
+
+action approve appliesTo {
+    principal: [User],
+    resource: [Document],
+};
+
+action read appliesTo {
+    principal: [User],
+    resource: [Document],
+};

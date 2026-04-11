@@ -1,0 +1,53 @@
+// Delegation with Temporary Grant — a principal can grant another
+// principal time-bounded access to a specific resource. Represents the
+// "ephemeral grant" pattern used in on-call handoffs, contractor
+// access, and customer-support escalation.
+//
+// Design note: in a real production system, the host application
+// maintains the grant database and looks up the relevant grant when a
+// request comes in. It attaches the looked-up grant to the request
+// context as an optional attribute. The policy then verifies the
+// claim against the request. This is more realistic than storing a
+// `Set<Grant>` on the resource because Cedar's `.contains()` cannot
+// perform partial-record existential searches.
+
+entity User;
+
+entity Resource = {
+    owner: User,
+};
+
+// A pre-validated grant, looked up by the host application and attached
+// to the request context. If no grant applies, the context attribute is
+// absent — the policy then falls back to owner-only access.
+type Grant = {
+    grantee: User,
+    allowedAction: String,
+    expiresAt: datetime,
+};
+
+action read, write appliesTo {
+    principal: [User],
+    resource: [Resource],
+    context: {
+        now: {
+            datetime: datetime,
+        },
+        // Optional: present when the host application has pre-validated
+        // a grant for this request. Absent when the request is not
+        // relying on a grant (e.g. when the owner is acting directly).
+        activeGrant?: Grant,
+    },
+};
+
+// Grant management — only the owner may create or revoke grants on
+// their own resource.
+action createGrant, revokeGrant appliesTo {
+    principal: [User],
+    resource: [Resource],
+    context: {
+        now: {
+            datetime: datetime,
+        },
+    },
+};

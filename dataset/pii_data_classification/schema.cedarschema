@@ -1,0 +1,34 @@
+// PII Data Classification — Multi-Level Security (MLS) pattern with
+// hierarchical data classification and user clearance. Adapted from
+// standard government / defense / HIPAA-style classification schemes.
+
+entity User = {
+    // One of "L1", "L2", "L3", "L4" — the user's clearance tier.
+    // Higher tiers can access data at their level OR any lower level.
+    clearance: String,
+    // Whether the user has completed mandatory PII training (a
+    // secondary gate beyond clearance).
+    hasPIITraining: Bool,
+};
+
+entity Document = {
+    // One of "Public", "Internal", "Confidential", "Restricted".
+    classification: String,
+    // Whether this document contains PII requiring the PII-training gate.
+    containsPII: Bool,
+    // Need-to-know list: for "Restricted" documents, only users in
+    // this set may access the document even if they have L4 clearance.
+    // For non-Restricted documents, this field is ignored.
+    needToKnow: Set<User>,
+};
+
+action readDocument appliesTo {
+    principal: [User],
+    resource: [Document],
+};
+
+// Downloading triggers stricter scrutiny than reading.
+action downloadDocument appliesTo {
+    principal: [User],
+    resource: [Document],
+};

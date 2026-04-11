@@ -89,10 +89,10 @@ The current evaluation flow is:
 
 ## Current Layout
 
-- [target/project_goal.md](target/project_goal.md): project motivation and notes
+- [docs/](docs): research documentation — design decisions, research log, repair loop evolution
 - [dataset/](dataset): local task datasets, now including reference policies and verification plans
 - [src/test_lm.py](src/test_lm.py): quick local model endpoint test
-- [src/experiments/](src/experiments): experiment design, prompt strategies, and single-model baselines
+- [src/experiments/](src/experiments): prompt strategies and single-model baselines
 - [src/metrics/](src/metrics): reusable syntax/schema/semantic evaluation code
 - [SETUP_COMMANDS.md](SETUP_COMMANDS.md): environment setup and verification commands
 

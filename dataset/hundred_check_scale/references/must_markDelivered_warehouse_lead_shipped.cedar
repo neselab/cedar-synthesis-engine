@@ -1,0 +1,10 @@
+// Floor: a warehouse_lead MUST be permitted to markDelivered an order with status=shipped.
+permit (
+    principal is User,
+    action == Action::"markDelivered",
+    resource is Order
+)
+when {
+    principal.role == "warehouse_lead"
+    && resource.status == "shipped"
+};

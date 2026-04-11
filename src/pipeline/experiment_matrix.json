@@ -1,0 +1,41 @@
+{
+  "stage": "single_model_baseline",
+  "goal": "Measure how far a single open-source model can go on Cedar policy generation before introducing multi-agent coordination.",
+  "evaluation_axes": [
+    "syntax_correctness",
+    "semantic_alignment",
+    "verification_loss",
+    "failed_check_types",
+    "latency"
+  ],
+  "variants": [
+    {
+      "id": "zero_shot_direct",
+      "description": "Raw generation from policy description and schema only."
+    },
+    {
+      "id": "structured_instruction",
+      "description": "Adds detailed task instructions, constraints, output rules, and construction guidance."
+    },
+    {
+      "id": "cot",
+      "description": "Encourages stepwise policy construction before finalizing the Cedar output."
+    },
+    {
+      "id": "few_shot_grounded",
+      "description": "Provides a positive grounded example of a correct Cedar policy pattern."
+    }
+  ],
+  "default_tasks": [
+    {
+      "id": "github_v1",
+      "path": "experiments/github"
+    }
+  ],
+  "future_extensions": [
+    "self_consistency",
+    "verifier_guided_repair",
+    "planner_grounder_split",
+    "multi_agent_squads"
+  ]
+}

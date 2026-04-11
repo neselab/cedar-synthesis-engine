@@ -1,0 +1,16 @@
+// Email-Based Domain Access Control — access decisions based on email
+// domain and local-part patterns. Exercises Cedar's `like` glob
+// operator (the only string-matching primitive in base Cedar).
+
+entity User = {
+    email: String,
+};
+
+entity Resource = {
+    classification: String,  // "public" | "internal" | "partner"
+};
+
+action readResource, writeResource appliesTo {
+    principal: [User],
+    resource: [Resource],
+};

@@ -9,12 +9,10 @@ from typing import Iterable
 
 THIS_FILE = Path(__file__).resolve()
 SRC_DIR = THIS_FILE.parent.parent
-CEDARFORGE_DIR = SRC_DIR.parent
-REPO_ROOT = CEDARFORGE_DIR.parent
 
-sys.path.insert(0, str(REPO_ROOT))
+sys.path.insert(0, str(SRC_DIR))
 
-from solver_wrapper import VerificationResult
+from metrics.solver_wrapper import VerificationResult
 
 
 SYNTAX_PATTERNS = [

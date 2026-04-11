@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib.util
 import json
 import sys
 import time
@@ -9,13 +10,10 @@ from pathlib import Path
 
 THIS_FILE = Path(__file__).resolve()
 SRC_DIR = THIS_FILE.parent.parent
-CEDARFORGE_DIR = SRC_DIR.parent
-REPO_ROOT = CEDARFORGE_DIR.parent
 
-sys.path.insert(0, str(REPO_ROOT))
+sys.path.insert(0, str(SRC_DIR))
 
-from orchestrator import load_checks  # noqa: E402
-from solver_wrapper import (  # noqa: E402
+from metrics.solver_wrapper import (  # noqa: E402
     CheckResult,
     run_always_denies_check,
     run_implies_check,
@@ -29,6 +27,15 @@ from metrics.policy_generation_metrics import (  # noqa: E402
     metric_record_to_dict,
 )
 from metrics.error_explainer import explain_validation_error  # noqa: E402
+
+
+def load_checks(workspace: str) -> list[dict]:
+    """Load verification checks from workspace/verification_plan.py."""
+    vp_path = str(Path(workspace) / "verification_plan.py")
+    spec = importlib.util.spec_from_file_location("verification_plan", vp_path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.get_checks()
 
 
 @dataclass
@@ -132,7 +139,7 @@ def evaluate_workspace(workspace: str | Path, prompt_variant: str = "unknown") -
 
     stages: list[EvaluationStage] = []
 
-    is_valid, error_msg = run_syntax_check(str(schema_path), str(candidate_path))
+    is_valid, error_msg, _error_kind = run_syntax_check(str(schema_path), str(candidate_path))
     if not is_valid:
         syntax_error, schema_error = _classify_validation_failure(error_msg)
         if syntax_error:

@@ -1,0 +1,164 @@
+{
+  "tasks": [
+    {
+      "id": "github",
+      "path": "dataset/github_repo_permission",
+      "description": "GitHub repository permission synthesis task with ceiling, floor, and liveness checks."
+    },
+    {
+      "id": "clinical_trial",
+      "path": "dataset/clinical_trial",
+      "description": "Clinical trial data access task with ceiling, floor, and liveness checks for view and edit."
+    },
+    {
+      "id": "streaming_base",
+      "path": "dataset/streaming_base",
+      "description": "Streaming platform base access control scenario."
+    },
+    {
+      "id": "streaming_add_age_rating",
+      "path": "dataset/streaming_add_age_rating",
+      "description": "Streaming platform with age rating restriction mutation."
+    },
+    {
+      "id": "streaming_add_download",
+      "path": "dataset/streaming_add_download",
+      "description": "Streaming platform with download permission mutation."
+    },
+    {
+      "id": "streaming_add_geo_restriction",
+      "path": "dataset/streaming_add_geo_restriction",
+      "description": "Streaming platform with geographic restriction mutation."
+    },
+    {
+      "id": "streaming_add_trial_tier",
+      "path": "dataset/streaming_add_trial_tier",
+      "description": "Streaming platform with trial tier mutation."
+    },
+    {
+      "id": "streaming_full_expansion",
+      "path": "dataset/streaming_full_expansion",
+      "description": "Streaming platform full expansion mutation."
+    },
+    {
+      "id": "streaming_multidevice",
+      "path": "dataset/streaming_multidevice",
+      "description": "Streaming platform with multi-device access mutation."
+    },
+    {
+      "id": "streaming_parental_controls",
+      "path": "dataset/streaming_parental_controls",
+      "description": "Streaming platform with parental controls mutation."
+    },
+    {
+      "id": "streaming_remove_bedtime",
+      "path": "dataset/streaming_remove_bedtime",
+      "description": "Streaming platform with bedtime restriction removal mutation."
+    },
+    {
+      "id": "streaming_remove_oscars",
+      "path": "dataset/streaming_remove_oscars",
+      "description": "Streaming platform with Oscars restriction removal mutation."
+    },
+    {
+      "id": "tax_base",
+      "path": "dataset/tax_base",
+      "description": "Tax preparation platform base access control scenario."
+    },
+    {
+      "id": "tax_add_auditor",
+      "path": "dataset/tax_add_auditor",
+      "description": "Tax platform with auditor role mutation."
+    },
+    {
+      "id": "tax_add_client_profile",
+      "path": "dataset/tax_add_client_profile",
+      "description": "Tax platform with client profile access mutation."
+    },
+    {
+      "id": "tax_add_edit",
+      "path": "dataset/tax_add_edit",
+      "description": "Tax platform with edit permission mutation."
+    },
+    {
+      "id": "tax_add_sensitivity",
+      "path": "dataset/tax_add_sensitivity",
+      "description": "Tax platform with document sensitivity mutation."
+    },
+    {
+      "id": "tax_add_supervisor",
+      "path": "dataset/tax_add_supervisor",
+      "description": "Tax platform with supervisor role mutation."
+    },
+    {
+      "id": "tax_full_expansion",
+      "path": "dataset/tax_full_expansion",
+      "description": "Tax platform full expansion mutation."
+    },
+    {
+      "id": "tax_remove_consent",
+      "path": "dataset/tax_remove_consent",
+      "description": "Tax platform with consent requirement removal mutation."
+    },
+    {
+      "id": "api_key_scoped_access",
+      "path": "dataset/api_key_scoped_access",
+      "description": "Realworld: API key scoped access control scenario."
+    },
+    {
+      "id": "approval_chain_workflow",
+      "path": "dataset/approval_chain_workflow",
+      "description": "Realworld: multi-step approval chain workflow scenario."
+    },
+    {
+      "id": "contextual_mfa_elevation",
+      "path": "dataset/contextual_mfa_elevation",
+      "description": "Realworld: contextual MFA elevation scenario."
+    },
+    {
+      "id": "delegation_temporary_grant",
+      "path": "dataset/delegation_temporary_grant",
+      "description": "Realworld: delegation and temporary grant scenario."
+    },
+    {
+      "id": "emergency_break_glass",
+      "path": "dataset/emergency_break_glass",
+      "description": "Realworld: emergency break-glass access override scenario."
+    },
+    {
+      "id": "hundred_check_scale",
+      "path": "dataset/hundred_check_scale",
+      "description": "Realworld: scale test with many verification checks."
+    },
+    {
+      "id": "intentional_planner_contradiction",
+      "path": "dataset/intentional_planner_contradiction",
+      "description": "Realworld: scenario with intentional contradictions in policy spec."
+    },
+    {
+      "id": "legal_hold_override_expiry",
+      "path": "dataset/legal_hold_override_expiry",
+      "description": "Realworld: legal hold override and expiry scenario."
+    },
+    {
+      "id": "multi_tenant_saas",
+      "path": "dataset/multi_tenant_saas",
+      "description": "Realworld: multi-tenant SaaS isolation scenario."
+    },
+    {
+      "id": "payroll_separation_of_duties",
+      "path": "dataset/payroll_separation_of_duties",
+      "description": "Realworld: payroll separation of duties scenario."
+    },
+    {
+      "id": "pii_data_classification",
+      "path": "dataset/pii_data_classification",
+      "description": "Realworld: PII data classification access control scenario."
+    },
+    {
+      "id": "string_prefix_domain_match",
+      "path": "dataset/string_prefix_domain_match",
+      "description": "Realworld: string prefix and domain match scenario."
+    }
+  ]
+}

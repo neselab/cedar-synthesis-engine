@@ -1,0 +1,64 @@
+// Contextual MFA Elevation — sensitive actions require a recent MFA
+// verification, computed as a time-window check between the request's
+// `now.datetime` and the principal's `mfaVerifiedAt` timestamp.
+
+entity Workspace;
+
+entity User = {
+    workspace: Workspace,
+    // The most recent MFA verification time for this user. Updated by
+    // the auth system whenever the user completes an MFA challenge.
+    mfaVerifiedAt: datetime,
+    // Whether this user has admin role in the workspace.
+    isAdmin: Bool,
+};
+
+entity Document = {
+    workspace: Workspace,
+};
+
+// Low-risk actions — no MFA freshness check required.
+action read, comment appliesTo {
+    principal: [User],
+    resource: [Document],
+    context: {
+        now: {
+            datetime: datetime,
+        },
+    },
+};
+
+// Write actions — no MFA freshness check.
+action write appliesTo {
+    principal: [User],
+    resource: [Document],
+    context: {
+        now: {
+            datetime: datetime,
+        },
+    },
+};
+
+// Sensitive actions — REQUIRE that the principal's MFA verification is
+// fresh (within 15 minutes of the request's `now.datetime`). Deleting
+// a document or performing admin operations on a workspace falls in
+// this category.
+action deleteDocument appliesTo {
+    principal: [User],
+    resource: [Document],
+    context: {
+        now: {
+            datetime: datetime,
+        },
+    },
+};
+
+action adminOperation appliesTo {
+    principal: [User],
+    resource: [Workspace],
+    context: {
+        now: {
+            datetime: datetime,
+        },
+    },
+};
