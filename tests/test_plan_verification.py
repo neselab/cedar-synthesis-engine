@@ -1,4 +1,4 @@
-"""Tests for ``cedar_agent.plan_verification``.
+"""Tests for ``autocedar.plan_verification``.
 
 Covers acceptance criteria 5 (Stage 1.75 unsat detection) and 6
 (Stage 2.5 traceback) from ``docs/HITL_STEP_B_PLAN.md`` §9.
@@ -12,13 +12,13 @@ from pathlib import Path
 
 import pytest
 
-from cedar_agent.atoms import PropertyAtom, VerificationPlanDraft
-from cedar_agent.grounding import CEDAR_PATH, CVC5_PATH
-from cedar_agent.plan_verification import (
+from autocedar.atoms import PropertyAtom, VerificationPlanDraft
+from autocedar.grounding import CEDAR_PATH, CVC5_PATH
+from autocedar.plan_verification import (
     generate_atom_traceback,
     symbolic_consistency_check,
 )
-from cedar_agent.plan_verification import (
+from autocedar.plan_verification import (
     _extract_attribute_paths,
     _split_clauses,
 )

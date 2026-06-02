@@ -11,9 +11,12 @@ The package is organized as:
 - ``corpus``: session log writer.
 - ``pipeline``: orchestrates Stages 1, 1.5, 2, 1.75, 3, 2.5.
 - ``ui``: terminal review UI and persistence.
+- ``tui``: Textual-based interactive agent shell.
+- ``harness``: packaged namespace for the v1 CEGIS harness.
 
-The package never modifies ``eval_harness.py``, ``orchestrator.py``, or
-``solver_wrapper.py`` — the v1 harness contract is frozen.
+Root-level ``eval_harness.py``, ``orchestrator.py``, and
+``solver_wrapper.py`` remain as backwards-compatible scripts. New package
+imports should use ``autocedar.harness``.
 """
 
-__version__ = "0.1.0-step-b"
+__version__ = "0.1.0"

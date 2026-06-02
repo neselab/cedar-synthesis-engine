@@ -1,4 +1,4 @@
-"""Unit tests for ``cedar_agent.property_elicitor``.
+"""Unit tests for ``autocedar.property_elicitor``.
 
 See ``docs/HITL_STEP_B_PLAN.md`` §9 acceptance criterion 4: sugar
 compile-down produces byte-identical output for five golden inputs.
@@ -10,8 +10,8 @@ from __future__ import annotations
 
 import textwrap
 
-from cedar_agent.atoms import PropertyAtom, VerificationPlanDraft
-from cedar_agent.property_elicitor import (
+from autocedar.atoms import PropertyAtom, VerificationPlanDraft
+from autocedar.property_elicitor import (
     compile_plan,
     insert_when_with_conjuncts,
     wrap_when_with_conjuncts,

@@ -1,4 +1,4 @@
-"""End-to-end tests for ``cedar_agent.pipeline.author``.
+"""End-to-end tests for ``autocedar.pipeline.author``.
 
 Covers acceptance criteria 8 (pipeline skeleton) and 9 (corpus
 logging) of ``docs/HITL_STEP_B_PLAN.md`` §9.
@@ -16,10 +16,10 @@ from pathlib import Path
 
 import pytest
 
-from cedar_agent.atoms import PropertyAtom
-from cedar_agent.corpus import AtomDecision
-from cedar_agent.grounding import CEDAR_PATH, CVC5_PATH
-from cedar_agent.pipeline import author
+from autocedar.atoms import PropertyAtom
+from autocedar.corpus import AtomDecision
+from autocedar.grounding import CEDAR_PATH, CVC5_PATH
+from autocedar.pipeline import author
 
 _HAVE_SOLVERS = (
     os.path.isfile(CEDAR_PATH)

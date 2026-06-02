@@ -25,7 +25,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable, Optional
 
-from cedar_agent.atoms import (
+from autocedar.atoms import (
     ActionAtom,
     AttributeAtom,
     EntityAtom,
@@ -34,25 +34,25 @@ from cedar_agent.atoms import (
     TypeAliasAtom,
     VerificationPlanDraft,
 )
-from cedar_agent.corpus import (
+from autocedar.corpus import (
     AtomDecision,
     AttributionDecision,
     IterationLog,
     Session,
 )
-from cedar_agent.critic import (
+from autocedar.critic import (
     CRITIC_DIMENSIONS,
     CriticScore,
     score_candidate as score_candidate_default,
     stub_llm_scorer,
 )
-from cedar_agent.grounding import symbolic_verify_atom
-from cedar_agent.plan_verification import (
+from autocedar.grounding import symbolic_verify_atom
+from autocedar.plan_verification import (
     generate_atom_traceback,
     symbolic_consistency_check,
 )
-from cedar_agent.property_elicitor import compile_plan
-from cedar_agent.schema_atomizer import compose_schema
+from autocedar.property_elicitor import compile_plan
+from autocedar.schema_atomizer import compose_schema
 
 
 # ---------------------------------------------------------------------------
@@ -67,7 +67,7 @@ SchemaProposer = Callable[[str], list[Stage1AtomT]]
 PropertyProposer = Callable[[str, str], list[PropertyAtom]]
 
 # Per-atom user review.
-AtomReviewer = Callable[[Any], AtomDecision]
+AtomReviewer = Callable[[Any], Any]
 
 # Stage 3 synthesis: given a scenario directory, produce candidate.cedar.
 # Returns the candidate path. Real implementations wrap eval_harness.
@@ -100,7 +100,7 @@ def _stub_property_proposer(spec_text: str, schema_path: str) -> list[PropertyAt
 def _stub_auto_approve(atom: Any) -> AtomDecision:
     """Default reviewer for Step B: auto-approves with intent ack.
 
-    Real interactive review lives in ``cedar_agent.ui.terminal``.
+    Real interactive review lives in ``autocedar.ui.terminal``.
     """
     return AtomDecision(
         atom_name=getattr(atom, "name", "?"),
@@ -207,11 +207,11 @@ def author(
         decisions: list[AtomDecision] = []
         draft = SchemaDraft()
         for atom in schema_atoms:
-            decision = review_atom(atom)
+            reviewed_atom, decision = _normalize_review_result(atom, review_atom(atom))
             decisions.append(decision)
             if decision.action != "approve":
                 continue
-            _route_into_schema_draft(atom, draft)
+            _route_into_schema_draft(reviewed_atom, draft)
         session.write_stage1_decisions(decisions)
         schema_text = compose_schema(draft) if (
             draft.entities or draft.actions or draft.type_aliases
@@ -241,13 +241,13 @@ def author(
     for atom in prop_atoms:
         symbolic_verify_atom(atom, str(schema_path), prior_atoms=plan.properties)
         verification_logs[atom.name] = list(atom.symbolic_verification_log)
-        decision = review_atom(atom)
+        reviewed_atom, decision = _normalize_review_result(atom, review_atom(atom))
         # Mirror the symbolic_verified flag onto the decision log so the
         # corpus captures both fields per §1.4.
-        decision.symbolic_verified = atom.symbolic_verified
+        decision.symbolic_verified = getattr(reviewed_atom, "symbolic_verified", False)
         if decision.action == "approve":
-            atom.intent_acknowledged_by_user = True
-            plan.properties.append(atom)
+            reviewed_atom.intent_acknowledged_by_user = True
+            plan.properties.append(reviewed_atom)
         decisions2.append(decision)
     session.write_stage2_decisions(decisions2)
     session.write_stage2_symbolic_verification_logs(verification_logs)
@@ -334,6 +334,25 @@ def _route_into_schema_draft(atom: Stage1AtomT, draft: SchemaDraft) -> None:
             owner.attributes[atom.field_name] = atom
         # If owner not found, the atom is dropped — Step C should ensure
         # entity atoms are proposed before their attribute atoms.
+
+
+def _normalize_review_result(atom: Any, review_result: Any) -> tuple[Any, AtomDecision]:
+    """Accept either an AtomDecision or a ReviewedAtom-like object.
+
+    The terminal UI returns ``ReviewedAtom(atom=..., decision=...)`` so edits
+    and LLM replacements can flow into composition. Older tests and batch
+    callers return an ``AtomDecision`` directly; keep that path unchanged.
+    """
+    if isinstance(review_result, AtomDecision):
+        return atom, review_result
+    reviewed_atom = getattr(review_result, "atom", None)
+    decision = getattr(review_result, "decision", None)
+    if reviewed_atom is not None and isinstance(decision, AtomDecision):
+        return reviewed_atom, decision
+    raise TypeError(
+        "review_atom must return AtomDecision or an object with "
+        "`atom` and `decision: AtomDecision` fields",
+    )
 
 
 def _detect_schema_amendments(prop_atoms: list[PropertyAtom]) -> list[dict[str, Any]]:

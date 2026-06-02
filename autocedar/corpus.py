@@ -23,7 +23,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Optional
 
-from cedar_agent.atoms import (
+from autocedar.atoms import (
     PropertyAtom,
     SchemaDraft,
     VerificationPlanDraft,

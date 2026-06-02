@@ -1,4 +1,4 @@
-"""Tests for ``cedar_agent.schema_atomizer`` — Stage 1 atomizer.
+"""Tests for ``autocedar.schema_atomizer`` — Stage 1 atomizer.
 
 Covers acceptance criterion 3 of ``docs/HITL_STEP_C_PLAN.md`` §3 —
 ``compose_and_validate`` runs cedar validate; on failure asks the LLM
@@ -14,15 +14,15 @@ from typing import Any
 
 import pytest
 
-from cedar_agent.atoms import (
+from autocedar.atoms import (
     ActionAtom,
     AttributeAtom,
     EntityAtom,
     SchemaDraft,
     TypeAliasAtom,
 )
-from cedar_agent.grounding import CEDAR_PATH
-from cedar_agent.schema_atomizer import (
+from autocedar.grounding import CEDAR_PATH
+from autocedar.schema_atomizer import (
     cedar_validate_schema,
     compose_and_validate,
     compose_schema,

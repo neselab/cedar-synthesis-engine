@@ -1,4 +1,4 @@
-"""Thin Anthropic SDK wrapper for cedar_agent.
+"""Thin Anthropic SDK wrapper for autocedar.
 
 See ``docs/HITL_STEP_C_PLAN.md`` for the implementation contract.
 Per §2 of that plan:
@@ -17,7 +17,7 @@ Per §2 of that plan:
 
 Structured output is provided via Pydantic schemas at this layer; the
 schemas are then translated into the existing dataclasses in
-``cedar_agent.atoms`` so the rest of the pipeline (sugar compile-down,
+``autocedar.atoms`` so the rest of the pipeline (sugar compile-down,
 grounding, etc.) stays unchanged.
 """
 
@@ -28,10 +28,13 @@ from typing import Annotated, Any, Literal, Optional, Union
 
 from pydantic import BaseModel, Field
 
-from cedar_agent.atoms import (
+from autocedar.atoms import (
     ActionAtom,
+    AlternativeEncoding,
     AttributeAtom,
     EntityAtom,
+    Example,
+    PropertyAtom,
     TypeAliasAtom,
 )
 
@@ -46,7 +49,7 @@ DEFAULT_EFFORT = "high"
 
 
 def _load_prompt(name: str) -> str:
-    """Load a prompt template from ``cedar_agent/prompts/<name>``."""
+    """Load a prompt template from ``autocedar/prompts/<name>``."""
     path = Path(__file__).resolve().parent / "prompts" / name
     return path.read_text()
 
@@ -54,7 +57,7 @@ def _load_prompt(name: str) -> str:
 # ---------------------------------------------------------------------------
 # Pydantic schemas for LLM-side structured output.
 #
-# These are deliberately a separate layer from ``cedar_agent.atoms``: the
+# These are deliberately a separate layer from ``autocedar.atoms``: the
 # LLM gets a clean, discriminator-tagged shape; the rest of the pipeline
 # keeps the dataclasses with sugar-specific validation in __post_init__.
 # Translation lives in ``_translate_*`` helpers further down.
@@ -134,12 +137,59 @@ class SchemaFixResponse(BaseModel):
     explanation: str
 
 
+class _LLMExample(BaseModel):
+    """Adversarial example attached to a Stage 2 property atom."""
+
+    description: str
+    request_dict: dict[str, Any]
+    decision_under_chosen: Literal["permit", "deny"]
+    decisions_under_alternatives: dict[str, Literal["permit", "deny"]] = Field(
+        default_factory=dict,
+    )
+    diagnostic_for: list[str] = Field(default_factory=list)
+
+
+class _LLMAlternativeEncoding(BaseModel):
+    """Alternative property encoding considered by the model."""
+
+    label: str
+    interpretive_choice: str
+    cedar_text: str
+
+
+class _LLMPropertyAtom(BaseModel):
+    """LLM-side Stage 2 property atom."""
+
+    name: str
+    rationale: str
+    plain_english_summary: str
+    source_excerpt: str
+    constraint_type: Literal["ceiling", "floor", "liveness", "rate_limit", "disjointness"]
+    action: str
+    principal_types: list[str] = Field(default_factory=list)
+    resource_types: list[str] = Field(default_factory=list)
+    reference_cedar: str = ""
+    examples_adversarial: list[_LLMExample] = Field(default_factory=list)
+    alternatives_considered: list[_LLMAlternativeEncoding] = Field(default_factory=list)
+    rate_limit_window: Optional[str] = None
+    rate_limit_threshold: Optional[int] = None
+    rate_limit_counter_attr: Optional[str] = None
+    disjoint_with: Optional[str] = None
+    disjoint_target_body: Optional[str] = None
+
+
+class PropertyAtomsResponse(BaseModel):
+    """Top-level structured response for Stage 2 property elicitation."""
+
+    atoms: list[_LLMPropertyAtom]
+
+
 # Translated atom types (returned by ``LLMClient.propose_schema_atoms``).
 Stage1Atom = Union[EntityAtom, AttributeAtom, ActionAtom, TypeAliasAtom]
 
 
 # ---------------------------------------------------------------------------
-# Translation: Pydantic LLM atoms → cedar_agent.atoms dataclasses.
+# Translation: Pydantic LLM atoms → autocedar.atoms dataclasses.
 # ---------------------------------------------------------------------------
 
 
@@ -217,13 +267,50 @@ def _translate_atom(llm_atom: Any) -> Stage1Atom:
     raise TypeError(f"unknown LLM atom kind: {type(llm_atom).__name__}")
 
 
+def _translate_property_atom(llm: _LLMPropertyAtom) -> PropertyAtom:
+    return PropertyAtom(
+        name=llm.name,
+        rationale=llm.rationale,
+        plain_english_summary=llm.plain_english_summary,
+        source_excerpt=llm.source_excerpt,
+        constraint_type=llm.constraint_type,
+        action=llm.action,
+        principal_types=list(llm.principal_types),
+        resource_types=list(llm.resource_types),
+        reference_cedar=llm.reference_cedar,
+        examples_adversarial=[
+            Example(
+                description=e.description,
+                request_dict=dict(e.request_dict),
+                decision_under_chosen=e.decision_under_chosen,
+                decisions_under_alternatives=dict(e.decisions_under_alternatives),
+                diagnostic_for=list(e.diagnostic_for),
+            )
+            for e in llm.examples_adversarial
+        ],
+        alternatives_considered=[
+            AlternativeEncoding(
+                label=a.label,
+                interpretive_choice=a.interpretive_choice,
+                cedar_text=a.cedar_text,
+            )
+            for a in llm.alternatives_considered
+        ],
+        rate_limit_window=llm.rate_limit_window,
+        rate_limit_threshold=llm.rate_limit_threshold,
+        rate_limit_counter_attr=llm.rate_limit_counter_attr,
+        disjoint_with=llm.disjoint_with,
+        disjoint_target_body=llm.disjoint_target_body,
+    )
+
+
 # ---------------------------------------------------------------------------
 # LLMClient — the dependency-injection seam.
 # ---------------------------------------------------------------------------
 
 
 class LLMClient:
-    """Thin wrapper around the Anthropic SDK for cedar_agent.
+    """Thin wrapper around the Anthropic SDK for autocedar.
 
     Construction:
       - ``client``: an ``anthropic.Anthropic`` instance (or any object
@@ -288,27 +375,55 @@ class LLMClient:
         return [_translate_atom(a) for a in response.parsed_output.atoms]
 
     # ------------------------------------------------------------------
+    # Stage 2: property atom proposal.
+    # ------------------------------------------------------------------
+
+    def propose_property_atoms(self, spec_text: str, schema_text: str) -> list[PropertyAtom]:
+        """Ask the LLM to propose Stage 2 property atoms for a spec + schema."""
+        system_prompt = _load_prompt("property_atomization.md")
+        response = self._call_parse(
+            system_prompt=system_prompt,
+            spec_text=spec_text,
+            user_turn=(
+                "Use this validated Cedar schema as the grounding context:\n\n"
+                f"```cedarschema\n{schema_text}\n```\n\n"
+                "Propose the Stage 2 property atoms needed to verify and "
+                "synthesize a policy for the spec above. Each atom must include "
+                "a valid `reference_cedar` policy except liveness atoms, which "
+                "may leave it empty. Prefer orthogonal ceiling/floor/liveness "
+                "properties over role-by-role duplication."
+            ),
+            output_format=PropertyAtomsResponse,
+        )
+        return [
+            _translate_property_atom(atom)
+            for atom in response.parsed_output.atoms
+        ]
+
+    # ------------------------------------------------------------------
     # Stage 1 fix: ask the LLM to fix a cedar-validate failure.
     # ------------------------------------------------------------------
 
     def answer_question_about_atom(
         self,
-        atom: Stage1Atom,
+        atom: Any,
         question: str,
         spec_text: str,
     ) -> str:
-        """Answer a user's free-text question about one Stage 1 atom.
+        """Answer a user's free-text question about one reviewed atom.
 
         Used by the interactive review loop's ``[Q]`` key. The atom is
         rendered as JSON in the user turn so the model has the full
         context (rationale, plain English, source excerpt, fields).
         Returns plain text — no structured output needed.
         """
-        from cedar_agent.atoms import to_dict as _atom_to_dict
+        from autocedar.atoms import to_dict as _atom_to_dict
 
         atom_json = _atom_to_dict(atom)
+        is_property_atom = isinstance(atom, PropertyAtom)
+        atom_stage = "Stage 2 property atom" if is_property_atom else "Stage 1 schema atom"
         user_turn = (
-            f"The user is reviewing this Stage 1 atom:\n\n"
+            f"The user is reviewing this {atom_stage}:\n\n"
             f"```json\n{atom_json}\n```\n\n"
             f"They ask: {question}\n\n"
             "Answer their question in 1–3 sentences. Stay focused on "
@@ -316,7 +431,9 @@ class LLMClient:
             "user explicitly asks for one."
         )
         response = self._call_text(
-            system_prompt=_load_prompt("schema_atomization.md"),
+            system_prompt=_load_prompt(
+                "property_atomization.md" if is_property_atom else "schema_atomization.md",
+            ),
             spec_text=spec_text,
             user_turn=user_turn,
         )
@@ -335,7 +452,7 @@ class LLMClient:
         ``SchemaAtomsResponse`` schema for consistency), or ``None`` if
         the LLM declined to propose an alternative.
         """
-        from cedar_agent.atoms import to_dict as _atom_to_dict
+        from autocedar.atoms import to_dict as _atom_to_dict
 
         atom_json = _atom_to_dict(rejected_atom)
         user_turn = (

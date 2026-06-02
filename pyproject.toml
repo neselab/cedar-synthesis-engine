@@ -1,12 +1,38 @@
 [project]
-name = "cedar-synthesis-engine"
+name = "autocedar"
 version = "0.1.0"
-description = "Add your description here"
+description = "Human-in-the-loop Cedar policy authoring with symbolic verification."
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = ["anthropic"]
+dependencies = [
+    "anthropic",
+    "pydantic",
+    "textual",
+]
+
+[project.scripts]
+autocedar = "autocedar.cli:main"
 
 [dependency-groups]
 dev = [
     "pytest>=9.0.3",
 ]
+
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["autocedar*"]
+exclude = [
+    "cedarbench*",
+    "dataset*",
+    "experiments*",
+    "eval_runs*",
+    "workspace*",
+    "workspace_demo_backup*",
+    "tests*",
+]
+
+[tool.setuptools.package-data]
+autocedar = ["prompts/*.md"]

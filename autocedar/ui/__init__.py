@@ -1,4 +1,4 @@
-"""Terminal UI + persistence for cedar_agent.
+"""Terminal UI + persistence for autocedar.
 
 Real interactive UI lives in ``terminal.py`` (Step C). The
 ``persistence.py`` helper writes session state to JSON so an

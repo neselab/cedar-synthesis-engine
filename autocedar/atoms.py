@@ -239,7 +239,7 @@ class SchemaDraft:
     """In-progress schema being assembled from approved Stage 1 atoms.
 
     The ``to_cedar_schema`` rendering and ``cedar validate`` round-trip
-    live in ``cedar_agent.schema_atomizer`` (Step C). At the data-model
+    live in ``autocedar.schema_atomizer`` (Step C). At the data-model
     layer this class is just the ordered structure of approved atoms.
     """
 
@@ -255,7 +255,7 @@ class VerificationPlanDraft:
 
     ``compile`` resolves sugars to primitives, applies §8.8 patches,
     and produces the artifacts the v1 harness consumes. The
-    implementation lives in ``cedar_agent.property_elicitor`` (§5.3).
+    implementation lives in ``autocedar.property_elicitor`` (§5.3).
     """
 
     properties: list[PropertyAtom] = field(default_factory=list)

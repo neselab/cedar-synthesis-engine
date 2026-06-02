@@ -1,4 +1,4 @@
-"""Tests for ``cedar_agent.critic``.
+"""Tests for ``autocedar.critic``.
 
 Covers acceptance criterion 7 of ``docs/HITL_STEP_B_PLAN.md`` §9 —
 the critic prompt boundary.
@@ -11,7 +11,7 @@ import json
 
 import pytest
 
-from cedar_agent.critic import (
+from autocedar.critic import (
     CRITIC_DIMENSIONS,
     CRITIC_STYLE_GUIDE,
     CriticScore,

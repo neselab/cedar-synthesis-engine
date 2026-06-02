@@ -12,20 +12,20 @@
 
 Step C implements **Stage 1 with real LLM**:
 
-- ``cedar_agent/llm.py`` — thin Anthropic SDK wrapper with a
+- ``autocedar/llm.py`` — thin Anthropic SDK wrapper with a
   dependency-injection seam for mocking in tests. Supports prompt
   caching so the schema-atomization system prompt (large, stable) is
   cached across atom-proposal calls.
-- ``cedar_agent/schema_atomizer.py`` — extends Step B's
+- ``autocedar/schema_atomizer.py`` — extends Step B's
   ``compose_schema`` with:
   - ``propose_schema_atoms(spec_text, llm)`` — LLM call returning a
     structured list of Stage 1 atoms, validated against the atom
-    JSON shape from ``cedar_agent.atoms``.
+    JSON shape from ``autocedar.atoms``.
   - ``compose_and_validate(draft, schema_path, llm)`` — compose →
     ``cedar validate`` → on failure, ask LLM to fix → re-validate.
     Bounded retries (max 3) per ``HITL_STEP_B_PLAN.md`` §6.4.
-- ``cedar_agent/prompts/schema_atomization.md`` — the prompt template.
-- ``cedar_agent/ui/terminal.py`` — interactive review loop with
+- ``autocedar/prompts/schema_atomization.md`` — the prompt template.
+- ``autocedar/ui/terminal.py`` — interactive review loop with
   dependency-injected I/O for testability. Implements the
   ``[A]pprove / [R]eject / [E]dit / [Q]uestion / [S]ee Cedar /
   [V]iew patches`` keys from ``HITL_STEP_B_PLAN.md`` §6.2.
@@ -57,7 +57,7 @@ first try.
 
 Model identifier is configurable via constructor argument so
 deployments that prefer Sonnet 4.6 (cost) or want to pin a specific
-model can override. The default lives in `cedar_agent/llm.py` as a
+model can override. The default lives in `autocedar/llm.py` as a
 module constant so tests pin a known model name.
 
 ### 2.2 Output format
@@ -65,12 +65,12 @@ module constant so tests pin a known model name.
 LLM returns a **JSON array of atom records** wrapped in a code
 fence. The proposer prompt explicitly asks for fenced JSON; the
 parser tolerates either fenced or bare JSON (similar to the
-``_extract_json_block`` helper already in ``cedar_agent.critic``).
+``_extract_json_block`` helper already in ``autocedar.critic``).
 
 Each atom record has a ``kind`` field discriminating entity /
 attribute / action / type_alias, plus the AtomBase fields and
 kind-specific fields. The parser routes by ``kind`` into the right
-dataclass via ``cedar_agent.atoms.from_dict``.
+dataclass via ``autocedar.atoms.from_dict``.
 
 Tool use (the Anthropic SDK's structured output mode) is a future
 option but adds boilerplate; the JSON-via-prompt approach is simpler
@@ -115,10 +115,10 @@ matching the Step B corpus contract.
 
 Step C is done when:
 
-1. ``cedar_agent/llm.py`` has an ``LLMClient`` class. Construction
+1. ``autocedar/llm.py`` has an ``LLMClient`` class. Construction
    defaults to the Anthropic SDK; tests inject mock clients. Prompt
    caching is enabled for the system+spec block.
-2. ``cedar_agent/schema_atomizer.py`` has
+2. ``autocedar/schema_atomizer.py`` has
    ``propose_schema_atoms(spec_text, llm)`` that calls the LLM,
    parses JSON, and returns a typed list of Stage 1 atoms. Round-
    trip through ``atoms.from_dict`` is unit-tested.
@@ -126,7 +126,7 @@ Step C is done when:
    ``cedar validate``; on failure, calls the LLM with the error text
    and the current schema; loops up to 3 attempts. Tests cover
    success on first try, success after one fix, and exhaustion.
-4. The interactive review loop in ``cedar_agent/ui/terminal.py``
+4. The interactive review loop in ``autocedar/ui/terminal.py``
    handles all six keys (A/R/E/Q/S/V) and writes ``AtomDecision``
    records to the corpus with both verification flags. Tests use
    scripted ``input_fn`` to walk through each key.

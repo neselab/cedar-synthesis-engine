@@ -1,0 +1,4 @@
+include README.md
+recursive-include autocedar/prompts *.md
+
+prune tests

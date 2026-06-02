@@ -23,8 +23,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
-from cedar_agent.atoms import PropertyAtom, VerificationPlanDraft
-from cedar_agent.grounding import _ceiling_or_floor, _principal_resource, _run_symcc
+from autocedar.atoms import PropertyAtom, VerificationPlanDraft
+from autocedar.grounding import _ceiling_or_floor, _principal_resource, _run_symcc
 
 
 # ---------------------------------------------------------------------------
@@ -52,7 +52,7 @@ def symbolic_consistency_check(
     those two atoms form the unsat core. Multiple failures return all
     involved atoms as the core.
     """
-    workdir = workdir or Path(tempfile.mkdtemp(prefix="cedar_agent_consistency_"))
+    workdir = workdir or Path(tempfile.mkdtemp(prefix="autocedar_consistency_"))
     workdir.mkdir(parents=True, exist_ok=True)
 
     failed_pairs: list[tuple[str, str, str]] = []

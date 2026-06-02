@@ -21,14 +21,14 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
-from cedar_agent.atoms import (
+from autocedar.atoms import (
     ActionAtom,
     AttributeAtom,
     EntityAtom,
     SchemaDraft,
     TypeAliasAtom,
 )
-from cedar_agent.llm import LLMClient, Stage1Atom
+from autocedar.llm import LLMClient, Stage1Atom
 
 CEDAR_PATH = os.environ.get("CEDAR", os.path.expanduser("~/.cargo/bin/cedar"))
 

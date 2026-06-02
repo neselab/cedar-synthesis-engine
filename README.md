@@ -161,11 +161,42 @@ when { principal.department == "Engineering" && !resource.is_locked };
 
 - **Cedar CLI v4.10+** — `cargo install cedar-policy-cli`
 - **CVC5 SMT solver** — at `~/.local/bin/cvc5` (or `$CVC5` env var)
-- **Python 3.11+** — no pip dependencies
+- **Python 3.11+** — install project dependencies with `uv`/`pip`
 
 ## Running
 
 CVC5=~/.local/bin/cvc5 python orchestrator.py
+
+## Installable CLI
+
+The runtime package exposes an `autocedar` console script:
+
+```bash
+uv run autocedar
+uv run autocedar verify workspace
+uv run autocedar synthesize cedarbench/scenarios/realworld/emergency_break_glass \
+  --no-review --max-iters 20
+uv run autocedar author path/to/spec.md --out ./autocedar-runs
+```
+
+With no arguments, `autocedar` opens the Textual-based interactive agent
+shell. Talk to it in normal language: "verify the workspace", "save this as
+policy.md", "author this with schema workspace/schema.cedarschema", or "start
+a policy draft". Normal language stays conversational until drafting is
+explicitly approved; policy-like prose opens a "start drafting and add this?"
+gate instead of silently mutating the draft. Slash commands and explicit
+subcommands remain as shortcuts for repeatable runs. Before running authoring,
+verification, synthesis, saving, clearing, or starting draft capture, the TUI
+summarizes the inferred action and waits for "yes" / "no". The conversational
+layer can answer questions about the current TUI state, while `author` still
+runs with clean authoring inputs: the saved prose spec, optional schema, and
+HITL review decisions. `verify` and `synthesize` wrap the v1 CEGIS harness.
+The Stage 2 property proposer and final synthesis step are still injectable
+library seams while the CLI uses current pipeline defaults.
+
+For packaging, runtime code lives under `autocedar/`. The packaged v1
+harness import surface is `autocedar.harness`; the root-level scripts
+remain for backwards-compatible local workflows.
 
 ## The reference policies *are* the security contract
 

@@ -429,13 +429,13 @@ verifier can solve this part in seconds with no human in the loop.
 ### 4.4 The full pipeline as a single command
 
 ```bash
-cedar-agent author --input policy_spec.md --output ./my-policy/
+autocedar author --input policy_spec.md --output ./my-policy/
 ```
 
 Or interactively:
 
 ```bash
-cedar-agent author --interactive
+autocedar author --interactive
 > Paste your specification (Ctrl-D to end):
 > ...prose spec...
 > ^D
@@ -508,12 +508,12 @@ class PropertyAtom:
     source_excerpt: str
 ```
 
-Place: `cedar_agent/atoms.py` (new package alongside the existing harness
+Place: `autocedar/atoms.py` (new package alongside the existing harness
 modules).
 
 ### Step C — Schema atomizer (Stage 1) (~1–2 weeks)
 
-Build `cedar_agent/schema_atomizer.py` with:
+Build `autocedar/schema_atomizer.py` with:
 
 - `SchemaAtomizer.propose_schema(spec_text)` — calls LLM with a
   structured prompt asking for an atomized draft. Output validated
@@ -569,7 +569,7 @@ restructured around HITL atomic review and using the existing §8.3 and
 
 ### Step E — Pipeline driver and CLI (~1 week)
 
-Build `cedar_agent/cli.py`:
+Build `autocedar/cli.py`:
 
 ```python
 def author(spec_path: str, output_dir: str, interactive: bool = True):
@@ -685,7 +685,7 @@ cedar-synthesis-engine/
 ├── eval_harness.py                  # v1 harness (UNCHANGED)
 ├── orchestrator.py                  # v1 harness
 ├── solver_wrapper.py                # v1 harness
-├── cedar_agent/                     # NEW HITL production agent
+├── autocedar/                     # NEW HITL production agent
 │   ├── __init__.py
 │   ├── atoms.py                     # atom data classes
 │   ├── schema_atomizer.py           # Stage 1

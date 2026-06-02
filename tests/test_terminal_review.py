@@ -1,4 +1,4 @@
-"""Tests for ``cedar_agent.ui.terminal`` — interactive review loop.
+"""Tests for ``autocedar.ui.terminal`` — interactive review loop.
 
 Covers acceptance criterion 4 of ``docs/HITL_STEP_C_PLAN.md`` §3: all
 six keys (A/R/E/Q/S/V) dispatch correctly, the AtomDecision captures
@@ -12,14 +12,14 @@ from typing import Any, Iterable
 
 import pytest
 
-from cedar_agent.atoms import (
+from autocedar.atoms import (
     ActionAtom,
     AttributeAtom,
     EntityAtom,
     PropertyAtom,
     TypeAliasAtom,
 )
-from cedar_agent.ui.terminal import (
+from autocedar.ui.terminal import (
     VERIFIED_BADGE,
     interactive_review_loop,
     render_property_atom,
@@ -100,6 +100,25 @@ def _action() -> ActionAtom:
     )
 
 
+def _property() -> PropertyAtom:
+    return PropertyAtom(
+        name="owner_only_read",
+        rationale="bound",
+        plain_english_summary="Only the owner reads.",
+        source_excerpt="Owners can read their own resources.",
+        constraint_type="ceiling",
+        action="read",
+        principal_types=["User"],
+        resource_types=["Record"],
+        reference_cedar=(
+            'permit (principal is User, action == Action::"read", resource is Record)\n'
+            "when { principal == resource.owner };"
+        ),
+        symbolic_verified=True,
+        symbolic_verification_log=["ceiling check passed"],
+    )
+
+
 # ---------------------------------------------------------------------------
 # render helpers.
 # ---------------------------------------------------------------------------
@@ -130,19 +149,7 @@ def test_render_schema_declaration_for_each_kind() -> None:
 
 
 def test_render_property_atom_uses_verified_badge() -> None:
-    atom = PropertyAtom(
-        name="owner_only_read",
-        rationale="bound",
-        plain_english_summary="Only the owner reads.",
-        source_excerpt="...",
-        constraint_type="ceiling",
-        action="read",
-        principal_types=["User"],
-        resource_types=["Record"],
-        reference_cedar="permit ...;",
-        symbolic_verified=True,
-    )
-    text = render_property_atom(atom, 1, 1)
+    text = render_property_atom(_property(), 1, 1)
     assert VERIFIED_BADGE in text
 
 
@@ -242,6 +249,36 @@ def test_edit_action_principal_types_parses_csv() -> None:
     assert action.principal_types == ["User", "ApiKey", "Bot"]
 
 
+def test_property_atom_approval_preserves_symbolic_verified() -> None:
+    captured = _CaptureOutput()
+    scripted = _ScriptedInput(["A"])
+
+    reviewed = interactive_review_loop(
+        [_property()],
+        input_fn=scripted,
+        output_fn=captured,
+    )
+
+    assert reviewed[0].decision.action == "approve"
+    assert reviewed[0].decision.symbolic_verified is True
+    assert "Property 1 of 1" in captured.text
+
+
+def test_edit_property_action_field() -> None:
+    captured = _CaptureOutput()
+    scripted = _ScriptedInput(["E", "action=view", "A"])
+
+    reviewed = interactive_review_loop(
+        [_property()],
+        input_fn=scripted,
+        output_fn=captured,
+    )
+
+    atom = reviewed[0].atom
+    assert isinstance(atom, PropertyAtom)
+    assert atom.action == "view"
+
+
 # ---------------------------------------------------------------------------
 # [S] see Cedar — prints declaration, stays on atom.
 # ---------------------------------------------------------------------------
@@ -262,6 +299,19 @@ def test_see_cedar_key_prints_declaration_then_loops() -> None:
     assert captured.text.count("Doctors and nurses") >= 2
 
 
+def test_see_cedar_key_prints_property_reference() -> None:
+    captured = _CaptureOutput()
+    scripted = _ScriptedInput(["S", "A"])
+    reviewed = interactive_review_loop(
+        [_property()],
+        input_fn=scripted,
+        output_fn=captured,
+    )
+    assert reviewed[0].decision.action == "approve"
+    assert "```cedar" in captured.text
+    assert "principal == resource.owner" in captured.text
+
+
 # ---------------------------------------------------------------------------
 # [V] view patches — Stage 1 no-op message.
 # ---------------------------------------------------------------------------
@@ -277,6 +327,18 @@ def test_view_patches_key_prints_stage1_no_op_message() -> None:
     )
     assert reviewed[0].decision.action == "approve"
     assert "no §8.8 patches" in captured.text
+
+
+def test_view_patches_key_prints_property_symbolic_log() -> None:
+    captured = _CaptureOutput()
+    scripted = _ScriptedInput(["V", "A"])
+    reviewed = interactive_review_loop(
+        [_property()],
+        input_fn=scripted,
+        output_fn=captured,
+    )
+    assert reviewed[0].decision.action == "approve"
+    assert "ceiling check passed" in captured.text
 
 
 # ---------------------------------------------------------------------------

@@ -1,4 +1,4 @@
-"""Tests for ``cedar_agent.corpus``.
+"""Tests for ``autocedar.corpus``.
 
 Covers acceptance criterion 9 of ``docs/HITL_STEP_B_PLAN.md`` §9 —
 session log directory layout including prose-excerpt-to-atom
@@ -11,8 +11,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from cedar_agent.atoms import PropertyAtom
-from cedar_agent.corpus import (
+from autocedar.atoms import PropertyAtom
+from autocedar.corpus import (
     AtomDecision,
     AttributionDecision,
     IterationLog,

@@ -20,14 +20,14 @@ from typing import Any, Iterable
 
 import pytest
 
-from cedar_agent.atoms import (
+from autocedar.atoms import (
     ActionAtom,
     AttributeAtom,
     EntityAtom,
     SchemaDraft,
 )
-from cedar_agent.grounding import CEDAR_PATH
-from cedar_agent.llm import (
+from autocedar.grounding import CEDAR_PATH
+from autocedar.llm import (
     LLMClient,
     SchemaAtomsResponse,
     _LLMActionAtom,
@@ -35,13 +35,13 @@ from cedar_agent.llm import (
     _LLMContextAttribute,
     _LLMEntityAtom,
 )
-from cedar_agent.schema_atomizer import (
+from autocedar.schema_atomizer import (
     cedar_validate_schema,
     compose_and_validate,
     propose_schema_atoms,
     route_atom_into_draft,
 )
-from cedar_agent.ui.terminal import interactive_review_loop
+from autocedar.ui.terminal import interactive_review_loop
 
 _HAVE_CEDAR = os.path.isfile(CEDAR_PATH) and os.access(CEDAR_PATH, os.X_OK)
 requires_cedar = pytest.mark.skipif(not _HAVE_CEDAR, reason="cedar not available")

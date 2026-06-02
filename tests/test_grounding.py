@@ -1,4 +1,4 @@
-"""Integration tests for ``cedar_agent.grounding``.
+"""Integration tests for ``autocedar.grounding``.
 
 These tests invoke the real Cedar CLI (``cedar symcc`` + ``cedar
 validate``) and CVC5. They are skipped when the binaries are not on
@@ -15,11 +15,11 @@ from pathlib import Path
 
 import pytest
 
-from cedar_agent.atoms import (
+from autocedar.atoms import (
     AlternativeEncoding,
     PropertyAtom,
 )
-from cedar_agent.grounding import (
+from autocedar.grounding import (
     CEDAR_PATH,
     CVC5_PATH,
     find_distinguishing_request,

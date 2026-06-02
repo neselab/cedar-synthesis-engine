@@ -1,4 +1,4 @@
-"""Unit tests for ``cedar_agent.atoms``.
+"""Unit tests for ``autocedar.atoms``.
 
 See ``docs/HITL_STEP_B_PLAN.md`` §9 acceptance criterion 1.
 """
@@ -7,7 +7,7 @@ import json
 
 import pytest
 
-from cedar_agent.atoms import (
+from autocedar.atoms import (
     ActionAtom,
     AlternativeEncoding,
     AttributeAtom,

@@ -1,4 +1,4 @@
-"""Live tests for ``cedar_agent.llm`` against the real Anthropic API.
+"""Live tests for ``autocedar.llm`` against the real Anthropic API.
 
 Per ``docs/HITL_STEP_C_PLAN.md`` §3 acceptance criterion 6, this is
 default-skipped. To run: ``uv run pytest --run-live`` with
@@ -18,14 +18,14 @@ from pathlib import Path
 
 import pytest
 
-from cedar_agent.atoms import (
+from autocedar.atoms import (
     ActionAtom,
     EntityAtom,
     SchemaDraft,
 )
-from cedar_agent.grounding import CEDAR_PATH
-from cedar_agent.llm import LLMClient
-from cedar_agent.schema_atomizer import (
+from autocedar.grounding import CEDAR_PATH
+from autocedar.llm import LLMClient
+from autocedar.schema_atomizer import (
     cedar_validate_schema,
     compose_and_validate,
     propose_schema_atoms,

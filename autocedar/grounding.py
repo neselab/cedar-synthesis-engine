@@ -35,7 +35,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, Optional
 
-from cedar_agent.atoms import (
+from autocedar.atoms import (
     AlternativeEncoding,
     Example,
     PropertyAtom,
@@ -370,7 +370,7 @@ def symbolic_verify_atom(
     Populates ``atom.symbolic_verification_log`` with one line per check.
     """
     prior_atoms = prior_atoms or []
-    workdir = workdir or Path(tempfile.mkdtemp(prefix="cedar_agent_grounding_"))
+    workdir = workdir or Path(tempfile.mkdtemp(prefix="autocedar_grounding_"))
     workdir.mkdir(parents=True, exist_ok=True)
 
     result = SymbolicVerificationResult(atom_name=atom.name)
@@ -436,7 +436,7 @@ def find_distinguishing_request(
     directions pass, the encodings are equivalent on this action's
     request space and we return ``None``.
     """
-    workdir = workdir or Path(tempfile.mkdtemp(prefix="cedar_agent_distinguish_"))
+    workdir = workdir or Path(tempfile.mkdtemp(prefix="autocedar_distinguish_"))
     workdir.mkdir(parents=True, exist_ok=True)
 
     chosen_path = workdir / "chosen.cedar"
@@ -531,7 +531,7 @@ def generate_adversarial_examples(
     if alternatives is None:
         alternatives = propose(atom, schema_text, n_alternatives)
 
-    workdir = workdir or Path(tempfile.mkdtemp(prefix="cedar_agent_adv_"))
+    workdir = workdir or Path(tempfile.mkdtemp(prefix="autocedar_adv_"))
     workdir.mkdir(parents=True, exist_ok=True)
 
     principal_type, resource_type = _principal_resource(atom)

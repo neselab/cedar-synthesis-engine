@@ -34,7 +34,7 @@ ceiling/floor/liveness — sugars are invisible to it.
 | `disjointness` | sugar | ceiling whose reference is `NOT(target_ref)`, plus automated §8.8 consistency patches on every floor |
 
 Out of scope: `equivalence`, `cardinality`. The harness contract does
-not change; sugars are local to `cedar_agent/property_elicitor.py`.
+not change; sugars are local to `autocedar/property_elicitor.py`.
 
 ### 1.3 User skill assumption (Q3)
 
@@ -86,7 +86,7 @@ hand for the user to edit the schema during Stage 2.
 ## 2. Module layout
 
 ```
-cedar_agent/
+autocedar/
 ├── __init__.py
 ├── atoms.py                   # all atom dataclasses (Stage 1 + Stage 2)
 ├── schema_atomizer.py         # Stage 1
@@ -110,7 +110,7 @@ The harness modules (`eval_harness.py`, `orchestrator.py`,
 
 ---
 
-## 3. Atom dataclasses (`cedar_agent/atoms.py`)
+## 3. Atom dataclasses (`autocedar/atoms.py`)
 
 ### 3.1 Common base
 
@@ -246,7 +246,7 @@ class VerificationPlanDraft:
 
 ---
 
-## 4. Verification scaffolding (`cedar_agent/grounding.py`)
+## 4. Verification scaffolding (`autocedar/grounding.py`)
 
 ### 4.1 What symcc earns the verified badge for (and what it doesn't)
 
@@ -373,7 +373,7 @@ def generate_adversarial_examples(
 
 ---
 
-## 5. Sugar compile-down rules (`cedar_agent/property_elicitor.py`)
+## 5. Sugar compile-down rules (`autocedar/property_elicitor.py`)
 
 ### 5.1 `rate_limit` → ceiling + schema amendment
 
@@ -428,7 +428,7 @@ are approved does the compile step produce the primitive
 
 ---
 
-## 6. HITL UI contract (`cedar_agent/ui/terminal.py`)
+## 6. HITL UI contract (`autocedar/ui/terminal.py`)
 
 ### 6.1 What the user sees per atom
 
@@ -525,7 +525,7 @@ session closes.
 
 ---
 
-## 7. Pipeline orchestration (`cedar_agent/pipeline.py`)
+## 7. Pipeline orchestration (`autocedar/pipeline.py`)
 
 The pipeline now has six stages: 1, 1.5, 2, 1.75, 3 (with critic), 2.5.
 Numbering follows the doc; ordering follows the call graph.
@@ -584,7 +584,7 @@ def author(spec_path: str, output_dir: str) -> Path:
     return candidate_path
 ```
 
-State persistence lives in `cedar_agent/ui/persistence.py`: the
+State persistence lives in `autocedar/ui/persistence.py`: the
 in-progress draft is written to `<output_dir>/.session.json` after
 each user decision so the session can be resumed. Resume is mandatory
 for the ~30-minute user-attention budget.
@@ -740,10 +740,10 @@ candidate-by-critic-score fallback.
 
 Step B is done when:
 
-1. **Atom dataclasses (§3).** `cedar_agent/atoms.py` defines all
+1. **Atom dataclasses (§3).** `autocedar/atoms.py` defines all
    dataclasses listed, with pytest unit tests covering construction,
    sugar field validation, and JSON serialization for persistence.
-2. **Symbolic verification (§4.1–§4.3).** `cedar_agent/grounding.py`
+2. **Symbolic verification (§4.1–§4.3).** `autocedar/grounding.py`
    runs the four symcc checks against a real `cedar` binary on a
    minimal handcrafted atom and correctly populates
    `symbolic_verified` and `symbolic_verification_log`.
@@ -766,7 +766,7 @@ Step B is done when:
    has a unit test asserting it does NOT include the verification
    plan, the spec, or the verifier feedback in the prompt sent to
    the LLM.
-8. **Pipeline skeleton (§7.1).** `cedar_agent/pipeline.py` compiles
+8. **Pipeline skeleton (§7.1).** `autocedar/pipeline.py` compiles
    and the test harness can call `author()` with stubbed LLM /
    `review_loop` callbacks end-to-end without errors. LLM stubs can
    be deterministic fixtures; real LLM integration is Step C/D.
@@ -777,7 +777,7 @@ Step B is done when:
    `alternative_attributions_considered`; per-decision logged events
    include `intent_acknowledged_by_user` distinct from
    `symbolic_verified`.
-10. **Plan reference.** Every new file under `cedar_agent/` references
+10. **Plan reference.** Every new file under `autocedar/` references
     this plan (`HITL_STEP_B_PLAN.md`) at the top.
 
 When all ten criteria are met, Step B is signed off and Step C

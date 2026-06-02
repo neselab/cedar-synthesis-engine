@@ -11,3 +11,9 @@ wheels/
 
 # Local secrets (use .env.example as the template)
 .env
+
+# Evaluation run outputs (per-session, large, regeneratable)
+eval_runs/
+
+# Worktree management
+.claude/

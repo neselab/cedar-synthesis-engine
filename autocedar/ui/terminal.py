@@ -23,20 +23,21 @@ from __future__ import annotations
 
 import dataclasses
 from dataclasses import dataclass
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Optional, Union
 
-from cedar_agent.atoms import (
+from autocedar.atoms import (
     ActionAtom,
     AttributeAtom,
     EntityAtom,
     PropertyAtom,
     TypeAliasAtom,
 )
-from cedar_agent.corpus import AtomDecision
-from cedar_agent.llm import LLMClient, Stage1Atom
+from autocedar.corpus import AtomDecision
+from autocedar.llm import LLMClient, Stage1Atom
 
 VERIFIED_BADGE = "✓ Formally consistent — does this match your intent?"
 UNVERIFIED_BADGE = "✗ Symbolic checks failed — review carefully before approving"
+ReviewableAtom = Union[Stage1Atom, PropertyAtom]
 
 
 # ---------------------------------------------------------------------------
@@ -53,7 +54,7 @@ class ReviewedAtom:
     the final draft from these post-review atoms.
     """
 
-    atom: Stage1Atom
+    atom: ReviewableAtom
     decision: AtomDecision
 
 
@@ -210,7 +211,7 @@ OutputFn = Callable[[str], None]
 
 
 def interactive_review_loop(
-    atoms: list[Stage1Atom],
+    atoms: list[ReviewableAtom],
     *,
     llm: Optional[LLMClient] = None,
     spec_text: str = "",
@@ -254,7 +255,7 @@ def interactive_review_loop(
 
 
 def _review_one_atom(
-    atom: Stage1Atom,
+    atom: ReviewableAtom,
     *,
     index: int,
     total: int,
@@ -268,7 +269,7 @@ def _review_one_atom(
     edit_log: dict[str, Any] = {}
 
     while True:
-        output_fn(render_schema_atom(current, index, total))
+        output_fn(_render_review_atom(current, index, total))
         key = (input_fn("> ") or "").strip().upper()[:1]
 
         if key == "A":
@@ -278,12 +279,13 @@ def _review_one_atom(
                     atom_name=current.name,
                     action="approve",
                     intent_acknowledged_by_user=True,
+                    symbolic_verified=getattr(current, "symbolic_verified", False),
                     edit_delta=edit_log,
                 ),
             )
         if key == "R":
             reason = (input_fn("Reason: ") or "").strip()
-            if llm is None:
+            if llm is None or isinstance(current, PropertyAtom):
                 return ReviewedAtom(
                     atom=current,
                     decision=AtomDecision(
@@ -330,17 +332,32 @@ def _review_one_atom(
             output_fn(f"Agent: {answer}")
             continue
         if key == "S":
-            output_fn("```cedarschema")
-            output_fn(render_schema_declaration(current))
-            output_fn("```")
+            if isinstance(current, PropertyAtom):
+                output_fn("```cedar")
+                output_fn(current.reference_cedar or "// liveness property has no reference policy")
+                output_fn("```")
+            else:
+                output_fn("```cedarschema")
+                output_fn(render_schema_declaration(current))
+                output_fn("```")
             continue
         if key == "V":
-            output_fn(
-                "(no §8.8 patches or schema amendments apply to a Stage 1 atom)",
-            )
+            if isinstance(current, PropertyAtom):
+                logs = current.symbolic_verification_log or ["no symbolic log recorded"]
+                output_fn("\n".join(logs))
+            else:
+                output_fn(
+                    "(no §8.8 patches or schema amendments apply to a Stage 1 atom)",
+                )
             continue
         # Unknown key.
         output_fn(f"unknown key {key!r}; valid: A / R / E / Q / S / V")
+
+
+def _render_review_atom(atom: ReviewableAtom, index: int, total: int) -> str:
+    if isinstance(atom, PropertyAtom):
+        return render_property_atom(atom, index, total)
+    return render_schema_atom(atom, index, total)
 
 
 # ---------------------------------------------------------------------------
@@ -349,8 +366,8 @@ def _review_one_atom(
 
 
 def _apply_field_edit(
-    atom: Stage1Atom, edit_input: str, edit_log: dict[str, Any],
-) -> Stage1Atom:
+    atom: ReviewableAtom, edit_input: str, edit_log: dict[str, Any],
+) -> ReviewableAtom:
     """Apply a ``field=value`` edit to a Stage 1 atom.
 
     Supported fields per atom kind:
@@ -391,6 +408,26 @@ def _apply_field_edit(
         new_value = [t.strip() for t in value.split(",") if t.strip()]
     elif field_name == "cedar_type" and isinstance(atom, TypeAliasAtom):
         new_value = value
+    elif field_name == "constraint_type" and isinstance(atom, PropertyAtom):
+        new_value = value
+    elif field_name == "action" and isinstance(atom, PropertyAtom):
+        new_value = value
+    elif field_name in ("principal_types", "resource_types") and isinstance(atom, PropertyAtom):
+        new_value = [t.strip() for t in value.split(",") if t.strip()]
+    elif field_name == "reference_cedar" and isinstance(atom, PropertyAtom):
+        new_value = value
+    elif field_name in {
+        "rate_limit_window",
+        "rate_limit_counter_attr",
+        "disjoint_with",
+        "disjoint_target_body",
+    } and isinstance(atom, PropertyAtom):
+        new_value = value
+    elif field_name == "rate_limit_threshold" and isinstance(atom, PropertyAtom):
+        try:
+            new_value = int(value)
+        except ValueError as exc:
+            raise ValueError("rate_limit_threshold expects an integer") from exc
     else:
         raise ValueError(
             f"field {field_name!r} is not editable on {type(atom).__name__}",

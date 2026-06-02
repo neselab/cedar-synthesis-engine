@@ -1,4 +1,4 @@
-"""Unit tests for ``cedar_agent.llm``.
+"""Unit tests for ``autocedar.llm``.
 
 Covers ``docs/HITL_STEP_C_PLAN.md`` §3 acceptance criterion 1 — the
 ``LLMClient`` constructs, accepts injected mock clients, and uses
@@ -15,23 +15,26 @@ from typing import Any
 
 import pytest
 
-from cedar_agent.atoms import (
+from autocedar.atoms import (
     ActionAtom,
     AttributeAtom,
     EntityAtom,
+    PropertyAtom,
     TypeAliasAtom,
 )
-from cedar_agent.llm import (
+from autocedar.llm import (
     DEFAULT_EFFORT,
     DEFAULT_MAX_TOKENS,
     DEFAULT_MODEL,
     LLMClient,
+    PropertyAtomsResponse,
     SchemaAtomsResponse,
     SchemaFixResponse,
     _LLMActionAtom,
     _LLMAttributeAtom,
     _LLMContextAttribute,
     _LLMEntityAtom,
+    _LLMPropertyAtom,
     _LLMTypeAliasAtom,
     _translate_atom,
 )
@@ -283,6 +286,52 @@ def test_propose_schema_atoms_calls_llm_exactly_once() -> None:
     client = LLMClient(client=fake)
     client.propose_schema_atoms("spec")
     assert fake.messages.call_count == 1
+
+
+# ---------------------------------------------------------------------------
+# propose_property_atoms — Stage 2 with mocked LLM.
+# ---------------------------------------------------------------------------
+
+
+def test_propose_property_atoms_returns_translated_dataclasses() -> None:
+    fake_response = _make_response(
+        PropertyAtomsResponse(
+            atoms=[
+                _LLMPropertyAtom(
+                    name="owner_only_read",
+                    rationale="safety bound",
+                    plain_english_summary="Only owners can read.",
+                    source_excerpt="Owners can read their own resources.",
+                    constraint_type="ceiling",
+                    action="read",
+                    principal_types=["User"],
+                    resource_types=["Resource"],
+                    reference_cedar=(
+                        'permit (principal is User, action == Action::"read", resource is Resource)\n'
+                        "when { principal == resource.owner };"
+                    ),
+                ),
+            ],
+        ),
+    )
+    fake = _FakeAnthropic(fake_response)
+    client = LLMClient(client=fake)
+    atoms = client.propose_property_atoms("Owners can read.", "entity User;")
+
+    assert len(atoms) == 1
+    assert isinstance(atoms[0], PropertyAtom)
+    assert atoms[0].constraint_type == "ceiling"
+    assert atoms[0].action == "read"
+
+
+def test_propose_property_atoms_includes_schema_in_user_turn() -> None:
+    fake = _FakeAnthropic(_make_response(PropertyAtomsResponse(atoms=[])))
+    client = LLMClient(client=fake)
+    client.propose_property_atoms("Owners can read.", "entity User;")
+
+    kwargs = fake.messages.last_kwargs
+    assert kwargs["output_format"] is PropertyAtomsResponse
+    assert "```cedarschema\nentity User;\n```" in kwargs["messages"][0]["content"]
 
 
 # ---------------------------------------------------------------------------
