@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import os
 from pathlib import Path
 
 import pytest
@@ -10,6 +11,7 @@ import pytest
 from autocedar.tui import (
     AutoCedarApp,
     _describe_author_action,
+    _redact_sensitive_input,
     _split_review_input,
     interpret_natural_language,
     parse_author_args,
@@ -36,12 +38,15 @@ def test_parse_author_args_defaults_and_options() -> None:
         "schema.cedarschema",
         "--session-id",
         "session-1",
+        "--effort",
+        "max",
         "--auto-approve",
     ])
     assert options.spec == Path("spec.md")
     assert options.out == Path("runs")
     assert options.schema == Path("schema.cedarschema")
     assert options.session_id == "session-1"
+    assert options.effort == "max"
     assert options.auto_approve is True
 
 
@@ -180,6 +185,31 @@ def test_natural_language_synthesize_scenario() -> None:
     assert intent.synthesize_options.gen_references is True
 
 
+def test_natural_language_settings_updates() -> None:
+    intent = interpret_natural_language("set model to claude-sonnet-4-6", has_draft=False)
+    assert intent.kind == "settings"
+    assert intent.settings_update is not None
+    assert intent.settings_update.model == "claude-sonnet-4-6"
+
+    intent = interpret_natural_language("use effort max", has_draft=False)
+    assert intent.kind == "settings"
+    assert intent.settings_update is not None
+    assert intent.settings_update.effort == "max"
+
+    intent = interpret_natural_language("set api key sk-ant-secret123", has_draft=False)
+    assert intent.kind == "settings"
+    assert intent.settings_update is not None
+    assert intent.settings_update.api_key == "sk-ant-secret123"
+
+
+def test_sensitive_input_redaction() -> None:
+    assert _redact_sensitive_input("/apikey sk-ant-secret123") == "/apikey [redacted-api-key]"
+    assert (
+        _redact_sensitive_input("ANTHROPIC_API_KEY=sk-ant-secret123")
+        == "ANTHROPIC_API_KEY=[redacted]"
+    )
+
+
 def test_textual_app_mounts() -> None:
     async def run() -> None:
         app = AutoCedarApp()
@@ -255,9 +285,13 @@ def test_textual_app_state_snapshot_includes_drafting_and_pending_action() -> No
 
 def test_chat_request_includes_backend_process_and_tui_context() -> None:
     app = AutoCedarApp()
+    app.llm_model = "claude-test"
+    app.llm_effort = "max"
     system, messages = app._chat_request("can you atomize and verify a schema too?")
     user_context = messages[0]["content"]
 
+    assert "model: claude-test" in user_context
+    assert "effort: max" in user_context
     assert "process context" in user_context
     assert "Stage 1 schema atomization" in user_context
     assert "HITL review" in user_context
@@ -282,6 +316,48 @@ def test_author_confirmation_describes_schema_mode() -> None:
     assert "Stage 2 property atoms" in _describe_author_action(no_schema, from_draft=False)
     assert "skip Stage 1 schema atomization" in _describe_author_action(with_schema, from_draft=False)
     assert "Stage 2 property atoms" in _describe_author_action(with_schema, from_draft=False)
+
+
+def test_textual_settings_commands_update_runtime(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.delenv("AUTOCEDAR_MODEL", raising=False)
+    monkeypatch.delenv("AUTOCEDAR_CHAT_MODEL", raising=False)
+    monkeypatch.delenv("AUTOCEDAR_AUTHOR_MODEL", raising=False)
+    monkeypatch.delenv("AUTOCEDAR_EFFORT", raising=False)
+
+    async def run() -> None:
+        app = AutoCedarApp()
+        async with app.run_test() as pilot:
+            app._handle_command_input("/model claude-sonnet-4-6")
+            assert app.llm_model == "claude-sonnet-4-6"
+            assert os.environ["AUTOCEDAR_MODEL"] == "claude-sonnet-4-6"
+
+            app._handle_command_input("/effort max")
+            assert app.llm_effort == "max"
+            assert os.environ["AUTOCEDAR_EFFORT"] == "max"
+
+            app._handle_command_input("/apikey sk-ant-secret123")
+            assert os.environ["ANTHROPIC_API_KEY"] == "sk-ant-secret123"
+
+            app._handle_command_input("/apikey clear")
+            assert "ANTHROPIC_API_KEY" not in os.environ
+            await pilot.exit(None)
+
+    asyncio.run(run())
+
+
+def test_runtime_settings_resolve_author_and_synthesis_defaults() -> None:
+    app = AutoCedarApp()
+    app.llm_model = "claude-selected"
+    app.llm_effort = "max"
+
+    author = app._resolve_author_options(parse_author_args(["spec.md"]))
+    assert author.model == "claude-selected"
+    assert author.effort == "max"
+
+    synth = app._resolve_synthesize_options(parse_synthesize_args(["scenario"]))
+    assert synth.phase1_model == "claude-selected"
+    assert synth.phase2_model == "claude-selected"
 
 
 def test_local_chat_response_answers_identity_without_api_key(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -324,14 +400,19 @@ def test_stream_chat_model_emits_incremental_text() -> None:
         def __exit__(self, *args):
             return None
 
+    seen_kwargs = {}
+
     class FakeMessages:
         def stream(self, **kwargs):
+            seen_kwargs.update(kwargs)
             return FakeStream()
 
     class FakeClient:
         messages = FakeMessages()
 
     app = AutoCedarApp()
+    app.llm_model = "claude-test"
+    app.llm_effort = "max"
     events: list[tuple[str, str]] = []
     app.call_from_thread = lambda func, *args: func(*args)  # type: ignore[method-assign]
     app._make_anthropic_client = lambda: FakeClient()  # type: ignore[method-assign]
@@ -342,6 +423,8 @@ def test_stream_chat_model_emits_incremental_text() -> None:
     answer = app._stream_chat_model("say hello")
 
     assert answer == "Hello"
+    assert seen_kwargs["model"] == "claude-test"
+    assert seen_kwargs["output_config"] == {"effort": "max"}
     assert events == [
         ("start", ""),
         ("update", "Hel"),

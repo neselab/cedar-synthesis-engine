@@ -9,7 +9,7 @@ import os
 import re
 import shlex
 import threading
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any, Callable, Sequence
 
@@ -22,7 +22,7 @@ from textual.widgets import Footer, Header, Input, RichLog, Static
 
 from autocedar.corpus import AtomDecision
 from autocedar.env import load_dotenv
-from autocedar.llm import DEFAULT_MODEL as DEFAULT_AUTHOR_MODEL
+from autocedar.llm import DEFAULT_EFFORT, DEFAULT_MODEL as DEFAULT_AUTHOR_MODEL
 from autocedar.llm import LLMClient
 from autocedar.pipeline import author as author_pipeline
 from autocedar.property_atomizer import propose_property_atoms
@@ -82,17 +82,24 @@ _COMMON_WORDS = {
 }
 
 COMMANDS = {
+    "api-key",
+    "apikey",
     "author",
     "clear",
     "draft",
+    "effort",
     "exit",
     "help",
+    "model",
     "new",
     "quit",
     "save",
+    "settings",
     "synthesize",
     "verify",
 }
+
+EFFORT_LEVELS = {"low", "medium", "high", "max"}
 
 
 WELCOME_TEXT = f"""\
@@ -119,9 +126,13 @@ Talk normally:
 
 Slash shortcuts are also available:
 
-  [#f0c678]/author SPEC[/] [--out DIR] [--session-id ID] [--schema PATH] [--model MODEL]
+  [#f0c678]/author SPEC[/] [--out DIR] [--session-id ID] [--schema PATH] [--model MODEL] [--effort high]
   [#f0c678]/verify[/] [WORKSPACE]
   [#f0c678]/synthesize SCENARIO...[/] [--out DIR] [--max-iters N] [--no-review]
+  [#f0c678]/settings[/]              show model, effort, and API key status
+  [#f0c678]/model MODEL[/]           set the default LLM model
+  [#f0c678]/effort low|medium|high|max[/]
+  [#f0c678]/apikey[/] [KEY|clear]    set or clear ANTHROPIC_API_KEY for this session
   [#f0c678]/draft[/]                 show the current prose draft
   [#f0c678]/save[/] [PATH]           save the current draft
   [#f0c678]/new[/]                   clear the draft
@@ -165,6 +176,10 @@ COMMAND_RAIL = """\
 [#f0c678]/author[/] spec.md
 [#f0c678]/verify[/] workspace
 [#f0c678]/synthesize[/] scenario
+[#f0c678]/settings[/]
+[#f0c678]/model[/] claude-opus-4-7
+[#f0c678]/effort[/] high
+[#f0c678]/apikey[/]
 [#f0c678]/draft[/]
 [#f0c678]/save[/]
 
@@ -184,7 +199,8 @@ class AuthorOptions:
     out: Path = Path("autocedar-runs")
     session_id: str | None = None
     schema: Path | None = None
-    model: str = DEFAULT_AUTHOR_MODEL
+    model: str | None = None
+    effort: str | None = None
     auto_approve: bool = False
 
 
@@ -208,7 +224,18 @@ class NaturalLanguageIntent:
     workspace: Path | None = None
     author_options: AuthorOptions | None = None
     synthesize_options: SynthesizeOptions | None = None
+    settings_update: "SettingsUpdate | None" = None
     from_draft: bool = False
+
+
+@dataclass
+class SettingsUpdate:
+    show: bool = False
+    model: str | None = None
+    effort: str | None = None
+    api_key: str | None = None
+    clear_api_key: bool = False
+    prompt_api_key: bool = False
 
 
 @dataclass
@@ -359,7 +386,10 @@ class AutoCedarApp(App[None]):
         self.drafting_active = False
         self.pending_review: ReviewRequest | None = None
         self.pending_action: PendingAction | None = None
+        self.pending_secret: str | None = None
         self.chat_history: list[tuple[str, str]] = []
+        self.llm_model = _initial_model()
+        self.llm_effort = _normalize_effort(os.environ.get("AUTOCEDAR_EFFORT")) or DEFAULT_EFFORT
         self.busy = False
         self.active_task = "idle"
 
@@ -411,7 +441,13 @@ class AutoCedarApp(App[None]):
         message.input.value = ""
         if not raw:
             return
-        self._write(f"[bold {TEAL}]you[/] [dim {MUTED}]>[/] {escape(raw)}")
+        self._write(
+            f"[bold {TEAL}]you[/] [dim {MUTED}]>[/] "
+            f"{escape(_redact_sensitive_input(raw))}",
+        )
+        if self.pending_secret == "api_key":
+            self._handle_pending_api_key(raw)
+            return
         if self.pending_review is not None:
             self._handle_review_input(raw)
             return
@@ -552,6 +588,11 @@ class AutoCedarApp(App[None]):
         try:
             if intent.kind == "help":
                 self._say(HELP_TEXT)
+            elif intent.kind == "settings":
+                if intent.settings_update is None:
+                    self._show_settings()
+                else:
+                    self._apply_settings_update(intent.settings_update)
             elif intent.kind == "quit":
                 self._say("I’ll close the session.")
                 self.exit()
@@ -598,6 +639,7 @@ class AutoCedarApp(App[None]):
                 options = intent.author_options
                 if options is None:
                     raise ValueError("I need a spec path or a draft before authoring.")
+                options = self._resolve_author_options(options)
                 self._request_confirmation(
                     _describe_author_action(options, from_draft=intent.from_draft),
                     lambda options=options, intent=intent: self._run_author_action(
@@ -609,6 +651,7 @@ class AutoCedarApp(App[None]):
                 options = intent.synthesize_options
                 if options is None:
                     raise ValueError("I need a scenario path before synthesis.")
+                options = self._resolve_synthesize_options(options)
                 self._request_confirmation(
                     _describe_synthesize_action(options),
                     lambda options=options: self._start_task(
@@ -652,6 +695,14 @@ class AutoCedarApp(App[None]):
                 self._write(HELP_TEXT)
             elif command == "clear":
                 self.action_clear_log()
+            elif command == "settings":
+                self._show_settings()
+            elif command == "model":
+                self._handle_model_command(args)
+            elif command == "effort":
+                self._handle_effort_command(args)
+            elif command in {"apikey", "api-key"}:
+                self._handle_api_key_command(args)
             elif command == "new":
                 self._request_confirmation(
                     "I’m going to clear the working policy draft.",
@@ -680,13 +731,13 @@ class AutoCedarApp(App[None]):
                     ),
                 )
             elif command == "author":
-                options = parse_author_args(args)
+                options = self._resolve_author_options(parse_author_args(args))
                 self._request_confirmation(
                     _describe_author_action(options, from_draft=False),
                     lambda options=options: self._run_author_action(options, from_draft=False),
                 )
             elif command == "synthesize":
-                options = parse_synthesize_args(args)
+                options = self._resolve_synthesize_options(parse_synthesize_args(args))
                 self._request_confirmation(
                     _describe_synthesize_action(options),
                     lambda options=options: self._start_task(
@@ -696,6 +747,141 @@ class AutoCedarApp(App[None]):
                 )
         except ValueError as exc:
             self._write(f"[bold {RED}]{escape(str(exc))}[/]")
+
+    def _handle_model_command(self, args: Sequence[str]) -> None:
+        if not args:
+            self._show_settings()
+            return
+        self._set_model(args[0])
+
+    def _handle_effort_command(self, args: Sequence[str]) -> None:
+        if not args:
+            self._show_settings()
+            return
+        self._set_effort(args[0])
+
+    def _handle_api_key_command(self, args: Sequence[str]) -> None:
+        if not args:
+            self.pending_secret = "api_key"
+            self.query_one(Input).placeholder = "Paste ANTHROPIC_API_KEY, or type cancel"
+            self._say(
+                "Paste your Anthropic API key. I’ll redact it in the transcript "
+                "and keep it only in this process environment. Type “cancel” to stop.",
+            )
+            self._update_status()
+            return
+        value = args[0]
+        if value.lower() in {"clear", "unset", "remove", "delete"}:
+            self._clear_api_key()
+            return
+        self._set_api_key(value)
+
+    def _handle_pending_api_key(self, raw: str) -> None:
+        value = raw.strip()
+        self.pending_secret = None
+        self.query_one(Input).placeholder = "Tell AutoCedar what to do, or type /help"
+        if value.lower() in {"cancel", "stop", "abort", "no"}:
+            self._say("Cancelled API key entry.")
+            self._update_status()
+            return
+        self._set_api_key(value)
+
+    def _apply_settings_update(self, update: SettingsUpdate) -> None:
+        changed = False
+        if update.clear_api_key:
+            self._clear_api_key()
+            changed = True
+        if update.api_key:
+            self._set_api_key(update.api_key)
+            changed = True
+        if update.prompt_api_key:
+            self._handle_api_key_command([])
+            changed = True
+        if update.model:
+            self._set_model(update.model)
+            changed = True
+        if update.effort:
+            self._set_effort(update.effort)
+            changed = True
+        if update.show or not changed:
+            self._show_settings()
+
+    def _set_model(self, model: str) -> None:
+        normalized = model.strip()
+        if not normalized:
+            raise ValueError("Model cannot be empty.")
+        self.llm_model = normalized
+        os.environ["AUTOCEDAR_MODEL"] = normalized
+        os.environ["AUTOCEDAR_CHAT_MODEL"] = normalized
+        os.environ["AUTOCEDAR_AUTHOR_MODEL"] = normalized
+        self._say(f"Model set to [bold {AMBER}]{escape(normalized)}[/].")
+        self._update_status()
+
+    def _set_effort(self, effort: str) -> None:
+        normalized = _normalize_effort(effort)
+        if normalized is None:
+            raise ValueError("Effort must be one of: low, medium, high, max.")
+        self.llm_effort = normalized
+        os.environ["AUTOCEDAR_EFFORT"] = normalized
+        self._say(f"Effort set to [bold {AMBER}]{normalized}[/].")
+        self._update_status()
+
+    def _set_api_key(self, api_key: str) -> None:
+        value = _strip_wrapping_quotes(api_key.strip())
+        if not value:
+            raise ValueError("API key cannot be empty.")
+        os.environ["ANTHROPIC_API_KEY"] = value
+        self._say(
+            "Anthropic API key set for this session "
+            f"([dim {MUTED}]{escape(_mask_api_key(value))}[/]).",
+        )
+        self._update_status()
+
+    def _clear_api_key(self) -> None:
+        os.environ.pop("ANTHROPIC_API_KEY", None)
+        self._say("Anthropic API key cleared for this session.")
+        self._update_status()
+
+    def _show_settings(self) -> None:
+        self._write(
+            Panel(
+                self._settings_text(),
+                title=f"[bold {COPPER}]Runtime settings[/]",
+                border_style=TEAL,
+                padding=(1, 2),
+            ),
+        )
+
+    def _settings_text(self) -> str:
+        api_key = os.environ.get("ANTHROPIC_API_KEY")
+        return "\n".join(
+            [
+                f"[dim {MUTED}]model[/]\n[bold {CREAM}]{escape(self.llm_model)}[/]",
+                f"[dim {MUTED}]effort[/]\n[bold {CREAM}]{escape(self.llm_effort)}[/]",
+                (
+                    f"[dim {MUTED}]api key[/]\n[bold {TEAL}]set[/] "
+                    f"[dim {MUTED}]({_mask_api_key(api_key)})[/]"
+                    if api_key
+                    else f"[dim {MUTED}]api key[/]\n[bold {CORAL}]not set[/]"
+                ),
+                "",
+                f"[dim {MUTED}]Use /model, /effort, or /apikey to change these.[/]",
+            ],
+        )
+
+    def _resolve_author_options(self, options: AuthorOptions) -> AuthorOptions:
+        return replace(
+            options,
+            model=options.model or self.llm_model,
+            effort=options.effort or self.llm_effort,
+        )
+
+    def _resolve_synthesize_options(self, options: SynthesizeOptions) -> SynthesizeOptions:
+        return replace(
+            options,
+            phase1_model=options.phase1_model or self.llm_model,
+            phase2_model=options.phase2_model or self.llm_model,
+        )
 
     def _show_draft(self) -> None:
         if not self.draft_lines:
@@ -835,8 +1021,10 @@ class AutoCedarApp(App[None]):
         system, messages = self._chat_request(raw)
         client = anthropic.Anthropic()
         response = client.messages.create(
-            model=os.environ.get("AUTOCEDAR_CHAT_MODEL", DEFAULT_AUTHOR_MODEL),
+            model=self.llm_model,
             max_tokens=800,
+            thinking={"type": "adaptive"},
+            output_config={"effort": self.llm_effort},
             system=system,
             messages=messages,
         )
@@ -851,8 +1039,10 @@ class AutoCedarApp(App[None]):
         chunks: list[str] = []
         self.call_from_thread(self._start_stream_output)
         with client.messages.stream(
-            model=os.environ.get("AUTOCEDAR_CHAT_MODEL", DEFAULT_AUTHOR_MODEL),
+            model=self.llm_model,
             max_tokens=800,
+            thinking={"type": "adaptive"},
+            output_config={"effort": self.llm_effort},
             system=system,
             messages=messages,
         ) as stream:
@@ -909,7 +1099,10 @@ class AutoCedarApp(App[None]):
         try:
             if not options.spec.exists():
                 raise FileNotFoundError(f"spec not found: {options.spec}")
-            llm = LLMClient(model=options.model)
+            llm = LLMClient(
+                model=options.model or self.llm_model,
+                effort=options.effort or self.llm_effort,
+            )
 
             spec_text = options.spec.read_text()
 
@@ -1001,8 +1194,8 @@ class AutoCedarApp(App[None]):
             run_dir = options.out / run_id
             run_dir.mkdir(parents=True, exist_ok=True)
 
-            phase1_model = options.phase1_model or DEFAULT_PHASE1_MODEL
-            phase2_model = options.phase2_model or DEFAULT_MODEL
+            phase1_model = options.phase1_model or self.llm_model or DEFAULT_PHASE1_MODEL
+            phase2_model = options.phase2_model or self.llm_model or DEFAULT_MODEL
             max_iters = options.max_iters or MAX_ITERATIONS
 
             with contextlib.redirect_stdout(output), contextlib.redirect_stderr(output):
@@ -1106,14 +1299,19 @@ class AutoCedarApp(App[None]):
         drafting_state = "active" if self.drafting_active else "off"
         review_state = "yes" if self.pending_review is not None else "no"
         action_state = "yes" if self.pending_action is not None else "no"
+        key_state = "set" if os.environ.get("ANTHROPIC_API_KEY") else "not set"
         busy_color = AMBER if self.busy else TEAL
         drafting_color = GREEN if self.drafting_active else MUTED
         review_color = CORAL if self.pending_review is not None else MUTED
         action_color = AMBER if self.pending_action is not None else MUTED
+        key_color = TEAL if key_state == "set" else CORAL
         text = (
             f"[bold {COPPER}]Session[/]\n\n"
             f"[dim {MUTED}]current task[/]\n[bold {CREAM}]{escape(self.active_task)}[/]\n\n"
             f"[dim {MUTED}]agent state[/]\n[bold {busy_color}]{'working' if self.busy else 'ready'}[/]\n\n"
+            f"[dim {MUTED}]model[/]\n[bold {CREAM}]{escape(_short_model(self.llm_model))}[/]\n\n"
+            f"[dim {MUTED}]effort[/]\n[bold {CREAM}]{escape(self.llm_effort)}[/]\n\n"
+            f"[dim {MUTED}]api key[/]\n[bold {key_color}]{key_state}[/]\n\n"
             f"[dim {MUTED}]pending atom review[/]\n[bold {review_color}]{review_state}[/]\n\n"
             f"[dim {MUTED}]pending yes/no[/]\n[bold {action_color}]{action_state}[/]\n\n"
             f"[dim {MUTED}]draft capture[/]\n[bold {drafting_color}]{drafting_state}[/]\n\n"
@@ -1131,6 +1329,9 @@ class AutoCedarApp(App[None]):
         lines = [
             f"task: {self.active_task}",
             f"working: {'yes' if self.busy else 'no'}",
+            f"model: {self.llm_model}",
+            f"effort: {self.llm_effort}",
+            f"api key: {'set' if os.environ.get('ANTHROPIC_API_KEY') else 'not set'}",
             f"drafting: {'active' if self.drafting_active else 'off'}",
             f"draft lines: {len(self.draft_lines)}",
             f"pending confirmation: {pending_summary}",
@@ -1156,6 +1357,7 @@ class AutoCedarApp(App[None]):
                 "Authoring with a schema path: AutoCedar uses that existing schema directly and skips Stage 1 schema atomization/review.",
                 "Stage 2 property atoms: AutoCedar proposes property atoms from the spec and validated schema, symbolically verifies each atom, and sends each proposed property through the same HITL review callback before compiling the verification plan.",
                 "The authoring engine receives clean inputs: saved spec text, optional schema path, and HITL review decisions. The chat transcript is not passed into authoring.",
+                "Runtime LLM settings are user-selectable inside the TUI through /settings, /model, /effort, and /apikey. The selected model is used for chat, authoring atomization, and default synthesis phase models unless an explicit command overrides it. Effort is used for chat and authoring atomization calls that support adaptive thinking.",
             ],
         )
 
@@ -1197,6 +1399,9 @@ def interpret_natural_language(raw: str, *, has_draft: bool) -> NaturalLanguageI
         return NaturalLanguageIntent("help")
     if lowered in {"quit", "exit", "bye", "goodbye"}:
         return NaturalLanguageIntent("quit")
+    settings_update = _settings_update_from_nl(text)
+    if settings_update is not None:
+        return NaturalLanguageIntent("settings", settings_update=settings_update)
     if _mentions(lowered, "clear transcript", "clear screen", "clear chat"):
         return NaturalLanguageIntent("clear_transcript")
     if _mentions(lowered, "clear draft", "clear spec", "start over", "reset draft"):
@@ -1270,6 +1475,102 @@ def _squash(text: str) -> str:
 
 def _mentions(text: str, *phrases: str) -> bool:
     return any(phrase in text for phrase in phrases)
+
+
+def _settings_update_from_nl(raw: str) -> SettingsUpdate | None:
+    text = _squash(raw)
+    lowered = text.lower()
+
+    if lowered in {
+        "settings",
+        "show settings",
+        "show me settings",
+        "show runtime settings",
+        "show model settings",
+        "what model are you using",
+        "what model are you using?",
+        "what effort are you using",
+        "what effort are you using?",
+    }:
+        return SettingsUpdate(show=True)
+
+    if _mentions(lowered, "api key", "apikey", "anthropic key", "anthropic api key"):
+        if _mentions(lowered, "clear api key", "unset api key", "remove api key", "delete api key"):
+            return SettingsUpdate(clear_api_key=True)
+        key = _extract_api_key(text)
+        if key:
+            return SettingsUpdate(api_key=key)
+        if lowered.startswith((
+            "set api key",
+            "set the api key",
+            "add api key",
+            "add the api key",
+            "update api key",
+            "use api key",
+            "set anthropic api key",
+            "set the anthropic api key",
+        )):
+            return SettingsUpdate(prompt_api_key=True)
+
+    model = _extract_settings_model(text)
+    effort = _extract_effort(text)
+    if model or effort:
+        return SettingsUpdate(model=model, effort=effort)
+
+    return None
+
+
+def _extract_settings_model(raw: str) -> str | None:
+    match = re.search(
+        r"\b(?:set|switch|change|use)\s+(?:the\s+)?(?:llm\s+|chat\s+|authoring\s+)?"
+        r"model(?:\s+(?:to|as))?\s+(?P<value>[^\s]+)",
+        raw,
+        flags=re.IGNORECASE,
+    )
+    if not match:
+        return None
+    return _clean_path_token(match.group("value"))
+
+
+def _extract_effort(raw: str) -> str | None:
+    match = re.search(
+        r"\b(?:set|switch|change|use)\s+(?:the\s+)?effort(?:\s+(?:to|as))?\s+"
+        r"(?P<value>low|medium|high|max)\b",
+        raw,
+        flags=re.IGNORECASE,
+    )
+    if not match:
+        match = re.search(
+            r"\beffort\s+(?P<value>low|medium|high|max)\b",
+            raw,
+            flags=re.IGNORECASE,
+        )
+    return _normalize_effort(match.group("value")) if match else None
+
+
+def _extract_api_key(raw: str) -> str | None:
+    match = re.search(
+        r"\bANTHROPIC_API_KEY\s*=\s*(?P<value>[^\s]+)",
+        raw,
+        flags=re.IGNORECASE,
+    )
+    if match:
+        return _strip_wrapping_quotes(match.group("value"))
+    match = re.search(r"\b(?P<value>sk-ant-[A-Za-z0-9_\-.]+)", raw)
+    if match:
+        return _strip_wrapping_quotes(match.group("value"))
+    match = re.search(
+        r"\b(?:api[- ]?key|apikey|anthropic(?:\s+api)?\s+key)"
+        r"(?:\s+(?:to|as|is))?\s+(?P<value>[^\s]+)",
+        raw,
+        flags=re.IGNORECASE,
+    )
+    if not match:
+        return None
+    value = _strip_wrapping_quotes(match.group("value"))
+    if value.lower() in {"clear", "unset", "remove", "delete", "cancel"}:
+        return None
+    return value
 
 
 def _looks_like_help(text: str) -> bool:
@@ -1472,7 +1773,8 @@ def _author_options_from_nl(
             out=_extract_output_path(raw) or Path("autocedar-runs"),
             session_id=_extract_session_id(raw),
             schema=schema,
-            model=_extract_author_model(raw) or DEFAULT_AUTHOR_MODEL,
+            model=_extract_author_model(raw),
+            effort=_extract_effort(raw),
             auto_approve=_mentions(lowered, "auto approve", "auto-approve", "without review"),
         ),
         from_draft,
@@ -1635,7 +1937,8 @@ def _describe_author_action(options: AuthorOptions, *, from_draft: bool) -> str:
         "I’m going to run HITL authoring.",
         f"spec: {options.spec}",
         f"output: {options.out}",
-        f"model: {options.model}",
+        f"model: {options.model or DEFAULT_AUTHOR_MODEL}",
+        f"effort: {options.effort or DEFAULT_EFFORT}",
     ]
     if options.session_id:
         lines.append(f"session id: {options.session_id}")
@@ -1686,7 +1989,7 @@ def tokenize(raw: str) -> list[str]:
 
 def parse_author_args(args: Sequence[str]) -> AuthorOptions:
     if not args:
-        raise ValueError("Usage: /author SPEC [--out DIR] [--schema PATH]")
+        raise ValueError("Usage: /author SPEC [--out DIR] [--schema PATH] [--model MODEL] [--effort high]")
     spec = Path(args[0])
     options = AuthorOptions(spec=spec)
     i = 1
@@ -1712,6 +2015,14 @@ def parse_author_args(args: Sequence[str]) -> AuthorOptions:
             if i >= len(args):
                 raise ValueError("--model requires a model name")
             options.model = args[i]
+        elif token == "--effort":
+            i += 1
+            if i >= len(args):
+                raise ValueError("--effort requires low, medium, high, or max")
+            effort = _normalize_effort(args[i])
+            if effort is None:
+                raise ValueError("--effort must be one of: low, medium, high, max")
+            options.effort = effort
         elif token == "--auto-approve":
             options.auto_approve = True
         else:
@@ -1790,6 +2101,57 @@ def _render_cedar_for_review(atom: Any) -> str:
     if hasattr(atom, "reference_cedar") and getattr(atom, "reference_cedar"):
         return str(getattr(atom, "reference_cedar"))
     return render_schema_declaration(atom)
+
+
+def _initial_model() -> str:
+    return (
+        os.environ.get("AUTOCEDAR_MODEL")
+        or os.environ.get("AUTOCEDAR_AUTHOR_MODEL")
+        or os.environ.get("AUTOCEDAR_CHAT_MODEL")
+        or DEFAULT_AUTHOR_MODEL
+    )
+
+
+def _normalize_effort(effort: str | None) -> str | None:
+    if effort is None:
+        return None
+    normalized = effort.strip().lower()
+    return normalized if normalized in EFFORT_LEVELS else None
+
+
+def _strip_wrapping_quotes(value: str) -> str:
+    stripped = value.strip()
+    if len(stripped) >= 2 and stripped[0] == stripped[-1] and stripped[0] in {"'", '"'}:
+        return stripped[1:-1]
+    return stripped
+
+
+def _mask_api_key(value: str | None) -> str:
+    if not value:
+        return "not set"
+    if len(value) <= 12:
+        return value[:3] + "..."
+    return f"{value[:7]}...{value[-4:]}"
+
+
+def _redact_sensitive_input(raw: str) -> str:
+    redacted = re.sub(
+        r"\bANTHROPIC_API_KEY\s*=\s*[^\s]+",
+        "ANTHROPIC_API_KEY=[redacted]",
+        raw,
+        flags=re.IGNORECASE,
+    )
+    redacted = re.sub(r"\bsk-ant-[A-Za-z0-9_\-.]+", "[redacted-api-key]", redacted)
+    if redacted.strip().lower().startswith(("/apikey ", "/api-key ")):
+        command = redacted.strip().split(maxsplit=1)[0]
+        return f"{command} [redacted-api-key]"
+    return redacted
+
+
+def _short_model(model: str) -> str:
+    if len(model) <= 30:
+        return model
+    return model[:27] + "..."
 
 
 def run_tui() -> int:

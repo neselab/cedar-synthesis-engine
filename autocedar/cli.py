@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Sequence
 
 from autocedar.env import load_dotenv
+from autocedar.llm import DEFAULT_EFFORT
 from autocedar.llm import DEFAULT_MODEL as DEFAULT_AUTHOR_MODEL
 from autocedar.llm import LLMClient
 from autocedar.pipeline import author as author_pipeline
@@ -57,8 +58,18 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     author_p.add_argument(
         "--model",
-        default=DEFAULT_AUTHOR_MODEL,
+        default=(
+            os.environ.get("AUTOCEDAR_MODEL")
+            or os.environ.get("AUTOCEDAR_AUTHOR_MODEL")
+            or DEFAULT_AUTHOR_MODEL
+        ),
         help=f"Anthropic model for Stage 1/2 atomization (default: {DEFAULT_AUTHOR_MODEL}).",
+    )
+    author_p.add_argument(
+        "--effort",
+        choices=["low", "medium", "high", "max"],
+        default=os.environ.get("AUTOCEDAR_EFFORT", DEFAULT_EFFORT),
+        help=f"Adaptive thinking effort for Stage 1/2 atomization (default: {DEFAULT_EFFORT}).",
     )
     author_p.add_argument(
         "--auto-approve",
@@ -118,7 +129,7 @@ def _cmd_author(args: argparse.Namespace) -> int:
     if not spec_path.exists():
         raise SystemExit(f"spec not found: {spec_path}")
 
-    llm = LLMClient(model=args.model)
+    llm = LLMClient(model=args.model, effort=args.effort)
 
     spec_text = spec_path.read_text()
 

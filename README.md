@@ -199,6 +199,18 @@ AutoCedar looks for:
 
 If those binaries live elsewhere, set them in your shell or `.env`.
 
+Check the verifier setup before running policy verification:
+
+```bash
+cedar --version
+cedar symcc --help
+cvc5 --version
+```
+
+If `cedar symcc --help` does not work, the installed Cedar binary cannot run
+AutoCedar's symbolic verification path. Install a Cedar CLI build that includes
+the `symcc` subcommand, or use the Docker image below.
+
 ## API Keys And `.env`
 
 AutoCedar uses Anthropic models for the conversational TUI, schema
@@ -216,7 +228,8 @@ Or create a `.env` file in the directory where you run AutoCedar:
 
 ```dotenv
 ANTHROPIC_API_KEY=sk-ant-...
-AUTOCEDAR_CHAT_MODEL=claude-opus-4-7
+AUTOCEDAR_MODEL=claude-opus-4-7
+AUTOCEDAR_EFFORT=high
 CEDAR=/usr/local/bin/cedar
 CVC5=/usr/bin/cvc5
 ```
@@ -228,6 +241,22 @@ For a normal project, the path is simply:
 ```text
 your-policy-project/.env
 ```
+
+The interactive agent can also configure the current session from inside the
+TUI:
+
+```text
+/settings
+/model claude-opus-4-7
+/effort low|medium|high|max
+/apikey
+/apikey clear
+```
+
+`/apikey` prompts for the key and redacts it in the transcript. `/apikey
+sk-ant-...` also works for one-line setup. In-agent settings affect the current
+process; put `ANTHROPIC_API_KEY`, `AUTOCEDAR_MODEL`, and `AUTOCEDAR_EFFORT` in
+`.env` when you want them to persist across launches.
 
 ## Docker
 
@@ -252,6 +281,10 @@ docker run --rm -it \
   -w /work \
   ghcr.io/neselab/autocedar:latest
 ```
+
+Docker users can either pass the key as `-e ANTHROPIC_API_KEY=...` or mount a
+project directory containing `.env`; AutoCedar will load that mounted `.env`
+from the container working directory.
 
 ## CLI
 
@@ -281,6 +314,107 @@ The CLI/TUI authoring path uses LLM-backed Stage 1 schema atomization and Stage
 2 property atomization. The final Stage 3 synthesis hook remains injectable in
 the library authoring pipeline; the explicit `synthesize` command wraps the v1
 CEGIS harness directly.
+
+### Interactive Agent Usage
+
+Start the agent:
+
+```bash
+autocedar
+```
+
+Inside the TUI, normal language is the primary interface:
+
+```text
+start a policy draft
+Doctors can read records for patients on their care team.
+Managers can approve access only for records in their department.
+show the draft
+save this as clinical.md
+author this with schema workspace/schema.cedarschema
+verify the workspace
+synthesize emergency_break_glass no review max iters 7
+```
+
+The agent does not silently mutate the draft. Policy-looking prose starts a
+draft-capture confirmation unless drafting is already active. Operational
+actions such as authoring, verification, synthesis, clearing, and saving also
+show a yes/no confirmation before execution.
+
+Slash shortcuts are available for repeatable control:
+
+| Command | Purpose |
+| --- | --- |
+| `/settings` | Show selected model, effort, and API-key status. |
+| `/model MODEL` | Set the default model for chat, authoring atomization, and default TUI synthesis phases. |
+| `/effort low\|medium\|high\|max` | Set adaptive thinking effort for chat/authoring calls that support it. |
+| `/apikey` | Prompt for `ANTHROPIC_API_KEY`; the transcript redacts the key. |
+| `/apikey KEY` | Set `ANTHROPIC_API_KEY` for the current process. |
+| `/apikey clear` | Remove the key from the current process. |
+| `/draft` | Show the current prose draft. |
+| `/save [PATH]` | Save the draft, defaulting to `autocedar-spec.md`. |
+| `/new` | Clear the draft and leave drafting mode. |
+| `/author SPEC --out DIR [--schema PATH] [--model MODEL] [--effort high]` | Run HITL authoring from a spec file. |
+| `/verify [WORKSPACE]` | Verify an existing workspace, defaulting to `workspace`. |
+| `/synthesize SCENARIO... [--out DIR] [--max-iters N] [--no-review]` | Run the v1 CEGIS harness on one or more scenarios. |
+| `/clear` | Clear the transcript. |
+| `/quit` | Exit. |
+
+During HITL atom review, the prompt accepts one-line review commands:
+
+| Review key | Meaning |
+| --- | --- |
+| `A` | Approve the proposed schema/property atom. |
+| `R reason` | Reject the atom and record the reason. |
+| `E field=value` | Edit a field on the current atom. |
+| `Q question` | Record a question in the review log. |
+| `S` | Show the Cedar/schema declaration for the atom. |
+| `V` | Show patch notes when available. |
+
+### Non-Interactive Commands
+
+Use explicit subcommands for scripts and repeatable experiments:
+
+```bash
+autocedar author policy_spec.md \
+  --out ./autocedar-runs \
+  --schema workspace/schema.cedarschema \
+  --model claude-opus-4-7 \
+  --effort high
+
+autocedar verify workspace
+
+autocedar synthesize cedarbench/scenarios/realworld/emergency_break_glass \
+  --no-review \
+  --max-iters 20 \
+  --phase1-model claude-opus-4-7 \
+  --phase2-model claude-sonnet-4-20250514
+```
+
+### Output Files
+
+Authoring writes session artifacts under the `--out` directory, usually
+`autocedar-runs/<session-id>/`. The important files are:
+
+| File | Meaning |
+| --- | --- |
+| `schema.cedarschema` | Composed or supplied Cedar schema. |
+| `policy_spec.md` | Saved prose requirements. |
+| `verification_plan.py` | Compiled checks from approved property atoms. |
+| `references/*.cedar` | Human-reviewed floor/ceiling reference policies. |
+| `candidate.cedar` | Synthesized candidate, when the synthesis hook produces one. |
+| `corpus.jsonl` | Attribution, review decisions, symbolic logs, and iteration records. |
+
+### Troubleshooting
+
+| Symptom | Fix |
+| --- | --- |
+| Chat says no API key is loaded | Use `/apikey` in the TUI, export `ANTHROPIC_API_KEY`, or create `.env` in the directory where you launch `autocedar`. |
+| API key works in shell but not TUI | Start `autocedar` from the project directory containing `.env`, or export the key before launch. |
+| Verification says Cedar is missing | Set `CEDAR=/path/to/cedar` or install the Cedar CLI. |
+| Verification says CVC5 is missing | Set `CVC5=/path/to/cvc5` or install CVC5. |
+| `cedar symcc` is unknown | Install a Cedar CLI build with `symcc`, or use the Docker image. |
+| Normal prose starts a confirmation | That is intentional. AutoCedar only begins draft capture after you approve it. |
 
 For packaging, runtime code lives under `autocedar/`. The packaged v1
 harness import surface is `autocedar.harness`; the root-level scripts
