@@ -51,6 +51,14 @@ bundles the Python app, Cedar CLI, and CVC5 solver.
      autocedar
    ```
 
+   If your terminal reports `invalid reference format`, paste this one-line
+   version instead. That error is often caused by hidden Unicode spaces copied
+   into multi-line shell commands:
+
+   ```bash
+   docker run --rm -it --env-file .env -v "$PWD:/work" -w /work autocedar
+   ```
+
 You should see the AutoCedar interactive terminal UI.
 
 ### Option B: Local From The Repo
@@ -482,6 +490,14 @@ docker run --rm -it \
   autocedar
 ```
 
+If Docker reports `invalid reference format`, use the one-line form below.
+That error is usually caused by hidden Unicode spaces or broken line
+continuations in a copied multi-line command:
+
+```bash
+docker run --rm -it --env-file .env -v "$PWD:/work" -w /work autocedar
+```
+
 Tagged releases publish the same image to GitHub Container Registry:
 
 ```bash
@@ -632,6 +648,7 @@ Authoring writes session artifacts under the `--out` directory, usually
 | Verification says CVC5 is missing | Set `CVC5=/path/to/cvc5` or install CVC5. |
 | `cedar symcc` is unknown | Install a Cedar CLI build with `symcc`, or use the Docker image. |
 | Docker says `permission denied while trying to connect to the docker API` | On Linux, your user cannot access `/var/run/docker.sock`. Quick workaround: prefix the Docker commands with `sudo`. Better fix: run `sudo usermod -aG docker "$USER"`, then log out and back in, or run `newgrp docker`, then test with `docker ps`. If Docker is not running, start it with `sudo systemctl enable --now docker`. |
+| Docker says `invalid reference format` | Retype or paste the one-line Docker command: `docker run --rm -it --env-file .env -v "$PWD:/work" -w /work autocedar`. This usually means the copied multi-line command contains hidden Unicode spaces, smart punctuation, or a missing trailing `\`. |
 | Normal prose starts a confirmation | That is intentional. AutoCedar only begins draft capture after you approve it. |
 
 For packaging, runtime code lives under `autocedar/`. The packaged v1
