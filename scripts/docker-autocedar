@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
+IMAGE="${AUTOCEDAR_DOCKER_IMAGE:-autocedar}"
+
+cd "$REPO_ROOT"
+
+if ! command -v docker >/dev/null 2>&1; then
+  echo "Docker is not installed or is not on PATH."
+  echo "Install Docker, then run this script again."
+  exit 1
+fi
+
+if [[ ! -f "$REPO_ROOT/.env" ]]; then
+  echo "Missing .env in $REPO_ROOT"
+  if [[ -f "$REPO_ROOT/.env.example" ]]; then
+    cp "$REPO_ROOT/.env.example" "$REPO_ROOT/.env"
+    echo "Created .env from .env.example."
+  fi
+  echo "Edit .env, set ANTHROPIC_API_KEY, then run ./scripts/docker-autocedar again."
+  exit 1
+fi
+
+DOCKER=(docker)
+if ! docker info >/dev/null 2>&1; then
+  if command -v sudo >/dev/null 2>&1; then
+    echo "Docker needs elevated permission on this machine; using sudo."
+    sudo -v
+    DOCKER=(sudo docker)
+  else
+    echo "Docker is not reachable, and sudo is not available."
+    echo "Start Docker or add your user to the docker group."
+    exit 1
+  fi
+fi
+
+if ! "${DOCKER[@]}" info >/dev/null 2>&1; then
+  echo "Docker daemon is not reachable."
+  echo "On Linux, try: sudo systemctl enable --now docker"
+  exit 1
+fi
+
+echo "Building Docker image: $IMAGE"
+"${DOCKER[@]}" build -t "$IMAGE" "$REPO_ROOT"
+
+echo "Starting AutoCedar in Docker..."
+exec "${DOCKER[@]}" run \
+  --rm \
+  -it \
+  --env-file "$REPO_ROOT/.env" \
+  --volume "$REPO_ROOT:/work" \
+  --workdir /work \
+  "$IMAGE" \
+  "$@"

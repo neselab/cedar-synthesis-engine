@@ -40,7 +40,23 @@ bundles the Python app, Cedar CLI, and CVC5 solver.
    when using Docker. If you used `nano`, save with `Ctrl+O`, press `Enter`,
    then exit with `Ctrl+X`. Do not share or commit your API key.
 
-4. Build and run:
+4. Build and run with the repo script:
+
+   ```bash
+   ./scripts/docker-autocedar
+   ```
+
+   The script builds the image, uses your `.env`, mounts the repo at `/work`,
+   and automatically uses `sudo docker` on Linux when your user cannot access
+   the Docker socket.
+
+   If your shell says the script is not executable, run:
+
+   ```bash
+   bash scripts/docker-autocedar
+   ```
+
+   If you prefer to run Docker manually, this is what the script does:
 
    ```bash
    docker build -t autocedar .
@@ -482,6 +498,16 @@ The Docker image is the lowest-friction runtime because it bundles the Python
 package, Cedar CLI, and CVC5:
 
 ```bash
+./scripts/docker-autocedar
+```
+
+The script builds the image, uses `.env`, mounts the current repo, and
+automatically falls back to `sudo docker` when Docker requires elevated
+permission.
+
+Manual equivalent:
+
+```bash
 docker build -t autocedar .
 docker run --rm -it \
   --env-file .env \
@@ -648,7 +674,7 @@ Authoring writes session artifacts under the `--out` directory, usually
 | Verification says CVC5 is missing | Set `CVC5=/path/to/cvc5` or install CVC5. |
 | `cedar symcc` is unknown | Install a Cedar CLI build with `symcc`, or use the Docker image. |
 | Docker says `permission denied while trying to connect to the docker API` | On Linux, your user cannot access `/var/run/docker.sock`. Quick workaround: prefix the Docker commands with `sudo`. Better fix: run `sudo usermod -aG docker "$USER"`, then log out and back in, or run `newgrp docker`, then test with `docker ps`. If Docker is not running, start it with `sudo systemctl enable --now docker`. |
-| Docker says `invalid reference format` | Retype or paste the one-line Docker command: `docker run --rm -it --env-file .env -v "$PWD:/work" -w /work autocedar`. This usually means the copied multi-line command contains hidden Unicode spaces, smart punctuation, or a missing trailing `\`. |
+| Docker says `invalid reference format` | Run `./scripts/docker-autocedar` instead of pasting a long Docker command. This usually means the copied command contains hidden Unicode spaces, smart punctuation, or a missing trailing `\`. |
 | Normal prose starts a confirmation | That is intentional. AutoCedar only begins draft capture after you approve it. |
 
 For packaging, runtime code lives under `autocedar/`. The packaged v1
