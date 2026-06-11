@@ -631,6 +631,7 @@ Authoring writes session artifacts under the `--out` directory, usually
 | Verification says Cedar is missing | Set `CEDAR=/path/to/cedar` or install the Cedar CLI. |
 | Verification says CVC5 is missing | Set `CVC5=/path/to/cvc5` or install CVC5. |
 | `cedar symcc` is unknown | Install a Cedar CLI build with `symcc`, or use the Docker image. |
+| Docker says `permission denied while trying to connect to the docker API` | On Linux, your user cannot access `/var/run/docker.sock`. Quick workaround: prefix the Docker commands with `sudo`. Better fix: run `sudo usermod -aG docker "$USER"`, then log out and back in, or run `newgrp docker`, then test with `docker ps`. If Docker is not running, start it with `sudo systemctl enable --now docker`. |
 | Normal prose starts a confirmation | That is intentional. AutoCedar only begins draft capture after you approve it. |
 
 For packaging, runtime code lives under `autocedar/`. The packaged v1
