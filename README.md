@@ -6,6 +6,159 @@ natural-language policy intent into reviewed schema and property atoms, checks
 those atoms with Cedar/CVC5 where possible, and uses the packaged v1 CEGIS
 harness to verify and synthesize Cedar policies against formal bounds.
 
+## Start Here
+
+If you just cloned this repo and want AutoCedar to run, use one of the two
+paths below.
+
+### Option A: Docker, Easiest
+
+Use this if you do not want to install Cedar CLI or CVC5 yourself. Docker
+bundles the Python app, Cedar CLI, and CVC5 solver.
+
+1. Clone the repo:
+
+   ```bash
+   git clone https://github.com/neselab/cedar-synthesis-engine.git
+   cd cedar-synthesis-engine
+   ```
+
+2. Create your local `.env` file:
+
+   ```bash
+   cp .env.example .env
+   nano .env
+   ```
+
+3. Open `.env` and replace this line:
+
+   ```dotenv
+   ANTHROPIC_API_KEY=sk-ant-...
+   ```
+
+   with your real Anthropic API key. Leave `CEDAR` and `CVC5` commented out
+   when using Docker. If you used `nano`, save with `Ctrl+O`, press `Enter`,
+   then exit with `Ctrl+X`. Do not share or commit your API key.
+
+4. Build and run:
+
+   ```bash
+   docker build -t autocedar .
+   docker run --rm -it \
+     --env-file .env \
+     -v "$PWD:/work" \
+     -w /work \
+     autocedar
+   ```
+
+You should see the AutoCedar interactive terminal UI.
+
+### Option B: Local From The Repo
+
+Use this if you already have Python tooling and want to run directly from the
+checkout.
+
+1. Clone the repo:
+
+   ```bash
+   git clone https://github.com/neselab/cedar-synthesis-engine.git
+   cd cedar-synthesis-engine
+   ```
+
+2. Install `uv` if you do not have it:
+
+   ```bash
+   curl -LsSf https://astral.sh/uv/install.sh | sh
+   ```
+
+   On Windows, use Docker Desktop or install `uv` from the official `uv`
+   documentation. Restart your terminal after installing `uv`.
+
+3. Create your local `.env` file:
+
+   ```bash
+   cp .env.example .env
+   nano .env
+   ```
+
+4. Open `.env` and replace:
+
+   ```dotenv
+   ANTHROPIC_API_KEY=sk-ant-...
+   ```
+
+   with your real Anthropic API key.
+
+5. For full authoring, verification, and synthesis, install the verifier tools:
+
+   ```bash
+   cargo install cedar-policy-cli
+   cedar --version
+   cedar symcc --help
+   cvc5 --version
+   ```
+
+   If `cargo` is not installed, install Rust first:
+
+   ```bash
+   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+   ```
+
+   If `cvc5 --version` fails, install CVC5 and put its path in `.env`:
+
+   ```dotenv
+   CVC5=/path/to/cvc5
+   ```
+
+   On macOS with Homebrew, that usually looks like:
+
+   ```bash
+   brew install cvc5
+   echo "CVC5=$(which cvc5)" >> .env
+   ```
+
+   If local solver setup is annoying, use Docker instead.
+
+6. Run AutoCedar:
+
+   ```bash
+   uv run autocedar
+   ```
+
+### First Things To Type
+
+Once the TUI opens, try:
+
+```text
+/settings
+/apikey
+/model claude-opus-4-7
+/effort high
+start a policy draft
+Doctors can read records for patients on their care team.
+show the draft
+save this as clinical.md
+```
+
+When you are ready to run authoring:
+
+```text
+author this with schema workspace/schema.cedarschema
+```
+
+AutoCedar will ask for confirmation before executing actions and will pause for
+human review when it proposes schema/property atoms.
+
+### What Each Setup File Does
+
+| File | What you put there |
+| --- | --- |
+| `.env` | Your local API key and optional runtime settings. Do not commit it. |
+| `.env.example` | Template showing supported environment variables. Safe to commit. |
+| `workspace/schema.cedarschema` | Optional existing Cedar schema for authoring/verification. |
+| `workspace/candidate.cedar` | Existing candidate policy for `verify workspace`. |
+| `workspace/verification_plan.py` | Existing formal checks for `verify workspace`. |
+
 ## Architecture
 
 ```mermaid
@@ -161,32 +314,32 @@ when { principal.department == "Engineering" && !resource.is_locked };
 
 ---
 
-## Install
+## Detailed Setup Reference
 
-From PyPI:
+The package is not published to PyPI yet. For now, run from this repo:
+
+```bash
+uv run autocedar
+```
+
+After PyPI publishing is configured, the package will also support:
 
 ```bash
 uv tool install autocedar
 autocedar
 ```
 
-One-shot without installing:
+and:
 
 ```bash
 uvx autocedar
 ```
 
-From a checkout:
-
-```bash
-uv run autocedar
-```
-
 The runtime package installs the Python agent/library and the `autocedar`
-console script. Verification also needs the Cedar CLI and CVC5 solver on the
-machine.
+console script. Verification also needs the Cedar CLI and CVC5 solver unless
+you use Docker.
 
-## External Dependencies
+### External Dependencies
 
 - **Python 3.11+**
 - **Cedar CLI v4.10+**: `cargo install cedar-policy-cli`
@@ -211,7 +364,7 @@ If `cedar symcc --help` does not work, the installed Cedar binary cannot run
 AutoCedar's symbolic verification path. Install a Cedar CLI build that includes
 the `symcc` subcommand, or use the Docker image below.
 
-## API Keys And `.env`
+### API Keys And `.env`
 
 AutoCedar uses Anthropic models for the conversational TUI, schema
 atomization, property atomization, and optional harness translation. The key is
@@ -258,7 +411,7 @@ sk-ant-...` also works for one-line setup. In-agent settings affect the current
 process; put `ANTHROPIC_API_KEY`, `AUTOCEDAR_MODEL`, and `AUTOCEDAR_EFFORT` in
 `.env` when you want them to persist across launches.
 
-## Docker
+### Docker
 
 The Docker image is the lowest-friction runtime because it bundles the Python
 package, Cedar CLI, and CVC5:
@@ -266,7 +419,7 @@ package, Cedar CLI, and CVC5:
 ```bash
 docker build -t autocedar .
 docker run --rm -it \
-  -e ANTHROPIC_API_KEY="$ANTHROPIC_API_KEY" \
+  --env-file .env \
   -v "$PWD:/work" \
   -w /work \
   autocedar
@@ -276,7 +429,7 @@ Tagged releases publish the same image to GitHub Container Registry:
 
 ```bash
 docker run --rm -it \
-  -e ANTHROPIC_API_KEY="$ANTHROPIC_API_KEY" \
+  --env-file .env \
   -v "$PWD:/work" \
   -w /work \
   ghcr.io/neselab/autocedar:latest
@@ -286,17 +439,20 @@ Docker users can either pass the key as `-e ANTHROPIC_API_KEY=...` or mount a
 project directory containing `.env`; AutoCedar will load that mounted `.env`
 from the container working directory.
 
-## CLI
+## How To Use AutoCedar
 
-The runtime package exposes an `autocedar` console script:
+From this repo, prefix commands with `uv run`:
 
 ```bash
-autocedar
-autocedar verify workspace
-autocedar synthesize cedarbench/scenarios/realworld/emergency_break_glass \
+uv run autocedar
+uv run autocedar verify workspace
+uv run autocedar synthesize cedarbench/scenarios/realworld/emergency_break_glass \
   --no-review --max-iters 20
-autocedar author path/to/spec.md --out ./autocedar-runs
+uv run autocedar author path/to/spec.md --out ./autocedar-runs
 ```
+
+After package installation, drop the `uv run` prefix and use `autocedar`
+directly.
 
 With no arguments, `autocedar` opens the Textual-based interactive agent
 shell. Talk to it in normal language: "verify the workspace", "save this as
@@ -320,7 +476,7 @@ CEGIS harness directly.
 Start the agent:
 
 ```bash
-autocedar
+uv run autocedar
 ```
 
 Inside the TUI, normal language is the primary interface:
@@ -376,15 +532,15 @@ During HITL atom review, the prompt accepts one-line review commands:
 Use explicit subcommands for scripts and repeatable experiments:
 
 ```bash
-autocedar author policy_spec.md \
+uv run autocedar author policy_spec.md \
   --out ./autocedar-runs \
   --schema workspace/schema.cedarschema \
   --model claude-opus-4-7 \
   --effort high
 
-autocedar verify workspace
+uv run autocedar verify workspace
 
-autocedar synthesize cedarbench/scenarios/realworld/emergency_break_glass \
+uv run autocedar synthesize cedarbench/scenarios/realworld/emergency_break_glass \
   --no-review \
   --max-iters 20 \
   --phase1-model claude-opus-4-7 \
