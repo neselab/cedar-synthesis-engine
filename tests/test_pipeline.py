@@ -92,6 +92,24 @@ def _owner_must_floor() -> PropertyAtom:
     )
 
 
+def _approve(atom: object) -> AtomDecision:
+    return AtomDecision(
+        atom_name=getattr(atom, "name", "?"),
+        action="approve",
+        intent_acknowledged_by_user=True,
+        symbolic_verified=getattr(atom, "symbolic_verified", False),
+    )
+
+
+def _synthesize_stub(scenario_dir: Path) -> Path:
+    candidate = scenario_dir / "candidate.cedar"
+    candidate.write_text(
+        "// test synthesizer output\n"
+        "permit (principal, action, resource);\n",
+    )
+    return candidate
+
+
 # ---------------------------------------------------------------------------
 # Acceptance criterion 8 — pipeline compiles + stubbed end-to-end run.
 # ---------------------------------------------------------------------------
@@ -114,6 +132,8 @@ def test_author_runs_end_to_end_with_stubs(
         output_dir=output_dir,
         session_id="t1",
         propose_property_atoms=propose_property_atoms,
+        review_atom=_approve,
+        synthesize=_synthesize_stub,
         schema_path_override=str(schema_path),
     )
 
@@ -171,6 +191,8 @@ def test_pipeline_logs_intent_and_symbolic_separately(
         output_dir=output_dir,
         session_id="t2",
         propose_property_atoms=propose_property_atoms,
+        review_atom=_approve,
+        synthesize=_synthesize_stub,
         schema_path_override=str(schema_path),
     )
 
@@ -204,6 +226,8 @@ def test_pipeline_logs_prose_excerpt_attribution_per_atom(
         output_dir=output_dir,
         session_id="t3",
         propose_property_atoms=propose_property_atoms,
+        review_atom=_approve,
+        synthesize=_synthesize_stub,
         schema_path_override=str(schema_path),
     )
 
@@ -235,6 +259,8 @@ def test_pipeline_logs_stage3_critic_score_distinct_from_verifier(
         output_dir=output_dir,
         session_id="t4",
         propose_property_atoms=propose_property_atoms,
+        review_atom=_approve,
+        synthesize=_synthesize_stub,
         schema_path_override=str(schema_path),
     )
 
@@ -278,6 +304,8 @@ def test_pipeline_returns_unsat_when_atoms_are_jointly_inconsistent(
         output_dir=output_dir,
         session_id="t5",
         propose_property_atoms=propose_property_atoms,
+        review_atom=_approve,
+        synthesize=_synthesize_stub,
         schema_path_override=str(schema_path),
     )
 

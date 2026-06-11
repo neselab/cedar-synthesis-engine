@@ -105,7 +105,7 @@ def compose_schema(draft: SchemaDraft) -> str:
 
 
 # ---------------------------------------------------------------------------
-# LLM integration (Step C).
+# LLM integration.
 # ---------------------------------------------------------------------------
 
 @dataclass
@@ -140,9 +140,8 @@ def propose_schema_atoms(
     """Stage 1 atom proposer (thin wrapper over LLMClient).
 
     Returns the LLM's proposed atoms as typed dataclasses (already
-    translated from the Pydantic LLM schema). The pipeline (§7.1 of
-    HITL_STEP_B_PLAN.md) consumes this list and dispatches per atom
-    to the review loop.
+    translated from the Pydantic LLM schema). The pipeline consumes this
+    list and dispatches each atom to the review loop.
     """
     return llm.propose_schema_atoms(spec_text)
 
@@ -151,10 +150,9 @@ def route_atom_into_draft(atom: Stage1Atom, draft: SchemaDraft) -> None:
     """Insert one approved atom into the right SchemaDraft slot.
 
     Attribute atoms target an entity by ``on_entity`` name; if the
-    owner entity is not yet in the draft (Step C order invariant
-    violation), the attribute is dropped silently. The corpus log
-    captures the decision separately so the user can detect this case
-    during review.
+    owner entity is not yet in the draft, the attribute is dropped
+    silently. The corpus log captures the decision separately so the user
+    can detect this case during review.
     """
     if isinstance(atom, EntityAtom):
         draft.entities[atom.name] = atom

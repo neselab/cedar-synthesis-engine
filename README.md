@@ -190,7 +190,7 @@ graph LR
 | --- | --- |
 | `autocedar/tui.py` | Interactive conversational terminal agent. This is what `autocedar` opens by default. |
 | `autocedar/cli.py` | Console entry point for `autocedar`, plus scriptable `author`, `verify`, and `synthesize` subcommands. |
-| `autocedar/pipeline.py` | End-to-end authoring pipeline: schema atoms, property atoms, review, harness compile, synthesis hook. |
+| `autocedar/pipeline.py` | End-to-end authoring pipeline: schema atoms, property atoms, review, harness compile, Stage 3 synthesis hook. |
 | `autocedar/llm.py` | Anthropic-backed chat and structured LLM calls for schema/property atomization. |
 | `autocedar/schema_atomizer.py` | Stage 1 schema atom proposal, composition, and schema validation helpers. |
 | `autocedar/property_atomizer.py` | Stage 2 property atom proposal from prose plus validated schema. |
@@ -525,9 +525,9 @@ layer can answer questions about the current TUI state, while `author` still
 runs with clean authoring inputs: the saved prose spec, optional schema, and
 HITL review decisions. `verify` and `synthesize` wrap the v1 CEGIS harness.
 The CLI/TUI authoring path uses LLM-backed Stage 1 schema atomization and Stage
-2 property atomization. The final Stage 3 synthesis hook remains injectable in
-the library authoring pipeline; the explicit `synthesize` command wraps the v1
-CEGIS harness directly.
+2 property atomization, then runs Stage 3 through the packaged v1 CEGIS harness
+adapter. The Stage 3 hook remains injectable for library users and tests; the
+explicit `synthesize` command also wraps the v1 CEGIS harness directly.
 
 ### Interactive Agent Usage
 
@@ -619,7 +619,7 @@ Authoring writes session artifacts under the `--out` directory, usually
 | `policy_spec.md` | Saved prose requirements. |
 | `verification_plan.py` | Compiled checks from approved property atoms. |
 | `references/*.cedar` | Human-reviewed floor/ceiling reference policies. |
-| `candidate.cedar` | Synthesized candidate, when the synthesis hook produces one. |
+| `candidate.cedar` | Synthesized candidate policy produced by Stage 3. |
 | `corpus.jsonl` | Attribution, review decisions, symbolic logs, and iteration records. |
 
 ### Troubleshooting

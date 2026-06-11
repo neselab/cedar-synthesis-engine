@@ -181,7 +181,7 @@ def test_score_candidate_with_stub_returns_valid_score() -> None:
 
 
 def test_score_candidate_with_custom_llm() -> None:
-    """The pluggable LLMScorer interface lets Step C/D inject a real LLM."""
+    """The pluggable LLMScorer interface accepts a real model-backed scorer."""
     high_quality_response = json.dumps(
         {
             "idiomatic": 5,

@@ -202,7 +202,7 @@ def auto_approve(atom: Any) -> AtomDecision:
 
 
 # ---------------------------------------------------------------------------
-# Interactive review loop — Step C acceptance criterion 4.
+# Interactive review loop.
 # ---------------------------------------------------------------------------
 
 

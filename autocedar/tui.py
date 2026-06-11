@@ -22,6 +22,7 @@ from textual.widgets import Footer, Header, Input, RichLog, Static
 
 from autocedar.corpus import AtomDecision
 from autocedar.env import load_dotenv
+from autocedar.harness_adapter import make_harness_synthesizer
 from autocedar.llm import DEFAULT_EFFORT, DEFAULT_MODEL as DEFAULT_AUTHOR_MODEL
 from autocedar.llm import LLMClient
 from autocedar.pipeline import author as author_pipeline
@@ -120,6 +121,7 @@ Talk normally:
   [#f0c678]Start a policy draft[/]
   [#f0c678]Doctors can read records for patients on their care team.[/]
   [#f0c678]Save this as clinical.md[/]
+  [#f0c678]Author this[/]
   [#f0c678]Author this with schema workspace/schema.cedarschema[/]
   [#f0c678]Verify the workspace[/]
   [#f0c678]Synthesize cedarbench/scenarios/realworld/emergency_break_glass no review[/]
@@ -1129,6 +1131,16 @@ class AutoCedarApp(App[None]):
                 session_id=options.session_id,
                 review_atom=review_atom,
                 propose_property_atoms=property_proposer,
+                synthesize=make_harness_synthesizer(
+                    phase1_model=options.model or self.llm_model,
+                    phase2_model=options.model or self.llm_model,
+                    no_review=True,
+                    quiet=True,
+                    output_callback=lambda text: self.call_from_thread(
+                        self._write,
+                        text,
+                    ),
+                ),
                 schema_path_override=str(options.schema) if options.schema else None,
                 **kwargs,
             )

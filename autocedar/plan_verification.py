@@ -245,9 +245,9 @@ def generate_atom_traceback(
     each atom's ``traceback_clauses`` and ``traceback_flags`` in place
     so corpus logging captures the result.
 
-    ``schema_path`` is reserved for future ``cedar symcc``-driven
-    minimum-sufficient-subset search; Step B implements the heuristic
-    string-based version per §7.4 acceptance criterion 6.
+    ``schema_path`` is reserved for a future ``cedar symcc``-driven
+    minimum-sufficient-subset search. Current behavior uses a conservative
+    string-based traceback over candidate clauses.
     """
     candidate_text = Path(candidate_path).read_text()
     clauses = _split_clauses(candidate_text)

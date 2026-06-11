@@ -18,10 +18,8 @@ Quality scoring is intrinsic — "is this idiomatic Cedar" — not
 spec-relative. This is the load-bearing prompt boundary tested by
 acceptance criterion 7 in §9.
 
-For Step B the LLM call is a thin abstraction (``LLMScorer``) that
-real implementations plug into. The default ``score_candidate`` runs
-a stubbed LLM that returns a fixed mid-quality score so end-to-end
-pipeline tests can run without a live LLM.
+The LLM call is a thin abstraction (``LLMScorer``) so tests can use a
+static scorer and production callers can inject an API-backed scorer.
 """
 
 from __future__ import annotations
@@ -220,30 +218,24 @@ def _extract_json_block(text: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Stubbed LLM scorer (Step B).
+# Static scorer for offline tests.
 # ---------------------------------------------------------------------------
 
 LLMScorer = Callable[[str], str]
 
 
 def stub_llm_scorer(prompt: str) -> str:
-    """Step B placeholder LLM that returns a fixed mid-quality score.
-
-    Real LLM integration lands in Step C/D. The stub exists so the
-    end-to-end pipeline can be exercised in tests without a live API
-    key, and so the critic-loop logic in Stage 3 (which compares
-    scores across iterations) has something to compare.
-    """
+    """Return a fixed mid-quality score for offline tests."""
     _ = prompt  # silence unused
     return json.dumps(
         {
             "idiomatic": {
                 "score": 4,
-                "rationale": "stubbed score — real LLM integration in Step C/D",
+                "rationale": "static offline score",
             },
-            "minimal": {"score": 4, "rationale": "stubbed"},
-            "attribute_prefer": {"score": 4, "rationale": "stubbed"},
-            "maintainable": {"score": 4, "rationale": "stubbed"},
+            "minimal": {"score": 4, "rationale": "static offline score"},
+            "attribute_prefer": {"score": 4, "rationale": "static offline score"},
+            "maintainable": {"score": 4, "rationale": "static offline score"},
         },
     )
 

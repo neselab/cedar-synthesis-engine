@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Sequence
 
 from autocedar.env import load_dotenv
+from autocedar.harness_adapter import make_harness_synthesizer
 from autocedar.llm import DEFAULT_EFFORT
 from autocedar.llm import DEFAULT_MODEL as DEFAULT_AUTHOR_MODEL
 from autocedar.llm import LLMClient
@@ -63,7 +64,10 @@ def _build_parser() -> argparse.ArgumentParser:
             or os.environ.get("AUTOCEDAR_AUTHOR_MODEL")
             or DEFAULT_AUTHOR_MODEL
         ),
-        help=f"Anthropic model for Stage 1/2 atomization (default: {DEFAULT_AUTHOR_MODEL}).",
+        help=(
+            "Anthropic model for schema/property atomization and Stage 3 "
+            f"synthesis (default: {DEFAULT_AUTHOR_MODEL})."
+        ),
     )
     author_p.add_argument(
         "--effort",
@@ -159,6 +163,11 @@ def _cmd_author(args: argparse.Namespace) -> int:
         session_id=args.session_id,
         review_atom=reviewer,
         propose_property_atoms=property_proposer,
+        synthesize=make_harness_synthesizer(
+            phase1_model=args.model,
+            phase2_model=args.model,
+            no_review=True,
+        ),
         schema_path_override=args.schema,
         **author_kwargs,
     )

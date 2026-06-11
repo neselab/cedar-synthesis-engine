@@ -1,12 +1,10 @@
 """Stage 2 — property elicitation and sugar compile-down.
 
-See ``docs/HITL_STEP_B_PLAN.md`` §5 for the sugar compile-down rules
-and §7.1 for where this fits in the pipeline.
+The LLM-backed property atom proposer lives in ``autocedar.property_atomizer``.
+This module takes approved property atoms and compiles them into the concrete
+v1-harness artifacts used by symbolic synthesis:
 
-The atom-proposal logic (LLM-driven) lives in Step D and is stubbed
-here. What is fully implemented in Step B:
-
-- ``compile_plan(plan)``: resolves all sugar atoms into primitive
+- ``compile_plan(plan)`` resolves all sugar atoms into primitive
   ceiling/floor/liveness checks, applies §8.8 patches from
   disjointness atoms to every same-action floor, and emits the
   ``verification_plan.py`` + ``references/*.cedar`` artifacts the v1
@@ -16,7 +14,7 @@ here. What is fully implemented in Step B:
   ``insert_when_with_conjuncts``) used by the §8.8 patcher.
 
 The compiled output is byte-deterministic so it can be golden-tested
-(acceptance criterion 4 in §9).
+and reviewed.
 """
 
 from __future__ import annotations

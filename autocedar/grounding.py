@@ -1,14 +1,13 @@
 """Symbolic verification + adversarial-example generation for Stage 2 atoms.
 
-See ``docs/HITL_STEP_B_PLAN.md`` §4 for the full spec. The four symcc
-checks per atom (§4.1):
+The symbolic checks per atom are:
 
 1. Satisfiability — there exists a request the encoding permits/denies.
 2. Joint consistency — atom is jointly satisfiable with previously-
    approved atoms (pairwise floor-implies-ceiling on same action).
 3. Type correctness — ``cedar validate`` against the composed schema.
-4. Sugar-specific universal claims — full verification deferred to
-   Step C; Step B records a sanity-check log entry.
+4. Sugar-specific universal claims — structural sanity checks for
+   sugar atoms such as disjointness and rate limits.
 
 Per §1.4, these earn the **formal-consistency** badge. They do NOT
 prove the encoding is a faithful translation of the prose; that is
@@ -17,9 +16,8 @@ human judgment exercised by the user during atom review.
 The adversarial-example pipeline (§4.4) generates examples that
 distinguish the chosen encoding from plausible alternative readings:
 
-- ``propose_alternatives`` — LLM-driven; stubbed in Step B with a
-  fixed-callable interface so the rest of the pipeline can be tested
-  end-to-end.
+- ``propose_alternatives`` — injectable LLM-driven alternative proposal.
+  Offline tests can pass alternatives directly or use the empty default.
 - ``find_distinguishing_request`` — runs ``cedar symcc implies`` in
   both directions and returns a counterexample (a request) where the
   chosen and alternative encodings disagree.
@@ -304,11 +302,9 @@ def _check_sugar_universal(
 ) -> SymbolicCheck:
     """Check 4: sugar-specific universal claim.
 
-    Step B records the structural constraint as a "deferred" entry so
-    the four-check shape is always populated. Full universal
-    verification (e.g. proving disjointness as ``∀req. R(req) ⇒ ¬T(req)``)
-    is implemented in Step C, when the agent's atom-proposal logic
-    produces well-formed sugar atoms reliably.
+    This is a structural check rather than a complete theorem for every
+    sugar form. Primitive ceiling/floor/liveness atoms are fully checked
+    through the normal symcc paths.
     """
     if atom.constraint_type == "disjointness":
         # Sanity check: reference encoding mentions the negated body.
@@ -320,13 +316,13 @@ def _check_sugar_universal(
                 passed=False,
                 detail=(
                     "disjointness encoding does not appear to negate "
-                    f"target body {target!r} (full check deferred to Step C)"
+                    f"target body {target!r}"
                 ),
             )
         return SymbolicCheck(
             name="sugar-universal",
             passed=True,
-            detail="syntactic disjointness sanity check ok (full check deferred)",
+            detail="syntactic disjointness sanity check ok",
         )
     if atom.constraint_type == "rate_limit":
         counter = atom.rate_limit_counter_attr or ""
@@ -338,7 +334,7 @@ def _check_sugar_universal(
                     passed=False,
                     detail=(
                         f"rate_limit encoding does not reference counter {counter!r} "
-                        f"or threshold {threshold} (full check deferred to Step C)"
+                        f"or threshold {threshold}"
                     ),
                 )
         return SymbolicCheck(
@@ -410,11 +406,11 @@ def _stub_alternative_proposer(
     schema_text: str,
     n: int,
 ) -> list[AlternativeEncoding]:
-    """Default alternative-proposer for Step B: returns an empty list.
+    """Offline alternative proposer: returns an empty list by default.
 
-    Step C/D plugs in a real LLM-driven proposer. For Step B, callers
-    wanting to test the distinguisher pipeline pass alternatives in
-    directly via ``generate_adversarial_examples(..., alternatives=...)``.
+    Production callers may inject an LLM-backed proposer. Tests can pass
+    alternatives directly via ``generate_adversarial_examples(...,
+    alternatives=...)``.
     """
     return []
 
@@ -521,9 +517,8 @@ def generate_adversarial_examples(
 
     Mutates ``atom.examples_adversarial`` and ``atom.alternatives_considered``.
 
-    Callers in Step B can pass a list of pre-built ``alternatives``
-    directly to skip the LLM step. Callers in Step C/D wire ``propose``
-    to a real LLM.
+    Callers can pass a list of pre-built ``alternatives`` directly to skip
+    proposal, or wire ``propose`` to an LLM-backed alternative proposer.
     """
     if atom.constraint_type == "liveness":
         return []

@@ -1,7 +1,6 @@
 """Atom dataclasses for Stage 1 (schema) and Stage 2 (properties).
 
-See ``docs/HITL_STEP_B_PLAN.md`` §3 for the dataclass contract and
-§1.4 for the load-bearing distinction between ``symbolic_verified``
+The load-bearing distinction is between ``symbolic_verified``
 (formal property earned by symcc) and ``intent_acknowledged_by_user``
 (human judgment exercised by the user during review).
 
@@ -23,7 +22,7 @@ from dataclasses import asdict, dataclass, field, fields, is_dataclass
 from typing import Any, Literal, Optional, Type, TypeVar
 
 # ---------------------------------------------------------------------------
-# Constraint type literals (Step B scope per §1.2).
+# Constraint type literals supported by Stage 2.
 # ---------------------------------------------------------------------------
 
 ConstraintType = Literal[
@@ -239,8 +238,8 @@ class SchemaDraft:
     """In-progress schema being assembled from approved Stage 1 atoms.
 
     The ``to_cedar_schema`` rendering and ``cedar validate`` round-trip
-    live in ``autocedar.schema_atomizer`` (Step C). At the data-model
-    layer this class is just the ordered structure of approved atoms.
+    live in ``autocedar.schema_atomizer``. At the data-model layer this
+    class is just the ordered structure of approved atoms.
     """
 
     entities: dict[str, EntityAtom] = field(default_factory=dict)

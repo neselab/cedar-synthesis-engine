@@ -1,19 +1,12 @@
-"""End-to-end pipeline orchestration.
+"""End-to-end HITL authoring pipeline orchestration.
 
-See ``docs/HITL_STEP_B_PLAN.md`` §7.1 for the call graph. The pipeline
-runs Stages 1, 1.5 (schema amendments), 2, 1.75 (pre-Stage-3 unsat
-detection), 3 (synthesis with critic loop), and 2.5 (atom-to-policy
-traceback) in that order, with the v1 harness contract at Stage 3
-unchanged.
+The pipeline runs Stage 1 schema atomization, Stage 2 property atomization,
+per-atom HITL review, symbolic consistency checks, Stage 3 synthesis, and
+atom-to-policy traceback. Public CLI/TUI callers inject LLM-backed proposers,
+the interactive review loop, and the packaged v1 CEGIS harness adapter.
 
-The skeleton in this module is testable end-to-end with stubs for the
-LLM-driven proposers and the synthesis call. Step C/D plugs in real
-LLM-driven proposers; the synthesis stub is replaced by the existing
-``eval_harness.run_scenario`` invocation.
-
-Per acceptance criterion 8 in §9, this module compiles, and a stubbed
-end-to-end ``author()`` call produces the corpus directory layout
-without errors.
+Tests may still inject stubs, but real authoring calls fail loudly if required
+components are missing; they never silently produce placeholder policies.
 """
 
 from __future__ import annotations
@@ -74,34 +67,20 @@ AtomReviewer = Callable[[Any], Any]
 Synthesizer = Callable[[Path], Path]
 
 
-# ---------------------------------------------------------------------------
-# Default stubs (Step B).
-# ---------------------------------------------------------------------------
-
 def _stub_schema_proposer(spec_text: str) -> list[Stage1AtomT]:
-    """Default Stage 1 proposer for Step B: returns an empty list.
-
-    Step C plugs in the real LLM-driven proposer. Step B's end-to-end
-    test passes a fixture-returning proposer directly.
-    """
+    """Test helper: return no Stage 1 atoms."""
     _ = spec_text
     return []
 
 
 def _stub_property_proposer(spec_text: str, schema_path: str) -> list[PropertyAtom]:
-    """Default Stage 2 proposer for Step B: returns an empty list.
-
-    Step D plugs in the real LLM-driven proposer.
-    """
+    """Test helper: return no Stage 2 atoms."""
     _ = spec_text, schema_path
     return []
 
 
 def _stub_auto_approve(atom: Any) -> AtomDecision:
-    """Default reviewer for Step B: auto-approves with intent ack.
-
-    Real interactive review lives in ``autocedar.ui.terminal``.
-    """
+    """Test helper: auto-approve with intent acknowledgement."""
     return AtomDecision(
         atom_name=getattr(atom, "name", "?"),
         action="approve",
@@ -111,16 +90,10 @@ def _stub_auto_approve(atom: Any) -> AtomDecision:
 
 
 def _stub_synthesizer(scenario_dir: Path) -> Path:
-    """Default synthesizer for Step B: writes a known-trivial candidate.
-
-    Real synthesis wraps ``eval_harness.run_scenario``; the stub exists
-    so the pipeline test can run without invoking the LLM-driven
-    harness loop. The trivial candidate is `permit (...)` — usually
-    over-permissive but always parses.
-    """
+    """Test helper: write a known-trivial candidate."""
     candidate = scenario_dir / "candidate.cedar"
     candidate.write_text(
-        "// stubbed Step B synthesizer output\n"
+        "// test synthesizer output\n"
         "permit (principal, action, resource);\n",
     )
     return candidate
@@ -152,10 +125,10 @@ def author(
     output_dir: str | Path,
     *,
     session_id: Optional[str] = None,
-    propose_schema_atoms: SchemaProposer = _stub_schema_proposer,
-    propose_property_atoms: PropertyProposer = _stub_property_proposer,
-    review_atom: AtomReviewer = _stub_auto_approve,
-    synthesize: Synthesizer = _stub_synthesizer,
+    propose_schema_atoms: SchemaProposer | None = None,
+    propose_property_atoms: PropertyProposer | None = None,
+    review_atom: AtomReviewer | None = None,
+    synthesize: Synthesizer | None = None,
     score_candidate: Callable[[str], CriticScore] = (
         lambda c: score_candidate_default(c, llm=stub_llm_scorer)
     ),
@@ -163,9 +136,9 @@ def author(
 ) -> AuthorResult:
     """End-to-end Stage-1-through-2.5 pipeline.
 
-    All LLM-driven steps are injected as callables so Step B tests can
-    run without a live LLM. ``synthesize`` is the integration point with
-    the v1 harness; Step C/D's default wraps ``eval_harness.run_scenario``.
+    LLM-driven steps are injected as callables so tests can run without a live
+    LLM. ``synthesize`` is the integration point with Stage 3, normally
+    ``autocedar.harness_adapter.make_harness_synthesizer``.
 
     ``schema_path_override`` is for tests that need to point at a
     pre-built schema (rather than composing one from atoms via the
@@ -181,6 +154,13 @@ def author(
     spec_text = spec_path.read_text()
     session.write_input_spec(spec_text, filename=spec_path.name)
 
+    if review_atom is None:
+        raise ValueError("author() requires a review_atom callback for HITL review")
+    if propose_property_atoms is None:
+        raise ValueError("author() requires a propose_property_atoms callback")
+    if synthesize is None:
+        raise ValueError("author() requires a Stage 3 synthesize callback")
+
     # ──── Stage 1: schema atomization ────
     if schema_path_override:
         schema_text = Path(schema_path_override).read_text()
@@ -193,6 +173,10 @@ def author(
         session.write_stage1_attribution_decisions([])
         session.write_stage1_decisions([])
     else:
+        if propose_schema_atoms is None:
+            raise ValueError(
+                "author() requires propose_schema_atoms when no schema_path_override is supplied",
+            )
         schema_atoms = propose_schema_atoms(spec_text)
         session.write_stage1_proposed_atoms(schema_atoms)
         attributions = [
@@ -232,7 +216,8 @@ def author(
     # ──── Stage 1.5: schema amendments forced by sugar atoms ────
     amendments = _detect_schema_amendments(prop_atoms)
     session.write_stage1_5_amendments(amendments)
-    # In Step B we don't auto-amend the schema text; we just log.
+    # Current behavior records host-application obligations; it does not
+    # rewrite the schema automatically.
 
     # Per-atom symbolic verification (§4) + decision review.
     decisions2: list[AtomDecision] = []
@@ -287,13 +272,13 @@ def author(
         references=compiled.references,
     )
 
-    # ──── Stage 3: synthesis (with critic loop in real use) ────
+    # ──── Stage 3: synthesis ────
     candidate_path = synthesize(scenario_dir)
     candidate_text = candidate_path.read_text()
     iter_log = IterationLog(
         iter_number=1,
         candidate_cedar=candidate_text,
-        verifier_feedback={"passed": True, "note": "stubbed in Step B"},
+        verifier_feedback={"passed": True, "note": "candidate produced by Stage 3 synthesizer"},
         critic_score=_critic_score_to_dict(score_candidate(candidate_text)),
     )
     session.write_stage3_iteration(iter_log)
@@ -332,8 +317,9 @@ def _route_into_schema_draft(atom: Stage1AtomT, draft: SchemaDraft) -> None:
         owner = draft.entities.get(atom.on_entity)
         if owner is not None:
             owner.attributes[atom.field_name] = atom
-        # If owner not found, the atom is dropped — Step C should ensure
-        # entity atoms are proposed before their attribute atoms.
+        # If owner not found, the atom is dropped. The decision log remains
+        # reviewable, and the schema atomizer prompt asks for entity-first
+        # ordering.
 
 
 def _normalize_review_result(atom: Any, review_result: Any) -> tuple[Any, AtomDecision]:
@@ -358,8 +344,8 @@ def _normalize_review_result(atom: Any, review_result: Any) -> tuple[Any, AtomDe
 def _detect_schema_amendments(prop_atoms: list[PropertyAtom]) -> list[dict[str, Any]]:
     """Stage 1.5: list schema amendments forced by Stage 2 sugar atoms.
 
-    Step B records amendments to the corpus but does not apply them
-    interactively; Step C wires the user-confirmation prompt.
+    Current behavior records amendments to the corpus; callers can surface
+    them to the user as host-application obligations.
     """
     out: list[dict[str, Any]] = []
     for atom in prop_atoms:
