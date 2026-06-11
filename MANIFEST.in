@@ -1,4 +1,5 @@
 include README.md
+include LICENSE
 recursive-include autocedar/prompts *.md
 
 prune tests

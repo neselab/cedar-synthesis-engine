@@ -1,6 +1,10 @@
-# Cedar Synthesis Engine — Architecture & Workflow
+# AutoCedar — HITL Cedar Policy Synthesis
 
-An automated policy synthesis + formal verification harness for [Cedar](https://www.cedarpolicy.com/) access control policies. An AI agent writes a candidate policy, the engine verifies it against formal specs using an SMT solver (CVC5), and the agent iterates on failures until the policy is proven correct.
+AutoCedar is a human-in-the-loop policy authoring agent for
+[Cedar](https://www.cedarpolicy.com/) access control policies. It turns
+natural-language policy intent into reviewed schema and property atoms, checks
+those atoms with Cedar/CVC5 where possible, and uses the packaged v1 CEGIS
+harness to verify and synthesize Cedar policies against formal bounds.
 
 ## Architecture
 
@@ -157,26 +161,108 @@ when { principal.department == "Engineering" && !resource.is_locked };
 
 ---
 
+## Install
+
+From PyPI:
+
+```bash
+uv tool install autocedar
+autocedar
+```
+
+One-shot without installing:
+
+```bash
+uvx autocedar
+```
+
+From a checkout:
+
+```bash
+uv run autocedar
+```
+
+The runtime package installs the Python agent/library and the `autocedar`
+console script. Verification also needs the Cedar CLI and CVC5 solver on the
+machine.
+
 ## External Dependencies
 
-- **Cedar CLI v4.10+** — `cargo install cedar-policy-cli`
-- **CVC5 SMT solver** — at `~/.local/bin/cvc5` (or `$CVC5` env var)
-- **Python 3.11+** — install project dependencies with `uv`/`pip`
+- **Python 3.11+**
+- **Cedar CLI v4.10+**: `cargo install cedar-policy-cli`
+- **CVC5 SMT solver**: default path `~/.local/bin/cvc5`, or set `$CVC5`
 
-## Running
+AutoCedar looks for:
 
-CVC5=~/.local/bin/cvc5 python orchestrator.py
+- `$CEDAR`, defaulting to `~/.cargo/bin/cedar`
+- `$CVC5`, defaulting to `~/.local/bin/cvc5`
 
-## Installable CLI
+If those binaries live elsewhere, set them in your shell or `.env`.
+
+## API Keys And `.env`
+
+AutoCedar uses Anthropic models for the conversational TUI, schema
+atomization, property atomization, and optional harness translation. The key is
+read from `ANTHROPIC_API_KEY`.
+
+You can export it:
+
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...
+autocedar
+```
+
+Or create a `.env` file in the directory where you run AutoCedar:
+
+```dotenv
+ANTHROPIC_API_KEY=sk-ant-...
+AUTOCEDAR_CHAT_MODEL=claude-opus-4-7
+CEDAR=/usr/local/bin/cedar
+CVC5=/usr/bin/cvc5
+```
+
+At startup, `autocedar` loads the nearest `.env` from the current directory or
+one of its parents. Existing shell environment variables are not overridden.
+For a normal project, the path is simply:
+
+```text
+your-policy-project/.env
+```
+
+## Docker
+
+The Docker image is the lowest-friction runtime because it bundles the Python
+package, Cedar CLI, and CVC5:
+
+```bash
+docker build -t autocedar .
+docker run --rm -it \
+  -e ANTHROPIC_API_KEY="$ANTHROPIC_API_KEY" \
+  -v "$PWD:/work" \
+  -w /work \
+  autocedar
+```
+
+Tagged releases publish the same image to GitHub Container Registry:
+
+```bash
+docker run --rm -it \
+  -e ANTHROPIC_API_KEY="$ANTHROPIC_API_KEY" \
+  -v "$PWD:/work" \
+  -w /work \
+  ghcr.io/neselab/autocedar:latest
+```
+
+## CLI
 
 The runtime package exposes an `autocedar` console script:
 
 ```bash
-uv run autocedar
-uv run autocedar verify workspace
-uv run autocedar synthesize cedarbench/scenarios/realworld/emergency_break_glass \
+autocedar
+autocedar verify workspace
+autocedar synthesize cedarbench/scenarios/realworld/emergency_break_glass \
   --no-review --max-iters 20
-uv run autocedar author path/to/spec.md --out ./autocedar-runs
+autocedar author path/to/spec.md --out ./autocedar-runs
 ```
 
 With no arguments, `autocedar` opens the Textual-based interactive agent
@@ -191,12 +277,32 @@ summarizes the inferred action and waits for "yes" / "no". The conversational
 layer can answer questions about the current TUI state, while `author` still
 runs with clean authoring inputs: the saved prose spec, optional schema, and
 HITL review decisions. `verify` and `synthesize` wrap the v1 CEGIS harness.
-The Stage 2 property proposer and final synthesis step are still injectable
-library seams while the CLI uses current pipeline defaults.
+The CLI/TUI authoring path uses LLM-backed Stage 1 schema atomization and Stage
+2 property atomization. The final Stage 3 synthesis hook remains injectable in
+the library authoring pipeline; the explicit `synthesize` command wraps the v1
+CEGIS harness directly.
 
 For packaging, runtime code lives under `autocedar/`. The packaged v1
 harness import surface is `autocedar.harness`; the root-level scripts
 remain for backwards-compatible local workflows.
+
+## Distribution
+
+AutoCedar is distributed as a lean Python runtime package. CedarBench and the
+larger research datasets are intentionally not included in the wheel; keep
+them as repository or release artifacts for benchmark and paper reproduction.
+
+Release builds are produced with:
+
+```bash
+uv build
+uvx twine check dist/*
+```
+
+The release workflow template lives at `docs/release-workflow.yml`. Install it
+as `.github/workflows/release.yml` using a GitHub token with `workflow` scope,
+then pushing a `vX.Y.Z` tag builds the Python distributions, publishes to PyPI
+through trusted publishing, and publishes the Docker image to GHCR.
 
 ## The reference policies *are* the security contract
 
