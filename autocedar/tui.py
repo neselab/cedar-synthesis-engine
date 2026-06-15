@@ -23,8 +23,7 @@ from textual.widgets import Footer, Header, Input, RichLog, Static
 from autocedar.corpus import AtomDecision
 from autocedar.env import load_dotenv
 from autocedar.harness_adapter import make_harness_synthesizer
-from autocedar.llm import DEFAULT_EFFORT, DEFAULT_MODEL as DEFAULT_AUTHOR_MODEL
-from autocedar.llm import LLMClient
+from autocedar.llm import DEFAULT_EFFORT, LLMClient, default_model_for_provider, default_provider
 from autocedar.pipeline import author as author_pipeline
 from autocedar.property_atomizer import propose_property_atoms
 from autocedar.schema_atomizer import propose_schema_atoms
@@ -390,6 +389,7 @@ class AutoCedarApp(App[None]):
         self.pending_action: PendingAction | None = None
         self.pending_secret: str | None = None
         self.chat_history: list[tuple[str, str]] = []
+        self.llm_provider = default_provider()
         self.llm_model = _initial_model()
         self.llm_effort = _normalize_effort(os.environ.get("AUTOCEDAR_EFFORT")) or DEFAULT_EFFORT
         self.busy = False
@@ -856,14 +856,18 @@ class AutoCedarApp(App[None]):
 
     def _settings_text(self) -> str:
         api_key = os.environ.get("ANTHROPIC_API_KEY")
+        codex_auth = "uses local Codex login" if self.llm_provider in {"codex", "openai-codex"} else ""
         return "\n".join(
             [
+                f"[dim {MUTED}]provider[/]\n[bold {CREAM}]{escape(self.llm_provider)}[/]",
                 f"[dim {MUTED}]model[/]\n[bold {CREAM}]{escape(self.llm_model)}[/]",
                 f"[dim {MUTED}]effort[/]\n[bold {CREAM}]{escape(self.llm_effort)}[/]",
                 (
                     f"[dim {MUTED}]api key[/]\n[bold {TEAL}]set[/] "
                     f"[dim {MUTED}]({_mask_api_key(api_key)})[/]"
                     if api_key
+                    else f"[dim {MUTED}]api key[/]\n[bold {TEAL}]{codex_auth}[/]"
+                    if codex_auth
                     else f"[dim {MUTED}]api key[/]\n[bold {CORAL}]not set[/]"
                 ),
                 "",
@@ -1000,6 +1004,13 @@ class AutoCedarApp(App[None]):
     def _local_chat_response(self, raw: str, *, fallback: str) -> str:
         lowered = _squash(raw).lower().rstrip("?!.")
         if "llm" in lowered or "language model" in lowered or "ai" in lowered:
+            if self.llm_provider in {"codex", "openai-codex"}:
+                return (
+                    "Yes. AutoCedar is configured to use the local Codex CLI "
+                    "login for internal authoring calls. Deterministic code "
+                    "still handles confirmations, verification, synthesis, and "
+                    "HITL review gates."
+                )
             return (
                 "Yes. AutoCedar uses an Anthropic chat model for open-ended "
                 "conversation when ANTHROPIC_API_KEY is loaded. Deterministic "
@@ -1102,6 +1113,7 @@ class AutoCedarApp(App[None]):
             if not options.spec.exists():
                 raise FileNotFoundError(f"spec not found: {options.spec}")
             llm = LLMClient(
+                provider=self.llm_provider,
                 model=options.model or self.llm_model,
                 effort=options.effort or self.llm_effort,
             )
@@ -1341,6 +1353,7 @@ class AutoCedarApp(App[None]):
         lines = [
             f"task: {self.active_task}",
             f"working: {'yes' if self.busy else 'no'}",
+            f"provider: {self.llm_provider}",
             f"model: {self.llm_model}",
             f"effort: {self.llm_effort}",
             f"api key: {'set' if os.environ.get('ANTHROPIC_API_KEY') else 'not set'}",
@@ -1949,7 +1962,7 @@ def _describe_author_action(options: AuthorOptions, *, from_draft: bool) -> str:
         "I’m going to run HITL authoring.",
         f"spec: {options.spec}",
         f"output: {options.out}",
-        f"model: {options.model or DEFAULT_AUTHOR_MODEL}",
+        f"model: {options.model or default_model_for_provider(default_provider())}",
         f"effort: {options.effort or DEFAULT_EFFORT}",
     ]
     if options.session_id:
@@ -2120,7 +2133,7 @@ def _initial_model() -> str:
         os.environ.get("AUTOCEDAR_MODEL")
         or os.environ.get("AUTOCEDAR_AUTHOR_MODEL")
         or os.environ.get("AUTOCEDAR_CHAT_MODEL")
-        or DEFAULT_AUTHOR_MODEL
+        or default_model_for_provider(default_provider())
     )
 
 

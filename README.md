@@ -8,79 +8,13 @@ harness to verify and synthesize Cedar policies against formal bounds.
 
 ## Start Here
 
-If you just cloned this repo and want AutoCedar to run, use one of the two
-paths below.
+If you just cloned this repo and want AutoCedar to run, use the local path
+first. Docker is optional; on Linux, `sudo docker` can create root-owned files
+inside the repo when the repo is bind-mounted.
 
-### Option A: Docker, Easiest
+### Option A: Local From The Repo
 
-Use this if you do not want to install Cedar CLI or CVC5 yourself. Docker
-bundles the Python app, Cedar CLI, and CVC5 solver.
-
-1. Clone the repo:
-
-   ```bash
-   git clone https://github.com/neselab/cedar-synthesis-engine.git
-   cd cedar-synthesis-engine
-   ```
-
-2. Create your local `.env` file:
-
-   ```bash
-   cp .env.example .env
-   nano .env
-   ```
-
-3. Open `.env` and replace this line:
-
-   ```dotenv
-   ANTHROPIC_API_KEY=sk-ant-...
-   ```
-
-   with your real Anthropic API key. Leave `CEDAR` and `CVC5` commented out
-   when using Docker. If you used `nano`, save with `Ctrl+O`, press `Enter`,
-   then exit with `Ctrl+X`. Do not share or commit your API key.
-
-4. Build and run with the repo script:
-
-   ```bash
-   ./scripts/docker-autocedar
-   ```
-
-   The script builds the image, uses your `.env`, mounts the repo at `/work`,
-   and automatically uses `sudo docker` on Linux when your user cannot access
-   the Docker socket.
-
-   If your shell says the script is not executable, run:
-
-   ```bash
-   bash scripts/docker-autocedar
-   ```
-
-   If you prefer to run Docker manually, this is what the script does:
-
-   ```bash
-   docker build -t autocedar .
-   docker run --rm -it \
-     --env-file .env \
-     -v "$PWD:/work" \
-     -w /work \
-     autocedar
-   ```
-
-   If your terminal reports `invalid reference format`, paste this one-line
-   version instead. That error is often caused by hidden Unicode spaces copied
-   into multi-line shell commands:
-
-   ```bash
-   docker run --rm -it --env-file .env -v "$PWD:/work" -w /work autocedar
-   ```
-
-You should see the AutoCedar interactive terminal UI.
-
-### Option B: Local From The Repo
-
-Use this if you already have Python tooling and want to run directly from the
-checkout.
+Use this for normal development and experiments.
 
 1. Clone the repo:
 
@@ -95,8 +29,7 @@ checkout.
    curl -LsSf https://astral.sh/uv/install.sh | sh
    ```
 
-   On Windows, use Docker Desktop or install `uv` from the official `uv`
-   documentation. Restart your terminal after installing `uv`.
+   Restart your terminal after installing `uv`.
 
 3. Create your local `.env` file:
 
@@ -111,9 +44,10 @@ checkout.
    ANTHROPIC_API_KEY=sk-ant-...
    ```
 
-   with your real Anthropic API key.
+   with your real Anthropic API key. If you used `nano`, save with `Ctrl+O`,
+   press `Enter`, then exit with `Ctrl+X`. Do not share or commit your API key.
 
-5. For full authoring, verification, and synthesis, install the verifier tools:
+5. Install the verifier tools for full authoring, verification, and synthesis:
 
    ```bash
    cargo install cedar-policy-cli
@@ -141,13 +75,21 @@ checkout.
    echo "CVC5=$(which cvc5)" >> .env
    ```
 
-   If local solver setup is annoying, use Docker instead.
-
 6. Run AutoCedar:
 
    ```bash
+   uv sync
    uv run autocedar
    ```
+
+You should see the AutoCedar interactive terminal UI.
+
+### Option B: Docker
+
+Docker is optional. Use it only when you specifically want a containerized
+runtime. If Docker on Linux requires `sudo`, prefer the local setup above.
+Running `sudo docker` with `-v "$PWD:/work"` can leave root-owned files in your
+repo.
 
 ### First Things To Type
 
@@ -417,8 +359,7 @@ uvx autocedar
 ```
 
 The runtime package installs the Python agent/library and the `autocedar`
-console script. Verification also needs the Cedar CLI and CVC5 solver unless
-you use Docker.
+console script. Verification also needs the Cedar CLI and CVC5 solver.
 
 ### External Dependencies
 
@@ -443,7 +384,7 @@ cvc5 --version
 
 If `cedar symcc --help` does not work, the installed Cedar binary cannot run
 AutoCedar's symbolic verification path. Install a Cedar CLI build that includes
-the `symcc` subcommand, or use the Docker image below.
+the `symcc` subcommand.
 
 ### API Keys And `.env`
 
@@ -494,16 +435,15 @@ process; put `ANTHROPIC_API_KEY`, `AUTOCEDAR_MODEL`, and `AUTOCEDAR_EFFORT` in
 
 ### Docker
 
-The Docker image is the lowest-friction runtime because it bundles the Python
-package, Cedar CLI, and CVC5:
+Docker is an optional containerized runtime. It is useful for reproducibility,
+but local install is usually simpler on Linux because Docker often requires
+extra daemon permissions.
 
 ```bash
 ./scripts/docker-autocedar
 ```
 
-The script builds the image, uses `.env`, mounts the current repo, and
-automatically falls back to `sudo docker` when Docker requires elevated
-permission.
+The script builds the image, uses `.env`, and mounts the current repo.
 
 Manual equivalent:
 
@@ -672,8 +612,10 @@ Authoring writes session artifacts under the `--out` directory, usually
 | API key works in shell but not TUI | Start `autocedar` from the project directory containing `.env`, or export the key before launch. |
 | Verification says Cedar is missing | Set `CEDAR=/path/to/cedar` or install the Cedar CLI. |
 | Verification says CVC5 is missing | Set `CVC5=/path/to/cvc5` or install CVC5. |
-| `cedar symcc` is unknown | Install a Cedar CLI build with `symcc`, or use the Docker image. |
-| Docker says `permission denied while trying to connect to the docker API` | On Linux, your user cannot access `/var/run/docker.sock`. Quick workaround: prefix the Docker commands with `sudo`. Better fix: run `sudo usermod -aG docker "$USER"`, then log out and back in, or run `newgrp docker`, then test with `docker ps`. If Docker is not running, start it with `sudo systemctl enable --now docker`. |
+| `cedar symcc` is unknown | Install a Cedar CLI build with `symcc`. |
+| `uv run autocedar` says `Failed to spawn: autocedar` | The local virtualenv has stale console scripts. Run `uv sync --reinstall-package autocedar`, then retry `uv run autocedar`. |
+| AutoCedar says `Permission denied: autocedar-runs/...` | Your repo or output directory is probably owned by `root` from a prior `sudo docker` or `sudo uv run`. From the repo root, run `sudo chown -R "$USER":"$USER" .` and `chmod -R u+rwX .`, then retry without `sudo`. |
+| Docker says `permission denied while trying to connect to the docker API` | On Linux, your user cannot access `/var/run/docker.sock`. Prefer local setup, or fix Docker access with `sudo usermod -aG docker "$USER"`, then log out and back in, or run `newgrp docker`, then test with `docker ps`. Avoid `sudo docker` with a bind-mounted repo unless you are prepared to repair file ownership afterward. |
 | Docker says `invalid reference format` | Run `./scripts/docker-autocedar` instead of pasting a long Docker command. This usually means the copied command contains hidden Unicode spaces, smart punctuation, or a missing trailing `\`. |
 | Normal prose starts a confirmation | That is intentional. AutoCedar only begins draft capture after you approve it. |
 

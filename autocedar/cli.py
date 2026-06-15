@@ -11,9 +11,7 @@ from typing import Sequence
 
 from autocedar.env import load_dotenv
 from autocedar.harness_adapter import make_harness_synthesizer
-from autocedar.llm import DEFAULT_EFFORT
-from autocedar.llm import DEFAULT_MODEL as DEFAULT_AUTHOR_MODEL
-from autocedar.llm import LLMClient
+from autocedar.llm import DEFAULT_EFFORT, LLMClient, default_model_for_provider, default_provider
 from autocedar.pipeline import author as author_pipeline
 from autocedar.property_atomizer import propose_property_atoms
 from autocedar.schema_atomizer import propose_schema_atoms
@@ -59,14 +57,10 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     author_p.add_argument(
         "--model",
-        default=(
-            os.environ.get("AUTOCEDAR_MODEL")
-            or os.environ.get("AUTOCEDAR_AUTHOR_MODEL")
-            or DEFAULT_AUTHOR_MODEL
-        ),
+        default=default_model_for_provider(),
         help=(
-            "Anthropic model for schema/property atomization and Stage 3 "
-            f"synthesis (default: {DEFAULT_AUTHOR_MODEL})."
+            "Model for schema/property atomization and Stage 3 synthesis "
+            f"(default: {default_model_for_provider()})."
         ),
     )
     author_p.add_argument(
@@ -133,7 +127,7 @@ def _cmd_author(args: argparse.Namespace) -> int:
     if not spec_path.exists():
         raise SystemExit(f"spec not found: {spec_path}")
 
-    llm = LLMClient(model=args.model, effort=args.effort)
+    llm = LLMClient(provider=default_provider(), model=args.model, effort=args.effort)
 
     spec_text = spec_path.read_text()
 

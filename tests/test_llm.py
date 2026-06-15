@@ -66,6 +66,30 @@ class _FakeAnthropic:
         self.messages = _FakeMessages(response)
 
 
+class _GrammarTimeoutMessages:
+    def __init__(self, fallback_text: str) -> None:
+        self.fallback_text = fallback_text
+        self.parse_count = 0
+        self.create_count = 0
+        self.create_kwargs: dict[str, Any] | None = None
+
+    def parse(self, **kwargs: Any) -> Any:
+        self.parse_count += 1
+        raise RuntimeError("Error code: 400 - {'message': 'Grammar compilation timed out.'}")
+
+    def create(self, **kwargs: Any) -> Any:
+        self.create_count += 1
+        self.create_kwargs = kwargs
+        return SimpleNamespace(
+            content=[SimpleNamespace(type="text", text=self.fallback_text)],
+        )
+
+
+class _GrammarTimeoutAnthropic:
+    def __init__(self, fallback_text: str) -> None:
+        self.messages = _GrammarTimeoutMessages(fallback_text)
+
+
 def _make_response(parsed: Any) -> Any:
     """Construct a response object with the SDK's ``.parsed_output`` shape."""
     return SimpleNamespace(parsed_output=parsed)
@@ -94,6 +118,20 @@ def test_default_effort_is_high() -> None:
     fake = _FakeAnthropic(_make_response(SchemaAtomsResponse(atoms=[])))
     client = LLMClient(client=fake)
     assert client._effort == DEFAULT_EFFORT == "high"
+
+
+def test_codex_provider_uses_codex_default_model(monkeypatch: pytest.MonkeyPatch) -> None:
+    class FakeCodex:
+        messages = _FakeMessages(_make_response(SchemaAtomsResponse(atoms=[])))
+
+    monkeypatch.setenv("AUTOCEDAR_PROVIDER", "codex")
+    monkeypatch.setenv("AUTOCEDAR_CODEX_MODEL", "gpt-test")
+    monkeypatch.setattr("autocedar.llm.CodexExecClient", lambda: FakeCodex())
+
+    client = LLMClient()
+
+    assert client._provider == "codex"
+    assert client._model == "gpt-test"
 
 
 # ---------------------------------------------------------------------------
@@ -332,6 +370,48 @@ def test_propose_property_atoms_includes_schema_in_user_turn() -> None:
     kwargs = fake.messages.last_kwargs
     assert kwargs["output_format"] is PropertyAtomsResponse
     assert "```cedarschema\nentity User;\n```" in kwargs["messages"][0]["content"]
+
+
+def test_propose_property_atoms_falls_back_when_grammar_compilation_times_out() -> None:
+    fallback = """
+    ```json
+    {
+      "atoms": [
+        {
+          "name": "owner_only_read",
+          "rationale": "safety bound",
+          "plain_english_summary": "Only owners can read.",
+          "source_excerpt": "Owners can read their own resources.",
+          "constraint_type": "ceiling",
+          "action": "read",
+          "principal_types": ["User"],
+          "resource_types": ["Resource"],
+          "reference_cedar": "permit (principal, action, resource);",
+          "examples_adversarial": [],
+          "alternatives_considered": [],
+          "rate_limit_window": null,
+          "rate_limit_threshold": null,
+          "rate_limit_counter_attr": null,
+          "disjoint_with": null,
+          "disjoint_target_body": null
+        }
+      ]
+    }
+    ```
+    """
+    fake = _GrammarTimeoutAnthropic(fallback)
+    client = LLMClient(client=fake)
+
+    atoms = client.propose_property_atoms("Owners can read.", "entity User;")
+
+    assert len(atoms) == 1
+    assert atoms[0].name == "owner_only_read"
+    assert fake.messages.parse_count == 1
+    assert fake.messages.create_count == 1
+    assert fake.messages.create_kwargs is not None
+    assert "The structured-output grammar compiler timed out" in fake.messages.create_kwargs[
+        "messages"
+    ][0]["content"]
 
 
 # ---------------------------------------------------------------------------

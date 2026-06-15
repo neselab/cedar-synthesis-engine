@@ -1,4 +1,4 @@
-"""Thin Anthropic SDK wrapper for autocedar.
+"""LLM wrapper for autocedar.
 
 See ``docs/HITL_STEP_C_PLAN.md`` for the implementation contract.
 Per §2 of that plan:
@@ -10,10 +10,10 @@ Per §2 of that plan:
   blocks so repeated calls in one session amortize the input-token
   cost. Per-turn user content stays uncached.
 - The constructor accepts an optional ``client`` (an
-  ``anthropic.Anthropic`` instance or any object with the same
-  ``messages.parse`` shape) so tests inject a mock without touching
-  the network. The minimum cacheable prefix on Opus 4.7 is 4096
-  tokens — short specs will silently bypass caching, which is fine.
+    ``anthropic.Anthropic`` instance, the internal Codex CLI adapter, or any
+    object with the same ``messages.parse`` shape) so tests inject a mock
+    without touching the network. The minimum cacheable prefix on Opus 4.7 is
+    4096 tokens — short specs will silently bypass caching, which is fine.
 
 Structured output is provided via Pydantic schemas at this layer; the
 schemas are then translated into the existing dataclasses in
@@ -23,7 +23,10 @@ grounding, etc.) stays unchanged.
 
 from __future__ import annotations
 
+import json
+import os
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Annotated, Any, Literal, Optional, Union
 
 from pydantic import BaseModel, Field
@@ -37,6 +40,7 @@ from autocedar.atoms import (
     PropertyAtom,
     TypeAliasAtom,
 )
+from autocedar.codex_exec import DEFAULT_CODEX_MODEL, CodexExecClient, is_codex_provider
 
 
 # ---------------------------------------------------------------------------
@@ -46,6 +50,23 @@ from autocedar.atoms import (
 DEFAULT_MODEL = "claude-opus-4-7"
 DEFAULT_MAX_TOKENS = 16000
 DEFAULT_EFFORT = "high"
+DEFAULT_PROVIDER = "anthropic"
+
+
+def default_provider() -> str:
+    return os.environ.get("AUTOCEDAR_PROVIDER", DEFAULT_PROVIDER).strip().lower()
+
+
+def default_model_for_provider(provider: str | None = None) -> str:
+    resolved = (provider or default_provider()).strip().lower()
+    if is_codex_provider(resolved):
+        return os.environ.get("AUTOCEDAR_CODEX_MODEL") or DEFAULT_CODEX_MODEL
+    return (
+        os.environ.get("AUTOCEDAR_MODEL")
+        or os.environ.get("AUTOCEDAR_AUTHOR_MODEL")
+        or os.environ.get("AUTOCEDAR_CHAT_MODEL")
+        or DEFAULT_MODEL
+    )
 
 
 def _load_prompt(name: str) -> str:
@@ -310,14 +331,16 @@ def _translate_property_atom(llm: _LLMPropertyAtom) -> PropertyAtom:
 
 
 class LLMClient:
-    """Thin wrapper around the Anthropic SDK for autocedar.
+    """Thin wrapper around AutoCedar's configured LLM provider.
 
     Construction:
-      - ``client``: an ``anthropic.Anthropic`` instance (or any object
-        exposing ``.messages.parse(**kwargs)``). When omitted, a default
-        ``anthropic.Anthropic()`` is constructed, which reads
-        ``ANTHROPIC_API_KEY`` from the environment.
+      - ``client``: an ``anthropic.Anthropic`` instance, ``CodexExecClient``,
+        or any object exposing ``.messages.parse(**kwargs)``.
+      - ``provider``: ``"anthropic"`` or ``"codex"``. When omitted, reads
+        ``AUTOCEDAR_PROVIDER`` and defaults to Anthropic.
       - ``model``: model identifier; defaults to ``claude-opus-4-7``.
+        With ``provider="codex"``, the Anthropic default is replaced by
+        ``AUTOCEDAR_CODEX_MODEL`` or ``gpt-5.5``.
       - ``max_tokens``: per-call ceiling; defaults to 16000.
       - ``effort``: ``"low" | "medium" | "high" | "max"``; defaults to
         ``"high"`` per the skill guidance for intelligence-sensitive
@@ -332,17 +355,25 @@ class LLMClient:
         self,
         *,
         client: Optional[Any] = None,
+        provider: str | None = None,
         model: str = DEFAULT_MODEL,
         max_tokens: int = DEFAULT_MAX_TOKENS,
         effort: str = DEFAULT_EFFORT,
     ) -> None:
+        resolved_provider = (provider or default_provider()).strip().lower()
+        if client is None and is_codex_provider(resolved_provider) and model == DEFAULT_MODEL:
+            model = default_model_for_provider(resolved_provider)
         if client is None:
-            # Lazy-import the SDK so tests can run without ANTHROPIC_API_KEY
-            # set; only the live path requires it.
-            import anthropic
+            if is_codex_provider(resolved_provider):
+                client = CodexExecClient()
+            else:
+                # Lazy-import the SDK so tests can run without ANTHROPIC_API_KEY
+                # set; only the live path requires it.
+                import anthropic
 
-            client = anthropic.Anthropic()
+                client = anthropic.Anthropic()
         self._client = client
+        self._provider = resolved_provider
         self._model = model
         self._max_tokens = max_tokens
         self._effort = effort
@@ -538,24 +569,47 @@ class LLMClient:
         Only one breakpoint is needed; the system+spec is the entire
         cached prefix.
         """
-        return self._client.messages.parse(
-            model=self._model,
-            max_tokens=self._max_tokens,
-            thinking={"type": "adaptive"},
-            output_config={
-                "effort": self._effort,
-            },
-            system=[
-                {"type": "text", "text": system_prompt},
-                {
-                    "type": "text",
-                    "text": f"<spec>\n{spec_text}\n</spec>",
-                    "cache_control": {"type": "ephemeral"},
-                },
-            ],
-            messages=[{"role": "user", "content": user_turn}],
-            output_format=output_format,
+        kwargs = self._message_kwargs(system_prompt=system_prompt, spec_text=spec_text)
+        try:
+            return self._client.messages.parse(
+                **kwargs,
+                messages=[{"role": "user", "content": user_turn}],
+                output_format=output_format,
+            )
+        except Exception as exc:
+            if not _is_grammar_compilation_timeout(exc):
+                raise
+            return self._call_parse_json_fallback(
+                system_prompt=system_prompt,
+                spec_text=spec_text,
+                user_turn=user_turn,
+                output_format=output_format,
+            )
+
+    def _call_parse_json_fallback(
+        self,
+        *,
+        system_prompt: str,
+        spec_text: str,
+        user_turn: str,
+        output_format: type[BaseModel],
+    ) -> Any:
+        """Fallback when provider-side structured-output grammar compilation times out."""
+        schema_json = json.dumps(output_format.model_json_schema(), indent=2)
+        fallback_turn = (
+            f"{user_turn}\n\n"
+            "The structured-output grammar compiler timed out. Return only a JSON "
+            "object matching this JSON Schema. Do not wrap it in Markdown and do "
+            "not include explanatory prose.\n\n"
+            f"```json\n{schema_json}\n```"
         )
+        response = self._client.messages.create(
+            **self._message_kwargs(system_prompt=system_prompt, spec_text=spec_text),
+            messages=[{"role": "user", "content": fallback_turn}],
+        )
+        text = _first_text_block(response)
+        payload = _loads_json_object(text)
+        return SimpleNamespace(parsed_output=output_format.model_validate(payload))
 
     def _call_text(
         self,
@@ -571,13 +625,20 @@ class LLMClient:
         across propose / fix / answer calls in one session.
         """
         response = self._client.messages.create(
-            model=self._model,
-            max_tokens=self._max_tokens,
-            thinking={"type": "adaptive"},
-            output_config={
+            **self._message_kwargs(system_prompt=system_prompt, spec_text=spec_text),
+            messages=[{"role": "user", "content": user_turn}],
+        )
+        return _first_text_block(response)
+
+    def _message_kwargs(self, *, system_prompt: str, spec_text: str) -> dict[str, Any]:
+        return {
+            "model": self._model,
+            "max_tokens": self._max_tokens,
+            "thinking": {"type": "adaptive"},
+            "output_config": {
                 "effort": self._effort,
             },
-            system=[
+            "system": [
                 {"type": "text", "text": system_prompt},
                 {
                     "type": "text",
@@ -585,10 +646,28 @@ class LLMClient:
                     "cache_control": {"type": "ephemeral"},
                 },
             ],
-            messages=[{"role": "user", "content": user_turn}],
-        )
-        # Extract the first text block (skip any thinking blocks).
-        for block in response.content:
-            if getattr(block, "type", None) == "text":
-                return block.text
-        return ""
+        }
+
+
+def _first_text_block(response: Any) -> str:
+    # Extract the first text block (skip any thinking blocks).
+    for block in response.content:
+        if getattr(block, "type", None) == "text":
+            return block.text
+    return ""
+
+
+def _is_grammar_compilation_timeout(exc: Exception) -> bool:
+    text = str(exc).lower()
+    return "grammar compilation timed out" in text
+
+
+def _loads_json_object(text: str) -> Any:
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        start = text.find("{")
+        end = text.rfind("}")
+        if start == -1 or end == -1 or end <= start:
+            raise
+        return json.loads(text[start : end + 1])
