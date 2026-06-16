@@ -264,6 +264,76 @@ def test_author_rechecks_edited_property_atom(
     assert logs["owner_only_read"] == ["checked action view"]
 
 
+def test_author_repairs_rejected_property_atom(
+    tmp_path: Path,
+    workspace: tuple[Path, Path],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    spec_path, schema_path = workspace
+    reviewed: list[str] = []
+    repaired: list[tuple[str, str]] = []
+
+    def fake_symbolic_verify(
+        atom: PropertyAtom,
+        schema_path_arg: str,
+        prior_atoms: list[PropertyAtom] | None = None,
+    ) -> None:
+        _ = schema_path_arg, prior_atoms
+        atom.symbolic_verified = True
+        atom.symbolic_verification_log = [f"checked {atom.name}"]
+
+    monkeypatch.setattr("autocedar.pipeline.symbolic_verify_atom", fake_symbolic_verify)
+
+    replacement = _owner_must_floor()
+
+    def review_then_approve(atom: object) -> AtomDecision:
+        reviewed.append(getattr(atom, "name", "?"))
+        if len(reviewed) == 1:
+            return AtomDecision(
+                atom_name=getattr(atom, "name", "?"),
+                action="reject",
+                reason="floor conflicts with prior ceiling",
+            )
+        return AtomDecision(
+            atom_name=getattr(atom, "name", "?"),
+            action="approve",
+            intent_acknowledged_by_user=True,
+        )
+
+    def repair_property_atom(
+        spec_text: str,
+        schema_path_arg: str,
+        rejected_atom: PropertyAtom,
+        reason: str,
+        prior_atoms: list[PropertyAtom],
+    ) -> PropertyAtom:
+        _ = spec_text, schema_path_arg, prior_atoms
+        repaired.append((rejected_atom.name, reason))
+        return replacement
+
+    author(
+        spec_path=spec_path,
+        output_dir=tmp_path / "out",
+        session_id="repaired-prop",
+        propose_property_atoms=lambda spec_text, schema_path_arg: [_owner_only_ceiling()],
+        repair_property_atom=repair_property_atom,
+        review_atom=review_then_approve,
+        synthesize=_synthesize_stub,
+        schema_path_override=str(schema_path),
+    )
+
+    assert reviewed == ["owner_only_read", "owner_must_read"]
+    assert repaired == [("owner_only_read", "floor conflicts with prior ceiling")]
+    decisions = json.loads(
+        (tmp_path / "out" / "repaired-prop" / "stage2" / "decisions.json").read_text(),
+    )
+    assert len(decisions) == 1
+    assert decisions[0]["action"] == "approve"
+    assert decisions[0]["atom_name"] == "owner_must_read"
+    assert decisions[0]["edit_delta"]["replaced_after_reject"] is True
+    assert decisions[0]["edit_delta"]["reject_history"][0]["atom_name"] == "owner_only_read"
+
+
 # ---------------------------------------------------------------------------
 # Acceptance criterion 9 — corpus logging shape.
 # ---------------------------------------------------------------------------

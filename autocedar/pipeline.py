@@ -59,6 +59,9 @@ SchemaProposer = Callable[[str], list[Stage1AtomT]]
 # Stage 2: propose property atoms from prose + the validated schema.
 PropertyProposer = Callable[[str, str], list[PropertyAtom]]
 
+# Stage 2 repair: propose one replacement after the user rejects a property atom.
+PropertyRepairer = Callable[[str, str, PropertyAtom, str, list[PropertyAtom]], Optional[PropertyAtom]]
+
 # Per-atom user review.
 AtomReviewer = Callable[[Any], Any]
 
@@ -127,6 +130,7 @@ def author(
     session_id: Optional[str] = None,
     propose_schema_atoms: SchemaProposer | None = None,
     propose_property_atoms: PropertyProposer | None = None,
+    repair_property_atom: PropertyRepairer | None = None,
     review_atom: AtomReviewer | None = None,
     synthesize: Synthesizer | None = None,
     score_candidate: Callable[[str], CriticScore] = (
@@ -228,18 +232,53 @@ def author(
     verification_logs: dict[str, list[str]] = {}
     _notify_review_stage(review_atom, "Property intent review", len(prop_atoms))
     for atom in prop_atoms:
-        symbolic_verify_atom(atom, str(schema_path), prior_atoms=plan.properties)
-        verification_logs[atom.name] = list(atom.symbolic_verification_log)
-        reviewed_atom, decision = _normalize_review_result(atom, review_atom(atom))
-        if (
-            decision.action == "approve"
-            and isinstance(reviewed_atom, PropertyAtom)
-            and reviewed_atom is not atom
-        ):
-            symbolic_verify_atom(reviewed_atom, str(schema_path), prior_atoms=plan.properties)
-            verification_logs[reviewed_atom.name] = list(
-                reviewed_atom.symbolic_verification_log,
+        current_atom = atom
+        rejection_history: list[dict[str, str]] = []
+        repairs_attempted = 0
+        while True:
+            symbolic_verify_atom(current_atom, str(schema_path), prior_atoms=plan.properties)
+            verification_logs[current_atom.name] = list(current_atom.symbolic_verification_log)
+            reviewed_atom, decision = _normalize_review_result(
+                current_atom,
+                review_atom(current_atom),
             )
+            if (
+                decision.action == "reject"
+                and repair_property_atom is not None
+                and repairs_attempted < 2
+            ):
+                reason = decision.reason or "Rejected during HITL property review"
+                replacement = repair_property_atom(
+                    spec_text,
+                    str(schema_path),
+                    reviewed_atom,
+                    reason,
+                    plan.properties,
+                )
+                rejection_history.append(
+                    {
+                        "atom_name": reviewed_atom.name,
+                        "reason": reason,
+                    },
+                )
+                repairs_attempted += 1
+                if replacement is not None:
+                    current_atom = replacement
+                    continue
+            if (
+                decision.action == "approve"
+                and isinstance(reviewed_atom, PropertyAtom)
+                and reviewed_atom is not current_atom
+            ):
+                symbolic_verify_atom(reviewed_atom, str(schema_path), prior_atoms=plan.properties)
+                verification_logs[reviewed_atom.name] = list(
+                    reviewed_atom.symbolic_verification_log,
+                )
+            if rejection_history:
+                decision.edit_delta.setdefault("reject_history", rejection_history)
+                if decision.action == "approve":
+                    decision.edit_delta["replaced_after_reject"] = True
+            break
         # Mirror the symbolic_verified flag onto the decision log so the
         # corpus captures both fields per §1.4.
         decision.symbolic_verified = getattr(reviewed_atom, "symbolic_verified", False)

@@ -203,6 +203,27 @@ def test_render_liveness_property_makes_non_schema_status_clear() -> None:
     assert "There exists" not in text
 
 
+def test_format_consistency_failure_shows_compared_references() -> None:
+    log = [
+        "joint-consistency-with-comment_ceiling: FAILED "
+        "(floor comment_floor not contained in ceiling comment_ceiling\n"
+        "Floor reference:\n"
+        'permit (principal, action == Action::"comment", resource) when { principal.isAdmin };\n'
+        "Ceiling reference:\n"
+        'permit (principal, action == Action::"comment", resource) when { resource.isOpen };\n'
+        "Cedar symcc output:\n"
+        "counterexample: principal User::\"alice\")",
+    ]
+
+    text = "\n".join(format_symbolic_verification_log(log))
+
+    assert "Compared floor reference:" in text
+    assert "principal.isAdmin" in text
+    assert "Compared ceiling reference:" in text
+    assert "resource.isOpen" in text
+    assert "Cedar counterexample summary:" in text
+
+
 def test_render_property_atom_supports_unknown_total() -> None:
     text = render_property_atom(_property(), 3, None)
     assert "[Property 3]" in text

@@ -335,10 +335,7 @@ def format_symbolic_verification_log(log: list[str]) -> list[str]:
                 if has_failure:
                     out.append(f"Consistency with `{label}`: OK.")
             else:
-                out.append(
-                    f"Consistency check failed against `{label}`: "
-                    f"{_compact_detail(detail) or 'the floor and ceiling conflict.'}",
-                )
+                out.extend(_consistency_error_lines(label, detail))
             continue
         if name == "sugar-universal":
             if status == "ok":
@@ -394,6 +391,53 @@ def _compact_detail(detail: str, limit: int = 260) -> str:
     return compacted[: limit - 3].rstrip() + "..."
 
 
+def _consistency_error_lines(label: str, detail: str) -> list[str]:
+    parsed = _parse_consistency_detail(detail)
+    if parsed is None:
+        return [
+            f"Consistency check failed against `{label}`: "
+            f"{_compact_detail(detail) or 'the floor and ceiling conflict.'}",
+        ]
+    summary, floor_ref, ceiling_ref, symcc_output = parsed
+    lines = [
+        f"Consistency check failed against `{label}`: {summary}",
+        "Compared floor reference:",
+        _indent_block(floor_ref),
+        "Compared ceiling reference:",
+        _indent_block(ceiling_ref),
+    ]
+    if symcc_output:
+        lines.extend([
+            "Cedar counterexample summary:",
+            _indent_block(_compact_detail(symcc_output, limit=420)),
+        ])
+    return lines
+
+
+def _parse_consistency_detail(detail: str) -> tuple[str, str, str, str] | None:
+    floor_marker = "\nFloor reference:\n"
+    ceiling_marker = "\nCeiling reference:\n"
+    symcc_marker = "\nCedar symcc output:\n"
+    if floor_marker not in detail or ceiling_marker not in detail:
+        return None
+    summary, rest = detail.split(floor_marker, 1)
+    floor_ref, rest = rest.split(ceiling_marker, 1)
+    if symcc_marker in rest:
+        ceiling_ref, symcc_output = rest.split(symcc_marker, 1)
+    else:
+        ceiling_ref, symcc_output = rest, ""
+    return (
+        summary.strip() or "the floor and ceiling conflict.",
+        floor_ref.strip(),
+        ceiling_ref.strip(),
+        symcc_output.strip(),
+    )
+
+
+def _indent_block(text: str) -> str:
+    return "\n".join(f"      {line}" for line in text.splitlines())
+
+
 # ---------------------------------------------------------------------------
 # Auto-approve reviewer (non-interactive, used by tests and batch eval).
 # ---------------------------------------------------------------------------
@@ -431,9 +475,9 @@ def interactive_review_loop(
     Dispatches on six keys per HITL_STEP_B_PLAN.md §6.2:
 
       [A]pprove    advance to next atom
-      [R]eject     prompt for reason; if LLM available, ask for an
-                   alternative atom and re-present; otherwise record
-                   the rejection and move on.
+      [R]eject     prompt for reason. Stage 1 schema review asks the LLM
+                   for an alternative when available. Stage 2 property
+                   repair is handled by the authoring pipeline.
       [E]dit       prompt for a ``field=value`` line; update the atom
                    via dataclasses.replace and re-present.
       [Q]uestion   prompt for free-text question; if LLM available,

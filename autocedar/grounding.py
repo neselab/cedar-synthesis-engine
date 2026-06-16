@@ -275,6 +275,12 @@ def _check_joint_consistency(
                 passed=passed,
                 detail="" if passed else (
                     f"floor {floor_atom.name} not contained in ceiling {ceiling_atom.name}"
+                    "\nFloor reference:\n"
+                    f"{floor_atom.reference_cedar.strip()}"
+                    "\nCeiling reference:\n"
+                    f"{ceiling_atom.reference_cedar.strip()}"
+                    "\nCedar symcc output:\n"
+                    f"{output.strip()[:1000]}"
                 ),
             ),
         )

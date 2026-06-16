@@ -212,6 +212,11 @@ def test_floor_inconsistent_with_ceiling_caught_in_joint_consistency(
     assert any(not c.passed for c in jc_checks), (
         f"expected at least one joint-consistency check to fail; got {result.log_lines()}"
     )
+    failed = next(c for c in jc_checks if not c.passed)
+    assert "Floor reference:" in failed.detail
+    assert "Ceiling reference:" in failed.detail
+    assert "principal.isAdmin" in failed.detail
+    assert "principal == resource.owner" in failed.detail
     assert floor.symbolic_verified is False
 
 

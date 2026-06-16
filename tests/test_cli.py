@@ -54,3 +54,4 @@ def test_author_command_injects_harness_synthesizer(
     assert rc == 0
     assert captured["synthesize"] is sentinel_synthesizer
     assert captured["schema_path_override"] == str(schema)
+    assert "repair_property_atom" in captured

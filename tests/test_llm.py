@@ -372,6 +372,60 @@ def test_propose_property_atoms_includes_schema_in_user_turn() -> None:
     assert "```cedarschema\nentity User;\n```" in kwargs["messages"][0]["content"]
 
 
+def test_propose_alternative_property_atom_includes_rejection_context() -> None:
+    fake_response = _make_response(
+        PropertyAtomsResponse(
+            atoms=[
+                _LLMPropertyAtom(
+                    name="owner_floor_read",
+                    rationale="minimum owner permission",
+                    plain_english_summary="Owners must be able to read.",
+                    source_excerpt="Owners can read their own resources.",
+                    constraint_type="floor",
+                    action="read",
+                    principal_types=["User"],
+                    resource_types=["Resource"],
+                    reference_cedar=(
+                        'permit (principal is User, action == Action::"read", resource is Resource)\n'
+                        "when { principal == resource.owner };"
+                    ),
+                ),
+            ],
+        ),
+    )
+    fake = _FakeAnthropic(fake_response)
+    client = LLMClient(client=fake)
+    rejected = PropertyAtom(
+        name="owner_ceiling_read",
+        rationale="bad direction",
+        plain_english_summary="Only owners can read.",
+        source_excerpt="Owners can read their own resources.",
+        constraint_type="ceiling",
+        action="read",
+        principal_types=["User"],
+        resource_types=["Resource"],
+        reference_cedar='permit (principal, action == Action::"read", resource);',
+    )
+
+    replacement = client.propose_alternative_property_atom(
+        rejected,
+        "this should be a floor, not a ceiling",
+        "Owners can read their own resources.",
+        "entity User;",
+        prior_atoms=[rejected],
+    )
+
+    assert replacement is not None
+    assert replacement.name == "owner_floor_read"
+    assert replacement.constraint_type == "floor"
+    kwargs = fake.messages.last_kwargs
+    assert kwargs["output_format"] is PropertyAtomsResponse
+    user_turn = kwargs["messages"][0]["content"]
+    assert "```cedarschema\nentity User;\n```" in user_turn
+    assert "this should be a floor, not a ceiling" in user_turn
+    assert "owner_ceiling_read" in user_turn
+
+
 def test_propose_property_atoms_falls_back_when_grammar_compilation_times_out() -> None:
     fallback = """
     ```json

@@ -649,8 +649,15 @@ class AutoCedarApp(App[None]):
         request.event.set()
         self.pending_review = None
         self.query_one(Input).placeholder = "Tell AutoCedar what to do, or type /help"
-        color = GREEN if action == "approve" else CORAL
-        self._write(f"[bold {color}]Review {action} recorded.[/] Continuing.")
+        if action == "approve":
+            self._write(f"[bold {GREEN}]Review approve recorded.[/] Continuing.")
+        elif request.current.__class__.__name__ == "PropertyAtom":
+            self._write(
+                f"[bold {CORAL}]Review reject recorded.[/] "
+                "I’ll ask for a replacement property atom if repair is available.",
+            )
+        else:
+            self._write(f"[bold {CORAL}]Review reject recorded.[/] Continuing.")
         self.active_task = "authoring" if self.busy else "idle"
         self._update_status()
 
@@ -1303,6 +1310,22 @@ class AutoCedarApp(App[None]):
             def property_proposer(text: str, schema_path: str) -> list[Any]:
                 return propose_property_atoms(text, schema_path, llm)
 
+            def property_repairer(
+                text: str,
+                schema_path: str,
+                rejected_atom: Any,
+                reason: str,
+                prior_atoms: list[Any],
+            ) -> Any:
+                schema_text = Path(schema_path).read_text()
+                return llm.propose_alternative_property_atom(
+                    rejected_atom,
+                    reason,
+                    text,
+                    schema_text,
+                    prior_atoms,
+                )
+
             reviewer = TuiAtomReviewer(self)
 
             def review_atom(atom: Any) -> Any:
@@ -1326,6 +1349,7 @@ class AutoCedarApp(App[None]):
                 session_id=options.session_id,
                 review_atom=review_atom,
                 propose_property_atoms=property_proposer,
+                repair_property_atom=property_repairer,
                 synthesize=make_harness_synthesizer(
                     phase1_model=options.model or self.llm_model,
                     phase2_model=options.model or self.llm_model,

@@ -431,6 +431,46 @@ class LLMClient:
             for atom in response.parsed_output.atoms
         ]
 
+    def propose_alternative_property_atom(
+        self,
+        rejected_atom: PropertyAtom,
+        user_reason: str,
+        spec_text: str,
+        schema_text: str,
+        prior_atoms: list[PropertyAtom] | None = None,
+    ) -> Optional[PropertyAtom]:
+        """Propose a replacement for a rejected Stage 2 property atom."""
+        from autocedar.atoms import to_dict as _atom_to_dict
+
+        prior_atoms = prior_atoms or []
+        rejected_json = _atom_to_dict(rejected_atom)
+        prior_json = [_atom_to_dict(atom) for atom in prior_atoms]
+        user_turn = (
+            "Use this validated Cedar schema as the grounding context:\n\n"
+            f"```cedarschema\n{schema_text}\n```\n\n"
+            "The user rejected this Stage 2 property atom:\n\n"
+            f"```json\n{json.dumps(rejected_json, indent=2)}\n```\n\n"
+            f"Their reason: {user_reason}\n\n"
+            "Already-approved property atoms, which the replacement must remain "
+            "consistent with:\n\n"
+            f"```json\n{json.dumps(prior_json, indent=2)}\n```\n\n"
+            "Propose ONE replacement property atom that addresses the user's "
+            "concern. Preserve the same source requirement unless the user's "
+            "reason says it should be dropped. Return a PropertyAtomsResponse "
+            "with a single atom. If no replacement should be proposed, return "
+            "an empty atoms list."
+        )
+        response = self._call_parse(
+            system_prompt=_load_prompt("property_atomization.md"),
+            spec_text=spec_text,
+            user_turn=user_turn,
+            output_format=PropertyAtomsResponse,
+        )
+        atoms = response.parsed_output.atoms
+        if not atoms:
+            return None
+        return _translate_property_atom(atoms[0])
+
     # ------------------------------------------------------------------
     # Stage 1 fix: ask the LLM to fix a cedar-validate failure.
     # ------------------------------------------------------------------

@@ -137,6 +137,22 @@ def _cmd_author(args: argparse.Namespace) -> int:
     def property_proposer(text: str, schema_path: str):
         return propose_property_atoms(text, schema_path, llm)
 
+    def property_repairer(
+        text: str,
+        schema_path: str,
+        rejected_atom,
+        reason: str,
+        prior_atoms,
+    ):
+        schema_text = Path(schema_path).read_text()
+        return llm.propose_alternative_property_atom(
+            rejected_atom,
+            reason,
+            text,
+            schema_text,
+            prior_atoms,
+        )
+
     def reviewer(atom):
         if args.auto_approve:
             return auto_approve(atom)
@@ -157,6 +173,7 @@ def _cmd_author(args: argparse.Namespace) -> int:
         session_id=args.session_id,
         review_atom=reviewer,
         propose_property_atoms=property_proposer,
+        repair_property_atom=property_repairer,
         synthesize=make_harness_synthesizer(
             phase1_model=args.model,
             phase2_model=args.model,

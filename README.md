@@ -243,7 +243,7 @@ intent:
 | Review key | Meaning |
 | --- | --- |
 | `A` | Approve the proposed schema/property atom. |
-| `R reason` | Reject it and record why. |
+| `R reason` | Reject it and record why. In authoring, rejected property atoms are sent back to the model for a replacement when repair is available. |
 | `E field=value` | Edit the current atom. |
 | `Q question` | Ask the model about the atom before deciding. |
 | `S` | Show the Cedar/schema declaration for the atom. |
@@ -581,7 +581,7 @@ During HITL atom review, the prompt accepts one-line review commands:
 | Review key | Meaning |
 | --- | --- |
 | `A` | Approve the proposed schema/property atom. |
-| `R reason` | Reject the atom and record the reason. |
+| `R reason` | Reject the atom and record the reason. During authoring, rejected property atoms are repaired and shown again when a repair model is available. |
 | `E field=value` | Edit a field on the current atom. |
 | `Q question` | Record a question in the review log. |
 | `S` | Show the Cedar/schema declaration for the atom. |
@@ -600,6 +600,11 @@ E reference_cedar=permit (...) when { ... };
 
 After an edit, AutoCedar shows the atom again. Approve only when the corrected
 schema/property intent matches what you mean.
+
+If a property atom fails symbolic checks, prefer `R reason` when the atom is
+conceptually wrong and `E field=value` when a specific field is wrong. A
+rejected property atom is repaired by the model and shown again for review; it
+is not silently approved.
 
 ### Non-Interactive Commands
 
