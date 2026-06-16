@@ -12,7 +12,9 @@ from __future__ import annotations
 import json
 import os
 import textwrap
+from dataclasses import replace
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -210,6 +212,56 @@ def test_author_emits_review_stage_and_overview_hooks(
     assert ("begin", ("Property intent review", 0)) in reviewer.events
     assert ("end", ("Property intent review", 0, 0)) in reviewer.events
     assert ("properties", 0) in reviewer.events
+
+
+def test_author_rechecks_edited_property_atom(
+    tmp_path: Path,
+    workspace: tuple[Path, Path],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    spec_path, schema_path = workspace
+    checks: list[str] = []
+
+    def fake_symbolic_verify(
+        atom: PropertyAtom,
+        schema_path_arg: str,
+        prior_atoms: list[PropertyAtom] | None = None,
+    ) -> None:
+        _ = schema_path_arg, prior_atoms
+        checks.append(atom.action)
+        atom.symbolic_verified = True
+        atom.symbolic_verification_log = [f"checked action {atom.action}"]
+
+    monkeypatch.setattr("autocedar.pipeline.symbolic_verify_atom", fake_symbolic_verify)
+
+    def review_with_edit(atom: object) -> object:
+        assert isinstance(atom, PropertyAtom)
+        edited = replace(atom, action="view")
+        return SimpleNamespace(
+            atom=edited,
+            decision=AtomDecision(
+                atom_name=edited.name,
+                action="approve",
+                intent_acknowledged_by_user=True,
+                edit_delta={"edits": [{"field": "action", "old": "read", "new": "view"}]},
+            ),
+        )
+
+    author(
+        spec_path=spec_path,
+        output_dir=tmp_path / "out",
+        session_id="edited-prop",
+        propose_property_atoms=lambda spec_text, schema_path_arg: [_owner_only_ceiling()],
+        review_atom=review_with_edit,
+        synthesize=_synthesize_stub,
+        schema_path_override=str(schema_path),
+    )
+
+    assert checks == ["read", "view"]
+    logs = json.loads(
+        (tmp_path / "out" / "edited-prop" / "stage2" / "symbolic_verification_logs.json").read_text(),
+    )
+    assert logs["owner_only_read"] == ["checked action view"]
 
 
 # ---------------------------------------------------------------------------

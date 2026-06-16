@@ -146,6 +146,8 @@ During atom review, use one-line review commands:
   [#8fc9bd]A[/]                  approve
   [#d57a5f]R reason[/]           reject with reason
   [#f0c678]E field=value[/]      edit an atom field
+  [#f0c678]E cedar_type=Bool[/]  fix a schema attribute type
+  [#f0c678]E action=view[/]      fix a property action
   [#f0c678]Q question[/]         record a question in the corpus
   [#f0c678]S[/]                  show the Cedar/schema declaration
   [#f0c678]V[/]                  view patch notes
@@ -581,7 +583,10 @@ class AutoCedarApp(App[None]):
             return
         if key == "E":
             if not detail:
-                self._write(f"[bold {RED}]Use E field=value.[/]")
+                self._write(
+                    f"[bold {RED}]Use E field=value.[/] "
+                    "Examples: E cedar_type=Bool, E optional=true, E action=view.",
+                )
                 return
             try:
                 request.current = _apply_field_edit(
@@ -1621,14 +1626,7 @@ def interpret_natural_language(raw: str, *, has_draft: bool) -> NaturalLanguageI
         return NaturalLanguageIntent("clear_draft")
     if _is_start_draft_request(lowered):
         return NaturalLanguageIntent("start_draft")
-    if _mentions(
-        lowered,
-        "show draft",
-        "show me the draft",
-        "current draft",
-        "current spec",
-        "what is in the draft",
-    ):
+    if _is_show_draft_request(lowered):
         return NaturalLanguageIntent("show_draft")
     if _is_save_request(lowered):
         return NaturalLanguageIntent("save_draft", path=_extract_save_path(text))
@@ -1916,6 +1914,39 @@ def _looks_like_active_draft_statement(raw: str) -> bool:
     if _looks_like_frustration(text) or _looks_like_meta_complaint(text):
         return False
     return _looks_like_policy_requirement(text) or _looks_like_domain_setup_statement(text)
+
+
+def _is_show_draft_request(text: str) -> bool:
+    return (
+        text in {
+            "show draft",
+            "show the draft",
+            "show me the draft",
+            "display draft",
+            "display the draft",
+            "view draft",
+            "view the draft",
+            "draft state",
+            "show draft state",
+            "show the draft state",
+            "current draft",
+            "current spec",
+            "what is in the draft",
+            "what's in the draft",
+            "whats in the draft",
+            "what is in my draft",
+            "what's in my draft",
+            "whats in my draft",
+        }
+        or text.startswith((
+            "show the current draft",
+            "show current draft",
+            "show me current draft",
+            "show me the current draft",
+            "peek at the draft",
+            "list the draft",
+        ))
+    )
 
 
 def _looks_like_domain_setup_statement(text: str) -> bool:

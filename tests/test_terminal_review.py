@@ -129,7 +129,7 @@ def _liveness_property() -> PropertyAtom:
     return PropertyAtom(
         name="read_liveness",
         rationale="at least one read must be allowed",
-        plain_english_summary="At least one read request is permitted.",
+        plain_english_summary="There exists a permitted request in which a User reads a Record.",
         source_excerpt="Users can read public records.",
         constraint_type="liveness",
         action="read",
@@ -160,6 +160,20 @@ def test_render_schema_atom_includes_kind_and_summary() -> None:
     assert "[V]iew patches" in text
 
 
+def test_render_attribute_atom_shows_type_edit_example() -> None:
+    text = render_schema_atom(_attribute(), 1, 1)
+
+    assert "Edit examples:" in text
+    assert "E cedar_type=Bool" in text
+
+
+def test_render_property_atom_shows_reference_edit_example() -> None:
+    text = render_property_atom(_property(), 1, 1)
+
+    assert "Edit examples:" in text
+    assert "E reference_cedar=permit" in text
+
+
 def test_render_schema_declaration_for_each_kind() -> None:
     assert "entity User" in render_schema_declaration(_entity())
     assert "role: String" in render_schema_declaration(_attribute())
@@ -178,6 +192,15 @@ def test_render_property_atom_uses_verified_badge() -> None:
     assert VERIFIED_BADGE in text
     assert "Satisfiability check: OK" in text
     assert "sugar-universal" not in text
+
+
+def test_render_liveness_property_makes_non_schema_status_clear() -> None:
+    text = render_property_atom(_liveness_property(), 1, 1)
+
+    assert "LIVENESS CHECK (not schema)" in text
+    assert "This is a verifier liveness check, not schema text" in text
+    assert "At least one request should be permitted where" in text
+    assert "There exists" not in text
 
 
 def test_render_property_atom_supports_unknown_total() -> None:
@@ -285,6 +308,19 @@ def test_edit_attribute_optional_flag_parses_bool() -> None:
     assert attr.optional is True
 
 
+def test_edit_attribute_cedar_type_for_string_to_bool() -> None:
+    captured = _CaptureOutput()
+    scripted = _ScriptedInput(["E", "cedar_type=Bool", "A"])
+    reviewed = interactive_review_loop(
+        [_attribute()],
+        input_fn=scripted,
+        output_fn=captured,
+    )
+    attr = reviewed[0].atom
+    assert isinstance(attr, AttributeAtom)
+    assert attr.cedar_type == "Bool"
+
+
 def test_edit_action_principal_types_parses_csv() -> None:
     captured = _CaptureOutput()
     scripted = _ScriptedInput([
@@ -330,6 +366,9 @@ def test_edit_property_action_field() -> None:
     atom = reviewed[0].atom
     assert isinstance(atom, PropertyAtom)
     assert atom.action == "view"
+    assert atom.symbolic_verified is False
+    assert reviewed[0].decision.symbolic_verified is False
+    assert "checks will be rerun" in atom.symbolic_verification_log[0]
 
 
 # ---------------------------------------------------------------------------

@@ -249,6 +249,23 @@ intent:
 | `S` | Show the Cedar/schema declaration for the atom. |
 | `V` | Show patch notes when available. |
 
+Common edit examples:
+
+```text
+E cedar_type=Bool
+E optional=true
+E field_name=isPublic
+E principal_types=User,Admin
+E resource_types=Document
+E action=view
+E constraint_type=floor
+```
+
+For example, if AutoCedar proposes a schema attribute as `String` but it should
+be a boolean flag, use `E cedar_type=Bool`. AutoCedar re-presents the edited
+atom before you approve it. If you edit a property atom, symbolic checks are
+rerun after approval so stale verification results are not reused.
+
 After the schema is established, AutoCedar proposes Stage 2 property atoms from
 the spec plus schema. These become the formal verification harness:
 
@@ -569,6 +586,20 @@ During HITL atom review, the prompt accepts one-line review commands:
 | `Q question` | Record a question in the review log. |
 | `S` | Show the Cedar/schema declaration for the atom. |
 | `V` | Show patch notes when available. |
+
+Useful edits:
+
+```text
+E cedar_type=Bool
+E optional=true
+E principal_types=User,Admin
+E resource_types=Document
+E action=view
+E reference_cedar=permit (...) when { ... };
+```
+
+After an edit, AutoCedar shows the atom again. Approve only when the corrected
+schema/property intent matches what you mean.
 
 ### Non-Interactive Commands
 

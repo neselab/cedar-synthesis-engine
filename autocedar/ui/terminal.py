@@ -114,6 +114,8 @@ def render_schema_atom(atom: Stage1Atom, index: int, total: int) -> str:
         lines.append(f"  Cedar type: {atom.cedar_type}")
 
     lines.append("")
+    lines.extend(_edit_hint_lines(atom))
+    lines.append("")
     lines.append("  [A]pprove  [R]eject  [E]dit  [Q]uestion  [S]ee Cedar  [V]iew patches")
     return "\n".join(lines)
 
@@ -163,13 +165,24 @@ def render_property_atom(atom: PropertyAtom, index: int, total: int | None) -> s
     """Render a property atom for terminal review (Stage 2 — §6.1)."""
     lines: list[str] = []
     progress = f"[Property {index} of {total}]" if total else f"[Property {index}]"
+    kind = (
+        "LIVENESS CHECK (not schema)"
+        if atom.constraint_type == "liveness"
+        else atom.constraint_type.upper()
+    )
     lines.append(
-        f"{progress}  {atom.constraint_type.upper()} — "
-        f"{atom.plain_english_summary}",
+        f"{progress}  {kind} — "
+        f"{_review_summary(atom)}",
     )
     lines.append("")
     lines.append(f"  Source excerpt: {atom.source_excerpt!r}")
     lines.append("")
+    if atom.constraint_type == "liveness":
+        lines.append(
+            "  This is a verifier liveness check, not schema text. It asks whether "
+            "the final policy permits at least one matching request.",
+        )
+        lines.append("")
     if atom.examples_adversarial:
         lines.append("  Adversarial examples (probing the boundary with plausible alternatives):")
         for ex in atom.examples_adversarial:
@@ -184,8 +197,56 @@ def render_property_atom(atom: PropertyAtom, index: int, total: int | None) -> s
         for line in format_symbolic_verification_log(atom.symbolic_verification_log):
             lines.append(f"    {line}")
     lines.append("")
+    lines.extend(_edit_hint_lines(atom))
+    lines.append("")
     lines.append("  [A]pprove  [R]eject  [E]dit  [Q]uestion  [S]ee Cedar")
     return "\n".join(lines)
+
+
+def _review_summary(atom: PropertyAtom) -> str:
+    if atom.constraint_type != "liveness":
+        return atom.plain_english_summary
+    summary = atom.plain_english_summary.strip()
+    lowered = summary.lower()
+    prefix = "there exists a permitted request in which "
+    if lowered.startswith(prefix):
+        rest = summary[len(prefix):].strip()
+        return f"At least one request should be permitted where {rest}"
+    if lowered.startswith("there exists a permitted request"):
+        return summary.replace("There exists a permitted request", "At least one request should be permitted", 1)
+    return summary
+
+
+def _edit_hint_lines(atom: ReviewableAtom) -> list[str]:
+    """Short edit examples shown in the review card."""
+    examples: list[str]
+    if isinstance(atom, AttributeAtom):
+        examples = [
+            "E cedar_type=Bool",
+            "E optional=true",
+            "E field_name=isPublic",
+        ]
+    elif isinstance(atom, EntityAtom):
+        examples = ["E name=Document", "E plain_english_summary=..."]
+    elif isinstance(atom, ActionAtom):
+        examples = [
+            "E principal_types=User,Admin",
+            "E resource_types=Document",
+        ]
+    elif isinstance(atom, TypeAliasAtom):
+        examples = ["E cedar_type={ owner: User, isPublic: Bool }"]
+    elif isinstance(atom, PropertyAtom):
+        examples = [
+            "E constraint_type=floor",
+            "E principal_types=User",
+            "E reference_cedar=permit (...) when { ... };",
+        ]
+    else:
+        examples = ["E plain_english_summary=..."]
+    return [
+        "  Edit examples:",
+        "    " + " | ".join(examples),
+    ]
 
 
 def render_property_reference(atom: PropertyAtom) -> str:
@@ -581,6 +642,11 @@ def _apply_field_edit(
         )
 
     updated = dataclasses.replace(atom, **{field_name: new_value})
+    if isinstance(updated, PropertyAtom):
+        updated.symbolic_verified = False
+        updated.symbolic_verification_log = [
+            "edited after symbolic verification; checks will be rerun after approval",
+        ]
     edit_log.setdefault("edits", []).append(
         {"field": field_name, "old": getattr(atom, field_name), "new": new_value},
     )

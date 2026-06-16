@@ -231,6 +231,15 @@ def author(
         symbolic_verify_atom(atom, str(schema_path), prior_atoms=plan.properties)
         verification_logs[atom.name] = list(atom.symbolic_verification_log)
         reviewed_atom, decision = _normalize_review_result(atom, review_atom(atom))
+        if (
+            decision.action == "approve"
+            and isinstance(reviewed_atom, PropertyAtom)
+            and reviewed_atom is not atom
+        ):
+            symbolic_verify_atom(reviewed_atom, str(schema_path), prior_atoms=plan.properties)
+            verification_logs[reviewed_atom.name] = list(
+                reviewed_atom.symbolic_verification_log,
+            )
         # Mirror the symbolic_verified flag onto the decision log so the
         # corpus captures both fields per §1.4.
         decision.symbolic_verified = getattr(reviewed_atom, "symbolic_verified", False)

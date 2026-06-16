@@ -208,6 +208,11 @@ def test_natural_language_start_draft_request() -> None:
     assert intent.kind == "start_draft"
 
 
+def test_natural_language_show_the_draft_request() -> None:
+    intent = interpret_natural_language("show the draft", has_draft=True)
+    assert intent.kind == "show_draft"
+
+
 def test_natural_language_runtime_status_routes_to_chat() -> None:
     intent = interpret_natural_language("are you drafting?", has_draft=False)
     assert intent.kind == "message"
@@ -443,6 +448,23 @@ def test_textual_app_clear_transcript_does_not_clear_draft() -> None:
             app._handle_command_input("/clear")
             assert app.draft_lines == ["Doctors can read assigned patient records."]
             assert app.drafting_active is True
+            await pilot.exit(None)
+
+    asyncio.run(run())
+
+
+def test_textual_app_show_the_draft_uses_buffer_not_chat() -> None:
+    async def run() -> None:
+        app = AutoCedarApp()
+        shown: list[bool] = []
+        async with app.run_test() as pilot:
+            app._start_drafting("Doctors can read assigned patient records.")
+            app._show_draft = lambda: shown.append(True)  # type: ignore[method-assign]
+            app._start_chat_response = (  # type: ignore[method-assign]
+                lambda raw, fallback: (_ for _ in ()).throw(AssertionError("chat should not handle draft display"))
+            )
+            app._handle_shell_input("show the draft")
+            assert shown == [True]
             await pilot.exit(None)
 
     asyncio.run(run())
