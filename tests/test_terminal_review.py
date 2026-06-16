@@ -21,8 +21,10 @@ from autocedar.atoms import (
 )
 from autocedar.ui.terminal import (
     VERIFIED_BADGE,
+    format_symbolic_verification_log,
     interactive_review_loop,
     render_property_atom,
+    render_property_reference,
     render_schema_atom,
     render_schema_declaration,
 )
@@ -115,7 +117,30 @@ def _property() -> PropertyAtom:
             "when { principal == resource.owner };"
         ),
         symbolic_verified=True,
-        symbolic_verification_log=["ceiling check passed"],
+        symbolic_verification_log=[
+            "type-correct: ok",
+            "satisfiable: ok",
+            "sugar-universal: ok (not applicable to primitives)",
+        ],
+    )
+
+
+def _liveness_property() -> PropertyAtom:
+    return PropertyAtom(
+        name="read_liveness",
+        rationale="at least one read must be allowed",
+        plain_english_summary="At least one read request is permitted.",
+        source_excerpt="Users can read public records.",
+        constraint_type="liveness",
+        action="read",
+        principal_types=["User"],
+        resource_types=["Record"],
+        symbolic_verified=True,
+        symbolic_verification_log=[
+            "type-correct: ok (n/a)",
+            "satisfiable: ok (liveness atom has no reference encoding)",
+            "sugar-universal: ok (not applicable to primitives)",
+        ],
     )
 
 
@@ -151,6 +176,34 @@ def test_render_schema_declaration_for_each_kind() -> None:
 def test_render_property_atom_uses_verified_badge() -> None:
     text = render_property_atom(_property(), 1, 1)
     assert VERIFIED_BADGE in text
+    assert "Satisfiability check: OK" in text
+    assert "sugar-universal" not in text
+
+
+def test_render_property_atom_supports_unknown_total() -> None:
+    text = render_property_atom(_property(), 3, None)
+    assert "[Property 3]" in text
+    assert "of 3" not in text
+
+
+def test_symbolic_log_formatter_explains_missing_schema_type() -> None:
+    lines = format_symbolic_verification_log([
+        "type-correct: FAILED (cedar validate rc=1: failed to resolve type: Vitals)",
+        "satisfiable: ok",
+        "sugar-universal: ok (not applicable to primitives)",
+    ])
+
+    rendered = "\n".join(lines)
+    assert "approved schema does not define `Vitals`" in rendered
+    assert "Satisfiability check: OK" in rendered
+    assert "sugar-universal" not in rendered
+
+
+def test_render_liveness_reference_explains_absent_cedar_body() -> None:
+    text = render_property_reference(_liveness_property())
+    assert "Liveness property" in text
+    assert "no standalone reference policy" in text
+    assert "Action: read" in text
 
 
 # ---------------------------------------------------------------------------
@@ -312,6 +365,19 @@ def test_see_cedar_key_prints_property_reference() -> None:
     assert "principal == resource.owner" in captured.text
 
 
+def test_see_cedar_key_explains_liveness_property_without_unknown_kind() -> None:
+    captured = _CaptureOutput()
+    scripted = _ScriptedInput(["S", "A"])
+    reviewed = interactive_review_loop(
+        [_liveness_property()],
+        input_fn=scripted,
+        output_fn=captured,
+    )
+    assert reviewed[0].decision.action == "approve"
+    assert "Liveness property" in captured.text
+    assert "unknown atom kind" not in captured.text
+
+
 # ---------------------------------------------------------------------------
 # [V] view patches — Stage 1 no-op message.
 # ---------------------------------------------------------------------------
@@ -338,7 +404,7 @@ def test_view_patches_key_prints_property_symbolic_log() -> None:
         output_fn=captured,
     )
     assert reviewed[0].decision.action == "approve"
-    assert "ceiling check passed" in captured.text
+    assert "type-correct: ok" in captured.text
 
 
 # ---------------------------------------------------------------------------

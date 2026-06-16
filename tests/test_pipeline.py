@@ -110,6 +110,26 @@ def _synthesize_stub(scenario_dir: Path) -> Path:
     return candidate
 
 
+class _RecordingReviewer:
+    def __init__(self) -> None:
+        self.events: list[tuple[str, object]] = []
+
+    def begin_stage(self, label: str, total: int) -> None:
+        self.events.append(("begin", (label, total)))
+
+    def end_stage(self, label: str, approved: int, rejected: int) -> None:
+        self.events.append(("end", (label, approved, rejected)))
+
+    def schema_ready(self, schema_text: str) -> None:
+        self.events.append(("schema", schema_text))
+
+    def property_plan_ready(self, properties: list[PropertyAtom]) -> None:
+        self.events.append(("properties", len(properties)))
+
+    def __call__(self, atom: object) -> AtomDecision:
+        return _approve(atom)
+
+
 # ---------------------------------------------------------------------------
 # Acceptance criterion 8 — pipeline compiles + stubbed end-to-end run.
 # ---------------------------------------------------------------------------
@@ -168,6 +188,28 @@ def test_author_runs_end_to_end_with_stubs(
     ]
     for rel in expected:
         assert (session_dir / rel).exists(), f"missing artifact {rel}"
+
+
+def test_author_emits_review_stage_and_overview_hooks(
+    tmp_path: Path, workspace: tuple[Path, Path],
+) -> None:
+    spec_path, schema_path = workspace
+    reviewer = _RecordingReviewer()
+
+    author(
+        spec_path=spec_path,
+        output_dir=tmp_path / "out",
+        session_id="hooks",
+        propose_property_atoms=lambda spec_text, schema_path_arg: [],
+        review_atom=reviewer,
+        synthesize=_synthesize_stub,
+        schema_path_override=str(schema_path),
+    )
+
+    assert ("schema", MINIMAL_SCHEMA) in reviewer.events
+    assert ("begin", ("Property intent review", 0)) in reviewer.events
+    assert ("end", ("Property intent review", 0, 0)) in reviewer.events
+    assert ("properties", 0) in reviewer.events
 
 
 # ---------------------------------------------------------------------------

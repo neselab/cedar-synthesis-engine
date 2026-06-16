@@ -32,6 +32,7 @@ from autocedar.ui.terminal import (
     _apply_field_edit,
     auto_approve,
     render_property_atom,
+    render_property_reference,
     render_schema_atom,
     render_schema_declaration,
 )
@@ -134,10 +135,10 @@ Slash shortcuts are also available:
   [#f0c678]/model MODEL[/]           set the default LLM model
   [#f0c678]/effort low|medium|high|max[/]
   [#f0c678]/apikey[/] [KEY|clear]    set or clear ANTHROPIC_API_KEY for this session
-  [#f0c678]/draft[/]                 show the current prose draft
+  [#f0c678]/draft[/] [show|start|clear] show, start, or clear draft capture
   [#f0c678]/save[/] [PATH]           save the current draft
   [#f0c678]/new[/]                   clear the draft
-  [#f0c678]/clear[/]                 clear the transcript
+  [#f0c678]/clear[/] [draft|transcript] clear transcript, or clear the draft explicitly
   [#f0c678]/quit[/]                  exit
 
 During atom review, use one-line review commands:
@@ -249,6 +250,9 @@ class PendingAction:
 class ReviewRequest:
     atom: Any
     sequence: int
+    index: int
+    total: int | None
+    stage_label: str
     current: Any = None
     edit_log: dict[str, Any] = field(default_factory=dict)
     event: threading.Event = field(default_factory=threading.Event)
@@ -264,10 +268,46 @@ class TuiAtomReviewer:
     def __init__(self, app: "AutoCedarApp") -> None:
         self.app = app
         self.sequence = 0
+        self.stage_label = "Atom review"
+        self.stage_total: int | None = None
+        self.stage_index = 0
+
+    def begin_stage(self, label: str, total: int) -> None:
+        self.stage_label = label
+        self.stage_total = total
+        self.stage_index = 0
+        self.app.call_from_thread(self.app.begin_review_stage, label, total)
+
+    def end_stage(self, label: str, approved: int, rejected: int) -> None:
+        self.app.call_from_thread(
+            self.app.end_review_stage,
+            label,
+            approved,
+            rejected,
+        )
+
+    def schema_ready(self, schema_text: str) -> None:
+        self.app.call_from_thread(self.app.show_schema_overview, schema_text)
+
+    def property_plan_ready(self, properties: list[Any]) -> None:
+        self.app.call_from_thread(self.app.show_property_overview, properties)
 
     def __call__(self, atom: Any) -> ReviewedAtom:
         self.sequence += 1
-        request = ReviewRequest(atom=atom, sequence=self.sequence)
+        if self.stage_total is None:
+            index = self.sequence
+            total = None
+        else:
+            self.stage_index += 1
+            index = self.stage_index
+            total = self.stage_total
+        request = ReviewRequest(
+            atom=atom,
+            sequence=self.sequence,
+            index=index,
+            total=total,
+            stage_label=self.stage_label,
+        )
         self.app.call_from_thread(self.app.begin_review, request)
         request.event.wait()
         if request.result is None:
@@ -437,6 +477,11 @@ class AutoCedarApp(App[None]):
     def action_clear_log(self) -> None:
         self.query_one("#transcript", RichLog).clear()
         self._write(f"[dim {MUTED}]Transcript cleared.[/]")
+        if self.draft_lines or self.drafting_active:
+            self._write(
+                f"[dim {MUTED}]Draft was not changed. Use /clear draft or /new "
+                "to clear the working policy draft.[/]",
+            )
 
     def on_input_submitted(self, message: Input.Submitted) -> None:
         raw = message.value.strip()
@@ -460,11 +505,66 @@ class AutoCedarApp(App[None]):
 
     def begin_review(self, request: ReviewRequest) -> None:
         self.pending_review = request
-        self.active_task = "reviewing atom"
+        self.active_task = request.stage_label.lower()
         self.query_one(Input).placeholder = "Review: A, R reason, E field=value, Q question, S, V"
         self._write(f"[bold {AMBER}]Review required before the agent continues.[/]")
         self._render_review_request(request)
         self._update_status()
+
+    def begin_review_stage(self, label: str, total: int) -> None:
+        if total <= 0:
+            self._write(f"[dim {MUTED}]{escape(label)}: no atoms proposed.[/]")
+            return
+        next_step = (
+            "After the last schema atom, AutoCedar composes the schema and shows an overview."
+            if "schema" in label.lower()
+            else "After the last property atom, AutoCedar compiles the verification plan."
+        )
+        self._write(
+            Panel(
+                (
+                    f"{escape(label)} starts now.\n"
+                    f"{total} atom(s) need a decision.\n"
+                    f"{next_step}"
+                ),
+                title=f"[bold {COPPER}]Review stage[/]",
+                border_style=TEAL,
+                padding=(1, 2),
+            ),
+        )
+
+    def end_review_stage(self, label: str, approved: int, rejected: int) -> None:
+        next_step = (
+            "Next: composing the schema."
+            if "schema" in label.lower()
+            else "Next: compiling the verification plan and running synthesis."
+        )
+        self._write(
+            f"[bold {GREEN}]{escape(label)} complete.[/] "
+            f"{approved} approved, {rejected} rejected. {next_step}",
+        )
+
+    def show_schema_overview(self, schema_text: str) -> None:
+        overview = _schema_overview_text(schema_text)
+        self._write(
+            Panel(
+                overview,
+                title=f"[bold {COPPER}]Schema overview[/]",
+                border_style=TEAL,
+                padding=(1, 2),
+            ),
+        )
+
+    def show_property_overview(self, properties: list[Any]) -> None:
+        overview = _property_overview_text(properties)
+        self._write(
+            Panel(
+                overview,
+                title=f"[bold {COPPER}]Property overview[/]",
+                border_style=TEAL,
+                padding=(1, 2),
+            ),
+        )
 
     def _handle_review_input(self, raw: str) -> None:
         request = self.pending_review
@@ -580,13 +680,31 @@ class AutoCedarApp(App[None]):
         self._say("Please answer “yes” to proceed or “no” to cancel.")
 
     def _handle_shell_input(self, raw: str) -> None:
+        stripped = raw.strip()
+        if stripped.startswith("+"):
+            self._handle_explicit_draft_line(stripped[1:].strip())
+            return
         if not raw.startswith("/"):
             self._handle_natural_language_input(raw)
             return
         self._handle_command_input(raw)
 
     def _handle_natural_language_input(self, raw: str) -> None:
+        lowered = _squash(raw).lower()
+        if self.drafting_active and lowered in {"clear it", "wipe it", "reset it", "delete it"}:
+            self._request_confirmation(
+                "I’m going to clear the working policy draft.",
+                self._clear_draft,
+            )
+            return
         intent = interpret_natural_language(raw, has_draft=bool(self.draft_lines))
+        if (
+            self.drafting_active
+            and intent.kind == "message"
+            and _looks_like_active_draft_statement(raw)
+        ):
+            self._append_draft_line(raw)
+            return
         try:
             if intent.kind == "help":
                 self._say(HELP_TEXT)
@@ -696,7 +814,7 @@ class AutoCedarApp(App[None]):
             if command == "help":
                 self._write(HELP_TEXT)
             elif command == "clear":
-                self.action_clear_log()
+                self._handle_clear_command(args)
             elif command == "settings":
                 self._show_settings()
             elif command == "model":
@@ -711,7 +829,7 @@ class AutoCedarApp(App[None]):
                     self._clear_draft,
                 )
             elif command == "draft":
-                self._show_draft()
+                self._handle_draft_command(args)
             elif command == "save":
                 path = Path(args[0]) if args else DRAFT_PATH
                 self._request_confirmation(
@@ -749,6 +867,52 @@ class AutoCedarApp(App[None]):
                 )
         except ValueError as exc:
             self._write(f"[bold {RED}]{escape(str(exc))}[/]")
+
+    def _handle_explicit_draft_line(self, line: str) -> None:
+        if not line:
+            self._write(f"[bold {RED}]Use + followed by the requirement text.[/]")
+            return
+        if not self.drafting_active:
+            self.drafting_active = True
+        self._append_draft_line(line)
+
+    def _handle_clear_command(self, args: Sequence[str]) -> None:
+        target = args[0].lower() if args else "transcript"
+        if target in {"draft", "spec", "policy"}:
+            self._request_confirmation(
+                "I’m going to clear the working policy draft.",
+                self._clear_draft,
+            )
+            return
+        if target in {"transcript", "screen", "chat", "log"}:
+            self.action_clear_log()
+            return
+        raise ValueError("Use /clear transcript or /clear draft.")
+
+    def _handle_draft_command(self, args: Sequence[str]) -> None:
+        target = args[0].lower() if args else ""
+        if target in {"clear", "reset", "wipe", "new"}:
+            self._request_confirmation(
+                "I’m going to clear the working policy draft.",
+                self._clear_draft,
+            )
+            return
+        if target in {"start", "capture", "begin"}:
+            if self.drafting_active:
+                self._say(
+                    "Drafting is already active. Send policy requirements and I’ll "
+                    "add them to the working draft.",
+                )
+            else:
+                self._start_drafting()
+            return
+        if target in {"show", "view", ""}:
+            if not self.drafting_active and not self.draft_lines and target == "":
+                self._start_drafting()
+            else:
+                self._show_draft()
+            return
+        raise ValueError("Use /draft, /draft show, /draft start, or /draft clear.")
 
     def _handle_model_command(self, args: Sequence[str]) -> None:
         if not args:
@@ -891,8 +1055,16 @@ class AutoCedarApp(App[None]):
 
     def _show_draft(self) -> None:
         if not self.draft_lines:
+            if self.drafting_active:
+                self._write(
+                    f"[dim {MUTED}]Draft capture is active, but no lines have been "
+                    "captured yet. Type a requirement, or prefix it with + to force "
+                    "capture.[/]",
+                )
+                return
             self._write(
-                f"[dim {MUTED}]Draft is empty. Say “start a policy draft” to begin.[/]",
+                f"[dim {MUTED}]Draft is empty. Say “start a policy draft” or type "
+                "/draft to begin.[/]",
             )
             return
         self._write(
@@ -1133,6 +1305,12 @@ class AutoCedarApp(App[None]):
                     return auto_approve(atom)
                 return reviewer(atom)
 
+            if not options.auto_approve:
+                review_atom.begin_stage = reviewer.begin_stage  # type: ignore[attr-defined]
+                review_atom.end_stage = reviewer.end_stage  # type: ignore[attr-defined]
+                review_atom.schema_ready = reviewer.schema_ready  # type: ignore[attr-defined]
+                review_atom.property_plan_ready = reviewer.property_plan_ready  # type: ignore[attr-defined]
+
             kwargs: dict[str, Any] = {}
             if options.schema is None:
                 kwargs["propose_schema_atoms"] = schema_proposer
@@ -1272,13 +1450,13 @@ class AutoCedarApp(App[None]):
     def _render_review_request(self, request: ReviewRequest) -> None:
         atom = request.current
         if atom.__class__.__name__ == "PropertyAtom":
-            text = render_property_atom(atom, request.sequence, request.sequence)
+            text = render_property_atom(atom, request.index, request.total)
         else:
-            text = render_schema_atom(atom, request.sequence, request.sequence)
+            text = render_schema_atom(atom, request.index, request.total or request.index)
         self._write(
             Panel(
                 text,
-                title=f"[bold {COPPER}]Atom review[/]",
+                title=f"[bold {COPPER}]{escape(request.stage_label)}[/]",
                 subtitle=f"[dim {MUTED}]A approve  E edit  S show[/]",
                 border_style=COPPER,
                 padding=(1, 2),
@@ -1420,6 +1598,14 @@ def interpret_natural_language(raw: str, *, has_draft: bool) -> NaturalLanguageI
                 "approval. Until then, I’ll treat normal language as conversation."
             ),
         )
+    if _looks_like_meta_complaint(lowered):
+        return NaturalLanguageIntent(
+            "message",
+            message=(
+                "That sounds like feedback about the session, not policy text. "
+                "I won’t add it to the draft."
+            ),
+        )
     if _looks_like_help(lowered):
         return NaturalLanguageIntent("help")
     if lowered in {"quit", "exit", "bye", "goodbye"}:
@@ -1429,7 +1615,9 @@ def interpret_natural_language(raw: str, *, has_draft: bool) -> NaturalLanguageI
         return NaturalLanguageIntent("settings", settings_update=settings_update)
     if _mentions(lowered, "clear transcript", "clear screen", "clear chat"):
         return NaturalLanguageIntent("clear_transcript")
-    if _mentions(lowered, "clear draft", "clear spec", "start over", "reset draft"):
+    if _mentions(lowered, "clear draft", "clear spec", "start over", "reset draft") or (
+        has_draft and lowered in {"clear it", "wipe it", "reset it", "delete it"}
+    ):
         return NaturalLanguageIntent("clear_draft")
     if _is_start_draft_request(lowered):
         return NaturalLanguageIntent("start_draft")
@@ -1633,6 +1821,21 @@ def _looks_like_frustration(text: str) -> bool:
     }
 
 
+def _looks_like_meta_complaint(text: str) -> bool:
+    return text.startswith((
+        "i said ",
+        "i told ",
+        "you said ",
+        "u said ",
+        "you didn't ",
+        "you didnt ",
+        "it won't ",
+        "it wont ",
+        "this won't ",
+        "this wont ",
+    ))
+
+
 def _looks_like_question(text: str) -> bool:
     return text.endswith("?") or text.startswith((
         "are ",
@@ -1651,6 +1854,8 @@ def _looks_like_question(text: str) -> bool:
 def _looks_like_policy_requirement(text: str) -> bool:
     if len(text.split()) < 4:
         return False
+    if _looks_like_domain_setup_statement(text):
+        return True
     if _mentions(
         text,
         " can ",
@@ -1676,9 +1881,19 @@ def _looks_like_policy_requirement(text: str) -> bool:
         " update ",
         " owner ",
         " admin ",
+        " admins ",
         " user ",
+        " users ",
         " role ",
+        " roles ",
         " resource ",
+        " resources ",
+        " document ",
+        " documents ",
+        " entity ",
+        " entities ",
+        " action ",
+        " actions ",
         " policy ",
     ):
         return True
@@ -1692,6 +1907,39 @@ def _looks_like_policy_requirement(text: str) -> bool:
         "admins ",
         "owners ",
     ))
+
+
+def _looks_like_active_draft_statement(raw: str) -> bool:
+    text = _squash(raw).lower()
+    if not text or _looks_like_question(text) or _looks_like_greeting(text):
+        return False
+    if _looks_like_frustration(text) or _looks_like_meta_complaint(text):
+        return False
+    return _looks_like_policy_requirement(text) or _looks_like_domain_setup_statement(text)
+
+
+def _looks_like_domain_setup_statement(text: str) -> bool:
+    return (
+        _mentions(
+            text,
+            " system has ",
+            " system contains ",
+            " has users ",
+            " has documents ",
+            " has resources ",
+            " has entities ",
+            " includes users ",
+            " includes documents ",
+            " includes resources ",
+            " includes entities ",
+            " there are users ",
+            " there are documents ",
+            " there are resources ",
+            " there are entities ",
+        )
+        or re.search(r"\b(users?|documents?|resources?|entities|actions?)\b.*\b(users?|documents?|resources?|entities|actions?)\b", text)
+        is not None
+    )
 
 
 def _is_save_request(text: str) -> bool:
@@ -2122,9 +2370,117 @@ def _split_review_input(raw: str) -> tuple[str, str]:
     return stripped[:1].upper(), stripped[1:].strip()
 
 
+def _schema_overview_text(schema_text: str) -> str:
+    entities: list[tuple[str, list[str], str]] = []
+    actions: list[tuple[str, str, str, list[str]]] = []
+    lines = schema_text.splitlines()
+    i = 0
+
+    while i < len(lines):
+        line = lines[i].strip()
+        entity_match = re.match(r"entity\s+([A-Za-z_][A-Za-z0-9_:]*)", line)
+        action_match = re.match(r"action\s+([A-Za-z_][A-Za-z0-9_:]*)\s+appliesTo", line)
+
+        if entity_match:
+            name = entity_match.group(1)
+            meta = ""
+            parent_match = re.search(r"\bin\s+\[([^\]]+)\]", line)
+            enum_match = re.search(r"\benum\s+\[([^\]]+)\]", line)
+            if parent_match:
+                meta = f" in [{parent_match.group(1)}]"
+            if enum_match:
+                meta = f" enum [{enum_match.group(1)}]"
+            attrs: list[str] = []
+            if "{" in line:
+                i += 1
+                while i < len(lines) and lines[i].strip() != "};":
+                    attr = _schema_attr_line(lines[i])
+                    if attr:
+                        attrs.append(attr)
+                    i += 1
+            entities.append((name, attrs, meta))
+        elif action_match:
+            name = action_match.group(1)
+            principals = ""
+            resources = ""
+            context_attrs: list[str] = []
+            i += 1
+            in_context = False
+            while i < len(lines) and lines[i].strip() != "};":
+                stripped = lines[i].strip()
+                principal_match = re.match(r"principal:\s*\[([^\]]*)\]", stripped)
+                resource_match = re.match(r"resource:\s*\[([^\]]*)\]", stripped)
+                if principal_match:
+                    principals = principal_match.group(1)
+                elif resource_match:
+                    resources = resource_match.group(1)
+                elif stripped.startswith("context:"):
+                    in_context = True
+                elif in_context and stripped.startswith("},"):
+                    in_context = False
+                elif in_context:
+                    attr = _schema_attr_line(stripped)
+                    if attr:
+                        context_attrs.append(attr)
+                i += 1
+            actions.append((name, principals or "...", resources or "...", context_attrs))
+        i += 1
+
+    out = ["Entities"]
+    if not entities:
+        out.append("  (none)")
+    for name, attrs, meta in entities:
+        out.append(f"  {name}{meta}")
+        for attr in attrs:
+            out.append(f"    - {attr}")
+
+    out.append("")
+    out.append("Actions")
+    if not actions:
+        out.append("  (none)")
+    for name, principals, resources, context_attrs in actions:
+        out.append(f"  {name}: [{principals}] -> [{resources}]")
+        if context_attrs:
+            out.append("    context")
+            for attr in context_attrs:
+                out.append(f"      - {attr}")
+    return "\n".join(out)
+
+
+def _schema_attr_line(line: str) -> str:
+    stripped = line.strip().rstrip(",")
+    attr_match = re.match(r"([A-Za-z_][A-Za-z0-9_?]*):\s*(.+)$", stripped)
+    if not attr_match:
+        return ""
+    return f"{attr_match.group(1)}: {attr_match.group(2)}"
+
+
+def _property_overview_text(properties: list[Any]) -> str:
+    if not properties:
+        return "No approved property atoms."
+
+    by_action: dict[str, list[Any]] = {}
+    for atom in properties:
+        by_action.setdefault(str(getattr(atom, "action", "(no action)")), []).append(atom)
+
+    out: list[str] = []
+    for action, atoms in by_action.items():
+        out.append(f"{action}")
+        for atom in atoms:
+            kind = str(getattr(atom, "constraint_type", "property")).upper()
+            principals = ", ".join(getattr(atom, "principal_types", []) or ["..."])
+            resources = ", ".join(getattr(atom, "resource_types", []) or ["..."])
+            summary = str(getattr(atom, "plain_english_summary", ""))
+            out.append(f"  - {kind}: [{principals}] -> [{resources}]")
+            if summary:
+                out.append(f"    {summary}")
+        out.append("")
+    return "\n".join(out).rstrip()
+
+
 def _render_cedar_for_review(atom: Any) -> str:
-    if hasattr(atom, "reference_cedar") and getattr(atom, "reference_cedar"):
-        return str(getattr(atom, "reference_cedar"))
+    if atom.__class__.__name__ == "PropertyAtom":
+        return render_property_reference(atom)
     return render_schema_declaration(atom)
 
 

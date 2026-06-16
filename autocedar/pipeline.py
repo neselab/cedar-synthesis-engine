@@ -188,6 +188,7 @@ def author(
         ]
         session.write_stage1_attribution_decisions(attributions)
 
+        _notify_review_stage(review_atom, "Schema atom review", len(schema_atoms))
         decisions: list[AtomDecision] = []
         draft = SchemaDraft()
         for atom in schema_atoms:
@@ -197,12 +198,14 @@ def author(
                 continue
             _route_into_schema_draft(reviewed_atom, draft)
         session.write_stage1_decisions(decisions)
+        _notify_review_stage_complete(review_atom, "Schema atom review", decisions)
         schema_text = compose_schema(draft) if (
             draft.entities or draft.actions or draft.type_aliases
         ) else "// empty schema (stub)\n"
         schema_path = session.base / "stage1" / "final_schema.cedarschema"
         schema_path.write_text(schema_text)
     session.write_stage1_final_schema(schema_text)
+    _notify_schema_ready(review_atom, schema_text)
 
     # ──── Stage 2: property elicitation ────
     prop_atoms = propose_property_atoms(spec_text, str(schema_path))
@@ -223,6 +226,7 @@ def author(
     decisions2: list[AtomDecision] = []
     plan = VerificationPlanDraft(properties=[])
     verification_logs: dict[str, list[str]] = {}
+    _notify_review_stage(review_atom, "Property intent review", len(prop_atoms))
     for atom in prop_atoms:
         symbolic_verify_atom(atom, str(schema_path), prior_atoms=plan.properties)
         verification_logs[atom.name] = list(atom.symbolic_verification_log)
@@ -235,6 +239,8 @@ def author(
             plan.properties.append(reviewed_atom)
         decisions2.append(decision)
     session.write_stage2_decisions(decisions2)
+    _notify_review_stage_complete(review_atom, "Property intent review", decisions2)
+    _notify_property_plan_ready(review_atom, plan.properties)
     session.write_stage2_symbolic_verification_logs(verification_logs)
     session.write_stage2_adversarial_examples(
         {a.name: [_example_to_dict(e) for e in a.examples_adversarial] for a in plan.properties},
@@ -339,6 +345,39 @@ def _normalize_review_result(atom: Any, review_result: Any) -> tuple[Any, AtomDe
         "review_atom must return AtomDecision or an object with "
         "`atom` and `decision: AtomDecision` fields",
     )
+
+
+def _notify_review_stage(review_atom: AtomReviewer, label: str, total: int) -> None:
+    callback = getattr(review_atom, "begin_stage", None)
+    if callable(callback):
+        callback(label, total)
+
+
+def _notify_review_stage_complete(
+    review_atom: AtomReviewer,
+    label: str,
+    decisions: list[AtomDecision],
+) -> None:
+    callback = getattr(review_atom, "end_stage", None)
+    if callable(callback):
+        approved = sum(1 for decision in decisions if decision.action == "approve")
+        rejected = len(decisions) - approved
+        callback(label, approved, rejected)
+
+
+def _notify_schema_ready(review_atom: AtomReviewer, schema_text: str) -> None:
+    callback = getattr(review_atom, "schema_ready", None)
+    if callable(callback):
+        callback(schema_text)
+
+
+def _notify_property_plan_ready(
+    review_atom: AtomReviewer,
+    properties: list[PropertyAtom],
+) -> None:
+    callback = getattr(review_atom, "property_plan_ready", None)
+    if callable(callback):
+        callback(properties)
 
 
 def _detect_schema_amendments(prop_atoms: list[PropertyAtom]) -> list[dict[str, Any]]:

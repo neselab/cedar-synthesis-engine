@@ -22,6 +22,7 @@ independent of the symcc-driven ``symbolic_verified`` flag.
 from __future__ import annotations
 
 import dataclasses
+import re
 from dataclasses import dataclass
 from typing import Any, Callable, Optional, Union
 
@@ -158,11 +159,12 @@ def render_schema_declaration(atom: Stage1Atom) -> str:
     return f"// unknown atom kind: {type(atom).__name__}"
 
 
-def render_property_atom(atom: PropertyAtom, index: int, total: int) -> str:
+def render_property_atom(atom: PropertyAtom, index: int, total: int | None) -> str:
     """Render a property atom for terminal review (Stage 2 — §6.1)."""
     lines: list[str] = []
+    progress = f"[Property {index} of {total}]" if total else f"[Property {index}]"
     lines.append(
-        f"[Property {index} of {total}]  {atom.constraint_type.upper()} — "
+        f"{progress}  {atom.constraint_type.upper()} — "
         f"{atom.plain_english_summary}",
     )
     lines.append("")
@@ -179,11 +181,156 @@ def render_property_atom(atom: PropertyAtom, index: int, total: int) -> str:
     badge = VERIFIED_BADGE if atom.symbolic_verified else UNVERIFIED_BADGE
     lines.append(f"  {badge}")
     if atom.symbolic_verification_log:
-        log_summary = "; ".join(atom.symbolic_verification_log[:3])
-        lines.append(f"    [{log_summary}]")
+        for line in format_symbolic_verification_log(atom.symbolic_verification_log):
+            lines.append(f"    {line}")
     lines.append("")
     lines.append("  [A]pprove  [R]eject  [E]dit  [Q]uestion  [S]ee Cedar")
     return "\n".join(lines)
+
+
+def render_property_reference(atom: PropertyAtom) -> str:
+    """Render the review-time Cedar or explanation for a property atom.
+
+    Most ceiling/floor/sugar atoms have a reference Cedar policy. Liveness
+    atoms deliberately do not: they assert that some request must be allowed
+    and are checked through the generated verification plan.
+    """
+    if atom.reference_cedar.strip():
+        return atom.reference_cedar.strip()
+    if atom.constraint_type == "liveness":
+        return "\n".join(
+            [
+                "// Liveness property: no standalone reference policy.",
+                "// AutoCedar checks this by asking Cedar symcc whether the",
+                "// synthesized policy always denies this action/resource shape.",
+                f"// Action: {atom.action}",
+                f"// Principal types: {', '.join(atom.principal_types) or '(none)'}",
+                f"// Resource types: {', '.join(atom.resource_types) or '(none)'}",
+                f"// Intent: {atom.plain_english_summary}",
+            ],
+        )
+    return "\n".join(
+        [
+            "// No reference Cedar was attached to this property atom.",
+            f"// Constraint type: {atom.constraint_type}",
+            f"// Intent: {atom.plain_english_summary}",
+        ],
+    )
+
+
+def format_symbolic_verification_log(log: list[str]) -> list[str]:
+    """Translate internal verifier labels into user-facing review notes."""
+    parsed = [_parse_symbolic_log_line(line) for line in log]
+    has_failure = any(status == "FAILED" for _, status, _ in parsed)
+    out: list[str] = []
+
+    for name, status, detail in parsed:
+        if not status:
+            out.append(name)
+            continue
+        if name == "sugar-universal" and status == "ok" and (
+            not detail or "not applicable" in detail.lower()
+        ):
+            continue
+        if name == "type-correct":
+            if status == "ok":
+                if detail and detail != "n/a" and has_failure:
+                    out.append(f"Schema/type check: OK ({detail}).")
+                elif has_failure:
+                    out.append("Schema/type check: OK.")
+                elif detail == "n/a":
+                    out.append("Schema/type check: skipped; liveness has no Cedar body.")
+                else:
+                    out.append("Schema/type check: OK.")
+            else:
+                out.append(_type_error_message(detail))
+            continue
+        if name == "satisfiable":
+            if status == "ok":
+                if detail and "liveness atom" in detail.lower():
+                    out.append(
+                        "Liveness check: records that at least one matching request "
+                        "should be permitted.",
+                    )
+                elif has_failure:
+                    out.append(
+                        "Satisfiability check: OK; the property is not contradictory. "
+                        "This does not override the failed check above.",
+                    )
+                else:
+                    out.append(
+                        "Satisfiability check: OK; the property is not vacuous.",
+                    )
+            else:
+                out.append(
+                    "Satisfiability check failed: this encoding appears vacuous "
+                    "or contradictory. Reject or edit it before approving."
+                    + (f" Details: {_compact_detail(detail)}" if detail else ""),
+                )
+            continue
+        if name.startswith("joint-consistency"):
+            label = name.removeprefix("joint-consistency-with-")
+            if status == "ok":
+                if has_failure:
+                    out.append(f"Consistency with `{label}`: OK.")
+            else:
+                out.append(
+                    f"Consistency check failed against `{label}`: "
+                    f"{_compact_detail(detail) or 'the floor and ceiling conflict.'}",
+                )
+            continue
+        if name == "sugar-universal":
+            if status == "ok":
+                if "not applicable" not in detail.lower():
+                    out.append("Sugar encoding check: OK.")
+            else:
+                out.append(
+                    "Sugar encoding check failed: "
+                    f"{_compact_detail(detail) or 'the compiled sugar form is incomplete.'}",
+                )
+            continue
+        out.append(
+            f"{name}: {'OK' if status == 'ok' else 'failed'}"
+            + (f" — {_compact_detail(detail)}" if detail else ""),
+        )
+
+    return out
+
+
+def _parse_symbolic_log_line(line: str) -> tuple[str, str, str]:
+    name, sep, rest = line.partition(":")
+    if not sep:
+        return line, "", ""
+    rest = rest.strip()
+    status = "ok" if rest.startswith("ok") else "FAILED" if rest.startswith("FAILED") else ""
+    detail = ""
+    match = re.search(r"\((.*)\)\s*$", rest, flags=re.DOTALL)
+    if match:
+        detail = match.group(1).strip()
+    return name.strip(), status, detail
+
+
+def _type_error_message(detail: str) -> str:
+    unresolved = re.search(r"failed to resolve type:\s*([A-Za-z_][A-Za-z0-9_]*)", detail)
+    if unresolved:
+        return (
+            "Schema/type check failed: this property mentions "
+            f"`{unresolved.group(1)}`, but the approved schema does not define "
+            f"`{unresolved.group(1)}` as an entity/type. Reject or edit this atom "
+            "before approving."
+        )
+    return (
+        "Schema/type check failed: Cedar rejected this property against the current "
+        "schema. Reject or edit this atom before approving."
+        + (f" Details: {_compact_detail(detail)}" if detail else "")
+    )
+
+
+def _compact_detail(detail: str, limit: int = 260) -> str:
+    compacted = " ".join(detail.split())
+    if len(compacted) <= limit:
+        return compacted
+    return compacted[: limit - 3].rstrip() + "..."
 
 
 # ---------------------------------------------------------------------------
@@ -334,7 +481,7 @@ def _review_one_atom(
         if key == "S":
             if isinstance(current, PropertyAtom):
                 output_fn("```cedar")
-                output_fn(current.reference_cedar or "// liveness property has no reference policy")
+                output_fn(render_property_reference(current))
                 output_fn("```")
             else:
                 output_fn("```cedarschema")

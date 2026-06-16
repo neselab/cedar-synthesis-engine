@@ -8,10 +8,14 @@ from pathlib import Path
 
 import pytest
 
+from autocedar.atoms import PropertyAtom
 from autocedar.tui import (
     AutoCedarApp,
     _describe_author_action,
+    _property_overview_text,
     _redact_sensitive_input,
+    _render_cedar_for_review,
+    _schema_overview_text,
     _split_review_input,
     interpret_natural_language,
     parse_author_args,
@@ -77,6 +81,72 @@ def test_split_review_input_supports_aliases_and_short_keys() -> None:
     assert _split_review_input("E name=User") == ("E", "name=User")
 
 
+def test_schema_overview_extracts_entity_hierarchy_and_actions() -> None:
+    overview = _schema_overview_text(
+        """entity Person;
+
+entity Doctor in [Person] {
+    careTeam: Set<Patient>,
+};
+
+entity Record {
+    patient: Patient,
+};
+
+action readRecord appliesTo {
+    principal: [Doctor],
+    resource: [Record],
+    context: {
+        now: datetime,
+    },
+};
+""",
+    )
+
+    assert "Doctor in [Person]" in overview
+    assert "careTeam: Set<Patient>" in overview
+    assert "readRecord: [Doctor] -> [Record]" in overview
+    assert "now: datetime" in overview
+
+
+def test_property_overview_groups_by_action() -> None:
+    overview = _property_overview_text([
+        PropertyAtom(
+            name="read_floor",
+            rationale="doctor read",
+            plain_english_summary="Doctors on the care team can read records.",
+            source_excerpt="Doctors can read records.",
+            constraint_type="floor",
+            action="readRecord",
+            principal_types=["Doctor"],
+            resource_types=["Record"],
+            reference_cedar='permit(principal, action == Action::"readRecord", resource);',
+        ),
+    ])
+
+    assert "readRecord" in overview
+    assert "FLOOR: [Doctor] -> [Record]" in overview
+    assert "Doctors on the care team" in overview
+
+
+def test_render_cedar_for_liveness_property_is_explanatory() -> None:
+    atom = PropertyAtom(
+        name="read_liveness",
+        rationale="non-empty permission",
+        plain_english_summary="At least one read request is permitted.",
+        source_excerpt="Doctors can read records.",
+        constraint_type="liveness",
+        action="readRecord",
+        principal_types=["Doctor"],
+        resource_types=["Record"],
+    )
+
+    preview = _render_cedar_for_review(atom)
+
+    assert "Liveness property" in preview
+    assert "unknown atom kind" not in preview
+
+
 def test_natural_language_verify_workspace() -> None:
     intent = interpret_natural_language("verify the workspace", has_draft=False)
     assert intent.kind == "verify"
@@ -124,6 +194,15 @@ def test_natural_language_policy_text_requests_draft_capture() -> None:
     assert intent.kind == "append_draft"
 
 
+def test_natural_language_schema_setup_statement_requests_draft_capture() -> None:
+    intent = interpret_natural_language(
+        "A document management system has Users and Documents.",
+        has_draft=False,
+    )
+
+    assert intent.kind == "append_draft"
+
+
 def test_natural_language_start_draft_request() -> None:
     intent = interpret_natural_language("start a policy draft", has_draft=False)
     assert intent.kind == "start_draft"
@@ -164,6 +243,11 @@ def test_natural_language_question_is_not_added_to_draft() -> None:
     assert intent.kind == "message"
     intent = interpret_natural_language("why is this failing?", has_draft=True)
     assert intent.kind == "message"
+
+
+def test_natural_language_clear_it_clears_existing_draft() -> None:
+    intent = interpret_natural_language("clear it", has_draft=True)
+    assert intent.kind == "clear_draft"
 
 
 def test_natural_language_synthesize_scenario() -> None:
@@ -254,6 +338,47 @@ def test_textual_app_appends_policy_text_after_drafting_is_active() -> None:
     asyncio.run(run())
 
 
+def test_textual_app_appends_schema_setup_statement_after_drafting_is_active() -> None:
+    async def run() -> None:
+        app = AutoCedarApp()
+        async with app.run_test() as pilot:
+            app._start_drafting()
+            app._handle_shell_input("A document management system has Users and Documents.")
+            assert app.pending_action is None
+            assert app.draft_lines == [
+                "A document management system has Users and Documents.",
+            ]
+            await pilot.exit(None)
+
+    asyncio.run(run())
+
+
+def test_textual_app_keeps_complaint_out_of_active_draft() -> None:
+    async def run() -> None:
+        app = AutoCedarApp()
+        async with app.run_test() as pilot:
+            app._start_drafting()
+            app._handle_shell_input("I said start a policy draft, you said it was active.")
+            assert app.draft_lines == []
+            await pilot.exit(None)
+
+    asyncio.run(run())
+
+
+def test_textual_app_plus_prefix_forces_draft_capture() -> None:
+    async def run() -> None:
+        app = AutoCedarApp()
+        async with app.run_test() as pilot:
+            app._handle_shell_input("+ A document management system has Users and Documents.")
+            assert app.drafting_active is True
+            assert app.draft_lines == [
+                "A document management system has Users and Documents.",
+            ]
+            await pilot.exit(None)
+
+    asyncio.run(run())
+
+
 def test_textual_app_clear_draft_disables_drafting() -> None:
     async def run() -> None:
         app = AutoCedarApp()
@@ -263,6 +388,61 @@ def test_textual_app_clear_draft_disables_drafting() -> None:
             app._clear_draft()
             assert app.draft_lines == []
             assert app.drafting_active is False
+            await pilot.exit(None)
+
+    asyncio.run(run())
+
+
+def test_textual_app_clear_it_while_drafting_requests_draft_clear() -> None:
+    async def run() -> None:
+        app = AutoCedarApp()
+        async with app.run_test() as pilot:
+            app._start_drafting()
+            app._handle_shell_input("clear it")
+            assert app.pending_action is not None
+            app._handle_confirmation_input("yes")
+            assert app.draft_lines == []
+            assert app.drafting_active is False
+            await pilot.exit(None)
+
+    asyncio.run(run())
+
+
+def test_textual_app_clear_draft_command_requests_draft_clear() -> None:
+    async def run() -> None:
+        app = AutoCedarApp()
+        async with app.run_test() as pilot:
+            app._start_drafting("Doctors can read assigned patient records.")
+            app._handle_command_input("/clear draft")
+            assert app.pending_action is not None
+            app._handle_confirmation_input("yes")
+            assert app.draft_lines == []
+            assert app.drafting_active is False
+            await pilot.exit(None)
+
+    asyncio.run(run())
+
+
+def test_textual_app_draft_command_starts_capture_mode() -> None:
+    async def run() -> None:
+        app = AutoCedarApp()
+        async with app.run_test() as pilot:
+            app._handle_command_input("/draft")
+            assert app.drafting_active is True
+            assert app.draft_lines == []
+            await pilot.exit(None)
+
+    asyncio.run(run())
+
+
+def test_textual_app_clear_transcript_does_not_clear_draft() -> None:
+    async def run() -> None:
+        app = AutoCedarApp()
+        async with app.run_test() as pilot:
+            app._start_drafting("Doctors can read assigned patient records.")
+            app._handle_command_input("/clear")
+            assert app.draft_lines == ["Doctors can read assigned patient records."]
+            assert app.drafting_active is True
             await pilot.exit(None)
 
     asyncio.run(run())
