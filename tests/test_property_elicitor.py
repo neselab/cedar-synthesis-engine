@@ -160,6 +160,143 @@ def _disjointness_atom() -> PropertyAtom:
     )
 
 
+def _scenario2_properties() -> list[PropertyAtom]:
+    """Expected Scenario 2 shape from the project-tracker Cedar exercise."""
+    return [
+        PropertyAtom(
+            name="view_requires_team_membership",
+            rationale="view is limited to ticket team members",
+            plain_english_summary="Only ticket team members can view a ticket.",
+            source_excerpt=(
+                "A user can view ... a ticket if they are a member of the "
+                "ticket's team."
+            ),
+            constraint_type="ceiling",
+            action="view",
+            principal_types=["User"],
+            resource_types=["Ticket"],
+            reference_cedar=(
+                'permit (principal is User, action == Action::"view", resource is Ticket) '
+                "when { principal in resource.team };"
+            ),
+        ),
+        PropertyAtom(
+            name="view_allowed_for_team_member",
+            rationale="team members must be able to view their tickets",
+            plain_english_summary="Ticket team members can view a ticket.",
+            source_excerpt=(
+                "A user can view ... a ticket if they are a member of the "
+                "ticket's team."
+            ),
+            constraint_type="floor",
+            action="view",
+            principal_types=["User"],
+            resource_types=["Ticket"],
+            reference_cedar=(
+                'permit (principal is User, action == Action::"view", resource is Ticket) '
+                "when { principal in resource.team };"
+            ),
+        ),
+        PropertyAtom(
+            name="comment_requires_team_membership",
+            rationale="comment is limited to ticket team members",
+            plain_english_summary="Only ticket team members can comment on a ticket.",
+            source_excerpt=(
+                "A user can ... comment on a ticket if they are a member of "
+                "the ticket's team."
+            ),
+            constraint_type="ceiling",
+            action="comment",
+            principal_types=["User"],
+            resource_types=["Ticket"],
+            reference_cedar=(
+                'permit (principal is User, action == Action::"comment", resource is Ticket) '
+                "when { principal in resource.team };"
+            ),
+        ),
+        PropertyAtom(
+            name="comment_allowed_for_team_member",
+            rationale="team members can comment subject to closed-ticket override",
+            plain_english_summary="Ticket team members can comment on a ticket.",
+            source_excerpt=(
+                "A user can ... comment on a ticket if they are a member of "
+                "the ticket's team."
+            ),
+            constraint_type="floor",
+            action="comment",
+            principal_types=["User"],
+            resource_types=["Ticket"],
+            reference_cedar=(
+                'permit (principal is User, action == Action::"comment", resource is Ticket) '
+                "when { principal in resource.team };"
+            ),
+        ),
+        PropertyAtom(
+            name="closed_ticket_comment_disjointness",
+            rationale="closed tickets cannot be commented on by anyone",
+            plain_english_summary="Closed tickets cannot be commented on.",
+            source_excerpt="Closed tickets cannot be commented on by anyone.",
+            constraint_type="disjointness",
+            action="comment",
+            principal_types=["User"],
+            resource_types=["Ticket"],
+            reference_cedar=(
+                'permit (principal is User, action == Action::"comment", resource is Ticket) '
+                'when { !(resource.status == "closed") };'
+            ),
+            disjoint_with="comment_closed_ticket_path",
+            disjoint_target_body='resource.status == "closed"',
+        ),
+        PropertyAtom(
+            name="close_exact_team_member_open",
+            rationale="closing requires team membership and open status",
+            plain_english_summary="Team members can close open tickets only.",
+            source_excerpt=(
+                "A user can close a ticket only if they are a member of the "
+                "team and the ticket is currently open."
+            ),
+            constraint_type="ceiling",
+            action="close",
+            principal_types=["User"],
+            resource_types=["Ticket"],
+            reference_cedar=(
+                'permit (principal is User, action == Action::"close", resource is Ticket) '
+                'when { principal in resource.team && resource.status == "open" };'
+            ),
+        ),
+        PropertyAtom(
+            name="close_allowed_for_team_member_open",
+            rationale="team members must be able to close open tickets",
+            plain_english_summary="Team members can close open tickets.",
+            source_excerpt=(
+                "Carol asks to close an open Alpha ticket. Allowed — member, "
+                "and the ticket is open."
+            ),
+            constraint_type="floor",
+            action="close",
+            principal_types=["User"],
+            resource_types=["Ticket"],
+            reference_cedar=(
+                'permit (principal is User, action == Action::"close", resource is Ticket) '
+                'when { principal in resource.team && resource.status == "open" };'
+            ),
+        ),
+        PropertyAtom(
+            name="comment_liveness_for_team_member_open",
+            rationale="there should be at least one permitted team-member comment",
+            plain_english_summary=(
+                "At least one comment request by a team member on an open "
+                "ticket should be permitted."
+            ),
+            source_excerpt="Carol comments on that same open Alpha ticket. Allowed.",
+            constraint_type="liveness",
+            action="comment",
+            principal_types=["User"],
+            resource_types=["Ticket"],
+        ),
+    ]
+
+
 def test_ceiling_compiles_to_implies_with_reference_path() -> None:
     plan = VerificationPlanDraft(properties=[_ceiling_atom()])
     out = compile_plan(plan)
@@ -240,6 +377,34 @@ def test_disjointness_does_not_patch_floors_on_other_actions() -> None:
     # The read floor should be unchanged — no disjointness patch.
     read_floor_text = out.references["read_must_permit_owner"]
     assert "legalHold" not in read_floor_text
+
+
+def test_scenario2_uses_disjointness_for_closed_ticket_override() -> None:
+    """Scenario 2 should preserve the deny-override intent.
+
+    The source exercise teaches that "closed tickets cannot be commented on"
+    overrides the member-comment permission. AutoCedar should represent that as
+    a disjointness property, which compiles to a ceiling and patches same-action
+    comment floors.
+    """
+    properties = _scenario2_properties()
+    plan = VerificationPlanDraft(properties=properties)
+    out = compile_plan(plan)
+
+    assert "closed_ticket_comment_disjointness" in out.references
+    assert '"name": "closed_ticket_comment_disjointness"' in out.verification_plan_py
+    assert '"type": "implies"' in out.verification_plan_py
+
+    comment_floor = out.references["comment_allowed_for_team_member"]
+    assert "principal in resource.team" in comment_floor
+    assert '!(resource.status == "closed")' in comment_floor
+
+    liveness_shapes = [
+        (atom.action, tuple(atom.principal_types), tuple(atom.resource_types))
+        for atom in properties
+        if atom.constraint_type == "liveness"
+    ]
+    assert len(liveness_shapes) == len(set(liveness_shapes))
 
 
 def test_full_five_atom_plan_compiles_deterministically() -> None:

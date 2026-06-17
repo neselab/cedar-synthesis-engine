@@ -372,6 +372,31 @@ def test_propose_property_atoms_includes_schema_in_user_turn() -> None:
     assert "```cedarschema\nentity User;\n```" in kwargs["messages"][0]["content"]
 
 
+def test_property_atomization_prompt_guards_scenario2_override_shape() -> None:
+    fake = _FakeAnthropic(_make_response(PropertyAtomsResponse(atoms=[])))
+    client = LLMClient(client=fake)
+    spec = (
+        "A user can view and comment on a ticket if they are a member of the "
+        "ticket's team. Closed tickets cannot be commented on by anyone. "
+        "The no-one-comments rule overrides the permission."
+    )
+    schema = (
+        "entity Team;\n"
+        "entity User in [Team];\n"
+        "entity Ticket { team: Team, status: String, };\n"
+    )
+
+    client.propose_property_atoms(spec, schema)
+
+    kwargs = fake.messages.last_kwargs
+    system_text = "\n".join(block["text"] for block in kwargs["system"])
+    assert "Prefer `disjointness` for explicit deny/override language" in system_text
+    assert "closed tickets cannot be commented on" in system_text
+    assert "Do not emit duplicate liveness atoms" in system_text
+    assert spec in system_text
+    assert f"```cedarschema\n{schema}\n```" in kwargs["messages"][0]["content"]
+
+
 def test_propose_alternative_property_atom_includes_rejection_context() -> None:
     fake_response = _make_response(
         PropertyAtomsResponse(

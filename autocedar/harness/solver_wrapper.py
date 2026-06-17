@@ -129,7 +129,7 @@ def _run_symcc(
     Run a single `cedar symcc` check.
     Returns (passed, output_text).
     """
-    cmd = [
+    cmd_with_cvc5 = [
         CEDAR_PATH, "symcc",
         "--cvc5-path", CVC5_PATH,
         "--principal-type", principal_type,
@@ -139,21 +139,45 @@ def _run_symcc(
         "--counterexample",
         subcommand,
     ] + extra_args
+    cmd_without_cvc5 = [
+        CEDAR_PATH, "symcc",
+        "--principal-type", principal_type,
+        "--action", action,
+        "--resource-type", resource_type,
+        "--schema", schema_path,
+        "--counterexample",
+        subcommand,
+    ] + extra_args
 
     try:
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            timeout=30,
-        )
-        output = result.stdout.strip() or result.stderr.strip()
+        result = _run_symcc_command(cmd_with_cvc5)
+        output = _subprocess_output(result)
+        if _rejects_cvc5_path(output):
+            result = _run_symcc_command(cmd_without_cvc5)
+            output = _subprocess_output(result)
         passed = "VERIFIED" in output
         return passed, output
     except subprocess.TimeoutExpired:
         return False, "CVC5 solver timed out (30s limit)."
     except FileNotFoundError:
         return False, f"CVC5 not found at {CVC5_PATH}. Set CVC5 env var."
+
+
+def _run_symcc_command(cmd: list[str]) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        cmd,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+
+
+def _subprocess_output(result: subprocess.CompletedProcess[str]) -> str:
+    return result.stdout.strip() or result.stderr.strip()
+
+
+def _rejects_cvc5_path(output: str) -> bool:
+    return "unexpected argument '--cvc5-path'" in output
 
 
 def run_implies_check(

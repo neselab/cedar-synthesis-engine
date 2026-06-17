@@ -10,6 +10,7 @@ See ``docs/HITL_STEP_B_PLAN.md`` §9 acceptance criteria 2 and 3.
 from __future__ import annotations
 
 import os
+import subprocess
 import textwrap
 from pathlib import Path
 
@@ -22,6 +23,7 @@ from autocedar.atoms import (
 from autocedar.grounding import (
     CEDAR_PATH,
     CVC5_PATH,
+    _run_symcc,
     find_distinguishing_request,
     generate_adversarial_examples,
     symbolic_verify_atom,
@@ -234,6 +236,51 @@ def test_consistent_floor_passes_joint_consistency(
     )
     assert result.all_passed, f"checks failed: {result.log_lines()}"
     assert floor.symbolic_verified is True
+
+
+def test_run_symcc_retries_without_cvc5_path_when_cedar_rejects_flag(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[list[str]] = []
+
+    def fake_run(
+        cmd: list[str],
+        *,
+        capture_output: bool,
+        text: bool,
+        timeout: int,
+    ) -> subprocess.CompletedProcess[str]:
+        _ = capture_output, text, timeout
+        calls.append(cmd)
+        if "--cvc5-path" in cmd:
+            return subprocess.CompletedProcess(
+                cmd,
+                2,
+                "",
+                "error: unexpected argument '--cvc5-path' found\nUsage: cedar symcc",
+            )
+        return subprocess.CompletedProcess(
+            cmd,
+            0,
+            "✓ Policy set 1 implies policy set 2: VERIFIED",
+            "",
+        )
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+
+    passed, output = _run_symcc(
+        "schema.cedarschema",
+        "User",
+        "read",
+        "Resource",
+        "implies",
+        ["--policies1", "a.cedar", "--policies2", "b.cedar"],
+    )
+
+    assert passed is True
+    assert "VERIFIED" in output
+    assert "--cvc5-path" in calls[0]
+    assert "--cvc5-path" not in calls[1]
 
 
 @requires_solvers

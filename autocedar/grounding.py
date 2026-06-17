@@ -129,7 +129,7 @@ def _run_symcc(
     output (which contains the counterexample for failed checks) is
     returned for downstream callers.
     """
-    cmd = [
+    cmd_with_cvc5 = [
         CEDAR_PATH,
         "symcc",
         "--cvc5-path",
@@ -145,19 +145,48 @@ def _run_symcc(
         "--counterexample",
         subcommand,
     ] + extra_args
+    cmd_without_cvc5 = [
+        CEDAR_PATH,
+        "symcc",
+        "--principal-type",
+        principal_type,
+        "--action",
+        _action_literal(action),
+        "--resource-type",
+        resource_type,
+        "--schema",
+        schema_path,
+        "--counterexample",
+        subcommand,
+    ] + extra_args
     try:
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            timeout=timeout_s,
-        )
+        result = _run_symcc_command(cmd_with_cvc5, timeout_s)
+        output = _subprocess_output(result)
+        if _rejects_cvc5_path(output):
+            result = _run_symcc_command(cmd_without_cvc5, timeout_s)
     except subprocess.TimeoutExpired:
         return False, "symcc timed out"
     except FileNotFoundError:
         return False, f"cedar binary not found at {CEDAR_PATH}"
-    output = (result.stdout.strip() + "\n" + result.stderr.strip()).strip()
+    output = _subprocess_output(result)
     return ("VERIFIED" in output), output
+
+
+def _run_symcc_command(cmd: list[str], timeout_s: int) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        cmd,
+        capture_output=True,
+        text=True,
+        timeout=timeout_s,
+    )
+
+
+def _subprocess_output(result: subprocess.CompletedProcess[str]) -> str:
+    return (result.stdout.strip() + "\n" + result.stderr.strip()).strip()
+
+
+def _rejects_cvc5_path(output: str) -> bool:
+    return "unexpected argument '--cvc5-path'" in output
 
 
 def _principal_resource(atom: PropertyAtom) -> tuple[str, str]:

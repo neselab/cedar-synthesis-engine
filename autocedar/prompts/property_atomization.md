@@ -37,8 +37,17 @@ Rules:
   floor and ceiling references; if it only gives a sufficient condition, use a
   floor; if it only gives a necessary condition, use a ceiling.
 - Use `liveness` when at least one request for an action/resource shape must be permitted; leave `reference_cedar` empty for liveness. For liveness `plain_english_summary`, use user-facing wording like "At least one <action> request should be permitted ..." and do not start with formal phrasing like "There exists ...".
+- Do not emit duplicate liveness atoms for the same action/resource shape. If a
+  floor already establishes a concrete permitted request shape, add at most one
+  liveness atom for that shape only when it adds useful user-review signal.
 - Use `rate_limit` only when the spec requires a numeric threshold over a context counter. Fill `rate_limit_window`, `rate_limit_threshold`, and `rate_limit_counter_attr`.
 - Use `disjointness` only when a condition must be excluded from otherwise-permitted access. Fill `disjoint_with` and `disjoint_target_body`; `disjoint_target_body` must be the Cedar boolean expression whose negation should patch same-action floors.
+- Prefer `disjointness` for explicit deny/override language such as "cannot",
+  "no one", "denied", "off-limits", "overrides", or "wins over a permission".
+  Example: "closed tickets cannot be commented on" should become a disjointness
+  atom for the `comment` action with `disjoint_target_body` like
+  `resource.status == "closed"` so same-action floors are patched with
+  `!(resource.status == "closed")`.
 - Each non-liveness `reference_cedar` must be a complete Cedar policy ending with `;`.
 - Guard optional attributes with `has` before reading them.
 - Do not use Cedar templates.

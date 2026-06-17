@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import subprocess
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -76,3 +77,45 @@ def test_harness_synthesizer_rejects_non_convergence(
     synthesize = make_harness_synthesizer(max_iters=3, quiet=True)
     with pytest.raises(RuntimeError, match="did not converge"):
         synthesize(scenario)
+
+
+def test_harness_symcc_retries_without_cvc5_path_when_cedar_rejects_flag(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import autocedar.harness.solver_wrapper as solver_wrapper
+
+    calls: list[list[str]] = []
+
+    def fake_run(
+        cmd: list[str],
+        *,
+        capture_output: bool,
+        text: bool,
+        timeout: int,
+    ) -> subprocess.CompletedProcess[str]:
+        _ = capture_output, text, timeout
+        calls.append(cmd)
+        if "--cvc5-path" in cmd:
+            return subprocess.CompletedProcess(
+                cmd,
+                2,
+                "",
+                "error: unexpected argument '--cvc5-path' found\nUsage: cedar symcc",
+            )
+        return subprocess.CompletedProcess(cmd, 0, "VERIFIED", "")
+
+    monkeypatch.setattr(solver_wrapper.subprocess, "run", fake_run)
+
+    passed, output = solver_wrapper._run_symcc(
+        "schema.cedarschema",
+        "User",
+        'Action::"read"',
+        "Resource",
+        "implies",
+        ["--policies1", "a.cedar", "--policies2", "b.cedar"],
+    )
+
+    assert passed is True
+    assert output == "VERIFIED"
+    assert "--cvc5-path" in calls[0]
+    assert "--cvc5-path" not in calls[1]

@@ -296,19 +296,29 @@ class TuiAtomReviewer:
 
     def __call__(self, atom: Any) -> ReviewedAtom:
         self.sequence += 1
+        stage_label = self.stage_label
         if self.stage_total is None:
             index = self.sequence
             total = None
         else:
             self.stage_index += 1
-            index = self.stage_index
-            total = self.stage_total
+            if self.stage_index > self.stage_total:
+                index = self.stage_index - self.stage_total
+                total = None
+                stage_label = f"{self.stage_label} replacement"
+                self.app.call_from_thread(
+                    self.app._say,
+                    "Reviewing a replacement property atom proposed after rejection.",
+                )
+            else:
+                index = self.stage_index
+                total = self.stage_total
         request = ReviewRequest(
             atom=atom,
             sequence=self.sequence,
             index=index,
             total=total,
-            stage_label=self.stage_label,
+            stage_label=stage_label,
         )
         self.app.call_from_thread(self.app.begin_review, request)
         request.event.wait()
