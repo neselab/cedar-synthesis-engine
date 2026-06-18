@@ -20,6 +20,7 @@ from autocedar.tui import (
     _redact_sensitive_input,
     _render_cedar_for_review,
     _schema_overview_text,
+    _slash_command_palette_text,
     _split_review_input,
     interpret_natural_language,
     parse_author_args,
@@ -42,6 +43,20 @@ def test_setup_and_doctor_are_discoverable_in_tui_help() -> None:
     assert "doctor" in COMMANDS
     assert "/setup" in HELP_TEXT
     assert "/doctor" in HELP_TEXT
+
+
+def test_slash_command_palette_filters_commands() -> None:
+    all_commands = _slash_command_palette_text("/")
+    assert "/setup" in all_commands
+    assert "/doctor" in all_commands
+
+    filtered = _slash_command_palette_text("/se")
+    assert "/setup" in filtered
+    assert "/settings" in filtered
+    assert "/doctor" not in filtered
+
+    missing = _slash_command_palette_text("/zz")
+    assert "No shortcut matches" in missing
 
 
 def test_parse_author_args_defaults_and_options() -> None:

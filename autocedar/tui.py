@@ -108,6 +108,28 @@ COMMANDS = {
     "verify",
 }
 
+SLASH_COMMAND_DESCRIPTIONS = {
+    "/author": "run HITL authoring for a spec",
+    "/verify": "verify a workspace",
+    "/synthesize": "run the synthesis harness",
+    "/setup": "show Cedar/CVC5 install steps",
+    "/doctor": "check API key and verifier setup",
+    "/settings": "show model, effort, and API-key status",
+    "/model": "set the default LLM model",
+    "/effort": "set low, medium, high, or max effort",
+    "/apikey": "set or clear the API key for this session",
+    "/draft": "show, start, or clear draft capture",
+    "/artifacts": "show latest session/schema/policy paths",
+    "/schema": "show latest or provided Cedar schema",
+    "/policy": "show latest or provided Cedar policy",
+    "/copy": "copy text or artifact paths",
+    "/save": "save the current draft",
+    "/clear": "clear transcript or draft",
+    "/new": "clear the current draft",
+    "/help": "show full help",
+    "/quit": "exit AutoCedar",
+}
+
 EFFORT_LEVELS = {"low", "medium", "high", "max"}
 
 
@@ -423,6 +445,17 @@ class AutoCedarApp(App[None]):
         border: tall #8fc9bd;
     }
 
+    #command_palette {
+        display: none;
+        width: 1fr;
+        max-height: 10;
+        margin-top: 1;
+        padding: 0 2;
+        background: #1d1712;
+        color: #f3e6d3;
+        border: tall #d99a5f;
+    }
+
     #side {
         width: 38;
         min-width: 34;
@@ -488,6 +521,7 @@ class AutoCedarApp(App[None]):
                     auto_scroll=True,
                 )
                 yield Static("", id="stream")
+                yield Static("", id="command_palette")
             with Vertical(id="side"):
                 yield Static(BRAND_TEXT, id="brand")
                 yield Static(id="status_text")
@@ -528,6 +562,7 @@ class AutoCedarApp(App[None]):
     def on_input_submitted(self, message: Input.Submitted) -> None:
         raw = message.value.strip()
         message.input.value = ""
+        self._hide_command_palette()
         if not raw:
             return
         self._write(
@@ -775,6 +810,13 @@ class AutoCedarApp(App[None]):
             self._handle_natural_language_input(raw)
             return
         self._handle_command_input(raw)
+
+    def on_input_changed(self, message: Input.Changed) -> None:
+        value = message.value
+        if value.startswith("/") and self.pending_review is None:
+            self._show_command_palette(value)
+        else:
+            self._hide_command_palette()
 
     def _handle_natural_language_input(self, raw: str) -> None:
         lowered = _squash(raw).lower()
@@ -1793,6 +1835,16 @@ class AutoCedarApp(App[None]):
         stream = self.query_one("#stream", Static)
         stream.update("")
         stream.display = False
+
+    def _show_command_palette(self, value: str) -> None:
+        palette = self.query_one("#command_palette", Static)
+        palette.update(_slash_command_palette_text(value))
+        palette.display = True
+
+    def _hide_command_palette(self) -> None:
+        palette = self.query_one("#command_palette", Static)
+        palette.update("")
+        palette.display = False
 
     def _update_status(self) -> None:
         draft_state = f"{len(self.draft_lines)} line(s)"
@@ -2841,6 +2893,33 @@ def _mask_api_key(value: str | None) -> str:
     if len(value) <= 12:
         return value[:3] + "..."
     return f"{value[:7]}...{value[-4:]}"
+
+
+def _slash_command_palette_text(value: str) -> str:
+    query = value.strip().lower()
+    matches = [
+        (command, description)
+        for command, description in SLASH_COMMAND_DESCRIPTIONS.items()
+        if command.startswith(query)
+    ]
+    if not matches:
+        needle = query.lstrip("/")
+        matches = [
+            (command, description)
+            for command, description in SLASH_COMMAND_DESCRIPTIONS.items()
+            if needle in command.lstrip("/") or needle in description.lower()
+        ]
+    if not matches:
+        return (
+            f"[bold {COPPER}]Slash commands[/]\n"
+            f"[dim {MUTED}]No shortcut matches {escape(value)}. Type /help for the full command list.[/]"
+        )
+    lines = [f"[bold {COPPER}]Slash commands[/] [dim {MUTED}]press Enter to run[/]"]
+    for command, description in matches[:10]:
+        lines.append(f"[bold {AMBER}]{command:<12}[/] [dim {MUTED}]{escape(description)}[/]")
+    if len(matches) > 10:
+        lines.append(f"[dim {MUTED}]+ {len(matches) - 10} more; keep typing to narrow.[/]")
+    return "\n".join(lines)
 
 
 def _copy_to_clipboard(text: str) -> ClipboardResult:
