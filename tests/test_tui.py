@@ -20,6 +20,7 @@ from autocedar.tui import (
     _redact_sensitive_input,
     _render_cedar_for_review,
     _schema_overview_text,
+    _slash_command_completion,
     _slash_command_palette_text,
     _split_review_input,
     interpret_natural_language,
@@ -49,6 +50,7 @@ def test_slash_command_palette_filters_commands() -> None:
     all_commands = _slash_command_palette_text("/")
     assert "/setup" in all_commands
     assert "/doctor" in all_commands
+    assert "Tab completes" in all_commands
 
     filtered = _slash_command_palette_text("/se")
     assert "/setup" in filtered
@@ -57,6 +59,13 @@ def test_slash_command_palette_filters_commands() -> None:
 
     missing = _slash_command_palette_text("/zz")
     assert "No shortcut matches" in missing
+
+
+def test_slash_command_completion_uses_first_palette_match() -> None:
+    assert _slash_command_completion("/se") == "/setup "
+    assert _slash_command_completion("/doctor") is None
+    assert _slash_command_completion("doctor") is None
+    assert _slash_command_completion("/zz") is None
 
 
 def test_parse_author_args_defaults_and_options() -> None:

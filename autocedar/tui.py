@@ -392,6 +392,7 @@ class AutoCedarApp(App[None]):
     BINDINGS = [
         ("ctrl+c", "quit", "Quit"),
         ("ctrl+l", "clear_log", "Clear"),
+        ("tab", "complete_slash_command", "Complete"),
     ]
 
     CSS = """
@@ -558,6 +559,15 @@ class AutoCedarApp(App[None]):
                 f"[dim {MUTED}]Draft was not changed. Use /clear draft or /new "
                 "to clear the working policy draft.[/]",
             )
+
+    def action_complete_slash_command(self) -> None:
+        command_input = self.query_one("#command", Input)
+        completion = _slash_command_completion(command_input.value)
+        if completion is None:
+            return
+        command_input.value = completion
+        command_input.cursor_position = len(completion)
+        self._show_command_palette(completion)
 
     def on_input_submitted(self, message: Input.Submitted) -> None:
         raw = message.value.strip()
@@ -2896,7 +2906,36 @@ def _mask_api_key(value: str | None) -> str:
 
 
 def _slash_command_palette_text(value: str) -> str:
+    matches = _slash_command_matches(value)
+    if not matches:
+        return (
+            f"[bold {COPPER}]Slash commands[/]\n"
+            f"[dim {MUTED}]No shortcut matches {escape(value)}. Type /help for the full command list.[/]"
+        )
+    lines = [f"[bold {COPPER}]Slash commands[/] [dim {MUTED}]Tab completes, Enter runs[/]"]
+    for command, description in matches[:10]:
+        lines.append(f"[bold {AMBER}]{command:<12}[/] [dim {MUTED}]{escape(description)}[/]")
+    if len(matches) > 10:
+        lines.append(f"[dim {MUTED}]+ {len(matches) - 10} more; keep typing to narrow.[/]")
+    return "\n".join(lines)
+
+
+def _slash_command_completion(value: str) -> str | None:
+    if not value.startswith("/"):
+        return None
+    matches = _slash_command_matches(value)
+    if not matches:
+        return None
+    command = matches[0][0]
+    if value == command or value.startswith(command + " "):
+        return None
+    return command + " "
+
+
+def _slash_command_matches(value: str) -> list[tuple[str, str]]:
     query = value.strip().lower()
+    if not query.startswith("/"):
+        return []
     matches = [
         (command, description)
         for command, description in SLASH_COMMAND_DESCRIPTIONS.items()
@@ -2909,17 +2948,7 @@ def _slash_command_palette_text(value: str) -> str:
             for command, description in SLASH_COMMAND_DESCRIPTIONS.items()
             if needle in command.lstrip("/") or needle in description.lower()
         ]
-    if not matches:
-        return (
-            f"[bold {COPPER}]Slash commands[/]\n"
-            f"[dim {MUTED}]No shortcut matches {escape(value)}. Type /help for the full command list.[/]"
-        )
-    lines = [f"[bold {COPPER}]Slash commands[/] [dim {MUTED}]press Enter to run[/]"]
-    for command, description in matches[:10]:
-        lines.append(f"[bold {AMBER}]{command:<12}[/] [dim {MUTED}]{escape(description)}[/]")
-    if len(matches) > 10:
-        lines.append(f"[dim {MUTED}]+ {len(matches) - 10} more; keep typing to narrow.[/]")
-    return "\n".join(lines)
+    return matches
 
 
 def _copy_to_clipboard(text: str) -> ClipboardResult:
