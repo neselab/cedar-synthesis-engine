@@ -19,6 +19,7 @@ from rich.markup import escape
 from rich.panel import Panel
 from rich.syntax import Syntax
 from textual.app import App, ComposeResult
+from textual.binding import Binding
 from textual.containers import Horizontal, Vertical
 from textual import events
 from textual.message import Message
@@ -424,7 +425,7 @@ class AutoCedarApp(App[None]):
     BINDINGS = [
         ("ctrl+c", "quit", "Quit"),
         ("ctrl+l", "clear_log", "Clear"),
-        ("tab", "complete_slash_command", "Complete"),
+        Binding("tab", "complete_slash_command", "Complete", priority=True),
     ]
 
     CSS = """

@@ -72,6 +72,22 @@ def test_slash_command_completion_uses_first_palette_match() -> None:
     assert _slash_command_completion("/zz") is None
 
 
+def test_textual_tab_key_completes_focused_command_input() -> None:
+    async def run() -> None:
+        app = AutoCedarApp()
+        async with app.run_test() as pilot:
+            command = app.query_one("#command", CommandInput)
+            command.value = "/se"
+            command.cursor_position = len(command.value)
+            await pilot.press("tab")
+            await pilot.pause()
+            assert command.value == "/setup "
+            assert command.cursor_position == len("/setup ")
+            await pilot.exit(None)
+
+    asyncio.run(run())
+
+
 def test_parse_author_args_defaults_and_options() -> None:
     options = parse_author_args([
         "spec.md",
