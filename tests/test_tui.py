@@ -13,6 +13,8 @@ from autocedar.atoms import PropertyAtom
 from autocedar.tui import (
     AutoCedarApp,
     ClipboardResult,
+    COMMANDS,
+    HELP_TEXT,
     _describe_author_action,
     _property_overview_text,
     _redact_sensitive_input,
@@ -33,6 +35,13 @@ def test_tokenize_accepts_slash_commands_and_quotes() -> None:
         "--out",
         "runs",
     ]
+
+
+def test_setup_and_doctor_are_discoverable_in_tui_help() -> None:
+    assert "setup" in COMMANDS
+    assert "doctor" in COMMANDS
+    assert "/setup" in HELP_TEXT
+    assert "/doctor" in HELP_TEXT
 
 
 def test_parse_author_args_defaults_and_options() -> None:

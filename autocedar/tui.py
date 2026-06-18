@@ -91,6 +91,7 @@ COMMANDS = {
     "artifacts",
     "clear",
     "copy",
+    "doctor",
     "draft",
     "effort",
     "exit",
@@ -102,6 +103,7 @@ COMMANDS = {
     "save",
     "schema",
     "settings",
+    "setup",
     "synthesize",
     "verify",
 }
@@ -137,6 +139,8 @@ Slash shortcuts are also available:
   [#f0c678]/author SPEC[/] [--out DIR] [--session-id ID] [--schema PATH] [--model MODEL] [--effort high]
   [#f0c678]/verify[/] [WORKSPACE]
   [#f0c678]/synthesize SCENARIO...[/] [--out DIR] [--max-iters N] [--no-review]
+  [#f0c678]/setup[/]                 show local Cedar/CVC5 install steps
+  [#f0c678]/doctor[/]                check API-key, Cedar SymCC, and CVC5 setup
   [#f0c678]/settings[/]              show model, effort, and API key status
   [#f0c678]/model MODEL[/]           set the default LLM model
   [#f0c678]/effort low|medium|high|max[/]
@@ -190,6 +194,8 @@ COMMAND_RAIL = """\
 [#f0c678]/author[/] spec.md
 [#f0c678]/verify[/] workspace
 [#f0c678]/synthesize[/] scenario
+[#f0c678]/setup[/]
+[#f0c678]/doctor[/]
 [#f0c678]/settings[/]
 [#f0c678]/model[/] claude-opus-4-7
 [#f0c678]/effort[/] high
@@ -505,6 +511,7 @@ class AutoCedarApp(App[None]):
             f"[dim {MUTED}]Examples: verify the workspace; save this as spec.md; "
             "start a policy draft; author this; show the draft.[/]",
         )
+        self._show_setup_hint_if_needed()
         self._update_status()
         self._clear_stream_output()
         self.query_one(Input).focus()
@@ -897,6 +904,10 @@ class AutoCedarApp(App[None]):
                 self._handle_clear_command(args)
             elif command == "settings":
                 self._show_settings()
+            elif command == "setup":
+                self._show_setup_plan()
+            elif command == "doctor":
+                self._show_doctor_report()
             elif command == "model":
                 self._handle_model_command(args)
             elif command == "effort":
@@ -1101,6 +1112,48 @@ class AutoCedarApp(App[None]):
             Panel(
                 self._settings_text(),
                 title=f"[bold {COPPER}]Runtime settings[/]",
+                border_style=TEAL,
+                padding=(1, 2),
+            ),
+        )
+
+    def _show_setup_hint_if_needed(self) -> None:
+        from autocedar.setup_tools import build_setup_plan
+
+        plan = build_setup_plan()
+        if not plan.needs_install and not plan.blocked:
+            return
+        self._write(
+            Panel(
+                f"[bold {AMBER}]Verifier setup is incomplete.[/]\n\n"
+                f"Type [bold {AMBER}]/setup[/] to see the exact Cedar/CVC5 install steps, "
+                f"then run [bold {AMBER}]autocedar setup --yes[/] from your terminal if you want AutoCedar to install what it can.\n"
+                f"Type [bold {AMBER}]/doctor[/] anytime to re-check the environment.",
+                title=f"[bold {COPPER}]setup needed[/]",
+                border_style=AMBER,
+                padding=(1, 2),
+            ),
+        )
+
+    def _show_setup_plan(self) -> None:
+        from autocedar.setup_tools import build_setup_plan, format_setup_plan
+
+        self._write(
+            Panel(
+                format_setup_plan(build_setup_plan()),
+                title=f"[bold {COPPER}]Verifier setup[/]",
+                border_style=TEAL,
+                padding=(1, 2),
+            ),
+        )
+
+    def _show_doctor_report(self) -> None:
+        from autocedar.doctor import format_doctor_report, run_doctor
+
+        self._write(
+            Panel(
+                format_doctor_report(run_doctor()),
+                title=f"[bold {COPPER}]Doctor[/]",
                 border_style=TEAL,
                 padding=(1, 2),
             ),
