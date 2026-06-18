@@ -34,6 +34,20 @@ Use this if you just want to run the AutoCedar agent. This installs a persistent
    If your shell cannot find `autocedar`, restart the terminal. `uv` will also
    print the tool-bin directory it added to PATH.
 
+   You can also install with `pip`, but only when that `pip` belongs to
+   Python 3.11 or newer:
+
+   ```bash
+   python3.11 -m pip install --upgrade autocedar
+   # or, if python3 is already 3.11+
+   python3 -m pip install --upgrade autocedar
+   autocedar --version
+   ```
+
+   If `pip install autocedar` says `No matching distribution found`, check
+   `python3 --version`. AutoCedar requires Python 3.11+, and older Python
+   interpreters will not see compatible PyPI releases.
+
 3. Save your Anthropic API key:
 
    ```bash
@@ -42,7 +56,8 @@ Use this if you just want to run the AutoCedar agent. This installs a persistent
 
    Paste the key when prompted. AutoCedar writes it to your user config
    (`~/.config/autocedar/.env` by default), redacts it in the terminal output,
-   validates it with Anthropic before saving, and uses it on the next launch.
+   validates it with Anthropic before saving, and uses it immediately and on
+   later launches.
    You can also run `autocedar apikey sk-ant-...` if you prefer a one-line
    command. Do not share or commit your API key.
 
@@ -469,6 +484,19 @@ uv tool install autocedar
 autocedar
 ```
 
+`pip` also works when it is tied to Python 3.11+:
+
+```bash
+python3.11 -m pip install --upgrade autocedar
+# or, if python3 is already 3.11+
+python3 -m pip install --upgrade autocedar
+autocedar --version
+```
+
+If plain `pip install autocedar` cannot find a matching distribution, that
+usually means the `pip` command is using Python 3.10 or older. Use a Python
+3.11+ interpreter explicitly, or use the `uv tool install autocedar` path above.
+
 To upgrade a persistent install:
 
 ```bash
@@ -816,7 +844,7 @@ Authoring writes session artifacts under the `--out` directory, usually
 | Symptom | Fix |
 | --- | --- |
 | Chat says no API key is loaded | Run `autocedar apikey`, use `/apikey` in the TUI, or export `ANTHROPIC_API_KEY`. AutoCedar loads `~/.config/autocedar/.env` on startup. |
-| API key works in shell but not TUI | Run `autocedar doctor` to confirm what AutoCedar sees. Shell env wins, then project `.env`, then user config. |
+| API key works in shell but not TUI | Run `autocedar doctor` to confirm what AutoCedar sees. Shell env wins first; otherwise the saved AutoCedar user config key wins over a stale project `.env` key. |
 | Cannot select/copy from the TUI | Textual full-screen apps can intercept mouse selection. Use `/copy last`, `/copy transcript`, `/copy session`, `/copy schema path`, `/copy policy path`, `/copy schema`, or `/copy policy`. Some terminals also allow mouse selection while holding Shift. If your terminal/container has no clipboard command, AutoCedar shows a copy fallback panel for manual selection. |
 | Verification says Cedar is missing | Set `CEDAR=/path/to/cedar` or install the Cedar CLI. |
 | Verification says CVC5 is missing | Install CVC5, confirm `cvc5 --version` works, then set `CVC5=$(command -v cvc5)` in `.env` if needed. |
