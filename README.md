@@ -11,9 +11,10 @@ harness to verify and synthesize Cedar policies against formal bounds.
 You do **not** need to clone this repository to use AutoCedar. The normal path
 is the published Python package.
 
-### Option A: Run From PyPI
+### Option A: Install From PyPI
 
-Use this if you just want to run the AutoCedar agent.
+Use this if you just want to run the AutoCedar agent. This installs a persistent
+`autocedar` command on your PATH.
 
 1. Install `uv` if you do not have it:
 
@@ -23,55 +24,65 @@ Use this if you just want to run the AutoCedar agent.
 
    Restart your terminal after installing `uv`.
 
-2. Save your Anthropic API key:
+2. Install AutoCedar:
 
    ```bash
-   uvx --refresh --from autocedar@latest autocedar apikey
+   uv tool install autocedar
+   autocedar --version
+   ```
+
+   If your shell cannot find `autocedar`, restart the terminal. `uv` will also
+   print the tool-bin directory it added to PATH.
+
+3. Save your Anthropic API key:
+
+   ```bash
+   autocedar apikey
    ```
 
    Paste the key when prompted. AutoCedar writes it to your user config
    (`~/.config/autocedar/.env` by default), redacts it in the terminal output,
-   validates it with Anthropic before saving, and uses it on the next launch. You can also run
-   `uvx --refresh --from autocedar@latest autocedar apikey sk-ant-...` if you prefer a one-line command. Do not
-   share or commit your API key.
+   validates it with Anthropic before saving, and uses it on the next launch.
+   You can also run `autocedar apikey sk-ant-...` if you prefer a one-line
+   command. Do not share or commit your API key.
 
-3. Install/check the local verifier tools:
+4. Install/check the local verifier tools:
 
    ```bash
-   uvx --refresh --from autocedar@latest autocedar setup --yes
-   uvx --refresh --from autocedar@latest autocedar doctor
+   autocedar setup --yes
+   autocedar doctor
    ```
 
    `setup` installs or prints install steps for Cedar CLI and CVC5. `doctor`
    verifies the exact toolchain AutoCedar will use.
 
-4. Start AutoCedar:
+5. Start AutoCedar:
 
    ```bash
-   uvx --refresh --from autocedar@latest autocedar
+   autocedar
    ```
 
 Already tried AutoCedar before? Use one of these update paths:
 
 ```bash
-# One-off: refresh the cached package and run the latest PyPI release.
-uvx --refresh --from autocedar@latest autocedar
-
-# Persistent install: only if you previously ran `uv tool install autocedar`.
+# Persistent install.
 uv tool upgrade autocedar
 
 # If you want to upgrade every installed uv tool.
 uv tool upgrade --all
+
+# One-off latest run without installing/upgrading the persistent command.
+uvx --refresh --from autocedar@latest autocedar
 ```
 
 Check which version you are running:
 
 ```bash
+# Persistent install.
+autocedar --version
+
 # One-off latest package.
 uvx --refresh --from autocedar@latest autocedar --version
-
-# Persistent uv tool install, if you used `uv tool install autocedar`.
-autocedar --version
 
 # Repo-local development checkout.
 uv run autocedar --version
@@ -81,7 +92,8 @@ uv run autocedar --version
 autocedar@latest autocedar` is a one-off latest run; it does not register
 AutoCedar as a persistent tool. `uv tool list` only shows tools installed with
 `uv tool install autocedar`, so AutoCedar not appearing there is expected if you
-use the `uvx` path.
+use the `uvx` path. For normal use, prefer `uv tool install autocedar`, then run
+`autocedar`.
 
 ### Option B: Local From The Repo
 
@@ -450,17 +462,18 @@ when { principal.department == "Engineering" && !resource.is_locked };
 
 ## Detailed Setup Reference
 
-AutoCedar is published on PyPI. For normal use, run the latest package directly:
-
-```bash
-uvx --refresh --from autocedar@latest autocedar
-```
-
-For a persistent command on your PATH:
+AutoCedar is published on PyPI. For normal use, install the persistent command:
 
 ```bash
 uv tool install autocedar
 autocedar
+```
+
+To upgrade a persistent install:
+
+```bash
+uv tool upgrade autocedar
+autocedar --version
 ```
 
 For repo-local development, use:
@@ -474,15 +487,21 @@ console script. Verification also needs the Cedar CLI and CVC5 solver. Use the
 guided setup path:
 
 ```bash
-uvx --refresh --from autocedar@latest autocedar apikey
-uvx --refresh --from autocedar@latest autocedar setup --yes
-uvx --refresh --from autocedar@latest autocedar doctor
-uvx --refresh --from autocedar@latest autocedar --version
-uvx --refresh --from autocedar@latest autocedar
+autocedar apikey
+autocedar setup --yes
+autocedar doctor
+autocedar --version
+autocedar
 ```
 
 If setup cannot safely install a system dependency on your platform, it prints
 the exact blocked prerequisite. Docker/GHCR remains the fully bundled path.
+
+For a one-off latest run without installing a persistent command:
+
+```bash
+uvx --refresh --from autocedar@latest autocedar
+```
 
 ### External Dependencies
 
@@ -796,8 +815,8 @@ Authoring writes session artifacts under the `--out` directory, usually
 
 | Symptom | Fix |
 | --- | --- |
-| Chat says no API key is loaded | Run `uvx --refresh --from autocedar@latest autocedar apikey`, use `/apikey` in the TUI, or export `ANTHROPIC_API_KEY`. AutoCedar loads `~/.config/autocedar/.env` on startup. |
-| API key works in shell but not TUI | Run `uvx --refresh --from autocedar@latest autocedar doctor` to confirm what AutoCedar sees. Shell env wins, then project `.env`, then user config. |
+| Chat says no API key is loaded | Run `autocedar apikey`, use `/apikey` in the TUI, or export `ANTHROPIC_API_KEY`. AutoCedar loads `~/.config/autocedar/.env` on startup. |
+| API key works in shell but not TUI | Run `autocedar doctor` to confirm what AutoCedar sees. Shell env wins, then project `.env`, then user config. |
 | Cannot select/copy from the TUI | Textual full-screen apps can intercept mouse selection. Use `/copy last`, `/copy transcript`, `/copy session`, `/copy schema path`, `/copy policy path`, `/copy schema`, or `/copy policy`. Some terminals also allow mouse selection while holding Shift. If your terminal/container has no clipboard command, AutoCedar shows a copy fallback panel for manual selection. |
 | Verification says Cedar is missing | Set `CEDAR=/path/to/cedar` or install the Cedar CLI. |
 | Verification says CVC5 is missing | Install CVC5, confirm `cvc5 --version` works, then set `CVC5=$(command -v cvc5)` in `.env` if needed. |
