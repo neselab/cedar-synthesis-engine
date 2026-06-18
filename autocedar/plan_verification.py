@@ -24,7 +24,12 @@ from pathlib import Path
 from typing import Optional
 
 from autocedar.atoms import PropertyAtom, VerificationPlanDraft
-from autocedar.grounding import _ceiling_or_floor, _principal_resource, _run_symcc
+from autocedar.grounding import (
+    _ceiling_or_floor,
+    _is_symcc_tool_error,
+    _principal_resource,
+    _run_symcc,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -38,6 +43,7 @@ class ConsistencyResult:
     unsat: bool
     core: list[str] = field(default_factory=list)
     detail: str = ""
+    tool_error: bool = False
 
 
 def symbolic_consistency_check(
@@ -94,6 +100,12 @@ def symbolic_consistency_check(
                     "implies",
                     ["--policies1", str(floor_path), "--policies2", str(ceiling_path)],
                 )
+                if _is_symcc_tool_error(output):
+                    return ConsistencyResult(
+                        unsat=False,
+                        detail=output,
+                        tool_error=True,
+                    )
                 if not passed:
                     failed_pairs.append((floor.name, ceiling.name, output[:200]))
 

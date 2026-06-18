@@ -162,6 +162,34 @@ def test_consistency_check_ignores_different_actions(schema_path: str) -> None:
     assert result.unsat is False
 
 
+def test_consistency_check_reports_symcc_setup_error(
+    monkeypatch: pytest.MonkeyPatch,
+    schema_path: str,
+) -> None:
+    def fake_run_symcc(*args: object, **kwargs: object) -> tuple[bool, str]:
+        _ = args, kwargs
+        return (
+            False,
+            "Cedar symcc setup error: this Cedar CLI was built without the `analyze` feature enabled",
+        )
+
+    import autocedar.plan_verification as plan_verification
+
+    monkeypatch.setattr(plan_verification, "_run_symcc", fake_run_symcc)
+    plan = VerificationPlanDraft(
+        properties=[
+            _ceiling("owner_only", "principal == resource.owner"),
+            _floor("owner_must", "principal == resource.owner"),
+        ],
+    )
+
+    result = symbolic_consistency_check(plan, schema_path)
+
+    assert result.unsat is False
+    assert result.tool_error is True
+    assert "analyze" in result.detail
+
+
 # ---------------------------------------------------------------------------
 # Helper-level tests for clause splitting and attribute extraction.
 # ---------------------------------------------------------------------------

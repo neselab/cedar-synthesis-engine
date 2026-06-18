@@ -301,6 +301,17 @@ def author(
         core=consistency.core,
         detail=consistency.detail,
     )
+    if consistency.tool_error:
+        session.flush_transcript()
+        return AuthorResult(
+            session_id=session_id,
+            session_dir=session.base,
+            candidate_path=Path(""),
+            plan=plan,
+            schema_text=schema_text,
+            final_user_approved=False,
+            notes=[f"Stage 1.75 verifier setup failed: {consistency.detail}"],
+        )
     if consistency.unsat:
         session.flush_transcript()
         return AuthorResult(

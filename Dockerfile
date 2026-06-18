@@ -3,9 +3,9 @@ FROM rust:1-bookworm AS cedar-builder
 ARG CEDAR_POLICY_CLI_VERSION=
 
 RUN if [ -n "$CEDAR_POLICY_CLI_VERSION" ]; then \
-        cargo install cedar-policy-cli --locked --version "$CEDAR_POLICY_CLI_VERSION"; \
+        cargo install cedar-policy-cli --locked --version "$CEDAR_POLICY_CLI_VERSION" --features analyze; \
     else \
-        cargo install cedar-policy-cli --locked; \
+        cargo install cedar-policy-cli --locked --features analyze; \
     fi
 
 FROM python:3.12-bookworm

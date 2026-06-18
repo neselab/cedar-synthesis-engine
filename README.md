@@ -50,9 +50,9 @@ Use this for normal development and experiments.
 5. Install the verifier tools for full authoring, verification, and synthesis:
 
    ```bash
-   cargo install cedar-policy-cli
+   cargo install cedar-policy-cli --locked --version 4.10.0 --features analyze
    cedar --version
-   cedar symcc --help
+   cedar symcc --help | grep principal-type
    cvc5 --version
    ```
 
@@ -66,6 +66,14 @@ Use this for normal development and experiments.
 
    ```dotenv
    CVC5=/path/to/cvc5
+   ```
+
+   On Ubuntu/Debian, that usually looks like:
+
+   ```bash
+   sudo apt-get update
+   sudo apt-get install -y cvc5
+   echo "CVC5=$(command -v cvc5)" >> .env
    ```
 
    On macOS with Homebrew, that usually looks like:
@@ -381,13 +389,15 @@ console script. Verification also needs the Cedar CLI and CVC5 solver.
 ### External Dependencies
 
 - **Python 3.11+**
-- **Cedar CLI v4.10+**: `cargo install cedar-policy-cli`
-- **CVC5 SMT solver**: default path `~/.local/bin/cvc5`, or set `$CVC5`
+- **Cedar CLI v4.10+ with SymCC analysis enabled**:
+  `cargo install cedar-policy-cli --locked --version 4.10.0 --features analyze`
+- **CVC5 SMT solver**: AutoCedar first uses `$CVC5`, then `cvc5` on `$PATH`,
+  then falls back to `~/.local/bin/cvc5`
 
 AutoCedar looks for:
 
 - `$CEDAR`, defaulting to `~/.cargo/bin/cedar`
-- `$CVC5`, defaulting to `~/.local/bin/cvc5`
+- `$CVC5`, defaulting to `cvc5` on `$PATH`, then `~/.local/bin/cvc5`
 
 If those binaries live elsewhere, set them in your shell or `.env`.
 
@@ -395,13 +405,17 @@ Check the verifier setup before running policy verification:
 
 ```bash
 cedar --version
-cedar symcc --help
+cedar symcc --help | grep principal-type
 cvc5 --version
 ```
 
-If `cedar symcc --help` does not work, the installed Cedar binary cannot run
-AutoCedar's symbolic verification path. Install a Cedar CLI build that includes
-the `symcc` subcommand.
+If `cedar symcc --help` says the CLI was built without `analyze`, or if
+`grep principal-type` prints nothing, the installed Cedar binary cannot run
+AutoCedar's symbolic verification path. Reinstall with:
+
+```bash
+cargo install cedar-policy-cli --locked --version 4.10.0 --features analyze --force
+```
 
 ### API Keys And `.env`
 
@@ -647,8 +661,8 @@ Authoring writes session artifacts under the `--out` directory, usually
 | Chat says no API key is loaded | Use `/apikey` in the TUI, export `ANTHROPIC_API_KEY`, or create `.env` in the directory where you launch `autocedar`. |
 | API key works in shell but not TUI | Start `autocedar` from the project directory containing `.env`, or export the key before launch. |
 | Verification says Cedar is missing | Set `CEDAR=/path/to/cedar` or install the Cedar CLI. |
-| Verification says CVC5 is missing | Set `CVC5=/path/to/cvc5` or install CVC5. |
-| `cedar symcc` is unknown | Install a Cedar CLI build with `symcc`. |
+| Verification says CVC5 is missing | Install CVC5, confirm `cvc5 --version` works, then set `CVC5=$(command -v cvc5)` in `.env` if needed. |
+| `cedar symcc` is unknown or says it was built without `analyze` | Reinstall Cedar with `cargo install cedar-policy-cli --locked --version 4.10.0 --features analyze --force`, then confirm `cedar symcc --help \| grep principal-type` prints a line. |
 | `uv run autocedar` says `Failed to spawn: autocedar` | The local virtualenv has stale console scripts. Run `uv sync --reinstall-package autocedar`, then retry `uv run autocedar`. |
 | AutoCedar says `Permission denied: autocedar-runs/...` | Your repo or output directory is probably owned by `root` from a prior `sudo docker` or `sudo uv run`. From the repo root, run `sudo chown -R "$USER":"$USER" .` and `chmod -R u+rwX .`, then retry without `sudo`. |
 | Docker says `permission denied while trying to connect to the docker API` | On Linux, your user cannot access `/var/run/docker.sock`. Prefer local setup, or fix Docker access with `sudo usermod -aG docker "$USER"`, then log out and back in, or run `newgrp docker`, then test with `docker ps`. Avoid `sudo docker` with a bind-mounted repo unless you are prepared to repair file ownership afterward. |

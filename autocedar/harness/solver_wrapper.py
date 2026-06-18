@@ -6,12 +6,17 @@ The solver uses CVC5 under the hood — no @domain annotations needed.
 """
 import json
 import os
+import shutil
 import subprocess
 from dataclasses import dataclass
 
 
-CVC5_PATH = os.environ.get("CVC5", os.path.expanduser("~/.local/bin/cvc5"))
 CEDAR_PATH = os.environ.get("CEDAR", os.path.expanduser("~/.cargo/bin/cedar"))
+CVC5_PATH = (
+    os.environ.get("CVC5")
+    or shutil.which("cvc5")
+    or os.path.expanduser("~/.local/bin/cvc5")
+)
 
 
 # ---------------------------------------------------------------------------
@@ -155,12 +160,14 @@ def _run_symcc(
         if _rejects_cvc5_path(output):
             result = _run_symcc_command(cmd_without_cvc5)
             output = _subprocess_output(result)
+        if _is_symcc_tool_error(output, result.returncode):
+            return False, _symcc_tool_error_message(output)
         passed = "VERIFIED" in output
         return passed, output
     except subprocess.TimeoutExpired:
         return False, "CVC5 solver timed out (30s limit)."
     except FileNotFoundError:
-        return False, f"CVC5 not found at {CVC5_PATH}. Set CVC5 env var."
+        return False, f"Cedar CLI not found at {CEDAR_PATH}. Set CEDAR env var."
 
 
 def _run_symcc_command(cmd: list[str]) -> subprocess.CompletedProcess[str]:
@@ -178,6 +185,77 @@ def _subprocess_output(result: subprocess.CompletedProcess[str]) -> str:
 
 def _rejects_cvc5_path(output: str) -> bool:
     return "unexpected argument '--cvc5-path'" in output
+
+
+def _rejects_required_symcc_arg(output: str) -> bool:
+    required_args = ("--principal-type", "--action", "--resource-type", "--schema")
+    return any(f"unexpected argument '{arg}'" in output for arg in required_args)
+
+
+def _is_symcc_tool_error(output: str, returncode: int | None = None) -> bool:
+    return (
+        "Cedar symcc setup error:" in output
+        or _is_symcc_interface_error(output)
+        or _is_cvc5_tool_error(output)
+        or (returncode not in (None, 0) and not _has_symcc_formal_result(output))
+    )
+
+
+def _is_symcc_interface_error(output: str) -> bool:
+    return (
+        _rejects_required_symcc_arg(output)
+        or "not built with `analyze` experimental feature enabled" in output
+        or "built without the `analyze` feature enabled" in output
+    )
+
+
+def _has_symcc_formal_result(output: str) -> bool:
+    formal_markers = (
+        "VERIFIED",
+        "DOES NOT HOLD",
+        "Counterexample",
+        "counterexample",
+        "No counterexample found",
+    )
+    return any(marker in output for marker in formal_markers)
+
+
+def _is_cvc5_tool_error(output: str) -> bool:
+    return (
+        "CVC5 solver not found or failed to start" in output
+        or "CVC5 solver was not found" in output
+        or ("failed to start" in output and "CVC5" in output)
+    )
+
+
+def _symcc_tool_error_message(output: str) -> str:
+    compact = " ".join(output.split())
+    if len(compact) > 600:
+        compact = compact[:597].rstrip() + "..."
+    if _is_cvc5_tool_error(output):
+        return (
+            "Cedar symcc setup error: CVC5 solver was not found or could "
+            "not start. Install CVC5 and ensure `cvc5 --version` works, "
+            "or set `CVC5=/path/to/cvc5`. Raw cedar output: "
+            f"{compact}"
+        )
+    if not _is_symcc_interface_error(output):
+        return (
+            "Cedar symcc setup error: Cedar symcc exited before producing "
+            "a formal verification result. This is a verifier/tooling "
+            "failure, not a policy counterexample. Check the Cedar and CVC5 "
+            "installations, then rerun. Raw cedar output: "
+            f"{compact}"
+        )
+    return (
+        "Cedar symcc setup error: this Cedar CLI does not expose the SymCC "
+        "analysis interface AutoCedar needs (--principal-type, --action, "
+        "--resource-type, --schema). It is usually cedar-policy-cli installed "
+        "without the `analyze` feature. Reinstall with: "
+        "`cargo install cedar-policy-cli --locked --features analyze`, or set "
+        "`CEDAR` to a compatible cedar binary. Raw cedar output: "
+        f"{compact}"
+    )
 
 
 def run_implies_check(
@@ -227,6 +305,14 @@ def run_always_denies_check(
         "always-denies",
         ["--policies", candidate_path],
     )
+    if _is_symcc_tool_error(output):
+        return CheckResult(
+            check_name=check_name,
+            check_type="always-denies (liveness)" if not expect_denies else "always-denies",
+            description=description,
+            passed=False,
+            counterexample=output,
+        )
     # If expect_denies=False (liveness), we want the check to FAIL (not always deny)
     if expect_denies:
         passed = passed_raw

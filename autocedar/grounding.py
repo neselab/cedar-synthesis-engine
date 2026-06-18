@@ -27,6 +27,7 @@ distinguish the chosen encoding from plausible alternative readings:
 from __future__ import annotations
 
 import os
+import shutil
 import subprocess
 import tempfile
 from dataclasses import dataclass, field
@@ -40,7 +41,11 @@ from autocedar.atoms import (
 )
 
 CEDAR_PATH = os.environ.get("CEDAR", os.path.expanduser("~/.cargo/bin/cedar"))
-CVC5_PATH = os.environ.get("CVC5", os.path.expanduser("~/.local/bin/cvc5"))
+CVC5_PATH = (
+    os.environ.get("CVC5")
+    or shutil.which("cvc5")
+    or os.path.expanduser("~/.local/bin/cvc5")
+)
 
 
 # ---------------------------------------------------------------------------
@@ -169,6 +174,8 @@ def _run_symcc(
     except FileNotFoundError:
         return False, f"cedar binary not found at {CEDAR_PATH}"
     output = _subprocess_output(result)
+    if _is_symcc_tool_error(output, result.returncode):
+        return False, _symcc_tool_error_message(output)
     return ("VERIFIED" in output), output
 
 
@@ -187,6 +194,77 @@ def _subprocess_output(result: subprocess.CompletedProcess[str]) -> str:
 
 def _rejects_cvc5_path(output: str) -> bool:
     return "unexpected argument '--cvc5-path'" in output
+
+
+def _rejects_required_symcc_arg(output: str) -> bool:
+    required_args = ("--principal-type", "--action", "--resource-type", "--schema")
+    return any(f"unexpected argument '{arg}'" in output for arg in required_args)
+
+
+def _is_symcc_tool_error(output: str, returncode: int | None = None) -> bool:
+    return (
+        "Cedar symcc setup error:" in output
+        or _is_symcc_interface_error(output)
+        or _is_cvc5_tool_error(output)
+        or (returncode not in (None, 0) and not _has_symcc_formal_result(output))
+    )
+
+
+def _is_symcc_interface_error(output: str) -> bool:
+    return (
+        _rejects_required_symcc_arg(output)
+        or "not built with `analyze` experimental feature enabled" in output
+        or "built without the `analyze` feature enabled" in output
+    )
+
+
+def _has_symcc_formal_result(output: str) -> bool:
+    formal_markers = (
+        "VERIFIED",
+        "DOES NOT HOLD",
+        "Counterexample",
+        "counterexample",
+        "No counterexample found",
+    )
+    return any(marker in output for marker in formal_markers)
+
+
+def _is_cvc5_tool_error(output: str) -> bool:
+    return (
+        "CVC5 solver not found or failed to start" in output
+        or "CVC5 solver was not found" in output
+        or ("failed to start" in output and "CVC5" in output)
+    )
+
+
+def _symcc_tool_error_message(output: str) -> str:
+    compact = " ".join(output.split())
+    if len(compact) > 600:
+        compact = compact[:597].rstrip() + "..."
+    if _is_cvc5_tool_error(output):
+        return (
+            "Cedar symcc setup error: CVC5 solver was not found or could "
+            "not start. Install CVC5 and ensure `cvc5 --version` works, "
+            "or set `CVC5=/path/to/cvc5`. Raw cedar output: "
+            f"{compact}"
+        )
+    if not _is_symcc_interface_error(output):
+        return (
+            "Cedar symcc setup error: Cedar symcc exited before producing "
+            "a formal verification result. This is a verifier/tooling "
+            "failure, not a policy counterexample. Check the Cedar and CVC5 "
+            "installations, then rerun. Raw cedar output: "
+            f"{compact}"
+        )
+    return (
+        "Cedar symcc setup error: this Cedar CLI does not expose the SymCC "
+        "analysis interface AutoCedar needs (--principal-type, --action, "
+        "--resource-type, --schema). It is usually cedar-policy-cli installed "
+        "without the `analyze` feature. Reinstall with: "
+        "`cargo install cedar-policy-cli --locked --features analyze`, or set "
+        "`CEDAR` to a compatible cedar binary. Raw cedar output: "
+        f"{compact}"
+    )
 
 
 def _principal_resource(atom: PropertyAtom) -> tuple[str, str]:
@@ -242,6 +320,12 @@ def _check_satisfiability(
         "always-denies",
         ["--policies", str(policy_path)],
     )
+    if _is_symcc_tool_error(output):
+        return SymbolicCheck(
+            name="satisfiable",
+            passed=False,
+            detail=output,
+        )
     if always_denies:
         return SymbolicCheck(
             name="satisfiable",
@@ -486,6 +570,8 @@ def find_distinguishing_request(
         ["--policies1", str(chosen_path), "--policies2", str(alt_path)],
     )
     if not chosen_implies_alt:
+        if _is_symcc_tool_error(out_a):
+            return None
         return Example(
             description=(
                 f"chosen permits, alternative '{alternative.label}' denies "
@@ -509,6 +595,8 @@ def find_distinguishing_request(
         ["--policies1", str(alt_path), "--policies2", str(chosen_path)],
     )
     if not alt_implies_chosen:
+        if _is_symcc_tool_error(out_b):
+            return None
         return Example(
             description=(
                 f"alternative '{alternative.label}' permits, chosen denies "

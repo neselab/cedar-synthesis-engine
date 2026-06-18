@@ -283,6 +283,155 @@ def test_run_symcc_retries_without_cvc5_path_when_cedar_rejects_flag(
     assert "--cvc5-path" not in calls[1]
 
 
+def test_run_symcc_reports_cli_without_analyze_feature(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[list[str]] = []
+
+    def fake_run(
+        cmd: list[str],
+        *,
+        capture_output: bool,
+        text: bool,
+        timeout: int,
+    ) -> subprocess.CompletedProcess[str]:
+        _ = capture_output, text, timeout
+        calls.append(cmd)
+        if "--cvc5-path" in cmd:
+            return subprocess.CompletedProcess(
+                cmd,
+                2,
+                "",
+                "error: unexpected argument '--cvc5-path' found\nUsage: cedar symcc",
+            )
+        return subprocess.CompletedProcess(
+            cmd,
+            2,
+            "",
+            "Cannot run `symcc`: this Cedar CLI was built without the `analyze` feature enabled",
+        )
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+
+    passed, output = _run_symcc(
+        "schema.cedarschema",
+        "User",
+        "read",
+        "Resource",
+        "implies",
+        ["--policies1", "a.cedar", "--policies2", "b.cedar"],
+    )
+
+    assert passed is False
+    assert "Cedar symcc setup error" in output
+    assert "--features analyze" in output
+    assert "built without the `analyze` feature" in output
+    assert "--cvc5-path" in calls[0]
+    assert "--cvc5-path" not in calls[1]
+
+
+def test_run_symcc_reports_missing_cvc5_as_setup_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fake_run(
+        cmd: list[str],
+        *,
+        capture_output: bool,
+        text: bool,
+        timeout: int,
+    ) -> subprocess.CompletedProcess[str]:
+        _ = capture_output, text, timeout
+        return subprocess.CompletedProcess(
+            cmd,
+            1,
+            "",
+            "Analysis failed: CVC5 solver not found or failed to start at "
+            "'/home/twinm/.local/bin/cvc5': IO error during a solver operation",
+        )
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+
+    passed, output = _run_symcc(
+        "schema.cedarschema",
+        "User",
+        "read",
+        "Resource",
+        "implies",
+        ["--policies1", "a.cedar", "--policies2", "b.cedar"],
+    )
+
+    assert passed is False
+    assert "Cedar symcc setup error" in output
+    assert "CVC5 solver was not found" in output
+    assert "CVC5=/path/to/cvc5" in output
+    assert "policy counterexample" not in output
+
+
+def test_run_symcc_classifies_nonformal_nonzero_exit_as_setup_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fake_run(
+        cmd: list[str],
+        *,
+        capture_output: bool,
+        text: bool,
+        timeout: int,
+    ) -> subprocess.CompletedProcess[str]:
+        _ = capture_output, text, timeout
+        return subprocess.CompletedProcess(cmd, 1, "", "internal solver transport error")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+
+    passed, output = _run_symcc(
+        "schema.cedarschema",
+        "User",
+        "read",
+        "Resource",
+        "implies",
+        ["--policies1", "a.cedar", "--policies2", "b.cedar"],
+    )
+
+    assert passed is False
+    assert "exited before producing a formal verification result" in output
+    assert "not a policy counterexample" in output
+
+
+def test_run_symcc_preserves_formal_counterexample_as_policy_result(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fake_run(
+        cmd: list[str],
+        *,
+        capture_output: bool,
+        text: bool,
+        timeout: int,
+    ) -> subprocess.CompletedProcess[str]:
+        _ = capture_output, text, timeout
+        return subprocess.CompletedProcess(
+            cmd,
+            1,
+            "Policy set 1 implies policy set 2: DOES NOT HOLD\n"
+            "Counterexample: principal User::\"alice\"",
+            "",
+        )
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+
+    passed, output = _run_symcc(
+        "schema.cedarschema",
+        "User",
+        "read",
+        "Resource",
+        "implies",
+        ["--policies1", "a.cedar", "--policies2", "b.cedar"],
+    )
+
+    assert passed is False
+    assert "DOES NOT HOLD" in output
+    assert "Counterexample" in output
+    assert "Cedar symcc setup error" not in output
+
+
 @requires_solvers
 def test_liveness_atom_skips_reference_checks(
     schema_path: str, workdir: Path,

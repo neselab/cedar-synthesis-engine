@@ -407,6 +407,12 @@ def _consistency_error_lines(label: str, detail: str) -> list[str]:
         _indent_block(ceiling_ref),
     ]
     if symcc_output:
+        if _is_symcc_setup_error(symcc_output):
+            lines.extend([
+                "Cedar verifier setup error:",
+                _indent_block(_compact_detail(symcc_output, limit=520)),
+            ])
+            return lines
         lines.extend([
             "Cedar counterexample summary:",
             _indent_block(_compact_detail(symcc_output, limit=420)),
@@ -436,6 +442,17 @@ def _parse_consistency_detail(detail: str) -> tuple[str, str, str, str] | None:
 
 def _indent_block(text: str) -> str:
     return "\n".join(f"      {line}" for line in text.splitlines())
+
+
+def _is_symcc_setup_error(text: str) -> bool:
+    return (
+        "Cedar symcc setup error:" in text
+        or "not built with `analyze` experimental feature enabled" in text
+        or "not built with the `analyze` feature enabled" in text
+        or "unexpected argument '--principal-type'" in text
+        or "unexpected argument '--resource-type'" in text
+        or "unexpected argument '--action'" in text
+    )
 
 
 # ---------------------------------------------------------------------------

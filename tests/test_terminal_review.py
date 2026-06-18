@@ -224,6 +224,26 @@ def test_format_consistency_failure_shows_compared_references() -> None:
     assert "Cedar counterexample summary:" in text
 
 
+def test_format_consistency_failure_labels_symcc_setup_error() -> None:
+    log = [
+        "joint-consistency-with-comment_ceiling: FAILED "
+        "(floor comment_floor not contained in ceiling comment_ceiling\n"
+        "Floor reference:\n"
+        'permit (principal, action == Action::"comment", resource) when { principal.isAdmin };\n'
+        "Ceiling reference:\n"
+        'permit (principal, action == Action::"comment", resource) when { resource.isOpen };\n'
+        "Cedar symcc output:\n"
+        "Cedar symcc setup error: this Cedar CLI does not expose the SymCC analysis interface. "
+        "Reinstall with: `cargo install cedar-policy-cli --locked --features analyze`.)",
+    ]
+
+    text = "\n".join(format_symbolic_verification_log(log))
+
+    assert "Cedar verifier setup error:" in text
+    assert "Cedar counterexample summary:" not in text
+    assert "--features analyze" in text
+
+
 def test_render_property_atom_supports_unknown_total() -> None:
     text = render_property_atom(_property(), 3, None)
     assert "[Property 3]" in text
