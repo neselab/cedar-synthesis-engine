@@ -13,6 +13,7 @@ def test_author_command_injects_harness_synthesizer(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test123")
     spec = tmp_path / "spec.md"
     spec.write_text("Owners can read their own resources.")
     schema = tmp_path / "schema.cedarschema"
@@ -80,3 +81,59 @@ def test_parser_exposes_doctor_command() -> None:
 
     assert args.no_live_symcc is True
     assert args.func is cli._cmd_doctor
+
+
+def test_apikey_command_writes_env_file(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    env_path = tmp_path / ".env"
+
+    rc = cli._cmd_apikey(
+        argparse.Namespace(
+            key="sk-ant-test123",
+            env=env_path,
+            clear=False,
+        ),
+    )
+
+    assert rc == 0
+    assert env_path.read_text() == "ANTHROPIC_API_KEY=sk-ant-test123\n"
+    assert "sk-ant-test123" not in capsys.readouterr().out
+
+
+def test_apikey_command_replaces_existing_value(tmp_path: Path) -> None:
+    env_path = tmp_path / ".env"
+    env_path.write_text("ANTHROPIC_API_KEY=sk-ant-...\nAUTOCEDAR_EFFORT=high\n")
+
+    cli._cmd_apikey(
+        argparse.Namespace(
+            key="sk-ant-realvalue",
+            env=env_path,
+            clear=False,
+        ),
+    )
+
+    assert env_path.read_text() == "ANTHROPIC_API_KEY=sk-ant-realvalue\nAUTOCEDAR_EFFORT=high\n"
+
+
+def test_apikey_command_rejects_placeholder(tmp_path: Path) -> None:
+    with pytest.raises(SystemExit):
+        cli._cmd_apikey(
+            argparse.Namespace(
+                key="sk-ant-...",
+                env=tmp_path / ".env",
+                clear=False,
+            ),
+        )
+
+
+def test_parser_exposes_apikey_command() -> None:
+    parser = cli._build_parser()
+    args = parser.parse_args(["api-key", "sk-ant-test123", "--env", "local.env"])
+
+    assert args.key == "sk-ant-test123"
+    assert args.env == Path("local.env")
+    assert args.func is cli._cmd_apikey

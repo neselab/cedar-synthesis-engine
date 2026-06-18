@@ -6,6 +6,16 @@ import os
 import shlex
 from pathlib import Path
 
+ANTHROPIC_API_KEY = "ANTHROPIC_API_KEY"
+_PLACEHOLDER_API_KEYS = {
+    "",
+    "sk-ant-...",
+    "sk-ant-…",
+    "your-api-key",
+    "your-anthropic-api-key",
+    "<your-anthropic-api-key>",
+}
+
 
 def load_dotenv(start: Path | None = None) -> Path | None:
     """Load the nearest ``.env`` without overriding existing environment vars."""
@@ -27,6 +37,64 @@ def load_dotenv(start: Path | None = None) -> Path | None:
             continue
         os.environ[key] = _parse_env_value(value)
     return env_path
+
+
+def write_dotenv_value(
+    key: str,
+    value: str,
+    *,
+    start: Path | None = None,
+    env_path: Path | None = None,
+) -> Path:
+    """Create or update ``key=value`` in the nearest ``.env`` file."""
+    target = _resolve_dotenv_for_write(start=start, env_path=env_path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+
+    lines = target.read_text().splitlines() if target.exists() else []
+    formatted = f"{key}={_format_env_value(value)}"
+    replaced = False
+    updated: list[str] = []
+    for line in lines:
+        parsed = _line_key(line)
+        if parsed == key:
+            prefix = "export " if line.lstrip().startswith("export ") else ""
+            updated.append(f"{prefix}{formatted}")
+            replaced = True
+        else:
+            updated.append(line)
+    if not replaced:
+        if updated and updated[-1].strip():
+            updated.append("")
+        updated.append(formatted)
+    target.write_text("\n".join(updated) + "\n", encoding="utf-8")
+    os.environ[key] = value
+    return target
+
+
+def remove_dotenv_value(
+    key: str,
+    *,
+    start: Path | None = None,
+    env_path: Path | None = None,
+) -> Path:
+    """Remove ``key`` from the nearest ``.env`` file, creating it if needed."""
+    target = _resolve_dotenv_for_write(start=start, env_path=env_path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    lines = target.read_text().splitlines() if target.exists() else []
+    remaining = [line for line in lines if _line_key(line) != key]
+    target.write_text(("\n".join(remaining) + "\n") if remaining else "", encoding="utf-8")
+    os.environ.pop(key, None)
+    return target
+
+
+def is_real_anthropic_api_key(value: str | None) -> bool:
+    """Return true when ``value`` looks like a user-supplied Anthropic key."""
+    if value is None:
+        return False
+    stripped = value.strip().strip("\"'")
+    if stripped.lower() in _PLACEHOLDER_API_KEYS:
+        return False
+    return bool(stripped)
 
 
 def find_dotenv(start: Path) -> Path | None:
@@ -51,3 +119,39 @@ def _parse_env_value(value: str) -> str:
     if not parts:
         return ""
     return parts[0]
+
+
+def _resolve_dotenv_for_write(
+    *,
+    start: Path | None,
+    env_path: Path | None,
+) -> Path:
+    if env_path is not None:
+        return env_path.expanduser().resolve()
+    base = (start or Path.cwd()).resolve()
+    existing = find_dotenv(base)
+    if existing is not None:
+        return existing
+    if base.is_file():
+        base = base.parent
+    return base / ".env"
+
+
+def _line_key(line: str) -> str | None:
+    stripped = line.strip()
+    if not stripped or stripped.startswith("#"):
+        return None
+    if stripped.startswith("export "):
+        stripped = stripped[len("export "):].strip()
+    if "=" not in stripped:
+        return None
+    key, _ = stripped.split("=", 1)
+    key = key.strip()
+    return key or None
+
+
+def _format_env_value(value: str) -> str:
+    stripped = value.strip()
+    if stripped and all(ch.isalnum() or ch in "_-./:@" for ch in stripped):
+        return stripped
+    return shlex.quote(stripped)

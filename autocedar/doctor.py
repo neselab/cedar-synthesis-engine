@@ -14,7 +14,7 @@ import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from autocedar.env import find_dotenv
+from autocedar.env import ANTHROPIC_API_KEY, find_dotenv, is_real_anthropic_api_key
 from autocedar.grounding import CEDAR_PATH, CVC5_PATH, _run_symcc
 from autocedar.llm import default_model_for_provider, default_provider
 
@@ -98,17 +98,17 @@ def _llm_check() -> DoctorCheck:
             detail=f"{provider} using model {model}; auth is delegated to the Codex CLI",
         )
 
-    if os.environ.get("ANTHROPIC_API_KEY"):
+    if is_real_anthropic_api_key(os.environ.get(ANTHROPIC_API_KEY)):
         return DoctorCheck(
             name="LLM provider",
             status="OK",
-            detail=f"{provider} using model {model}; ANTHROPIC_API_KEY is set",
+            detail=f"{provider} using model {model}; {ANTHROPIC_API_KEY} is set",
         )
     return DoctorCheck(
         name="LLM provider",
         status="WARN",
-        detail=f"{provider} using model {model}; ANTHROPIC_API_KEY is not set",
-        fix="set `ANTHROPIC_API_KEY` in `.env`, export it, or use `/apikey` inside the TUI",
+        detail=f"{provider} using model {model}; {ANTHROPIC_API_KEY} is not set",
+        fix="run `uv run autocedar apikey`, export `ANTHROPIC_API_KEY`, or use `/apikey` inside the TUI",
     )
 
 

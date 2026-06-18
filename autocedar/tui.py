@@ -8,6 +8,8 @@ import io
 import os
 import re
 import shlex
+import shutil
+import subprocess
 import threading
 from dataclasses import dataclass, field, replace
 from pathlib import Path
@@ -21,7 +23,7 @@ from textual.containers import Horizontal, Vertical
 from textual.widgets import Footer, Header, Input, RichLog, Static
 
 from autocedar.corpus import AtomDecision
-from autocedar.env import load_dotenv
+from autocedar.env import ANTHROPIC_API_KEY, is_real_anthropic_api_key, load_dotenv
 from autocedar.harness_adapter import make_harness_synthesizer
 from autocedar.llm import DEFAULT_EFFORT, LLMClient, default_model_for_provider, default_provider
 from autocedar.pipeline import author as author_pipeline
@@ -86,15 +88,19 @@ COMMANDS = {
     "api-key",
     "apikey",
     "author",
+    "artifacts",
     "clear",
+    "copy",
     "draft",
     "effort",
     "exit",
     "help",
     "model",
     "new",
+    "policy",
     "quit",
     "save",
+    "schema",
     "settings",
     "synthesize",
     "verify",
@@ -136,6 +142,10 @@ Slash shortcuts are also available:
   [#f0c678]/effort low|medium|high|max[/]
   [#f0c678]/apikey[/] [KEY|clear]    set or clear ANTHROPIC_API_KEY for this session
   [#f0c678]/draft[/] [show|start|clear] show, start, or clear draft capture
+  [#f0c678]/artifacts[/]             show latest session/schema/policy paths
+  [#f0c678]/schema[/] [PATH]         show latest or provided Cedar schema
+  [#f0c678]/policy[/] [PATH]         show latest or provided Cedar policy
+  [#f0c678]/copy[/] session|schema|policy|draft [path] copy text or artifact path
   [#f0c678]/save[/] [PATH]           save the current draft
   [#f0c678]/new[/]                   clear the draft
   [#f0c678]/clear[/] [draft|transcript] clear transcript, or clear the draft explicitly
@@ -185,6 +195,10 @@ COMMAND_RAIL = """\
 [#f0c678]/effort[/] high
 [#f0c678]/apikey[/]
 [#f0c678]/draft[/]
+[#f0c678]/artifacts[/]
+[#f0c678]/schema[/]
+[#f0c678]/policy[/]
+[#f0c678]/copy[/] session
 [#f0c678]/save[/]
 
 [bold #d99a5f]Review keys[/]
@@ -240,6 +254,12 @@ class SettingsUpdate:
     api_key: str | None = None
     clear_api_key: bool = False
     prompt_api_key: bool = False
+
+
+@dataclass
+class ClipboardResult:
+    ok: bool
+    message: str
 
 
 @dataclass
@@ -446,6 +466,9 @@ class AutoCedarApp(App[None]):
         self.llm_effort = _normalize_effort(os.environ.get("AUTOCEDAR_EFFORT")) or DEFAULT_EFFORT
         self.busy = False
         self.active_task = "idle"
+        self.latest_session_dir: Path | None = None
+        self.latest_schema_path: Path | None = None
+        self.latest_policy_path: Path | None = None
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -707,6 +730,41 @@ class AutoCedarApp(App[None]):
             self._handle_explicit_draft_line(stripped[1:].strip())
             return
         if not raw.startswith("/"):
+            lowered = _squash(raw).lower().rstrip("?.!")
+            if lowered in {"show schema", "show the schema", "show me the schema"}:
+                self._show_schema_command([])
+                return
+            if lowered in {
+                "show policy",
+                "show the policy",
+                "show me the policy",
+                "show policies",
+                "show the policies",
+                "show cedar policy",
+                "show the cedar policy",
+            }:
+                self._show_policy_command([])
+                return
+            if lowered in {
+                "show artifacts",
+                "show the artifacts",
+                "show paths",
+                "show the paths",
+                "where are the artifacts",
+            }:
+                self._show_artifacts()
+                return
+            if lowered in {
+                "copy session",
+                "copy session path",
+                "copy the session path",
+                "copy session link",
+                "copy the session link",
+                "copy session directory",
+                "copy the session directory",
+            }:
+                self._handle_copy_command(["session"])
+                return
             self._handle_natural_language_input(raw)
             return
         self._handle_command_input(raw)
@@ -852,6 +910,14 @@ class AutoCedarApp(App[None]):
                 )
             elif command == "draft":
                 self._handle_draft_command(args)
+            elif command == "artifacts":
+                self._show_artifacts()
+            elif command == "schema":
+                self._show_schema_command(args)
+            elif command == "policy":
+                self._show_policy_command(args)
+            elif command == "copy":
+                self._handle_copy_command(args)
             elif command == "save":
                 path = Path(args[0]) if args else DRAFT_PATH
                 self._request_confirmation(
@@ -1041,7 +1107,8 @@ class AutoCedarApp(App[None]):
         )
 
     def _settings_text(self) -> str:
-        api_key = os.environ.get("ANTHROPIC_API_KEY")
+        api_key = os.environ.get(ANTHROPIC_API_KEY)
+        api_key_is_real = is_real_anthropic_api_key(api_key)
         codex_auth = "uses local Codex login" if self.llm_provider in {"codex", "openai-codex"} else ""
         return "\n".join(
             [
@@ -1051,7 +1118,7 @@ class AutoCedarApp(App[None]):
                 (
                     f"[dim {MUTED}]api key[/]\n[bold {TEAL}]set[/] "
                     f"[dim {MUTED}]({_mask_api_key(api_key)})[/]"
-                    if api_key
+                    if api_key_is_real
                     else f"[dim {MUTED}]api key[/]\n[bold {TEAL}]{codex_auth}[/]"
                     if codex_auth
                     else f"[dim {MUTED}]api key[/]\n[bold {CORAL}]not set[/]"
@@ -1094,6 +1161,120 @@ class AutoCedarApp(App[None]):
                 "\n".join(self.draft_lines),
                 title=f"[bold {COPPER}]Current draft[/]",
                 border_style=TEAL,
+                padding=(1, 2),
+            ),
+        )
+
+    def _show_artifacts(self) -> None:
+        rows = [
+            ("session", self.latest_session_dir),
+            ("schema", self.latest_schema_path),
+            ("policy", self.latest_policy_path),
+        ]
+        if not any(path for _, path in rows):
+            self._write(
+                f"[dim {MUTED}]No authoring artifacts are registered yet. "
+                "Run authoring first, or pass a path to /schema or /policy.[/]",
+            )
+            return
+        lines = []
+        for label, path in rows:
+            value = str(path) if path else "(not available)"
+            lines.append(f"[bold {AMBER}]{label}[/]: {escape(value)}")
+        lines.extend([
+            "",
+            f"[dim {MUTED}]Use /schema, /policy, /copy session, /copy schema path, or /copy policy path.[/]",
+        ])
+        self._write(
+            Panel(
+                "\n".join(lines),
+                title=f"[bold {COPPER}]Artifacts[/]",
+                border_style=TEAL,
+                padding=(1, 2),
+            ),
+        )
+
+    def _show_schema_command(self, args: Sequence[str]) -> None:
+        path = Path(args[0]) if args else self.latest_schema_path
+        self._show_file_artifact(path, label="Cedar schema")
+
+    def _show_policy_command(self, args: Sequence[str]) -> None:
+        path = Path(args[0]) if args else self.latest_policy_path
+        self._show_file_artifact(path, label="Cedar policy")
+
+    def _show_file_artifact(self, path: Path | None, *, label: str) -> None:
+        if path is None:
+            command = "/schema" if "schema" in label.lower() else "/policy"
+            self._write(
+                f"[dim {MUTED}]No latest {label.lower()} is registered yet. "
+                f"Run authoring first, or pass a file path: {command} PATH[/]",
+            )
+            return
+        if not path.exists():
+            self._write(f"[bold {RED}]{escape(label)} not found:[/] {escape(str(path))}")
+            return
+        text = path.read_text()
+        self._write(
+            Panel(
+                Syntax(text, "cedar", word_wrap=True, theme="monokai"),
+                title=f"[bold {COPPER}]{escape(label)}[/]",
+                subtitle=f"[dim {MUTED}]{escape(str(path))}[/]",
+                border_style=TEAL,
+            ),
+        )
+
+    def _handle_copy_command(self, args: Sequence[str]) -> None:
+        if not args:
+            raise ValueError(
+                "Use /copy session, /copy schema, /copy schema path, "
+                "/copy policy, /copy policy path, or /copy draft.",
+            )
+        target = args[0].lower()
+        mode = args[1].lower() if len(args) > 1 else "content"
+        if target == "session":
+            if self.latest_session_dir is None:
+                raise ValueError("No session path is available yet.")
+            self._copy_text(str(self.latest_session_dir), label="session path")
+            return
+        if target == "draft":
+            self._copy_text("\n".join(self.draft_lines), label="draft")
+            return
+        if target in {"schema", "policy"}:
+            path = self.latest_schema_path if target == "schema" else self.latest_policy_path
+            if path is None:
+                raise ValueError(f"No latest {target} artifact is available yet.")
+            if mode == "path":
+                self._copy_text(str(path), label=f"{target} path")
+                return
+            if not path.exists():
+                raise ValueError(f"{target} file not found: {path}")
+            self._copy_text(path.read_text(), label=target)
+            return
+        if target in {"path", "text"}:
+            value = " ".join(args[1:]).strip()
+            if not value:
+                raise ValueError(f"Use /copy {target} VALUE.")
+            self._copy_text(value, label=target)
+            return
+        candidate = Path(args[0])
+        if candidate.exists() and candidate.is_file():
+            self._copy_text(candidate.read_text(), label=str(candidate))
+            return
+        self._copy_text(" ".join(args), label="text")
+
+    def _copy_text(self, text: str, *, label: str) -> None:
+        if not text:
+            raise ValueError(f"Nothing to copy for {label}.")
+        result = _copy_to_clipboard(text)
+        if result.ok:
+            self._say(f"Copied {label} to clipboard.")
+            return
+        self._write(
+            Panel(
+                escape(text),
+                title=f"[bold {COPPER}]Copy fallback: {escape(label)}[/]",
+                subtitle=f"[dim {MUTED}]{escape(result.message)}[/]",
+                border_style=AMBER,
                 padding=(1, 2),
             ),
         )
@@ -1182,7 +1363,7 @@ class AutoCedarApp(App[None]):
 
     def _answer_chat(self, raw: str, *, fallback: str) -> None:
         try:
-            if os.environ.get("ANTHROPIC_API_KEY"):
+            if is_real_anthropic_api_key(os.environ.get(ANTHROPIC_API_KEY)):
                 answer = self._stream_chat_model(raw)
             else:
                 answer = self._local_chat_response(raw, fallback=fallback)
@@ -1373,6 +1554,12 @@ class AutoCedarApp(App[None]):
                 schema_path_override=str(options.schema) if options.schema else None,
                 **kwargs,
             )
+            self.call_from_thread(
+                self._register_authoring_artifacts,
+                result.session_dir,
+                result.candidate_path,
+                schema_override=options.schema,
+            )
             lines = [
                 f"[bold {GREEN}]Authoring complete.[/]",
                 f"session:   {result.session_dir}",
@@ -1391,6 +1578,25 @@ class AutoCedarApp(App[None]):
             )
         finally:
             self.call_from_thread(self._finish_task)
+
+    def _register_authoring_artifacts(
+        self,
+        session_dir: Path,
+        candidate_path: Path | None,
+        *,
+        schema_override: Path | None,
+    ) -> None:
+        self.latest_session_dir = session_dir
+        final_schema = session_dir / "stage1" / "final_schema.cedarschema"
+        if final_schema.exists():
+            self.latest_schema_path = final_schema
+        elif schema_override is not None:
+            self.latest_schema_path = schema_override
+        if candidate_path and candidate_path.exists():
+            self.latest_policy_path = candidate_path
+        else:
+            scenario_candidate = session_dir / "scenario" / "candidate.cedar"
+            self.latest_policy_path = scenario_candidate if scenario_candidate.exists() else None
 
     def _verify_workspace(self, workspace: Path) -> None:
         try:
@@ -1540,7 +1746,7 @@ class AutoCedarApp(App[None]):
         drafting_state = "active" if self.drafting_active else "off"
         review_state = "yes" if self.pending_review is not None else "no"
         action_state = "yes" if self.pending_action is not None else "no"
-        key_state = "set" if os.environ.get("ANTHROPIC_API_KEY") else "not set"
+        key_state = "set" if is_real_anthropic_api_key(os.environ.get(ANTHROPIC_API_KEY)) else "not set"
         busy_color = AMBER if self.busy else TEAL
         drafting_color = GREEN if self.drafting_active else MUTED
         review_color = CORAL if self.pending_review is not None else MUTED
@@ -1573,7 +1779,10 @@ class AutoCedarApp(App[None]):
             f"provider: {self.llm_provider}",
             f"model: {self.llm_model}",
             f"effort: {self.llm_effort}",
-            f"api key: {'set' if os.environ.get('ANTHROPIC_API_KEY') else 'not set'}",
+            f"api key: {'set' if is_real_anthropic_api_key(os.environ.get(ANTHROPIC_API_KEY)) else 'not set'}",
+            f"latest session: {self.latest_session_dir or 'none'}",
+            f"latest schema: {self.latest_schema_path or 'none'}",
+            f"latest policy: {self.latest_policy_path or 'none'}",
             f"drafting: {'active' if self.drafting_active else 'off'}",
             f"draft lines: {len(self.draft_lines)}",
             f"pending confirmation: {pending_summary}",
@@ -1593,13 +1802,14 @@ class AutoCedarApp(App[None]):
     def _process_context(self) -> str:
         return "\n".join(
             [
-                "Deterministic routing only handles concrete actions: draft capture gates, author, verify, synthesize, save, show, clear, quit, and slash shortcuts.",
+                "Deterministic routing handles concrete actions: draft capture gates, author, verify, synthesize, save, show, artifact inspection, clipboard copy, clear, quit, and slash shortcuts.",
                 "Open-ended questions should be answered conversationally from this context, not by deterministic process-answer branches.",
                 "Authoring from prose without a schema override: AutoCedar saves the prose spec, runs Stage 1 schema atomization, proposes entity/action/attribute/type-alias atoms, and sends each proposed schema atom through HITL review before composing the schema.",
                 "Authoring with a schema path: AutoCedar uses that existing schema directly and skips Stage 1 schema atomization/review.",
                 "Stage 2 property atoms: AutoCedar proposes property atoms from the spec and validated schema, symbolically verifies each atom, and sends each proposed property through the same HITL review callback before compiling the verification plan.",
                 "The authoring engine receives clean inputs: saved spec text, optional schema path, and HITL review decisions. The chat transcript is not passed into authoring.",
                 "Runtime LLM settings are user-selectable inside the TUI through /settings, /model, /effort, and /apikey. The selected model is used for chat, authoring atomization, and default synthesis phase models unless an explicit command overrides it. Effort is used for chat and authoring atomization calls that support adaptive thinking.",
+                "Artifact inspection commands: /artifacts lists latest session/schema/policy paths, /schema shows the latest or provided schema file, /policy shows the latest or provided Cedar policy, and /copy can copy the latest session path, schema text/path, policy text/path, draft, or literal text.",
             ],
         )
 
@@ -2578,6 +2788,36 @@ def _mask_api_key(value: str | None) -> str:
     if len(value) <= 12:
         return value[:3] + "..."
     return f"{value[:7]}...{value[-4:]}"
+
+
+def _copy_to_clipboard(text: str) -> ClipboardResult:
+    commands = [
+        (["pbcopy"], "pbcopy"),
+        (["wl-copy"], "wl-copy"),
+        (["xclip", "-selection", "clipboard"], "xclip"),
+        (["xsel", "--clipboard", "--input"], "xsel"),
+        (["clip.exe"], "clip.exe"),
+    ]
+    for cmd, label in commands:
+        if shutil.which(cmd[0]) is None:
+            continue
+        try:
+            subprocess.run(
+                cmd,
+                input=text,
+                text=True,
+                check=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=3,
+            )
+            return ClipboardResult(True, f"copied with {label}")
+        except Exception:
+            continue
+    return ClipboardResult(
+        False,
+        "No supported clipboard command was available, so the text is shown here for manual selection.",
+    )
 
 
 def _redact_sensitive_input(raw: str) -> str:

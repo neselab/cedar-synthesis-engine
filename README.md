@@ -31,23 +31,19 @@ Use this for normal development and experiments.
 
    Restart your terminal after installing `uv`.
 
-3. Create your local `.env` file:
+3. Install the Python environment and save your Anthropic API key:
 
    ```bash
-   cp .env.example .env
-   nano .env
+   uv sync
+   uv run autocedar apikey
    ```
 
-4. Open `.env` and replace:
+   Paste the key when prompted. AutoCedar writes it to `.env`, redacts it in
+   the terminal output, and uses it on the next launch. You can also run
+   `uv run autocedar apikey sk-ant-...` if you prefer a one-line command. Do
+   not share or commit your API key.
 
-   ```dotenv
-   ANTHROPIC_API_KEY=sk-ant-...
-   ```
-
-   with your real Anthropic API key. If you used `nano`, save with `Ctrl+O`,
-   press `Enter`, then exit with `Ctrl+X`. Do not share or commit your API key.
-
-5. Install the verifier tools for full authoring, verification, and synthesis:
+4. Install the verifier tools for full authoring, verification, and synthesis:
 
    ```bash
    cargo install cedar-policy-cli --locked --version 4.10.0 --features analyze
@@ -83,10 +79,9 @@ Use this for normal development and experiments.
    echo "CVC5=$(which cvc5)" >> .env
    ```
 
-6. Run AutoCedar:
+5. Run AutoCedar:
 
    ```bash
-   uv sync
    uv run autocedar doctor
    uv run autocedar
    ```
@@ -102,7 +97,8 @@ runtime. If Docker on Linux requires `sudo`, prefer the local setup above.
 Running `sudo docker` with `-v "$PWD:/work"` can leave root-owned files in your
 repo.
 
-The wrapper builds the image, runs `autocedar doctor` inside the container, and
+The wrapper builds the image, asks for `ANTHROPIC_API_KEY` if `.env` is missing
+or still has the placeholder, runs `autocedar doctor` inside the container, and
 only starts the TUI if the containerized verifier stack is healthy:
 
 ```bash
@@ -437,7 +433,26 @@ AutoCedar uses Anthropic models for the conversational TUI, schema
 atomization, property atomization, and optional harness translation. The key is
 read from `ANTHROPIC_API_KEY`.
 
-You can export it:
+The easiest path is the CLI helper:
+
+```bash
+uv run autocedar apikey
+```
+
+It prompts for the key with hidden input, creates or updates the nearest `.env`,
+and sets `ANTHROPIC_API_KEY` for that process. To write a specific file:
+
+```bash
+uv run autocedar apikey --env ./policy-project/.env
+```
+
+To remove the persisted key:
+
+```bash
+uv run autocedar apikey clear
+```
+
+You can also export it:
 
 ```bash
 export ANTHROPIC_API_KEY=sk-ant-...
@@ -475,8 +490,7 @@ TUI:
 
 `/apikey` prompts for the key and redacts it in the transcript. `/apikey
 sk-ant-...` also works for one-line setup. In-agent settings affect the current
-process; put `ANTHROPIC_API_KEY`, `AUTOCEDAR_MODEL`, and `AUTOCEDAR_EFFORT` in
-`.env` when you want them to persist across launches.
+process. Use `autocedar apikey` for the persistent `.env` path.
 
 ### Docker
 
@@ -596,6 +610,12 @@ Slash shortcuts are available for repeatable control:
 | `/apikey KEY` | Set `ANTHROPIC_API_KEY` for the current process. |
 | `/apikey clear` | Remove the key from the current process. |
 | `/draft` | Show the current prose draft. |
+| `/artifacts` | Show the latest authoring session, schema, and policy paths. |
+| `/schema [PATH]` | Show the latest generated Cedar schema, or a schema file you provide. |
+| `/policy [PATH]` | Show the latest synthesized Cedar policy, or a policy file you provide. |
+| `/copy session` | Copy the latest authoring session path to the system clipboard when supported. |
+| `/copy schema [path]` | Copy the latest schema text, or use `/copy schema path` to copy its path. |
+| `/copy policy [path]` | Copy the latest policy text, or use `/copy policy path` to copy its path. |
 | `/save [PATH]` | Save the draft, defaulting to `autocedar-spec.md`. |
 | `/new` | Clear the draft and leave drafting mode. |
 | `/author SPEC --out DIR [--schema PATH] [--model MODEL] [--effort high]` | Run HITL authoring from a spec file. |
@@ -672,8 +692,9 @@ Authoring writes session artifacts under the `--out` directory, usually
 
 | Symptom | Fix |
 | --- | --- |
-| Chat says no API key is loaded | Use `/apikey` in the TUI, export `ANTHROPIC_API_KEY`, or create `.env` in the directory where you launch `autocedar`. |
+| Chat says no API key is loaded | Run `uv run autocedar apikey`, use `/apikey` in the TUI for the current session, or export `ANTHROPIC_API_KEY`. |
 | API key works in shell but not TUI | Start `autocedar` from the project directory containing `.env`, or export the key before launch. |
+| Cannot select/copy from the TUI | Use `/copy session`, `/copy schema path`, `/copy policy path`, `/copy schema`, or `/copy policy`. If your terminal/container has no clipboard command, AutoCedar shows a copy fallback panel for manual selection. |
 | Verification says Cedar is missing | Set `CEDAR=/path/to/cedar` or install the Cedar CLI. |
 | Verification says CVC5 is missing | Install CVC5, confirm `cvc5 --version` works, then set `CVC5=$(command -v cvc5)` in `.env` if needed. |
 | `cedar symcc` is unknown or says it was built without `analyze` | Reinstall Cedar with `cargo install cedar-policy-cli --locked --version 4.10.0 --features analyze --force`, then confirm `cedar symcc --help \| grep principal-type` prints a line. |

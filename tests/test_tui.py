@@ -5,12 +5,14 @@ from __future__ import annotations
 import asyncio
 import os
 from pathlib import Path
+from typing import Sequence
 
 import pytest
 
 from autocedar.atoms import PropertyAtom
 from autocedar.tui import (
     AutoCedarApp,
+    ClipboardResult,
     _describe_author_action,
     _property_overview_text,
     _redact_sensitive_input,
@@ -468,6 +470,68 @@ def test_textual_app_show_the_draft_uses_buffer_not_chat() -> None:
             await pilot.exit(None)
 
     asyncio.run(run())
+
+
+def test_tui_registers_latest_authoring_artifacts(tmp_path: Path) -> None:
+    app = AutoCedarApp()
+    session = tmp_path / "session"
+    schema = session / "stage1" / "final_schema.cedarschema"
+    candidate = session / "scenario" / "candidate.cedar"
+    schema.parent.mkdir(parents=True)
+    candidate.parent.mkdir(parents=True)
+    schema.write_text("entity User;")
+    candidate.write_text("permit(principal, action, resource);")
+
+    app._register_authoring_artifacts(session, candidate, schema_override=None)
+
+    assert app.latest_session_dir == session
+    assert app.latest_schema_path == schema
+    assert app.latest_policy_path == candidate
+
+
+def test_tui_artifact_slash_commands_dispatch_to_latest_paths(tmp_path: Path) -> None:
+    app = AutoCedarApp()
+    schema = tmp_path / "schema.cedarschema"
+    policy = tmp_path / "candidate.cedar"
+    app.latest_schema_path = schema
+    app.latest_policy_path = policy
+    calls: list[tuple[Path | None, str]] = []
+    app._show_file_artifact = lambda path, label: calls.append((path, label))  # type: ignore[method-assign]
+
+    app._handle_command_input("/schema")
+    app._handle_command_input("/policy")
+
+    assert calls == [(schema, "Cedar schema"), (policy, "Cedar policy")]
+
+
+def test_tui_copy_session_uses_clipboard_helper(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    app = AutoCedarApp()
+    app.latest_session_dir = tmp_path / "session"
+    copied: list[str] = []
+    messages: list[str] = []
+    monkeypatch.setattr(
+        "autocedar.tui._copy_to_clipboard",
+        lambda text: copied.append(text) or ClipboardResult(True, "ok"),
+    )
+    app._say = messages.append  # type: ignore[method-assign]
+
+    app._handle_command_input("/copy session")
+
+    assert copied == [str(tmp_path / "session")]
+    assert any("Copied session path" in message for message in messages)
+
+
+def test_tui_natural_language_show_schema_routes_to_artifact_command() -> None:
+    app = AutoCedarApp()
+    calls: list[Sequence[str]] = []
+    app._show_schema_command = lambda args: calls.append(args)  # type: ignore[method-assign]
+
+    app._handle_shell_input("show the schema")
+
+    assert calls == [[]]
 
 
 def test_textual_app_state_snapshot_includes_drafting_and_pending_action() -> None:

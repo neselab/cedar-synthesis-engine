@@ -139,3 +139,15 @@ def test_cvc5_check_uses_actionable_fix_when_missing(
     assert check.status == "FAIL"
     assert "not found" in check.detail
     assert "command -v cvc5" in check.fix
+
+
+def test_doctor_treats_placeholder_api_key_as_missing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-...")
+
+    check = doctor._llm_check()
+
+    assert check.status == "WARN"
+    assert "not set" in check.detail
+    assert "autocedar apikey" in check.fix

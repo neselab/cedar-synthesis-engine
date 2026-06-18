@@ -4,12 +4,19 @@ from __future__ import annotations
 
 import argparse
 import datetime
+import getpass
 import os
 import sys
 from pathlib import Path
 from typing import Sequence
 
-from autocedar.env import load_dotenv
+from autocedar.env import (
+    ANTHROPIC_API_KEY,
+    is_real_anthropic_api_key,
+    load_dotenv,
+    remove_dotenv_value,
+    write_dotenv_value,
+)
 from autocedar.harness_adapter import make_harness_synthesizer
 from autocedar.llm import DEFAULT_EFFORT, LLMClient, default_model_for_provider, default_provider
 from autocedar.pipeline import author as author_pipeline
@@ -24,6 +31,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     if not argv:
         from autocedar.tui import run_tui
 
+        _prompt_for_missing_api_key(allow_skip=True)
         return run_tui()
     parser = _build_parser()
     args = parser.parse_args(argv)
@@ -53,6 +61,29 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Skip the live SymCC smoke test.",
     )
     doctor_p.set_defaults(func=_cmd_doctor)
+
+    api_p = sub.add_parser(
+        "apikey",
+        aliases=["api-key"],
+        help="Save, update, or clear ANTHROPIC_API_KEY in .env.",
+    )
+    api_p.add_argument(
+        "key",
+        nargs="?",
+        help="Anthropic API key. Omit to enter it securely; use `clear` to remove it.",
+    )
+    api_p.add_argument(
+        "--env",
+        type=Path,
+        default=None,
+        help="Write to this .env path instead of the nearest .env.",
+    )
+    api_p.add_argument(
+        "--clear",
+        action="store_true",
+        help="Remove ANTHROPIC_API_KEY from .env and this process.",
+    )
+    api_p.set_defaults(func=_cmd_apikey)
 
     author_p = sub.add_parser(
         "author",
@@ -130,6 +161,7 @@ def _build_parser() -> argparse.ArgumentParser:
 def _cmd_tui(args: argparse.Namespace) -> int:
     from autocedar.tui import run_tui
 
+    _prompt_for_missing_api_key(allow_skip=True)
     return run_tui()
 
 
@@ -141,7 +173,34 @@ def _cmd_doctor(args: argparse.Namespace) -> int:
     return 1 if report.failed else 0
 
 
+def _cmd_apikey(args: argparse.Namespace) -> int:
+    value = (args.key or "").strip()
+    if args.clear or value.lower() in {"clear", "unset", "remove", "delete"}:
+        path = remove_dotenv_value(ANTHROPIC_API_KEY, env_path=args.env)
+        print(f"Removed ANTHROPIC_API_KEY from {path}.")
+        return 0
+
+    if not value:
+        if not _can_prompt_for_secret():
+            raise SystemExit(
+                "ANTHROPIC_API_KEY is not configured. Run "
+                "`autocedar apikey sk-ant-...` or rerun from an interactive terminal.",
+            )
+        value = getpass.getpass("Paste Anthropic API key (input hidden): ").strip()
+
+    if not is_real_anthropic_api_key(value):
+        raise SystemExit(
+            "That does not look like a real Anthropic API key. "
+            "Run `autocedar apikey` again and paste the full key.",
+        )
+
+    path = write_dotenv_value(ANTHROPIC_API_KEY, value, env_path=args.env)
+    print(f"Saved ANTHROPIC_API_KEY to {path} ({_mask_api_key(value)}).")
+    return 0
+
+
 def _cmd_author(args: argparse.Namespace) -> int:
+    _require_api_key_for_llm_command()
     spec_path = Path(args.spec)
     if not spec_path.exists():
         raise SystemExit(f"spec not found: {spec_path}")
@@ -234,6 +293,7 @@ def _cmd_verify(args: argparse.Namespace) -> int:
 
 
 def _cmd_synthesize(args: argparse.Namespace) -> int:
+    _require_api_key_for_llm_command()
     from autocedar.harness.eval_harness import (
         DEFAULT_MODEL,
         DEFAULT_PHASE1_MODEL,
@@ -279,6 +339,56 @@ def _cmd_synthesize(args: argparse.Namespace) -> int:
             print(f"    {result.error}")
     print(f"output: {run_dir}")
     return 0 if all(r.converged for r in results) else 1
+
+
+def _provider_uses_anthropic_key() -> bool:
+    return default_provider() not in {"codex", "openai-codex"}
+
+
+def _can_prompt_for_secret() -> bool:
+    return sys.stdin.isatty() and sys.stdout.isatty()
+
+
+def _prompt_for_missing_api_key(*, allow_skip: bool) -> bool:
+    if not _provider_uses_anthropic_key():
+        return True
+    if is_real_anthropic_api_key(os.environ.get(ANTHROPIC_API_KEY)):
+        return True
+    if not _can_prompt_for_secret():
+        return False
+
+    print("ANTHROPIC_API_KEY is not configured in the environment or nearest .env.")
+    value = getpass.getpass(
+        "Paste Anthropic API key to save to .env, or press Enter to continue without it: ",
+    ).strip()
+    if not value:
+        if allow_skip:
+            print("Continuing without an API key. Open-ended chat/model calls will be limited.")
+            return False
+        raise SystemExit("Cancelled. Run `autocedar apikey` when you have the key.")
+    if not is_real_anthropic_api_key(value):
+        raise SystemExit(
+            "That does not look like a real Anthropic API key. "
+            "Run `autocedar apikey` again and paste the full key.",
+        )
+    path = write_dotenv_value(ANTHROPIC_API_KEY, value)
+    print(f"Saved ANTHROPIC_API_KEY to {path} ({_mask_api_key(value)}).")
+    return True
+
+
+def _require_api_key_for_llm_command() -> None:
+    if _prompt_for_missing_api_key(allow_skip=False):
+        return
+    raise SystemExit(
+        "ANTHROPIC_API_KEY is not configured. Run `autocedar apikey`, "
+        "or set AUTOCEDAR_PROVIDER=codex if you are using local Codex auth.",
+    )
+
+
+def _mask_api_key(value: str) -> str:
+    if len(value) <= 8:
+        return "set"
+    return f"{value[:6]}...{value[-4:]}"
 
 
 if __name__ == "__main__":

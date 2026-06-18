@@ -13,16 +13,6 @@ if ! command -v docker >/dev/null 2>&1; then
   exit 1
 fi
 
-if [[ ! -f "$REPO_ROOT/.env" ]]; then
-  echo "Missing .env in $REPO_ROOT"
-  if [[ -f "$REPO_ROOT/.env.example" ]]; then
-    cp "$REPO_ROOT/.env.example" "$REPO_ROOT/.env"
-    echo "Created .env from .env.example."
-  fi
-  echo "Edit .env, set ANTHROPIC_API_KEY, then run ./scripts/docker-autocedar again."
-  exit 1
-fi
-
 DOCKER=(docker)
 if ! docker info >/dev/null 2>&1; then
   if command -v sudo >/dev/null 2>&1; then
@@ -42,13 +32,65 @@ if ! "${DOCKER[@]}" info >/dev/null 2>&1; then
   exit 1
 fi
 
+USER_ID="$(id -u):$(id -g)"
+
 echo "Building Docker image: $IMAGE"
 "${DOCKER[@]}" build -t "$IMAGE" "$REPO_ROOT"
+
+if [[ "${1:-}" == "apikey" || "${1:-}" == "api-key" ]]; then
+  if [[ -t 0 && -t 1 ]]; then
+    exec "${DOCKER[@]}" run \
+      --rm \
+      -it \
+      --user "$USER_ID" \
+      --volume "$REPO_ROOT:/work" \
+      --workdir /work \
+      "$IMAGE" \
+      "$@"
+  fi
+  exec "${DOCKER[@]}" run \
+    --rm \
+    --user "$USER_ID" \
+    --volume "$REPO_ROOT:/work" \
+    --workdir /work \
+    "$IMAGE" \
+    "$@"
+fi
+
+NEEDS_API_KEY=0
+if [[ ! -f "$REPO_ROOT/.env" ]]; then
+  NEEDS_API_KEY=1
+elif ! grep -Eq '^[[:space:]]*(export[[:space:]]+)?ANTHROPIC_API_KEY[[:space:]]*=' "$REPO_ROOT/.env"; then
+  NEEDS_API_KEY=1
+elif grep -Eq '^[[:space:]]*(export[[:space:]]+)?ANTHROPIC_API_KEY[[:space:]]*=[[:space:]]*"?sk-ant-(\.\.\.|…)"?[[:space:]]*$' "$REPO_ROOT/.env"; then
+  NEEDS_API_KEY=1
+fi
+
+if [[ "$NEEDS_API_KEY" -eq 1 ]]; then
+  echo "ANTHROPIC_API_KEY is not configured in $REPO_ROOT/.env."
+  if [[ -t 0 && -t 1 ]]; then
+    echo "AutoCedar will ask for it now and save it to .env."
+    "${DOCKER[@]}" run \
+      --rm \
+      -it \
+      --user "$USER_ID" \
+      --volume "$REPO_ROOT:/work" \
+      --workdir /work \
+      "$IMAGE" \
+      apikey
+  else
+    echo "Run: ./scripts/docker-autocedar apikey sk-ant-..."
+    exit 1
+  fi
+fi
 
 echo "Checking AutoCedar environment inside Docker..."
 "${DOCKER[@]}" run \
   --rm \
+  --user "$USER_ID" \
   --env-file "$REPO_ROOT/.env" \
+  --volume "$REPO_ROOT:/work" \
+  --workdir /work \
   "$IMAGE" \
   doctor
 
@@ -57,6 +99,7 @@ if [[ -t 0 && -t 1 ]]; then
   exec "${DOCKER[@]}" run \
     --rm \
     -it \
+    --user "$USER_ID" \
     --env-file "$REPO_ROOT/.env" \
     --volume "$REPO_ROOT:/work" \
     --workdir /work \
@@ -71,6 +114,7 @@ fi
 echo "Starting AutoCedar in Docker..."
 exec "${DOCKER[@]}" run \
   --rm \
+  --user "$USER_ID" \
   --env-file "$REPO_ROOT/.env" \
   --volume "$REPO_ROOT:/work" \
   --workdir /work \
