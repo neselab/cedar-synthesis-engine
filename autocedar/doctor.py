@@ -108,7 +108,7 @@ def _llm_check() -> DoctorCheck:
         name="LLM provider",
         status="WARN",
         detail=f"{provider} using model {model}; {ANTHROPIC_API_KEY} is not set",
-        fix="run `uv run autocedar apikey`, export `ANTHROPIC_API_KEY`, or use `/apikey` inside the TUI",
+        fix="run `autocedar apikey`, export `ANTHROPIC_API_KEY`, or use `/apikey` inside the TUI",
     )
 
 

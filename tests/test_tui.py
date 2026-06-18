@@ -819,12 +819,16 @@ def test_textual_settings_commands_update_runtime(
 
             app._handle_command_input("/apikey sk-ant-secret123")
             assert os.environ["ANTHROPIC_API_KEY"] == "sk-ant-secret123"
+            assert app.active_api_key == "sk-ant-secret123"
             assert validated == [("sk-ant-secret123", "claude-sonnet-4-6")]
             env_path = tmp_path / "config" / ".env"
             assert env_path.read_text() == "ANTHROPIC_API_KEY=sk-ant-secret123\n"
 
+            app._handle_command_input("/apikey status")
+
             app._handle_command_input("/apikey clear")
             assert "ANTHROPIC_API_KEY" not in os.environ
+            assert app.active_api_key == ""
             assert env_path.read_text() == ""
             await pilot.exit(None)
 
@@ -920,7 +924,7 @@ def test_textual_apikey_normalizes_pasted_key_before_saving(
 def test_make_anthropic_client_receives_resolved_api_key(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-explicit123")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-env123")
     captured: list[str | None] = []
 
     class FakeAnthropicModule:
@@ -930,9 +934,11 @@ def test_make_anthropic_client_receives_resolved_api_key(
 
     monkeypatch.setitem(sys.modules, "anthropic", FakeAnthropicModule)
 
-    AutoCedarApp()._make_anthropic_client()
+    app = AutoCedarApp()
+    app.active_api_key = "sk-ant-active123"
+    app._make_anthropic_client()
 
-    assert captured == ["sk-ant-explicit123"]
+    assert captured == ["sk-ant-active123"]
 
 
 def test_runtime_settings_resolve_author_and_synthesis_defaults() -> None:

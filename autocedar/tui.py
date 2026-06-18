@@ -133,7 +133,7 @@ SLASH_COMMAND_DESCRIPTIONS = {
     "/settings": "show model, effort, and API-key status",
     "/model": "set the default LLM model",
     "/effort": "set low, medium, high, or max effort",
-    "/apikey": "set or clear the API key for this session",
+    "/apikey": "set, show, or clear the saved API key",
     "/draft": "show, start, or clear draft capture",
     "/artifacts": "show latest session/schema/policy paths",
     "/schema": "show latest or provided Cedar schema",
@@ -182,7 +182,7 @@ Slash shortcuts are also available:
   [#f0c678]/settings[/]              show model, effort, and API key status
   [#f0c678]/model MODEL[/]           set the default LLM model
   [#f0c678]/effort low|medium|high|max[/]
-  [#f0c678]/apikey[/] [KEY|clear]    set or clear ANTHROPIC_API_KEY for this session
+  [#f0c678]/apikey[/] [KEY|status|clear] set, show, or clear the saved API key
   [#f0c678]/draft[/] [show|start|clear] show, start, or clear draft capture
   [#f0c678]/artifacts[/]             show latest session/schema/policy paths
   [#f0c678]/schema[/] [PATH]         show latest or provided Cedar schema
@@ -544,6 +544,7 @@ class AutoCedarApp(App[None]):
         self.llm_provider = default_provider()
         self.llm_model = _initial_model()
         self.llm_effort = _normalize_effort(os.environ.get("AUTOCEDAR_EFFORT")) or DEFAULT_EFFORT
+        self.active_api_key = normalize_anthropic_api_key(os.environ.get(ANTHROPIC_API_KEY, ""))
         self.busy = False
         self.active_task = "idle"
         self.latest_session_dir: Path | None = None
@@ -1144,6 +1145,9 @@ class AutoCedarApp(App[None]):
         if value.lower() in {"clear", "unset", "remove", "delete"}:
             self._clear_api_key()
             return
+        if value.lower() in {"status", "show"}:
+            self._show_api_key_status()
+            return
         self._set_api_key(value)
 
     def _handle_pending_api_key(self, raw: str) -> None:
@@ -1211,6 +1215,8 @@ class AutoCedarApp(App[None]):
         except Exception as exc:
             raise ValueError(format_api_key_validation_error(exc, model=self.llm_model)) from exc
         path = write_user_config_value(ANTHROPIC_API_KEY, value)
+        self.active_api_key = value
+        os.environ[ANTHROPIC_API_KEY] = value
         self._say(
             "Anthropic API key saved "
             f"([dim {MUTED}]{escape(mask_api_key_for_display(value))}[/]) to "
@@ -1220,7 +1226,24 @@ class AutoCedarApp(App[None]):
 
     def _clear_api_key(self) -> None:
         path = remove_user_config_value(ANTHROPIC_API_KEY)
+        self.active_api_key = ""
         self._say(f"Anthropic API key removed from [dim {MUTED}]{escape(str(path))}[/].")
+        self._update_status()
+
+    def _active_api_key(self) -> str:
+        if is_real_anthropic_api_key(self.active_api_key):
+            return self.active_api_key
+        return normalize_anthropic_api_key(os.environ.get(ANTHROPIC_API_KEY, ""))
+
+    def _show_api_key_status(self) -> None:
+        key = self._active_api_key()
+        if is_real_anthropic_api_key(key):
+            self._say(
+                "Active Anthropic API key is set for this session "
+                f"([dim {MUTED}]{escape(mask_api_key_for_display(key))}[/]).",
+            )
+        else:
+            self._say("No active Anthropic API key is set for this session.")
         self._update_status()
 
     def _show_settings(self) -> None:
@@ -1276,7 +1299,7 @@ class AutoCedarApp(App[None]):
         )
 
     def _settings_text(self) -> str:
-        api_key = os.environ.get(ANTHROPIC_API_KEY)
+        api_key = self._active_api_key()
         api_key_is_real = is_real_anthropic_api_key(api_key)
         codex_auth = "uses local Codex login" if self.llm_provider in {"codex", "openai-codex"} else ""
         return "\n".join(
@@ -1536,7 +1559,7 @@ class AutoCedarApp(App[None]):
 
     def _answer_chat(self, raw: str, *, fallback: str) -> None:
         try:
-            if is_real_anthropic_api_key(os.environ.get(ANTHROPIC_API_KEY)):
+            if is_real_anthropic_api_key(self._active_api_key()):
                 answer = self._stream_chat_model(raw)
             else:
                 answer = self._local_chat_response(raw, fallback=fallback)
@@ -1547,6 +1570,7 @@ class AutoCedarApp(App[None]):
             self.call_from_thread(self._clear_stream_output)
             if is_anthropic_auth_error(exc):
                 remove_user_config_value(ANTHROPIC_API_KEY)
+                self.active_api_key = ""
                 os.environ.pop(ANTHROPIC_API_KEY, None)
                 self.call_from_thread(self._update_status)
             self.call_from_thread(self._say, _chat_failure_message(exc))
@@ -1571,10 +1595,9 @@ class AutoCedarApp(App[None]):
             )
         if _mentions(lowered, "api key", "chat model", "model working"):
             return (
-                "I do not currently see ANTHROPIC_API_KEY in the process "
-                "environment. AutoCedar loads the nearest .env at startup; if "
-                "that file contains the key, restart the TUI from that project "
-                "directory."
+                "I do not currently see an active Anthropic API key. Run "
+                "`/apikey` to paste and validate one; it will be active "
+                "immediately and saved for later AutoCedar sessions."
             )
         if lowered in {"you didn't answer my question", "you didnt answer my question"}:
             return "You are right. That was a fallback response, not a real answer."
@@ -1584,7 +1607,7 @@ class AutoCedarApp(App[None]):
         import anthropic
 
         system, messages = self._chat_request(raw)
-        client = anthropic.Anthropic(api_key=os.environ.get(ANTHROPIC_API_KEY))
+        client = anthropic.Anthropic(api_key=self._active_api_key())
         response = client.messages.create(
             model=self.llm_model,
             max_tokens=800,
@@ -1623,7 +1646,7 @@ class AutoCedarApp(App[None]):
     def _make_anthropic_client(self) -> Any:
         import anthropic
 
-        return anthropic.Anthropic(api_key=os.environ.get(ANTHROPIC_API_KEY))
+        return anthropic.Anthropic(api_key=self._active_api_key())
 
     def _chat_request(self, raw: str) -> tuple[str, list[dict[str, str]]]:
         draft = "\n".join(self.draft_lines[-12:]) or "(empty)"
@@ -1935,7 +1958,7 @@ class AutoCedarApp(App[None]):
         drafting_state = "active" if self.drafting_active else "off"
         review_state = "yes" if self.pending_review is not None else "no"
         action_state = "yes" if self.pending_action is not None else "no"
-        key_state = "set" if is_real_anthropic_api_key(os.environ.get(ANTHROPIC_API_KEY)) else "not set"
+        key_state = "set" if is_real_anthropic_api_key(self._active_api_key()) else "not set"
         busy_color = AMBER if self.busy else TEAL
         drafting_color = GREEN if self.drafting_active else MUTED
         review_color = CORAL if self.pending_review is not None else MUTED
@@ -1968,7 +1991,7 @@ class AutoCedarApp(App[None]):
             f"provider: {self.llm_provider}",
             f"model: {self.llm_model}",
             f"effort: {self.llm_effort}",
-            f"api key: {'set' if is_real_anthropic_api_key(os.environ.get(ANTHROPIC_API_KEY)) else 'not set'}",
+            f"api key: {'set' if is_real_anthropic_api_key(self._active_api_key()) else 'not set'}",
             f"latest session: {self.latest_session_dir or 'none'}",
             f"latest schema: {self.latest_schema_path or 'none'}",
             f"latest policy: {self.latest_policy_path or 'none'}",

@@ -22,7 +22,14 @@ _PLACEHOLDER_API_KEYS = {
 
 
 def load_dotenv(start: Path | None = None) -> Path | None:
-    """Load project ``.env`` first, then user config for missing values."""
+    """Load project config, then user config for global AutoCedar secrets.
+
+    Shell-exported values still win. For ``ANTHROPIC_API_KEY``, the user-level
+    AutoCedar config wins over a project ``.env`` value so `autocedar apikey`
+    persists predictably across directories and stale project files do not
+    shadow the saved key.
+    """
+    preexisting_keys = set(os.environ)
     env_path = find_dotenv(start or Path.cwd())
     loaded: Path | None = None
     if env_path is not None:
@@ -31,12 +38,16 @@ def load_dotenv(start: Path | None = None) -> Path | None:
 
     user_env = user_config_env_path()
     if user_env.exists():
-        _load_env_file(user_env)
+        override_keys = set()
+        if ANTHROPIC_API_KEY not in preexisting_keys:
+            override_keys.add(ANTHROPIC_API_KEY)
+        _load_env_file(user_env, override_keys=override_keys)
         loaded = loaded or user_env
     return loaded
 
 
-def _load_env_file(env_path: Path) -> None:
+def _load_env_file(env_path: Path, *, override_keys: set[str] | None = None) -> None:
+    overrides = override_keys or set()
     for raw_line in env_path.read_text().splitlines():
         line = raw_line.strip()
         if not line or line.startswith("#"):
@@ -47,7 +58,7 @@ def _load_env_file(env_path: Path) -> None:
             continue
         key, value = line.split("=", 1)
         key = key.strip()
-        if not key or key in os.environ:
+        if not key or (key in os.environ and key not in overrides):
             continue
         os.environ[key] = _parse_env_value(value)
 
