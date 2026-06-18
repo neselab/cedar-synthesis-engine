@@ -849,7 +849,7 @@ class AutoCedarApp(App[None]):
             and intent.kind == "message"
             and _looks_like_active_draft_statement(raw)
         ):
-            self._append_draft_line(raw)
+            self._append_draft_text(raw)
             return
         try:
             if intent.kind == "help":
@@ -927,7 +927,7 @@ class AutoCedarApp(App[None]):
                 )
             elif intent.kind == "append_draft":
                 if self.drafting_active:
-                    self._append_draft_line(raw)
+                    self._append_draft_text(raw)
                 else:
                     self._request_confirmation(
                         _describe_start_draft_action(),
@@ -1032,7 +1032,7 @@ class AutoCedarApp(App[None]):
             return
         if not self.drafting_active:
             self.drafting_active = True
-        self._append_draft_line(line)
+        self._append_draft_text(line)
 
     def _handle_clear_command(self, args: Sequence[str]) -> None:
         target = args[0].lower() if args else "transcript"
@@ -1428,11 +1428,17 @@ class AutoCedarApp(App[None]):
         )
         self._update_status()
 
-    def _append_draft_line(self, raw: str) -> None:
-        self.draft_lines.append(raw)
+    def _append_draft_text(self, raw: str) -> None:
+        lines = _draft_lines_from_text(raw)
+        if not lines:
+            self._say("I didn’t find any non-empty requirement lines to add.")
+            return
+        self.draft_lines.extend(lines)
+        label = "line" if len(lines) == 1 else "lines"
         self._say(
-            "I added that to the policy draft. When you’re ready, say “author this”, "
-            "“save this as spec.md”, or “show the draft”.",
+            f"I added {len(lines)} requirement {label} to the policy draft. "
+            "When you’re ready, say “author this”, “save this as spec.md”, "
+            "or “show the draft”.",
         )
         self._update_status()
 
@@ -3001,6 +3007,10 @@ def _redact_sensitive_input(raw: str) -> str:
 
 def _strip_rich_markup(text: str) -> str:
     return re.sub(r"\[/?[^\]]+\]", "", text)
+
+
+def _draft_lines_from_text(text: str) -> list[str]:
+    return [line.strip() for line in text.splitlines() if line.strip()]
 
 
 def _short_model(model: str) -> str:

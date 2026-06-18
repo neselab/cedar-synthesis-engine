@@ -16,6 +16,7 @@ from autocedar.tui import (
     COMMANDS,
     HELP_TEXT,
     _describe_author_action,
+    _draft_lines_from_text,
     _property_overview_text,
     _redact_sensitive_input,
     _render_cedar_for_review,
@@ -410,6 +411,34 @@ def test_textual_app_appends_schema_setup_statement_after_drafting_is_active() -
     asyncio.run(run())
 
 
+def test_textual_app_appends_multiline_paste_after_drafting_is_active() -> None:
+    requirements = """\
+The new system will allow students to register for courses and view report cards from personal computers attached to the campus LAN.
+
+At the beginning of each semester, students may request a course catalogue containing a list of course offerings for the semester.
+
+Students cannot register for course offerings after registration for the current semester has been closed.
+
+Only Professors can enter grades for students.
+"""
+
+    async def run() -> None:
+        app = AutoCedarApp()
+        async with app.run_test() as pilot:
+            app._start_drafting()
+            app._handle_shell_input(requirements)
+            assert app.pending_action is None
+            assert app.draft_lines == [
+                "The new system will allow students to register for courses and view report cards from personal computers attached to the campus LAN.",
+                "At the beginning of each semester, students may request a course catalogue containing a list of course offerings for the semester.",
+                "Students cannot register for course offerings after registration for the current semester has been closed.",
+                "Only Professors can enter grades for students.",
+            ]
+            await pilot.exit(None)
+
+    asyncio.run(run())
+
+
 def test_textual_app_keeps_complaint_out_of_active_draft() -> None:
     async def run() -> None:
         app = AutoCedarApp()
@@ -605,6 +634,10 @@ def test_tui_copy_last_and_transcript_use_plain_text(
 
 def test_strip_rich_markup_for_copy_buffer() -> None:
     assert _strip_rich_markup("[bold #f0c678]Hello[/] [dim]there[/]") == "Hello there"
+
+
+def test_draft_lines_from_text_filters_blank_lines() -> None:
+    assert _draft_lines_from_text("A\n\n B \n") == ["A", "B"]
 
 
 def test_tui_natural_language_show_schema_routes_to_artifact_command() -> None:
