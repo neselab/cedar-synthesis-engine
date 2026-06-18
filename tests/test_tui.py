@@ -23,6 +23,7 @@ from autocedar.tui import (
     _slash_command_completion,
     _slash_command_palette_text,
     _split_review_input,
+    _strip_rich_markup,
     interpret_natural_language,
     parse_author_args,
     parse_synthesize_args,
@@ -354,10 +355,26 @@ def test_textual_app_gates_plain_english_before_draft_capture() -> None:
             assert app.drafting_active is False
             assert app.pending_action is not None
             app._handle_confirmation_input("yes")
-            assert app.draft_lines == [
-                "Doctors can read assigned patient records.",
-            ]
+            assert app.draft_lines == []
             assert app.drafting_active is True
+            await pilot.exit(None)
+
+    asyncio.run(run())
+
+
+def test_textual_app_does_not_capture_mode_trigger_as_requirement() -> None:
+    async def run() -> None:
+        app = AutoCedarApp()
+        async with app.run_test() as pilot:
+            app._handle_shell_input("A policy and a schema from a bunch of nl requirements I have")
+            assert app.pending_action is not None
+            app._handle_confirmation_input("yes")
+            assert app.drafting_active is True
+            assert app.draft_lines == []
+            app._handle_shell_input("The owner of a document can both view and edit it.")
+            assert app.draft_lines == [
+                "The owner of a document can both view and edit it.",
+            ]
             await pilot.exit(None)
 
     asyncio.run(run())
@@ -423,7 +440,8 @@ def test_textual_app_clear_draft_disables_drafting() -> None:
     async def run() -> None:
         app = AutoCedarApp()
         async with app.run_test() as pilot:
-            app._start_drafting("Doctors can read assigned patient records.")
+            app._start_drafting()
+            app._handle_shell_input("Doctors can read assigned patient records.")
             assert app.drafting_active is True
             app._clear_draft()
             assert app.draft_lines == []
@@ -452,7 +470,8 @@ def test_textual_app_clear_draft_command_requests_draft_clear() -> None:
     async def run() -> None:
         app = AutoCedarApp()
         async with app.run_test() as pilot:
-            app._start_drafting("Doctors can read assigned patient records.")
+            app._start_drafting()
+            app._handle_shell_input("Doctors can read assigned patient records.")
             app._handle_command_input("/clear draft")
             assert app.pending_action is not None
             app._handle_confirmation_input("yes")
@@ -479,7 +498,8 @@ def test_textual_app_clear_transcript_does_not_clear_draft() -> None:
     async def run() -> None:
         app = AutoCedarApp()
         async with app.run_test() as pilot:
-            app._start_drafting("Doctors can read assigned patient records.")
+            app._start_drafting()
+            app._handle_shell_input("Doctors can read assigned patient records.")
             app._handle_command_input("/clear")
             assert app.draft_lines == ["Doctors can read assigned patient records."]
             assert app.drafting_active is True
@@ -493,7 +513,8 @@ def test_textual_app_show_the_draft_uses_buffer_not_chat() -> None:
         app = AutoCedarApp()
         shown: list[bool] = []
         async with app.run_test() as pilot:
-            app._start_drafting("Doctors can read assigned patient records.")
+            app._start_drafting()
+            app._handle_shell_input("Doctors can read assigned patient records.")
             app._show_draft = lambda: shown.append(True)  # type: ignore[method-assign]
             app._start_chat_response = (  # type: ignore[method-assign]
                 lambda raw, fallback: (_ for _ in ()).throw(AssertionError("chat should not handle draft display"))
@@ -555,6 +576,35 @@ def test_tui_copy_session_uses_clipboard_helper(
 
     assert copied == [str(tmp_path / "session")]
     assert any("Copied session path" in message for message in messages)
+
+
+def test_tui_copy_last_and_transcript_use_plain_text(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    app = AutoCedarApp()
+    copied: list[str] = []
+    messages: list[str] = []
+    monkeypatch.setattr(
+        "autocedar.tui._copy_to_clipboard",
+        lambda text: copied.append(text) or ClipboardResult(True, "ok"),
+    )
+    app._write = lambda content: None  # type: ignore[method-assign]
+    app._say("Policy authoring has [bold]started[/].")
+    app.copyable_transcript.append("you > Owners can edit documents.")
+    app._say = messages.append  # type: ignore[method-assign]
+
+    app._handle_command_input("/copy last")
+    app._handle_command_input("/copy transcript")
+
+    assert copied[0] == "Policy authoring has started."
+    assert "autocedar > Policy authoring has started." in copied[1]
+    assert "you > Owners can edit documents." in copied[1]
+    assert any("Copied last assistant message" in message for message in messages)
+    assert any("Copied transcript" in message for message in messages)
+
+
+def test_strip_rich_markup_for_copy_buffer() -> None:
+    assert _strip_rich_markup("[bold #f0c678]Hello[/] [dim]there[/]") == "Hello there"
 
 
 def test_tui_natural_language_show_schema_routes_to_artifact_command() -> None:

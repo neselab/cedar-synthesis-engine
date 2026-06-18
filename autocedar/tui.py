@@ -171,7 +171,7 @@ Slash shortcuts are also available:
   [#f0c678]/artifacts[/]             show latest session/schema/policy paths
   [#f0c678]/schema[/] [PATH]         show latest or provided Cedar schema
   [#f0c678]/policy[/] [PATH]         show latest or provided Cedar policy
-  [#f0c678]/copy[/] session|schema|policy|draft [path] copy text or artifact path
+  [#f0c678]/copy[/] last|transcript|session|schema|policy|draft [path] copy text or artifact path
   [#f0c678]/save[/] [PATH]           save the current draft
   [#f0c678]/new[/]                   clear the draft
   [#f0c678]/clear[/] [draft|transcript] clear transcript, or clear the draft explicitly
@@ -227,6 +227,8 @@ COMMAND_RAIL = """\
 [#f0c678]/schema[/]
 [#f0c678]/policy[/]
 [#f0c678]/copy[/] session
+[#f0c678]/copy[/] last
+[#f0c678]/copy[/] transcript
 [#f0c678]/save[/]
 
 [bold #d99a5f]Review keys[/]
@@ -509,6 +511,8 @@ class AutoCedarApp(App[None]):
         self.latest_session_dir: Path | None = None
         self.latest_schema_path: Path | None = None
         self.latest_policy_path: Path | None = None
+        self.copyable_transcript: list[str] = []
+        self.last_assistant_text = ""
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -553,6 +557,8 @@ class AutoCedarApp(App[None]):
 
     def action_clear_log(self) -> None:
         self.query_one("#transcript", RichLog).clear()
+        self.copyable_transcript.clear()
+        self.last_assistant_text = ""
         self._write(f"[dim {MUTED}]Transcript cleared.[/]")
         if self.draft_lines or self.drafting_active:
             self._write(
@@ -575,6 +581,7 @@ class AutoCedarApp(App[None]):
         self._hide_command_palette()
         if not raw:
             return
+        self.copyable_transcript.append(f"you > {_redact_sensitive_input(raw)}")
         self._write(
             f"[bold {TEAL}]you[/] [dim {MUTED}]>[/] "
             f"{escape(_redact_sensitive_input(raw))}",
@@ -923,8 +930,8 @@ class AutoCedarApp(App[None]):
                     self._append_draft_line(raw)
                 else:
                     self._request_confirmation(
-                        _describe_start_draft_action(initial_line=raw),
-                        lambda raw=raw: self._start_drafting(initial_line=raw),
+                        _describe_start_draft_action(),
+                        self._start_drafting,
                     )
             else:
                 self._start_chat_response(
@@ -1331,11 +1338,17 @@ class AutoCedarApp(App[None]):
     def _handle_copy_command(self, args: Sequence[str]) -> None:
         if not args:
             raise ValueError(
-                "Use /copy session, /copy schema, /copy schema path, "
-                "/copy policy, /copy policy path, or /copy draft.",
+                "Use /copy last, /copy transcript, /copy session, /copy schema, "
+                "/copy schema path, /copy policy, /copy policy path, or /copy draft.",
             )
         target = args[0].lower()
         mode = args[1].lower() if len(args) > 1 else "content"
+        if target == "last":
+            self._copy_text(self.last_assistant_text, label="last assistant message")
+            return
+        if target in {"transcript", "chat", "screen", "log"}:
+            self._copy_text("\n".join(self.copyable_transcript), label="transcript")
+            return
         if target == "session":
             if self.latest_session_dir is None:
                 raise ValueError("No session path is available yet.")
@@ -1404,29 +1417,21 @@ class AutoCedarApp(App[None]):
         self._say("I cleared the working policy draft.")
         self._update_status()
 
-    def _start_drafting(self, initial_line: str | None = None) -> None:
+    def _start_drafting(self) -> None:
         self.drafting_active = True
         self.pending_action = None
         self.active_task = "idle"
         self.query_one(Input).placeholder = "Tell AutoCedar what to do, or type /help"
-        if initial_line:
-            self._append_draft_line(initial_line, started=True)
-            return
         self._say(
-            "Drafting is active. Send policy requirements and I’ll add them to "
-            "the working draft.",
+            "Policy authoring has started. Paste your natural-language requirements "
+            "now; I’ll add those lines to the working draft.",
         )
         self._update_status()
 
-    def _append_draft_line(self, raw: str, *, started: bool = False) -> None:
+    def _append_draft_line(self, raw: str) -> None:
         self.draft_lines.append(raw)
-        prefix = (
-            "Started a policy draft and added that requirement."
-            if started
-            else "I added that to the policy draft."
-        )
         self._say(
-            f"{prefix} When you’re ready, say “author this”, "
+            "I added that to the policy draft. When you’re ready, say “author this”, "
             "“save this as spec.md”, or “show the draft”.",
         )
         self._update_status()
@@ -1817,6 +1822,8 @@ class AutoCedarApp(App[None]):
         self.query_one("#transcript", RichLog).write(content)
 
     def _say(self, text: str) -> None:
+        self.last_assistant_text = _strip_rich_markup(text)
+        self.copyable_transcript.append(f"autocedar > {self.last_assistant_text}")
         self._write(self._assistant_line(text))
 
     def _assistant_line(self, text: str) -> str:
@@ -2584,15 +2591,12 @@ def _resolve_scenario_path(path: Path) -> Path | None:
     return path
 
 
-def _describe_start_draft_action(initial_line: str | None = None) -> str:
-    lines = [
+def _describe_start_draft_action() -> str:
+    return "\n".join([
         "I’m going to start policy drafting mode.",
-        "While drafting is active, policy requirements you give me will be added to the working draft.",
+        "After it starts, paste your natural-language requirements and I’ll add those to the working draft.",
         "Questions and operational requests will still stay conversational.",
-    ]
-    if initial_line:
-        lines.append(f"first requirement: {initial_line}")
-    return "\n".join(lines)
+    ])
 
 
 def _describe_author_action(options: AuthorOptions, *, from_draft: bool) -> str:
@@ -2993,6 +2997,10 @@ def _redact_sensitive_input(raw: str) -> str:
         command = redacted.strip().split(maxsplit=1)[0]
         return f"{command} [redacted-api-key]"
     return redacted
+
+
+def _strip_rich_markup(text: str) -> str:
+    return re.sub(r"\[/?[^\]]+\]", "", text)
 
 
 def _short_model(model: str) -> str:
