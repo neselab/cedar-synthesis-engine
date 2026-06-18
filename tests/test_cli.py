@@ -178,17 +178,25 @@ def test_apikey_command_writes_env_file(
 ) -> None:
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     monkeypatch.setenv("AUTOCEDAR_CONFIG_DIR", str(tmp_path / "config"))
+    validated: list[tuple[str, str]] = []
+    monkeypatch.setattr(
+        cli,
+        "validate_anthropic_api_key",
+        lambda value, *, model: validated.append((value, model)),
+    )
 
     rc = cli._cmd_apikey(
         argparse.Namespace(
             key="sk-ant-test123",
             env=None,
             clear=False,
+            no_validate=False,
         ),
     )
 
     env_path = tmp_path / "config" / ".env"
     assert rc == 0
+    assert validated == [("sk-ant-test123", cli.default_model_for_provider("anthropic"))]
     assert env_path.read_text() == "ANTHROPIC_API_KEY=sk-ant-test123\n"
     assert "sk-ant-test123" not in capsys.readouterr().out
 
@@ -198,6 +206,7 @@ def test_apikey_command_replaces_existing_user_config_value(
     tmp_path: Path,
 ) -> None:
     monkeypatch.setenv("AUTOCEDAR_CONFIG_DIR", str(tmp_path / "config"))
+    monkeypatch.setattr(cli, "validate_anthropic_api_key", lambda value, *, model: None)
     env_path = tmp_path / "config" / ".env"
     env_path.parent.mkdir(parents=True)
     env_path.write_text("ANTHROPIC_API_KEY=sk-ant-...\nAUTOCEDAR_EFFORT=high\n")
@@ -207,6 +216,7 @@ def test_apikey_command_replaces_existing_user_config_value(
             key="sk-ant-realvalue",
             env=None,
             clear=False,
+            no_validate=False,
         ),
     )
 
@@ -221,6 +231,7 @@ def test_apikey_command_still_supports_explicit_env_file(tmp_path: Path) -> None
             key="sk-ant-realvalue",
             env=env_path,
             clear=False,
+            no_validate=True,
         ),
     )
 
@@ -234,8 +245,38 @@ def test_apikey_command_rejects_placeholder(tmp_path: Path) -> None:
                 key="sk-ant-...",
                 env=tmp_path / ".env",
                 clear=False,
+                no_validate=False,
             ),
         )
+
+
+def test_apikey_command_does_not_save_when_live_validation_fails(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("AUTOCEDAR_CONFIG_DIR", str(tmp_path / "config"))
+
+    class AuthenticationError(Exception):
+        pass
+
+    def fail_validation(value: str, *, model: str) -> None:
+        _ = value, model
+        raise AuthenticationError("invalid x-api-key")
+
+    monkeypatch.setattr(cli, "validate_anthropic_api_key", fail_validation)
+
+    with pytest.raises(SystemExit) as exc:
+        cli._cmd_apikey(
+            argparse.Namespace(
+                key="sk-ant-invalid123",
+                env=None,
+                clear=False,
+                no_validate=False,
+            ),
+        )
+
+    assert "did not save" in str(exc.value)
+    assert not (tmp_path / "config" / ".env").exists()
 
 
 def test_parser_exposes_apikey_command() -> None:

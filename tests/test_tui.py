@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import sys
 from pathlib import Path
 from typing import Sequence
 
@@ -19,6 +20,7 @@ from autocedar.tui import (
     HELP_TEXT,
     _describe_author_action,
     _draft_lines_from_text,
+    _chat_failure_message,
     _property_overview_text,
     _redact_sensitive_input,
     _render_cedar_for_review,
@@ -798,6 +800,11 @@ def test_textual_settings_commands_update_runtime(
     monkeypatch.delenv("AUTOCEDAR_AUTHOR_MODEL", raising=False)
     monkeypatch.delenv("AUTOCEDAR_EFFORT", raising=False)
     monkeypatch.setenv("AUTOCEDAR_CONFIG_DIR", str(tmp_path / "config"))
+    validated: list[tuple[str, str]] = []
+    monkeypatch.setattr(
+        "autocedar.tui.validate_anthropic_api_key",
+        lambda value, *, model: validated.append((value, model)),
+    )
 
     async def run() -> None:
         app = AutoCedarApp()
@@ -812,6 +819,7 @@ def test_textual_settings_commands_update_runtime(
 
             app._handle_command_input("/apikey sk-ant-secret123")
             assert os.environ["ANTHROPIC_API_KEY"] == "sk-ant-secret123"
+            assert validated == [("sk-ant-secret123", "claude-sonnet-4-6")]
             env_path = tmp_path / "config" / ".env"
             assert env_path.read_text() == "ANTHROPIC_API_KEY=sk-ant-secret123\n"
 
@@ -821,6 +829,110 @@ def test_textual_settings_commands_update_runtime(
             await pilot.exit(None)
 
     asyncio.run(run())
+
+
+def test_textual_apikey_rejects_invalid_key_before_saving(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.setenv("AUTOCEDAR_CONFIG_DIR", str(tmp_path / "config"))
+
+    class AuthenticationError(Exception):
+        pass
+
+    def fail_validation(value: str, *, model: str) -> None:
+        _ = value, model
+        raise AuthenticationError("invalid x-api-key")
+
+    monkeypatch.setattr("autocedar.tui.validate_anthropic_api_key", fail_validation)
+
+    async def run() -> None:
+        app = AutoCedarApp()
+        written: list[str] = []
+        async with app.run_test() as pilot:
+            app._say = written.append  # type: ignore[method-assign]
+            app._write = written.append  # type: ignore[method-assign]
+            app._handle_command_input("/apikey sk-ant-invalid123")
+            assert "ANTHROPIC_API_KEY" not in os.environ
+            assert not (tmp_path / "config" / ".env").exists()
+            assert any("did not save" in item for item in written)
+            await pilot.exit(None)
+
+    asyncio.run(run())
+
+
+def test_textual_apikey_rejects_redacted_placeholder_without_live_validation(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.setenv("AUTOCEDAR_CONFIG_DIR", str(tmp_path / "config"))
+    validation_calls: list[str] = []
+    monkeypatch.setattr(
+        "autocedar.tui.validate_anthropic_api_key",
+        lambda value, *, model: validation_calls.append(value),
+    )
+
+    async def run() -> None:
+        app = AutoCedarApp()
+        written: list[str] = []
+        async with app.run_test() as pilot:
+            app._say = written.append  # type: ignore[method-assign]
+            app._write = written.append  # type: ignore[method-assign]
+            app._handle_command_input("/apikey [redacted-api-key]")
+            assert "ANTHROPIC_API_KEY" not in os.environ
+            assert not (tmp_path / "config" / ".env").exists()
+            assert validation_calls == []
+            assert any("redacted value" in item for item in written)
+            await pilot.exit(None)
+
+    asyncio.run(run())
+
+
+def test_textual_apikey_normalizes_pasted_key_before_saving(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.setenv("AUTOCEDAR_CONFIG_DIR", str(tmp_path / "config"))
+    validated: list[str] = []
+    monkeypatch.setattr(
+        "autocedar.tui.validate_anthropic_api_key",
+        lambda value, *, model: validated.append(value),
+    )
+
+    async def run() -> None:
+        app = AutoCedarApp()
+        async with app.run_test() as pilot:
+            app._say = lambda message: None  # type: ignore[method-assign]
+            app._handle_command_input('/apikey "sk-ant-\u200bsecret 123"')
+            assert validated == ["sk-ant-secret123"]
+            assert os.environ["ANTHROPIC_API_KEY"] == "sk-ant-secret123"
+            assert (tmp_path / "config" / ".env").read_text() == (
+                "ANTHROPIC_API_KEY=sk-ant-secret123\n"
+            )
+            await pilot.exit(None)
+
+    asyncio.run(run())
+
+
+def test_make_anthropic_client_receives_resolved_api_key(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-explicit123")
+    captured: list[str | None] = []
+
+    class FakeAnthropicModule:
+        class Anthropic:
+            def __init__(self, *, api_key: str | None = None) -> None:
+                captured.append(api_key)
+
+    monkeypatch.setitem(sys.modules, "anthropic", FakeAnthropicModule)
+
+    AutoCedarApp()._make_anthropic_client()
+
+    assert captured == ["sk-ant-explicit123"]
 
 
 def test_runtime_settings_resolve_author_and_synthesis_defaults() -> None:
@@ -925,6 +1037,51 @@ def test_answer_chat_uses_streaming_when_api_key_is_loaded(monkeypatch: pytest.M
     assert app.chat_history == [("are you there?", "streamed answer")]
     assert said == []
     assert finished == [True]
+
+
+def test_answer_chat_clears_saved_key_on_authentication_error(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-invalid123")
+    monkeypatch.setenv("AUTOCEDAR_CONFIG_DIR", str(tmp_path / "config"))
+    env_path = tmp_path / "config" / ".env"
+    env_path.parent.mkdir(parents=True)
+    env_path.write_text("ANTHROPIC_API_KEY=sk-ant-invalid123\n")
+
+    class AuthenticationError(Exception):
+        pass
+
+    app = AutoCedarApp()
+    said: list[str] = []
+    status_updates: list[bool] = []
+    finished: list[bool] = []
+    app.call_from_thread = lambda func, *args: func(*args)  # type: ignore[method-assign]
+    app._stream_chat_model = lambda raw: (_ for _ in ()).throw(  # type: ignore[method-assign]
+        AuthenticationError("invalid x-api-key"),
+    )
+    app._clear_stream_output = lambda: None  # type: ignore[method-assign]
+    app._say = said.append  # type: ignore[method-assign]
+    app._update_status = lambda: status_updates.append(True)  # type: ignore[method-assign]
+    app._finish_task = lambda: finished.append(True)  # type: ignore[method-assign]
+
+    app._answer_chat("hey", fallback="fallback")
+
+    assert "ANTHROPIC_API_KEY" not in os.environ
+    assert env_path.read_text() == ""
+    assert "cleared it" in said[0]
+    assert status_updates == [True]
+    assert finished == [True]
+
+
+def test_chat_failure_message_hides_raw_auth_exception() -> None:
+    class AuthenticationError(Exception):
+        pass
+
+    message = _chat_failure_message(AuthenticationError("Error code: 401 invalid x-api-key"))
+
+    assert "invalid x-api-key" not in message
+    assert "full key from the Anthropic console" in message
 
 
 def test_stream_output_mounts_and_clears() -> None:

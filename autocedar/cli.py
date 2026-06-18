@@ -11,6 +11,12 @@ from pathlib import Path
 from typing import Sequence
 
 from autocedar import __version__
+from autocedar.api_key import (
+    format_api_key_validation_error,
+    mask_api_key_for_display,
+    normalize_anthropic_api_key,
+    validate_anthropic_api_key,
+)
 from autocedar.env import (
     ANTHROPIC_API_KEY,
     is_real_anthropic_api_key,
@@ -124,6 +130,11 @@ def _build_parser() -> argparse.ArgumentParser:
         "--clear",
         action="store_true",
         help="Remove ANTHROPIC_API_KEY from .env and this process.",
+    )
+    api_p.add_argument(
+        "--no-validate",
+        action="store_true",
+        help="Save the key without making a live Anthropic validation request.",
     )
     api_p.set_defaults(func=_cmd_apikey)
 
@@ -253,7 +264,7 @@ def _cmd_setup(args: argparse.Namespace) -> int:
 
 
 def _cmd_apikey(args: argparse.Namespace) -> int:
-    value = (args.key or "").strip()
+    value = normalize_anthropic_api_key(args.key or "")
     if args.clear or value.lower() in {"clear", "unset", "remove", "delete"}:
         path = (
             remove_dotenv_value(ANTHROPIC_API_KEY, env_path=args.env)
@@ -269,7 +280,9 @@ def _cmd_apikey(args: argparse.Namespace) -> int:
                 "ANTHROPIC_API_KEY is not configured. Run "
                 "`autocedar apikey sk-ant-...` or rerun from an interactive terminal.",
             )
-        value = getpass.getpass("Paste Anthropic API key (input hidden): ").strip()
+        value = normalize_anthropic_api_key(
+            getpass.getpass("Paste Anthropic API key (input hidden): "),
+        )
 
     if not is_real_anthropic_api_key(value):
         raise SystemExit(
@@ -277,12 +290,19 @@ def _cmd_apikey(args: argparse.Namespace) -> int:
             "Run `autocedar apikey` again and paste the full key.",
         )
 
+    if not args.no_validate:
+        model = default_model_for_provider("anthropic")
+        try:
+            validate_anthropic_api_key(value, model=model)
+        except Exception as exc:
+            raise SystemExit(format_api_key_validation_error(exc, model=model)) from exc
+
     path = (
         write_dotenv_value(ANTHROPIC_API_KEY, value, env_path=args.env)
         if args.env
         else write_user_config_value(ANTHROPIC_API_KEY, value)
     )
-    print(f"Saved ANTHROPIC_API_KEY to {path} ({_mask_api_key(value)}).")
+    print(f"Saved ANTHROPIC_API_KEY to {path} ({mask_api_key_for_display(value)}).")
     return 0
 
 
@@ -448,9 +468,11 @@ def _prompt_for_missing_api_key(*, allow_skip: bool) -> bool:
         "ANTHROPIC_API_KEY is not configured in the environment, project .env, "
         f"or user config ({user_config_env_path()}).",
     )
-    value = getpass.getpass(
-        "Paste Anthropic API key to save to user config, or press Enter to continue without it: ",
-    ).strip()
+    value = normalize_anthropic_api_key(
+        getpass.getpass(
+            "Paste Anthropic API key to save to user config, or press Enter to continue without it: ",
+        ),
+    )
     if not value:
         if allow_skip:
             print("Continuing without an API key. Open-ended chat/model calls will be limited.")
@@ -461,8 +483,13 @@ def _prompt_for_missing_api_key(*, allow_skip: bool) -> bool:
             "That does not look like a real Anthropic API key. "
             "Run `autocedar apikey` again and paste the full key.",
         )
+    model = default_model_for_provider("anthropic")
+    try:
+        validate_anthropic_api_key(value, model=model)
+    except Exception as exc:
+        raise SystemExit(format_api_key_validation_error(exc, model=model)) from exc
     path = write_user_config_value(ANTHROPIC_API_KEY, value)
-    print(f"Saved ANTHROPIC_API_KEY to {path} ({_mask_api_key(value)}).")
+    print(f"Saved ANTHROPIC_API_KEY to {path} ({mask_api_key_for_display(value)}).")
     return True
 
 
@@ -473,12 +500,6 @@ def _require_api_key_for_llm_command() -> None:
         "ANTHROPIC_API_KEY is not configured. Run `autocedar apikey`, "
         "or set AUTOCEDAR_PROVIDER=codex if you are using local Codex auth.",
     )
-
-
-def _mask_api_key(value: str) -> str:
-    if len(value) <= 8:
-        return "set"
-    return f"{value[:6]}...{value[-4:]}"
 
 
 if __name__ == "__main__":

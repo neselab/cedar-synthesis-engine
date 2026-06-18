@@ -15,6 +15,9 @@ _PLACEHOLDER_API_KEYS = {
     "your-api-key",
     "your-anthropic-api-key",
     "<your-anthropic-api-key>",
+    "[redacted]",
+    "[redacted-api-key]",
+    "redacted-api-key",
 }
 
 

@@ -31,7 +31,7 @@ Use this if you just want to run the AutoCedar agent.
 
    Paste the key when prompted. AutoCedar writes it to your user config
    (`~/.config/autocedar/.env` by default), redacts it in the terminal output,
-   and uses it on the next launch. You can also run
+   validates it with Anthropic before saving, and uses it on the next launch. You can also run
    `uvx --refresh autocedar@latest apikey sk-ant-...` if you prefer a one-line command. Do not
    share or commit your API key.
 
@@ -586,10 +586,11 @@ TUI:
 /apikey clear
 ```
 
-`/apikey` prompts for the key and redacts it in the transcript. `/apikey
-sk-ant-...` also works for one-line setup. These commands save to the same
-user-level AutoCedar config, so the key persists across new `uvx` sessions and
-package upgrades.
+`/apikey` prompts for the key, redacts it in the transcript, and validates it
+with Anthropic before saving. `/apikey sk-ant-...` also works for one-line
+setup. Rejected keys are not persisted. Valid keys save to the same user-level
+AutoCedar config, so the key persists across new `uvx` sessions and package
+upgrades.
 
 ### Docker
 

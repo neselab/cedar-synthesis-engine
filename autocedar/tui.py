@@ -25,6 +25,13 @@ from textual import events
 from textual.message import Message
 from textual.widgets import Footer, Header, Input, RichLog, Static
 
+from autocedar.api_key import (
+    format_api_key_validation_error,
+    is_anthropic_auth_error,
+    mask_api_key_for_display,
+    normalize_anthropic_api_key,
+    validate_anthropic_api_key,
+)
 from autocedar.corpus import AtomDecision
 from autocedar.env import (
     ANTHROPIC_API_KEY,
@@ -1128,7 +1135,8 @@ class AutoCedarApp(App[None]):
             self.query_one(Input).placeholder = "Paste ANTHROPIC_API_KEY, or type cancel"
             self._say(
                 "Paste your Anthropic API key. I’ll redact it in the transcript "
-                "and save it to the user-level AutoCedar config. Type “cancel” to stop.",
+                "and validate it before saving it to the user-level AutoCedar config. "
+                "Type “cancel” to stop.",
             )
             self._update_status()
             return
@@ -1189,13 +1197,23 @@ class AutoCedarApp(App[None]):
         self._update_status()
 
     def _set_api_key(self, api_key: str) -> None:
-        value = _strip_wrapping_quotes(api_key.strip())
+        value = normalize_anthropic_api_key(api_key)
         if not value:
             raise ValueError("API key cannot be empty.")
+        if not is_real_anthropic_api_key(value):
+            raise ValueError(
+                "That does not look like a real Anthropic API key. "
+                "Paste the full key from the Anthropic console, not a redacted value.",
+            )
+        self._say("Checking Anthropic API key before saving it...")
+        try:
+            validate_anthropic_api_key(value, model=self.llm_model)
+        except Exception as exc:
+            raise ValueError(format_api_key_validation_error(exc, model=self.llm_model)) from exc
         path = write_user_config_value(ANTHROPIC_API_KEY, value)
         self._say(
             "Anthropic API key saved "
-            f"([dim {MUTED}]{escape(_mask_api_key(value))}[/]) to "
+            f"([dim {MUTED}]{escape(mask_api_key_for_display(value))}[/]) to "
             f"[dim {MUTED}]{escape(str(path))}[/].",
         )
         self._update_status()
@@ -1527,6 +1545,10 @@ class AutoCedarApp(App[None]):
             self.chat_history = self.chat_history[-8:]
         except Exception as exc:
             self.call_from_thread(self._clear_stream_output)
+            if is_anthropic_auth_error(exc):
+                remove_user_config_value(ANTHROPIC_API_KEY)
+                os.environ.pop(ANTHROPIC_API_KEY, None)
+                self.call_from_thread(self._update_status)
             self.call_from_thread(self._say, _chat_failure_message(exc))
         finally:
             self.call_from_thread(self._finish_task)
@@ -1562,7 +1584,7 @@ class AutoCedarApp(App[None]):
         import anthropic
 
         system, messages = self._chat_request(raw)
-        client = anthropic.Anthropic()
+        client = anthropic.Anthropic(api_key=os.environ.get(ANTHROPIC_API_KEY))
         response = client.messages.create(
             model=self.llm_model,
             max_tokens=800,
@@ -1601,7 +1623,7 @@ class AutoCedarApp(App[None]):
     def _make_anthropic_client(self) -> Any:
         import anthropic
 
-        return anthropic.Anthropic()
+        return anthropic.Anthropic(api_key=os.environ.get(ANTHROPIC_API_KEY))
 
     def _chat_request(self, raw: str) -> tuple[str, list[dict[str, str]]]:
         draft = "\n".join(self.draft_lines[-12:]) or "(empty)"
@@ -3065,6 +3087,12 @@ def run_tui() -> int:
 
 
 def _chat_failure_message(exc: Exception) -> str:
+    if is_anthropic_auth_error(exc):
+        return (
+            "Anthropic rejected the saved API key, so I cleared it from this "
+            "session and the AutoCedar user config. Run /apikey again with the "
+            "full key from the Anthropic console."
+        )
     return (
         "The chat model call failed, so I’m not going to pretend that was "
         f"model-backed. Error: {exc.__class__.__name__}: {escape(str(exc))}"
