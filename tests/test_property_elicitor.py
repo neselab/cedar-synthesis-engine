@@ -13,6 +13,7 @@ import textwrap
 from autocedar.atoms import PropertyAtom, VerificationPlanDraft
 from autocedar.property_elicitor import (
     compile_plan,
+    compile_plan_for_consistency,
     insert_when_with_conjuncts,
     wrap_when_with_conjuncts,
 )
@@ -352,6 +353,23 @@ def test_disjointness_compiles_to_implies_and_patches_floors_on_same_action() ->
     floor_text = out.references["admin_must_edit"]
     assert 'principal.role == "admin"' in floor_text
     assert '!(resource.legalHold && principal.role != "legal")' in floor_text
+
+
+def test_consistency_plan_uses_patched_floors_and_skips_raw_disjointness() -> None:
+    plan = VerificationPlanDraft(
+        properties=[
+            _floor_atom(),
+            _disjointness_atom(),
+        ],
+    )
+
+    consistency_plan = compile_plan_for_consistency(plan)
+
+    assert [atom.name for atom in consistency_plan.properties] == ["admin_must_edit"]
+    floor = consistency_plan.properties[0]
+    assert floor.constraint_type == "floor"
+    assert 'principal.role == "admin"' in floor.reference_cedar
+    assert '!(resource.legalHold && principal.role != "legal")' in floor.reference_cedar
 
 
 def test_disjointness_does_not_patch_floors_on_other_actions() -> None:

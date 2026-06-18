@@ -139,6 +139,14 @@ The runtime will not reorder for you.
   forms like `inGroup`, `hasAccess`, `likedItems` are fine.
 - Cedar context attributes are typed by the action, not by the
   schema globally — include them inline in the action atom.
+- When a requirement depends on lifecycle state, temporal state, or an
+  open/closed period (for example registration open/closed, add/drop
+  period, semester window, ticket open/closed), make that state
+  representable on the resource being authorized or as action context.
+  Do not leave Stage 2 without a field it can use to express the
+  safety property. If a global process entity is useful, also connect
+  the relevant resource to that process entity, e.g. a course offering
+  can point at a RegistrationPeriod with `isOpen`.
 - Cedar `enum` entities have no attributes; if you set `enum_values`,
   do not propose attribute atoms for that entity.
 - A sentinel `Session` (or similar) entity is the canonical

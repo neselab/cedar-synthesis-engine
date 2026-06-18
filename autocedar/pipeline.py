@@ -44,7 +44,7 @@ from autocedar.plan_verification import (
     generate_atom_traceback,
     symbolic_consistency_check,
 )
-from autocedar.property_elicitor import compile_plan
+from autocedar.property_elicitor import compile_plan, compile_plan_for_consistency
 from autocedar.schema_atomizer import compose_schema
 
 
@@ -295,7 +295,8 @@ def author(
     )
 
     # ──── Stage 1.75: pre-synthesis unsat detection ────
-    consistency = symbolic_consistency_check(plan, str(schema_path))
+    consistency_plan = compile_plan_for_consistency(plan)
+    consistency = symbolic_consistency_check(consistency_plan, str(schema_path))
     session.write_stage1_75_unsat_core(
         unsat=consistency.unsat,
         core=consistency.core,

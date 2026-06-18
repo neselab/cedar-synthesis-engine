@@ -8,12 +8,14 @@ from pathlib import Path
 from typing import Sequence
 
 import pytest
+from textual import events
 
 from autocedar.atoms import PropertyAtom
 from autocedar.tui import (
     AutoCedarApp,
     ClipboardResult,
     COMMANDS,
+    CommandInput,
     HELP_TEXT,
     _describe_author_action,
     _draft_lines_from_text,
@@ -434,6 +436,76 @@ Only Professors can enter grades for students.
                 "Students cannot register for course offerings after registration for the current semester has been closed.",
                 "Only Professors can enter grades for students.",
             ]
+            await pilot.exit(None)
+
+    asyncio.run(run())
+
+
+def test_textual_command_input_paste_forwards_all_requirement_lines() -> None:
+    requirements = """\
+The new system will allow students to register for courses and view report cards from personal computers attached to the campus LAN.
+
+At the beginning of each semester, students may request a course catalogue containing a list of course offerings for the semester.
+
+Information about each course, such as professor, department, and prerequisites, will be included to help students make informed decisions.
+
+Students must be able to access the system during this time to add or drop courses.
+
+At the end of the semester, the student will be able to access the system to view an electronic report card.
+
+This use case allows a Student to register for course offerings in the current semester.
+
+The Student can also update or delete course selections if changes are made within the add or drop period at the beginning of the semester.
+
+The Student may update the course selections on the current selection by deleting and adding new course offerings.
+
+Students cannot register for course offerings after registration for the current semester has been closed.
+
+This use case allows a Student to view his or her report card for the previously completed semester.
+
+Professors must be able to access the on-line system to indicate which courses they will be teaching.
+
+They will also need to see which students signed up for their course offerings.
+
+In addition, the professors will be able to record the grades for the students in each class.
+
+This use case allows a Professor to select the course offerings from the course catalog for the courses that he or she is eligible for and wishes to teach in the upcoming semester.
+
+If there is no conflict, the system updates the course offering information for each offering the professor selects (i.e., records the professor as the instructor for the course offering).
+
+Professors cannot change the course offerings they teach after registration for the current semester has been closed.
+
+This use case allows a Professor to submit student grades for one or more classes completed in the previous semester.
+
+The system retrieves a list of all students who were registered for the course offering.
+
+For each student on the list, the Professor enters a grade: A, B, C, D, F, or I. The system records the student’s grade for the course offering.
+
+Only the Registrar is allowed to change any student information.
+
+This use case allows a Registrar to close the registration process.
+
+Since student grades are sensitive information, the system must employ extra security measures to prevent unauthorized access.
+
+The system must prevent students from changing any schedules other than their own, and professors from modifying assigned course offerings for other professors.
+
+Only Professors can enter grades for students.
+"""
+
+    async def run() -> None:
+        app = AutoCedarApp()
+        async with app.run_test() as pilot:
+            app._submit_command_text("start a policy draft")
+            assert app.pending_action is not None
+            app._submit_command_text("yes")
+            assert app.drafting_active is True
+            command = app.query_one("#command", CommandInput)
+            command._on_paste(events.Paste(requirements))
+            await pilot.pause()
+            assert len(app.draft_lines) == 24
+            assert app.draft_lines[0].startswith("The new system will allow students")
+            assert app.draft_lines[-1] == "Only Professors can enter grades for students."
+            assert command.value == ""
             await pilot.exit(None)
 
     asyncio.run(run())

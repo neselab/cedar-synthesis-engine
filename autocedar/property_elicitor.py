@@ -223,6 +223,62 @@ def compile_plan(plan: VerificationPlanDraft) -> CompiledPlan:
     )
 
 
+def compile_plan_for_consistency(plan: VerificationPlanDraft) -> VerificationPlanDraft:
+    """Return the primitive plan shape Stage 1.75 should consistency-check.
+
+    Stage 1.75 is meant to catch contradictory floor/ceiling intent before
+    synthesis. Raw sugar atoms are not the final intent surface, though:
+    disjointness atoms patch same-action floors during compile-down. Checking
+    raw floors directly against raw disjointness forbids creates false unsat
+    reports. This helper mirrors the floor patching used by ``compile_plan`` and
+    excludes disjointness atoms from pairwise floor⊆ceiling checks; they are
+    still emitted into the final harness plan as safety checks.
+    """
+    patches_per_action = _collect_disjointness_patches(plan)
+    normalized: list[PropertyAtom] = []
+
+    for atom in plan.properties:
+        primitive_type = _resolve_primitive_type(atom)
+        if primitive_type == "always-denies-liveness":
+            continue
+        if atom.constraint_type == "disjointness":
+            continue
+
+        ref_cedar = atom.reference_cedar
+        normalized_type = "ceiling"
+        if primitive_type == "floor":
+            normalized_type = "floor"
+            patches = patches_per_action.get(atom.action, [])
+            if patches:
+                ref_cedar = wrap_when_with_conjuncts(
+                    ref_cedar,
+                    [body for _, body in patches],
+                )
+
+        normalized.append(
+            PropertyAtom(
+                name=atom.name,
+                rationale=atom.rationale,
+                plain_english_summary=atom.plain_english_summary,
+                source_excerpt=atom.source_excerpt,
+                constraint_type=normalized_type,
+                action=atom.action,
+                principal_types=list(atom.principal_types),
+                resource_types=list(atom.resource_types),
+                reference_cedar=ref_cedar,
+                examples_adversarial=list(atom.examples_adversarial),
+                alternatives_considered=list(atom.alternatives_considered),
+                symbolic_verified=atom.symbolic_verified,
+                symbolic_verification_log=list(atom.symbolic_verification_log),
+                intent_acknowledged_by_user=atom.intent_acknowledged_by_user,
+                traceback_clauses=list(atom.traceback_clauses),
+                traceback_flags=list(atom.traceback_flags),
+            ),
+        )
+
+    return VerificationPlanDraft(properties=normalized)
+
+
 def _resolve_primitive_type(atom: PropertyAtom) -> str:
     """Map sugar atom types to harness-facing primitive type strings."""
     if atom.constraint_type == "ceiling":

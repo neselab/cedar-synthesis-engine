@@ -170,6 +170,20 @@ def test_propose_schema_atoms_marks_spec_block_cache_controlled() -> None:
                 assert "cache_control" not in block
 
 
+def test_schema_atomization_prompt_requires_lifecycle_state_to_be_representable() -> None:
+    fake = _FakeAnthropic(_make_response(SchemaAtomsResponse(atoms=[])))
+    client = LLMClient(client=fake)
+    client.propose_schema_atoms(
+        "Students cannot register for course offerings after registration is closed.",
+    )
+
+    kwargs = fake.messages.last_kwargs
+    system_text = "\n".join(block["text"] for block in kwargs["system"])
+    assert "lifecycle state" in system_text
+    assert "registration open/closed" in system_text
+    assert "connect" in system_text
+
+
 def test_propose_schema_atoms_sends_adaptive_thinking_and_effort() -> None:
     """Per skill: Opus 4.7 + adaptive thinking + effort=high default."""
     fake = _FakeAnthropic(_make_response(SchemaAtomsResponse(atoms=[])))
@@ -395,6 +409,30 @@ def test_property_atomization_prompt_guards_scenario2_override_shape() -> None:
     assert "Do not emit duplicate liveness atoms" in system_text
     assert spec in system_text
     assert f"```cedarschema\n{schema}\n```" in kwargs["messages"][0]["content"]
+
+
+def test_property_atomization_prompt_covers_closed_periods_and_negated_has_trap() -> None:
+    fake = _FakeAnthropic(_make_response(PropertyAtomsResponse(atoms=[])))
+    client = LLMClient(client=fake)
+    spec = (
+        "Students cannot register for course offerings after registration is closed. "
+        "Professors cannot change course offerings after registration is closed."
+    )
+    schema = (
+        "entity RegistrationPeriod { isOpen: Bool, };\n"
+        "entity CourseOffering { registration: RegistrationPeriod, instructor?: Professor, };\n"
+        "entity Student;\n"
+        "entity Professor;\n"
+    )
+
+    client.propose_property_atoms(spec, schema)
+
+    kwargs = fake.messages.last_kwargs
+    system_text = "\n".join(block["text"] for block in kwargs["system"])
+    assert "!(x has field) || (x has field && x.field == value)" in system_text
+    assert "Cover every explicit safety sentence" in system_text
+    assert "after X is closed" in system_text
+    assert "registration is closed" in system_text
 
 
 def test_propose_alternative_property_atom_includes_rejection_context() -> None:

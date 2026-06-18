@@ -20,6 +20,8 @@ from rich.panel import Panel
 from rich.syntax import Syntax
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical
+from textual import events
+from textual.message import Message
 from textual.widgets import Footer, Header, Input, RichLog, Static
 
 from autocedar.corpus import AtomDecision
@@ -320,6 +322,28 @@ class ReviewRequest:
         self.current = self.atom
 
 
+class CommandInput(Input):
+    """Single-line command widget with explicit multiline paste forwarding."""
+
+    class Pasted(Message):
+        """A paste payload that should be handled as a submitted command."""
+
+        def __init__(self, input_widget: "CommandInput", text: str) -> None:
+            super().__init__()
+            self.input_widget = input_widget
+            self.text = text
+
+    def _on_paste(self, event: events.Paste) -> None:
+        if not event.text:
+            event.stop()
+            return
+        if "\n" in event.text or "\r" in event.text:
+            self.post_message(self.Pasted(self, event.text))
+            event.stop()
+            return
+        super()._on_paste(event)
+
+
 class TuiAtomReviewer:
     """Thread bridge from ``pipeline.author`` into the Textual app."""
 
@@ -537,7 +561,7 @@ class AutoCedarApp(App[None]):
                 yield Static(BRAND_TEXT, id="brand")
                 yield Static(id="status_text")
                 yield Static(COMMAND_RAIL, id="command_rail")
-        yield Input(
+        yield CommandInput(
             placeholder="Tell AutoCedar what to do, or type /help",
             id="command",
         )
@@ -582,8 +606,15 @@ class AutoCedarApp(App[None]):
         self._show_command_palette(completion)
 
     def on_input_submitted(self, message: Input.Submitted) -> None:
-        raw = message.value.strip()
         message.input.value = ""
+        self._submit_command_text(message.value)
+
+    def on_command_input_pasted(self, message: CommandInput.Pasted) -> None:
+        message.input_widget.value = ""
+        self._submit_command_text(message.text)
+
+    def _submit_command_text(self, value: str) -> None:
+        raw = value.strip()
         self._hide_command_palette()
         if not raw:
             return

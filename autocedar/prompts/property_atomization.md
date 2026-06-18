@@ -50,5 +50,18 @@ Rules:
   `!(resource.status == "closed")`.
 - Each non-liveness `reference_cedar` must be a complete Cedar policy ending with `;`.
 - Guard optional attributes with `has` before reading them.
+- Cedar's type checker does not treat `!(x has field) || x.field == value`
+  as a safe guard. When reading an optional attribute in a disjunction,
+  repeat the positive guard on the read side:
+  `!(x has field) || (x has field && x.field == value)`.
 - Do not use Cedar templates.
 - Do not invent policy behavior that is not grounded in the spec. If a requirement is ambiguous, encode the stricter safe bound and add an adversarial example describing the ambiguity.
+- Cover every explicit safety sentence, especially language like "only",
+  "cannot", "must prevent", "unauthorized", "sensitive", "other than their
+  own", "after X is closed", and "no conflict". Unless the same action,
+  principal, resource, and condition are already covered by a stronger
+  property, emit a ceiling or disjointness atom for the constraint.
+- When the schema contains lifecycle/open/closed fields relevant to an action,
+  use them in the property references. For example, registration actions after
+  registration is closed should become ceilings or disjointness atoms, not only
+  broad liveness atoms saying registration is possible.
