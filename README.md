@@ -8,13 +8,52 @@ harness to verify and synthesize Cedar policies against formal bounds.
 
 ## Start Here
 
-If you just cloned this repo and want AutoCedar to run, use the local path
-first. Docker is optional; on Linux, `sudo docker` can create root-owned files
-inside the repo when the repo is bind-mounted.
+You do **not** need to clone this repository to use AutoCedar. The normal path
+is the published Python package.
 
-### Option A: Local From The Repo
+### Option A: Run From PyPI
 
-Use this for normal development and experiments.
+Use this if you just want to run the AutoCedar agent.
+
+1. Install `uv` if you do not have it:
+
+   ```bash
+   curl -LsSf https://astral.sh/uv/install.sh | sh
+   ```
+
+   Restart your terminal after installing `uv`.
+
+2. Save your Anthropic API key:
+
+   ```bash
+   uvx autocedar apikey
+   ```
+
+   Paste the key when prompted. AutoCedar writes it to `.env`, redacts it in
+   the terminal output, and uses it on the next launch. You can also run
+   `uvx autocedar apikey sk-ant-...` if you prefer a one-line command. Do not
+   share or commit your API key.
+
+3. Install/check the local verifier tools:
+
+   ```bash
+   uvx autocedar setup --yes
+   uvx autocedar doctor
+   ```
+
+   `setup` installs or prints install steps for Cedar CLI and CVC5. `doctor`
+   verifies the exact toolchain AutoCedar will use.
+
+4. Start AutoCedar:
+
+   ```bash
+   uvx autocedar
+   ```
+
+### Option B: Local From The Repo
+
+Use this only for development, modifying AutoCedar itself, running tests, or
+working directly with repo-local examples/datasets.
 
 1. Clone the repo:
 
@@ -23,39 +62,21 @@ Use this for normal development and experiments.
    cd cedar-synthesis-engine
    ```
 
-2. Install `uv` if you do not have it:
-
-   ```bash
-   curl -LsSf https://astral.sh/uv/install.sh | sh
-   ```
-
-   Restart your terminal after installing `uv`.
-
-3. Install the Python environment and save your Anthropic API key:
+2. Install the Python environment and save your Anthropic API key:
 
    ```bash
    uv sync
    uv run autocedar apikey
    ```
 
-   Paste the key when prompted. AutoCedar writes it to `.env`, redacts it in
-   the terminal output, and uses it on the next launch. You can also run
-   `uv run autocedar apikey sk-ant-...` if you prefer a one-line command. Do
-   not share or commit your API key.
-
-4. Install the verifier tools for full authoring, verification, and synthesis:
-
-   ```bash
-   uv run autocedar setup
-   uv run autocedar doctor
-   ```
-
-   `autocedar setup` detects missing Cedar/CVC5 tools and offers to install
-   what it can. For unattended installs, run:
+3. Install/check the verifier tools:
 
    ```bash
    uv run autocedar setup --yes
+   uv run autocedar doctor
    ```
+
+   If setup says `Cargo is not installed`, install Rust first:
 
    If setup says `Cargo is not installed`, install Rust first:
 
@@ -93,10 +114,9 @@ Use this for normal development and experiments.
    echo "CVC5=$(which cvc5)" >> .env
    ```
 
-5. Run AutoCedar:
+4. Run AutoCedar:
 
    ```bash
-   uv run autocedar doctor
    uv run autocedar
    ```
 
@@ -105,20 +125,31 @@ Use this for normal development and experiments.
 AutoCedar will use. Fix any `FAIL` lines before authoring. After that, you
 should see the AutoCedar interactive terminal UI.
 
-### Option B: Docker
+### Option C: Docker
 
-Docker is optional. Use it only when you specifically want a containerized
-runtime. If Docker on Linux requires `sudo`, prefer the local setup above.
-Running `sudo docker` with `-v "$PWD:/work"` can leave root-owned files in your
-repo.
+Docker is optional. Use it when you specifically want a containerized runtime
+with Cedar/CVC5 already bundled.
 
-The wrapper builds the image, asks for `ANTHROPIC_API_KEY` if `.env` is missing
-or still has the placeholder, runs `autocedar doctor` inside the container, and
-only starts the TUI if the containerized verifier stack is healthy:
+Without cloning the repo:
+
+```bash
+docker run --rm -it \
+  --env-file .env \
+  -v "$PWD:/work" \
+  -w /work \
+  ghcr.io/neselab/autocedar:latest
+```
+
+From a cloned repo, the helper script builds/runs the image and preflights
+`autocedar doctor`:
 
 ```bash
 ./scripts/docker-autocedar
 ```
+
+If Docker on Linux requires `sudo`, prefer the PyPI/local setup above. Running
+`sudo docker` with `-v "$PWD:/work"` can leave root-owned files in your working
+directory.
 
 The Docker image pins Cedar CLI 4.10.0 with SymCC `analyze` enabled and installs
 CVC5 in the image. It should not depend on your host machine's Cedar or CVC5.
