@@ -10,6 +10,7 @@ import sys
 from pathlib import Path
 from typing import Sequence
 
+from autocedar import __version__
 from autocedar.env import (
     ANTHROPIC_API_KEY,
     is_real_anthropic_api_key,
@@ -46,7 +47,18 @@ def _build_parser() -> argparse.ArgumentParser:
         prog="autocedar",
         description="Human-in-the-loop Cedar policy authoring and verification.",
     )
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"%(prog)s {__version__}",
+    )
     sub = parser.add_subparsers(dest="command", required=True)
+
+    version_p = sub.add_parser(
+        "version",
+        help="Print the installed AutoCedar version.",
+    )
+    version_p.set_defaults(func=_cmd_version)
 
     tui_p = sub.add_parser(
         "tui",
@@ -186,6 +198,12 @@ def _build_parser() -> argparse.ArgumentParser:
     synth_p.set_defaults(func=_cmd_synthesize)
 
     return parser
+
+
+def _cmd_version(args: argparse.Namespace) -> int:
+    _ = args
+    print(f"autocedar {__version__}")
+    return 0
 
 
 def _cmd_tui(args: argparse.Namespace) -> int:

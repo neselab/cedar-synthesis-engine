@@ -9,6 +9,30 @@ import pytest
 import autocedar.cli as cli
 
 
+def test_parser_top_level_version(capsys: pytest.CaptureFixture[str]) -> None:
+    parser = cli._build_parser()
+
+    with pytest.raises(SystemExit) as exc:
+        parser.parse_args(["--version"])
+
+    assert exc.value.code == 0
+    assert capsys.readouterr().out.strip() == f"autocedar {cli.__version__}"
+
+
+def test_version_command_prints_installed_version(capsys: pytest.CaptureFixture[str]) -> None:
+    rc = cli._cmd_version(argparse.Namespace())
+
+    assert rc == 0
+    assert capsys.readouterr().out.strip() == f"autocedar {cli.__version__}"
+
+
+def test_parser_exposes_version_command() -> None:
+    parser = cli._build_parser()
+    args = parser.parse_args(["version"])
+
+    assert args.func is cli._cmd_version
+
+
 def test_author_command_injects_harness_synthesizer(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

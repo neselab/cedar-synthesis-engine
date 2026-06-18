@@ -18,4 +18,12 @@ Root-level ``eval_harness.py``, ``orchestrator.py``, and
 imports should use ``autocedar.harness``.
 """
 
-__version__ = "0.1.0"
+from __future__ import annotations
+
+from importlib.metadata import PackageNotFoundError, version
+
+
+try:
+    __version__ = version("autocedar")
+except PackageNotFoundError:  # pragma: no cover - only during unusual source imports
+    __version__ = "0+unknown"

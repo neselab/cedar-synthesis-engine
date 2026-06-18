@@ -26,20 +26,20 @@ Use this if you just want to run the AutoCedar agent.
 2. Save your Anthropic API key:
 
    ```bash
-   uvx autocedar apikey
+   uvx autocedar@latest apikey
    ```
 
    Paste the key when prompted. AutoCedar writes it to your user config
    (`~/.config/autocedar/.env` by default), redacts it in the terminal output,
    and uses it on the next launch. You can also run
-   `uvx autocedar apikey sk-ant-...` if you prefer a one-line command. Do not
+   `uvx autocedar@latest apikey sk-ant-...` if you prefer a one-line command. Do not
    share or commit your API key.
 
 3. Install/check the local verifier tools:
 
    ```bash
-   uvx autocedar setup --yes
-   uvx autocedar doctor
+   uvx autocedar@latest setup --yes
+   uvx autocedar@latest doctor
    ```
 
    `setup` installs or prints install steps for Cedar CLI and CVC5. `doctor`
@@ -48,15 +48,39 @@ Use this if you just want to run the AutoCedar agent.
 4. Start AutoCedar:
 
    ```bash
-   uvx autocedar
+   uvx autocedar@latest
    ```
 
-Already tried AutoCedar before? Ask `uvx` to upgrade its cached tool
-environment:
+Already tried AutoCedar before? Use one of these update paths:
 
 ```bash
-uvx --upgrade-package autocedar autocedar
+# One-off: always run the latest PyPI release.
+uvx autocedar@latest
+
+# Persistent install: only if you previously ran `uv tool install autocedar`.
+uv tool upgrade autocedar
+
+# If you want to upgrade every installed uv tool.
+uv tool upgrade --all
 ```
+
+Check which version you are running:
+
+```bash
+# One-off latest package.
+uvx autocedar@latest --version
+
+# Persistent uv tool install, if you used `uv tool install autocedar`.
+autocedar --version
+
+# Repo-local development checkout.
+uv run autocedar --version
+```
+
+`uvx` and `uv tool install` are different modes. `uvx autocedar@latest` is a
+one-off latest run; it does not register AutoCedar as a persistent tool. `uv
+tool list` only shows tools installed with `uv tool install autocedar`, so
+AutoCedar not appearing there is expected if you use the `uvx` path.
 
 ### Option B: Local From The Repo
 
@@ -425,23 +449,23 @@ when { principal.department == "Engineering" && !resource.is_locked };
 
 ## Detailed Setup Reference
 
-The package is not published to PyPI yet. For now, run from this repo:
+AutoCedar is published on PyPI. For normal use, run the latest package directly:
 
 ```bash
-uv run autocedar
+uvx autocedar@latest
 ```
 
-After PyPI publishing is configured, the package will also support:
+For a persistent command on your PATH:
 
 ```bash
 uv tool install autocedar
 autocedar
 ```
 
-and:
+For repo-local development, use:
 
 ```bash
-uvx autocedar
+uv run autocedar
 ```
 
 The runtime package installs the Python agent/library and the `autocedar`
@@ -449,10 +473,11 @@ console script. Verification also needs the Cedar CLI and CVC5 solver. Use the
 guided setup path:
 
 ```bash
-uvx autocedar apikey
-uvx autocedar setup --yes
-uvx autocedar doctor
-uvx autocedar
+uvx autocedar@latest apikey
+uvx autocedar@latest setup --yes
+uvx autocedar@latest doctor
+uvx autocedar@latest --version
+uvx autocedar@latest
 ```
 
 If setup cannot safely install a system dependency on your platform, it prints
@@ -769,8 +794,8 @@ Authoring writes session artifacts under the `--out` directory, usually
 
 | Symptom | Fix |
 | --- | --- |
-| Chat says no API key is loaded | Run `uvx autocedar apikey`, use `/apikey` in the TUI, or export `ANTHROPIC_API_KEY`. AutoCedar loads `~/.config/autocedar/.env` on startup. |
-| API key works in shell but not TUI | Run `uvx autocedar doctor` to confirm what AutoCedar sees. Shell env wins, then project `.env`, then user config. |
+| Chat says no API key is loaded | Run `uvx autocedar@latest apikey`, use `/apikey` in the TUI, or export `ANTHROPIC_API_KEY`. AutoCedar loads `~/.config/autocedar/.env` on startup. |
+| API key works in shell but not TUI | Run `uvx autocedar@latest doctor` to confirm what AutoCedar sees. Shell env wins, then project `.env`, then user config. |
 | Cannot select/copy from the TUI | Textual full-screen apps can intercept mouse selection. Use `/copy last`, `/copy transcript`, `/copy session`, `/copy schema path`, `/copy policy path`, `/copy schema`, or `/copy policy`. Some terminals also allow mouse selection while holding Shift. If your terminal/container has no clipboard command, AutoCedar shows a copy fallback panel for manual selection. |
 | Verification says Cedar is missing | Set `CEDAR=/path/to/cedar` or install the Cedar CLI. |
 | Verification says CVC5 is missing | Install CVC5, confirm `cvc5 --version` works, then set `CVC5=$(command -v cvc5)` in `.env` if needed. |
