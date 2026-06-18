@@ -87,10 +87,13 @@ Use this for normal development and experiments.
 
    ```bash
    uv sync
+   uv run autocedar doctor
    uv run autocedar
    ```
 
-You should see the AutoCedar interactive terminal UI.
+`autocedar doctor` checks the exact Cedar, SymCC, CVC5, and API-key state
+AutoCedar will use. Fix any `FAIL` lines before authoring. After that, you
+should see the AutoCedar interactive terminal UI.
 
 ### Option B: Docker
 
@@ -98,6 +101,16 @@ Docker is optional. Use it only when you specifically want a containerized
 runtime. If Docker on Linux requires `sudo`, prefer the local setup above.
 Running `sudo docker` with `-v "$PWD:/work"` can leave root-owned files in your
 repo.
+
+The wrapper builds the image, runs `autocedar doctor` inside the container, and
+only starts the TUI if the containerized verifier stack is healthy:
+
+```bash
+./scripts/docker-autocedar
+```
+
+The Docker image pins Cedar CLI 4.10.0 with SymCC `analyze` enabled and installs
+CVC5 in the image. It should not depend on your host machine's Cedar or CVC5.
 
 ### First Things To Type
 
@@ -404,6 +417,7 @@ If those binaries live elsewhere, set them in your shell or `.env`.
 Check the verifier setup before running policy verification:
 
 ```bash
+uv run autocedar doctor
 cedar --version
 cedar symcc --help | grep principal-type
 cvc5 --version

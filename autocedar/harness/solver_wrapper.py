@@ -236,7 +236,8 @@ def _symcc_tool_error_message(output: str) -> str:
         return (
             "Cedar symcc setup error: CVC5 solver was not found or could "
             "not start. Install CVC5 and ensure `cvc5 --version` works, "
-            "or set `CVC5=/path/to/cvc5`. Raw cedar output: "
+            "or set `CVC5=/path/to/cvc5`. Run `uv run autocedar doctor` "
+            "for a full setup diagnosis. Raw cedar output: "
             f"{compact}"
         )
     if not _is_symcc_interface_error(output):
@@ -244,7 +245,7 @@ def _symcc_tool_error_message(output: str) -> str:
             "Cedar symcc setup error: Cedar symcc exited before producing "
             "a formal verification result. This is a verifier/tooling "
             "failure, not a policy counterexample. Check the Cedar and CVC5 "
-            "installations, then rerun. Raw cedar output: "
+            "installations, then rerun `uv run autocedar doctor`. Raw cedar output: "
             f"{compact}"
         )
     return (
@@ -253,7 +254,8 @@ def _symcc_tool_error_message(output: str) -> str:
         "--resource-type, --schema). It is usually cedar-policy-cli installed "
         "without the `analyze` feature. Reinstall with: "
         "`cargo install cedar-policy-cli --locked --features analyze`, or set "
-        "`CEDAR` to a compatible cedar binary. Raw cedar output: "
+        "`CEDAR` to a compatible cedar binary. Run `uv run autocedar doctor` "
+        "for a full setup diagnosis. Raw cedar output: "
         f"{compact}"
     )
 

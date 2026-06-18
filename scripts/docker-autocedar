@@ -45,10 +45,32 @@ fi
 echo "Building Docker image: $IMAGE"
 "${DOCKER[@]}" build -t "$IMAGE" "$REPO_ROOT"
 
+echo "Checking AutoCedar environment inside Docker..."
+"${DOCKER[@]}" run \
+  --rm \
+  --env-file "$REPO_ROOT/.env" \
+  "$IMAGE" \
+  doctor
+
+if [[ -t 0 && -t 1 ]]; then
+  echo "Starting AutoCedar in Docker..."
+  exec "${DOCKER[@]}" run \
+    --rm \
+    -it \
+    --env-file "$REPO_ROOT/.env" \
+    --volume "$REPO_ROOT:/work" \
+    --workdir /work \
+    "$IMAGE" \
+    "$@"
+elif [[ $# -eq 0 || "$1" == "tui" ]]; then
+  echo "AutoCedar TUI needs an interactive terminal."
+  echo "For a non-interactive setup check, run: ./scripts/docker-autocedar doctor"
+  exit 1
+fi
+
 echo "Starting AutoCedar in Docker..."
 exec "${DOCKER[@]}" run \
   --rm \
-  -it \
   --env-file "$REPO_ROOT/.env" \
   --volume "$REPO_ROOT:/work" \
   --workdir /work \

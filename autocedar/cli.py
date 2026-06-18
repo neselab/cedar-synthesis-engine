@@ -43,6 +43,17 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     tui_p.set_defaults(func=_cmd_tui)
 
+    doctor_p = sub.add_parser(
+        "doctor",
+        help="Check API-key, Cedar SymCC, and CVC5 setup before authoring.",
+    )
+    doctor_p.add_argument(
+        "--no-live-symcc",
+        action="store_true",
+        help="Skip the live SymCC smoke test.",
+    )
+    doctor_p.set_defaults(func=_cmd_doctor)
+
     author_p = sub.add_parser(
         "author",
         help="Run the HITL authoring pipeline for a prose spec.",
@@ -120,6 +131,14 @@ def _cmd_tui(args: argparse.Namespace) -> int:
     from autocedar.tui import run_tui
 
     return run_tui()
+
+
+def _cmd_doctor(args: argparse.Namespace) -> int:
+    from autocedar.doctor import format_doctor_report, run_doctor
+
+    report = run_doctor(live_symcc=not args.no_live_symcc)
+    print(format_doctor_report(report))
+    return 1 if report.failed else 0
 
 
 def _cmd_author(args: argparse.Namespace) -> int:

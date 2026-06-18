@@ -55,3 +55,28 @@ def test_author_command_injects_harness_synthesizer(
     assert captured["synthesize"] is sentinel_synthesizer
     assert captured["schema_path_override"] == str(schema)
     assert "repair_property_atom" in captured
+
+
+def test_doctor_command_returns_nonzero_on_failed_check(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        "autocedar.doctor.run_doctor",
+        lambda live_symcc=True: SimpleNamespace(failed=True),
+    )
+    monkeypatch.setattr(
+        "autocedar.doctor.format_doctor_report",
+        lambda report: "doctor failed",
+    )
+
+    rc = cli._cmd_doctor(argparse.Namespace(no_live_symcc=False))
+
+    assert rc == 1
+
+
+def test_parser_exposes_doctor_command() -> None:
+    parser = cli._build_parser()
+    args = parser.parse_args(["doctor", "--no-live-symcc"])
+
+    assert args.no_live_symcc is True
+    assert args.func is cli._cmd_doctor

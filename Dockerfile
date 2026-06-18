@@ -1,6 +1,6 @@
 FROM rust:1-bookworm AS cedar-builder
 
-ARG CEDAR_POLICY_CLI_VERSION=
+ARG CEDAR_POLICY_CLI_VERSION=4.10.0
 
 RUN if [ -n "$CEDAR_POLICY_CLI_VERSION" ]; then \
         cargo install cedar-policy-cli --locked --version "$CEDAR_POLICY_CLI_VERSION" --features analyze; \
