@@ -50,6 +50,13 @@ Use this if you just want to run the AutoCedar agent.
    uvx autocedar
    ```
 
+Already tried AutoCedar before? Ask `uvx` to upgrade its cached tool
+environment:
+
+```bash
+uvx --upgrade-package autocedar autocedar
+```
+
 ### Option B: Local From The Repo
 
 Use this only for development, modifying AutoCedar itself, running tests, or
@@ -75,8 +82,6 @@ working directly with repo-local examples/datasets.
    uv run autocedar setup --yes
    uv run autocedar doctor
    ```
-
-   If setup says `Cargo is not installed`, install Rust first:
 
    If setup says `Cargo is not installed`, install Rust first:
 
