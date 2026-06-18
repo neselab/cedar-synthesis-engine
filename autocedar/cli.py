@@ -62,6 +62,33 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     doctor_p.set_defaults(func=_cmd_doctor)
 
+    setup_p = sub.add_parser(
+        "setup",
+        help="Install or print install steps for Cedar CLI and CVC5.",
+    )
+    setup_p.add_argument(
+        "--yes",
+        "-y",
+        action="store_true",
+        help="Run available install commands without prompting.",
+    )
+    setup_p.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Only print the detected setup plan.",
+    )
+    setup_p.add_argument(
+        "--skip-cedar",
+        action="store_true",
+        help="Do not install or check Cedar CLI.",
+    )
+    setup_p.add_argument(
+        "--skip-cvc5",
+        action="store_true",
+        help="Do not install or check CVC5.",
+    )
+    setup_p.set_defaults(func=_cmd_setup)
+
     api_p = sub.add_parser(
         "apikey",
         aliases=["api-key"],
@@ -171,6 +198,37 @@ def _cmd_doctor(args: argparse.Namespace) -> int:
     report = run_doctor(live_symcc=not args.no_live_symcc)
     print(format_doctor_report(report))
     return 1 if report.failed else 0
+
+
+def _cmd_setup(args: argparse.Namespace) -> int:
+    from autocedar.setup_tools import (
+        build_setup_plan,
+        format_setup_plan,
+        format_setup_results,
+        run_setup_plan,
+    )
+
+    plan = build_setup_plan(
+        install_cedar=not args.skip_cedar,
+        install_cvc5=not args.skip_cvc5,
+    )
+    print(format_setup_plan(plan))
+    if args.dry_run or not plan.needs_install:
+        return 1 if plan.blocked else 0
+    if plan.blocked:
+        return 1
+    if not args.yes:
+        if not sys.stdin.isatty():
+            print("\nRun `autocedar setup --yes` to execute the install commands.")
+            return 1
+        answer = input("\nRun these install commands now? [y/N] ").strip().lower()
+        if answer not in {"y", "yes"}:
+            print("Cancelled. No changes made.")
+            return 1
+    results = run_setup_plan(plan)
+    print()
+    print(format_setup_results(results))
+    return 1 if any(step.status == "FAIL" for step in results) else 0
 
 
 def _cmd_apikey(args: argparse.Namespace) -> int:

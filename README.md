@@ -46,19 +46,33 @@ Use this for normal development and experiments.
 4. Install the verifier tools for full authoring, verification, and synthesis:
 
    ```bash
-   cargo install cedar-policy-cli --locked --version 4.10.0 --features analyze
-   cedar --version
-   cedar symcc --help | grep principal-type
-   cvc5 --version
+   uv run autocedar setup
+   uv run autocedar doctor
    ```
 
-   If `cargo` is not installed, install Rust first:
+   `autocedar setup` detects missing Cedar/CVC5 tools and offers to install
+   what it can. For unattended installs, run:
+
+   ```bash
+   uv run autocedar setup --yes
+   ```
+
+   If setup says `Cargo is not installed`, install Rust first:
 
    ```bash
    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
    ```
 
-   If `cvc5 --version` fails, install CVC5 and put its path in `.env`:
+   If you prefer manual installation, these are the required checks:
+
+   ```bash
+   cargo install cedar-policy-cli --locked --version 4.10.0 --features analyze --force
+   cedar --version
+   cedar symcc --help | grep principal-type
+   cvc5 --version
+   ```
+
+   If CVC5 lives outside your shell `PATH`, put its path in `.env`:
 
    ```dotenv
    CVC5=/path/to/cvc5
@@ -86,6 +100,7 @@ Use this for normal development and experiments.
    uv run autocedar
    ```
 
+`autocedar setup` installs or prints the missing verifier-tool install steps.
 `autocedar doctor` checks the exact Cedar, SymCC, CVC5, and API-key state
 AutoCedar will use. Fix any `FAIL` lines before authoring. After that, you
 should see the AutoCedar interactive terminal UI.
@@ -393,7 +408,18 @@ uvx autocedar
 ```
 
 The runtime package installs the Python agent/library and the `autocedar`
-console script. Verification also needs the Cedar CLI and CVC5 solver.
+console script. Verification also needs the Cedar CLI and CVC5 solver. Use the
+guided setup path:
+
+```bash
+uvx autocedar apikey
+uvx autocedar setup --yes
+uvx autocedar doctor
+uvx autocedar
+```
+
+If setup cannot safely install a system dependency on your platform, it prints
+the exact blocked prerequisite. Docker/GHCR remains the fully bundled path.
 
 ### External Dependencies
 
@@ -413,6 +439,7 @@ If those binaries live elsewhere, set them in your shell or `.env`.
 Check the verifier setup before running policy verification:
 
 ```bash
+uv run autocedar setup
 uv run autocedar doctor
 cedar --version
 cedar symcc --help | grep principal-type

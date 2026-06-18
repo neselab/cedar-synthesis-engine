@@ -120,7 +120,7 @@ def _cedar_checks() -> list[DoctorCheck]:
             name="Cedar CLI",
             status="FAIL",
             detail=f"not found at {cedar}",
-            fix="run `cargo install cedar-policy-cli --locked --version 4.10.0 --features analyze --force`, or set `CEDAR=/path/to/cedar`",
+            fix="run `autocedar setup`, or install with `cargo install cedar-policy-cli --locked --version 4.10.0 --features analyze --force`, or set `CEDAR=/path/to/cedar`",
         ))
         return checks
     if not os.access(cedar, os.X_OK):
@@ -163,7 +163,7 @@ def _cedar_checks() -> list[DoctorCheck]:
             name="Cedar SymCC interface",
             status="FAIL",
             detail=f"missing required analysis flags: {', '.join(missing) or detail}",
-            fix="run `cargo install cedar-policy-cli --locked --version 4.10.0 --features analyze --force`, then confirm `cedar symcc --help | grep principal-type`",
+            fix="run `autocedar setup --yes` or `cargo install cedar-policy-cli --locked --version 4.10.0 --features analyze --force`, then confirm `cedar symcc --help | grep principal-type`",
         ))
     return checks
 
@@ -175,7 +175,7 @@ def _cvc5_check() -> DoctorCheck:
             name="CVC5",
             status="FAIL",
             detail=f"not found at {cvc5}",
-            fix="install CVC5, confirm `cvc5 --version`, then set `CVC5=$(command -v cvc5)` in `.env` if needed",
+            fix="run `autocedar setup`, or install CVC5 manually, confirm `cvc5 --version`, then set `CVC5=$(command -v cvc5)` in `.env` if needed",
         )
     if not os.access(cvc5, os.X_OK):
         return DoctorCheck(

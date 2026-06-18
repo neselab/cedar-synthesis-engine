@@ -83,6 +83,70 @@ def test_parser_exposes_doctor_command() -> None:
     assert args.func is cli._cmd_doctor
 
 
+def test_parser_exposes_setup_command() -> None:
+    parser = cli._build_parser()
+    args = parser.parse_args(["setup", "--yes", "--skip-cvc5"])
+
+    assert args.yes is True
+    assert args.skip_cvc5 is True
+    assert args.func is cli._cmd_setup
+
+
+def test_setup_dry_run_does_not_execute(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    from autocedar.setup_tools import SetupPlan, SetupStep
+
+    plan = SetupPlan([
+        SetupStep("Cedar CLI", "INSTALL", "missing", ["cargo", "install", "cedar-policy-cli"]),
+    ])
+    monkeypatch.setattr("autocedar.setup_tools.build_setup_plan", lambda **kwargs: plan)
+
+    def fail_run_setup_plan(*args: object, **kwargs: object) -> object:
+        raise AssertionError("setup should not execute during dry run")
+
+    monkeypatch.setattr("autocedar.setup_tools.run_setup_plan", fail_run_setup_plan)
+
+    rc = cli._cmd_setup(
+        argparse.Namespace(
+            yes=False,
+            dry_run=True,
+            skip_cedar=False,
+            skip_cvc5=False,
+        ),
+    )
+
+    assert rc == 0
+    assert "autocedar setup --yes" in capsys.readouterr().out
+
+
+def test_setup_yes_executes_plan(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    from autocedar.setup_tools import SetupPlan, SetupStep
+
+    plan = SetupPlan([
+        SetupStep("Cedar CLI", "INSTALL", "missing", ["cargo", "install", "cedar-policy-cli"]),
+    ])
+    result = [SetupStep("Cedar CLI", "OK", "installed")]
+    monkeypatch.setattr("autocedar.setup_tools.build_setup_plan", lambda **kwargs: plan)
+    monkeypatch.setattr("autocedar.setup_tools.run_setup_plan", lambda plan: result)
+
+    rc = cli._cmd_setup(
+        argparse.Namespace(
+            yes=True,
+            dry_run=False,
+            skip_cedar=False,
+            skip_cvc5=False,
+        ),
+    )
+
+    assert rc == 0
+    assert "setup commands finished" in capsys.readouterr().out
+
+
 def test_apikey_command_writes_env_file(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
