@@ -23,7 +23,13 @@ from textual.containers import Horizontal, Vertical
 from textual.widgets import Footer, Header, Input, RichLog, Static
 
 from autocedar.corpus import AtomDecision
-from autocedar.env import ANTHROPIC_API_KEY, is_real_anthropic_api_key, load_dotenv
+from autocedar.env import (
+    ANTHROPIC_API_KEY,
+    is_real_anthropic_api_key,
+    load_dotenv,
+    remove_user_config_value,
+    write_user_config_value,
+)
 from autocedar.harness_adapter import make_harness_synthesizer
 from autocedar.llm import DEFAULT_EFFORT, LLMClient, default_model_for_provider, default_provider
 from autocedar.pipeline import author as author_pipeline
@@ -1090,7 +1096,7 @@ class AutoCedarApp(App[None]):
             self.query_one(Input).placeholder = "Paste ANTHROPIC_API_KEY, or type cancel"
             self._say(
                 "Paste your Anthropic API key. I’ll redact it in the transcript "
-                "and keep it only in this process environment. Type “cancel” to stop.",
+                "and save it to the user-level AutoCedar config. Type “cancel” to stop.",
             )
             self._update_status()
             return
@@ -1154,16 +1160,17 @@ class AutoCedarApp(App[None]):
         value = _strip_wrapping_quotes(api_key.strip())
         if not value:
             raise ValueError("API key cannot be empty.")
-        os.environ["ANTHROPIC_API_KEY"] = value
+        path = write_user_config_value(ANTHROPIC_API_KEY, value)
         self._say(
-            "Anthropic API key set for this session "
-            f"([dim {MUTED}]{escape(_mask_api_key(value))}[/]).",
+            "Anthropic API key saved "
+            f"([dim {MUTED}]{escape(_mask_api_key(value))}[/]) to "
+            f"[dim {MUTED}]{escape(str(path))}[/].",
         )
         self._update_status()
 
     def _clear_api_key(self) -> None:
-        os.environ.pop("ANTHROPIC_API_KEY", None)
-        self._say("Anthropic API key cleared for this session.")
+        path = remove_user_config_value(ANTHROPIC_API_KEY)
+        self._say(f"Anthropic API key removed from [dim {MUTED}]{escape(str(path))}[/].")
         self._update_status()
 
     def _show_settings(self) -> None:

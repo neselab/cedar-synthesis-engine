@@ -29,8 +29,9 @@ Use this if you just want to run the AutoCedar agent.
    uvx autocedar apikey
    ```
 
-   Paste the key when prompted. AutoCedar writes it to `.env`, redacts it in
-   the terminal output, and uses it on the next launch. You can also run
+   Paste the key when prompted. AutoCedar writes it to your user config
+   (`~/.config/autocedar/.env` by default), redacts it in the terminal output,
+   and uses it on the next launch. You can also run
    `uvx autocedar apikey sk-ant-...` if you prefer a one-line command. Do not
    share or commit your API key.
 
@@ -490,7 +491,7 @@ AutoCedar's symbolic verification path. Reinstall with:
 cargo install cedar-policy-cli --locked --version 4.10.0 --features analyze --force
 ```
 
-### API Keys And `.env`
+### API Keys And Local Config
 
 AutoCedar uses Anthropic models for the conversational TUI, schema
 atomization, property atomization, and optional harness translation. The key is
@@ -502,8 +503,16 @@ The easiest path is the CLI helper:
 uv run autocedar apikey
 ```
 
-It prompts for the key with hidden input, creates or updates the nearest `.env`,
-and sets `ANTHROPIC_API_KEY` for that process. To write a specific file:
+It prompts for the key with hidden input, creates or updates the user-level
+AutoCedar config, and sets `ANTHROPIC_API_KEY` for that process. By default the
+key is stored here:
+
+```text
+~/.config/autocedar/.env
+```
+
+Project `.env` files still work and override the user config when present. To
+write a specific project file:
 
 ```bash
 uv run autocedar apikey --env ./policy-project/.env
@@ -552,8 +561,9 @@ TUI:
 ```
 
 `/apikey` prompts for the key and redacts it in the transcript. `/apikey
-sk-ant-...` also works for one-line setup. In-agent settings affect the current
-process. Use `autocedar apikey` for the persistent `.env` path.
+sk-ant-...` also works for one-line setup. These commands save to the same
+user-level AutoCedar config, so the key persists across new `uvx` sessions and
+package upgrades.
 
 ### Docker
 
@@ -671,9 +681,9 @@ Slash shortcuts are available for repeatable control:
 | `/settings` | Show selected model, effort, and API-key status. |
 | `/model MODEL` | Set the default model for chat, authoring atomization, and default TUI synthesis phases. |
 | `/effort low\|medium\|high\|max` | Set adaptive thinking effort for chat/authoring calls that support it. |
-| `/apikey` | Prompt for `ANTHROPIC_API_KEY`; the transcript redacts the key. |
-| `/apikey KEY` | Set `ANTHROPIC_API_KEY` for the current process. |
-| `/apikey clear` | Remove the key from the current process. |
+| `/apikey` | Prompt for `ANTHROPIC_API_KEY`; save it to user config and redact it in the transcript. |
+| `/apikey KEY` | Save `ANTHROPIC_API_KEY` to user config. |
+| `/apikey clear` | Remove the key from user config and the current process. |
 | `/draft` | Show the current prose draft. |
 | `/artifacts` | Show the latest authoring session, schema, and policy paths. |
 | `/schema [PATH]` | Show the latest generated Cedar schema, or a schema file you provide. |
@@ -759,8 +769,8 @@ Authoring writes session artifacts under the `--out` directory, usually
 
 | Symptom | Fix |
 | --- | --- |
-| Chat says no API key is loaded | Run `uv run autocedar apikey`, use `/apikey` in the TUI for the current session, or export `ANTHROPIC_API_KEY`. |
-| API key works in shell but not TUI | Start `autocedar` from the project directory containing `.env`, or export the key before launch. |
+| Chat says no API key is loaded | Run `uvx autocedar apikey`, use `/apikey` in the TUI, or export `ANTHROPIC_API_KEY`. AutoCedar loads `~/.config/autocedar/.env` on startup. |
+| API key works in shell but not TUI | Run `uvx autocedar doctor` to confirm what AutoCedar sees. Shell env wins, then project `.env`, then user config. |
 | Cannot select/copy from the TUI | Textual full-screen apps can intercept mouse selection. Use `/copy last`, `/copy transcript`, `/copy session`, `/copy schema path`, `/copy policy path`, `/copy schema`, or `/copy policy`. Some terminals also allow mouse selection while holding Shift. If your terminal/container has no clipboard command, AutoCedar shows a copy fallback panel for manual selection. |
 | Verification says Cedar is missing | Set `CEDAR=/path/to/cedar` or install the Cedar CLI. |
 | Verification says CVC5 is missing | Install CVC5, confirm `cvc5 --version` works, then set `CVC5=$(command -v cvc5)` in `.env` if needed. |

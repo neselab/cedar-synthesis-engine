@@ -10,7 +10,9 @@ from autocedar.env import (
     is_real_anthropic_api_key,
     load_dotenv,
     remove_dotenv_value,
+    user_config_env_path,
     write_dotenv_value,
+    write_user_config_value,
 )
 
 
@@ -39,6 +41,53 @@ def test_load_dotenv_does_not_override_existing_env(tmp_path: Path, monkeypatch)
     load_dotenv()
 
     assert os.environ["ANTHROPIC_API_KEY"] == "already-set"
+
+
+def test_load_dotenv_uses_user_config_when_project_env_missing(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.setenv("AUTOCEDAR_CONFIG_DIR", str(tmp_path / "config"))
+    user_env = user_config_env_path()
+    user_env.parent.mkdir(parents=True)
+    user_env.write_text("ANTHROPIC_API_KEY=from-user\n")
+    work = tmp_path / "work"
+    work.mkdir()
+    monkeypatch.chdir(work)
+
+    loaded = load_dotenv()
+
+    assert loaded == user_env
+    assert os.environ["ANTHROPIC_API_KEY"] == "from-user"
+
+
+def test_project_env_overrides_user_config(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.setenv("AUTOCEDAR_CONFIG_DIR", str(tmp_path / "config"))
+    user_env = user_config_env_path()
+    user_env.parent.mkdir(parents=True)
+    user_env.write_text("ANTHROPIC_API_KEY=from-user\n")
+    (tmp_path / ".env").write_text("ANTHROPIC_API_KEY=from-project\n")
+    monkeypatch.chdir(tmp_path)
+
+    load_dotenv()
+
+    assert os.environ["ANTHROPIC_API_KEY"] == "from-project"
+
+
+def test_write_user_config_value_uses_autocedar_config_dir(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.delenv(ANTHROPIC_API_KEY, raising=False)
+    monkeypatch.setenv("AUTOCEDAR_CONFIG_DIR", str(tmp_path / "config"))
+
+    written = write_user_config_value(ANTHROPIC_API_KEY, "sk-ant-user")
+
+    assert written == tmp_path / "config" / ".env"
+    assert written.read_text() == "ANTHROPIC_API_KEY=sk-ant-user\n"
+    assert os.environ[ANTHROPIC_API_KEY] == "sk-ant-user"
 
 
 def test_write_dotenv_value_creates_file_and_sets_process_env(

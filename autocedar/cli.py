@@ -15,7 +15,10 @@ from autocedar.env import (
     is_real_anthropic_api_key,
     load_dotenv,
     remove_dotenv_value,
+    remove_user_config_value,
+    user_config_env_path,
     write_dotenv_value,
+    write_user_config_value,
 )
 from autocedar.harness_adapter import make_harness_synthesizer
 from autocedar.llm import DEFAULT_EFFORT, LLMClient, default_model_for_provider, default_provider
@@ -92,7 +95,7 @@ def _build_parser() -> argparse.ArgumentParser:
     api_p = sub.add_parser(
         "apikey",
         aliases=["api-key"],
-        help="Save, update, or clear ANTHROPIC_API_KEY in .env.",
+        help="Save, update, or clear ANTHROPIC_API_KEY in the user config.",
     )
     api_p.add_argument(
         "key",
@@ -103,7 +106,7 @@ def _build_parser() -> argparse.ArgumentParser:
         "--env",
         type=Path,
         default=None,
-        help="Write to this .env path instead of the nearest .env.",
+        help="Write to this .env path instead of the user-level AutoCedar config.",
     )
     api_p.add_argument(
         "--clear",
@@ -234,7 +237,11 @@ def _cmd_setup(args: argparse.Namespace) -> int:
 def _cmd_apikey(args: argparse.Namespace) -> int:
     value = (args.key or "").strip()
     if args.clear or value.lower() in {"clear", "unset", "remove", "delete"}:
-        path = remove_dotenv_value(ANTHROPIC_API_KEY, env_path=args.env)
+        path = (
+            remove_dotenv_value(ANTHROPIC_API_KEY, env_path=args.env)
+            if args.env
+            else remove_user_config_value(ANTHROPIC_API_KEY)
+        )
         print(f"Removed ANTHROPIC_API_KEY from {path}.")
         return 0
 
@@ -252,7 +259,11 @@ def _cmd_apikey(args: argparse.Namespace) -> int:
             "Run `autocedar apikey` again and paste the full key.",
         )
 
-    path = write_dotenv_value(ANTHROPIC_API_KEY, value, env_path=args.env)
+    path = (
+        write_dotenv_value(ANTHROPIC_API_KEY, value, env_path=args.env)
+        if args.env
+        else write_user_config_value(ANTHROPIC_API_KEY, value)
+    )
     print(f"Saved ANTHROPIC_API_KEY to {path} ({_mask_api_key(value)}).")
     return 0
 
@@ -415,9 +426,12 @@ def _prompt_for_missing_api_key(*, allow_skip: bool) -> bool:
     if not _can_prompt_for_secret():
         return False
 
-    print("ANTHROPIC_API_KEY is not configured in the environment or nearest .env.")
+    print(
+        "ANTHROPIC_API_KEY is not configured in the environment, project .env, "
+        f"or user config ({user_config_env_path()}).",
+    )
     value = getpass.getpass(
-        "Paste Anthropic API key to save to .env, or press Enter to continue without it: ",
+        "Paste Anthropic API key to save to user config, or press Enter to continue without it: ",
     ).strip()
     if not value:
         if allow_skip:
@@ -429,7 +443,7 @@ def _prompt_for_missing_api_key(*, allow_skip: bool) -> bool:
             "That does not look like a real Anthropic API key. "
             "Run `autocedar apikey` again and paste the full key.",
         )
-    path = write_dotenv_value(ANTHROPIC_API_KEY, value)
+    path = write_user_config_value(ANTHROPIC_API_KEY, value)
     print(f"Saved ANTHROPIC_API_KEY to {path} ({_mask_api_key(value)}).")
     return True
 

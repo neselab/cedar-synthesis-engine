@@ -700,12 +700,16 @@ def test_author_confirmation_describes_schema_mode() -> None:
     assert "Stage 2 property atoms" in _describe_author_action(with_schema, from_draft=False)
 
 
-def test_textual_settings_commands_update_runtime(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_textual_settings_commands_update_runtime(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     monkeypatch.delenv("AUTOCEDAR_MODEL", raising=False)
     monkeypatch.delenv("AUTOCEDAR_CHAT_MODEL", raising=False)
     monkeypatch.delenv("AUTOCEDAR_AUTHOR_MODEL", raising=False)
     monkeypatch.delenv("AUTOCEDAR_EFFORT", raising=False)
+    monkeypatch.setenv("AUTOCEDAR_CONFIG_DIR", str(tmp_path / "config"))
 
     async def run() -> None:
         app = AutoCedarApp()
@@ -720,9 +724,12 @@ def test_textual_settings_commands_update_runtime(monkeypatch: pytest.MonkeyPatc
 
             app._handle_command_input("/apikey sk-ant-secret123")
             assert os.environ["ANTHROPIC_API_KEY"] == "sk-ant-secret123"
+            env_path = tmp_path / "config" / ".env"
+            assert env_path.read_text() == "ANTHROPIC_API_KEY=sk-ant-secret123\n"
 
             app._handle_command_input("/apikey clear")
             assert "ANTHROPIC_API_KEY" not in os.environ
+            assert env_path.read_text() == ""
             await pilot.exit(None)
 
     asyncio.run(run())

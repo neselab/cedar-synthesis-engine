@@ -7,6 +7,7 @@ import shlex
 from pathlib import Path
 
 ANTHROPIC_API_KEY = "ANTHROPIC_API_KEY"
+USER_CONFIG_DIR_ENV = "AUTOCEDAR_CONFIG_DIR"
 _PLACEHOLDER_API_KEYS = {
     "",
     "sk-ant-...",
@@ -18,11 +19,21 @@ _PLACEHOLDER_API_KEYS = {
 
 
 def load_dotenv(start: Path | None = None) -> Path | None:
-    """Load the nearest ``.env`` without overriding existing environment vars."""
+    """Load project ``.env`` first, then user config for missing values."""
     env_path = find_dotenv(start or Path.cwd())
-    if env_path is None:
-        return None
+    loaded: Path | None = None
+    if env_path is not None:
+        _load_env_file(env_path)
+        loaded = env_path
 
+    user_env = user_config_env_path()
+    if user_env.exists():
+        _load_env_file(user_env)
+        loaded = loaded or user_env
+    return loaded
+
+
+def _load_env_file(env_path: Path) -> None:
     for raw_line in env_path.read_text().splitlines():
         line = raw_line.strip()
         if not line or line.startswith("#"):
@@ -36,7 +47,6 @@ def load_dotenv(start: Path | None = None) -> Path | None:
         if not key or key in os.environ:
             continue
         os.environ[key] = _parse_env_value(value)
-    return env_path
 
 
 def write_dotenv_value(
@@ -69,6 +79,16 @@ def write_dotenv_value(
     target.write_text("\n".join(updated) + "\n", encoding="utf-8")
     os.environ[key] = value
     return target
+
+
+def write_user_config_value(key: str, value: str) -> Path:
+    """Create or update ``key=value`` in the user-level AutoCedar config."""
+    return write_dotenv_value(key, value, env_path=user_config_env_path())
+
+
+def remove_user_config_value(key: str) -> Path:
+    """Remove ``key`` from the user-level AutoCedar config."""
+    return remove_dotenv_value(key, env_path=user_config_env_path())
 
 
 def remove_dotenv_value(
@@ -106,6 +126,16 @@ def find_dotenv(start: Path) -> Path | None:
         if candidate.exists():
             return candidate
     return None
+
+
+def user_config_env_path() -> Path:
+    root = os.environ.get(USER_CONFIG_DIR_ENV)
+    if root:
+        return Path(root).expanduser() / ".env"
+    xdg = os.environ.get("XDG_CONFIG_HOME")
+    if xdg:
+        return Path(xdg).expanduser() / "autocedar" / ".env"
+    return Path.home() / ".config" / "autocedar" / ".env"
 
 
 def _parse_env_value(value: str) -> str:

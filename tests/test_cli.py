@@ -153,24 +153,44 @@ def test_apikey_command_writes_env_file(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
-    env_path = tmp_path / ".env"
+    monkeypatch.setenv("AUTOCEDAR_CONFIG_DIR", str(tmp_path / "config"))
 
     rc = cli._cmd_apikey(
         argparse.Namespace(
             key="sk-ant-test123",
-            env=env_path,
+            env=None,
             clear=False,
         ),
     )
 
+    env_path = tmp_path / "config" / ".env"
     assert rc == 0
     assert env_path.read_text() == "ANTHROPIC_API_KEY=sk-ant-test123\n"
     assert "sk-ant-test123" not in capsys.readouterr().out
 
 
-def test_apikey_command_replaces_existing_value(tmp_path: Path) -> None:
-    env_path = tmp_path / ".env"
+def test_apikey_command_replaces_existing_user_config_value(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("AUTOCEDAR_CONFIG_DIR", str(tmp_path / "config"))
+    env_path = tmp_path / "config" / ".env"
+    env_path.parent.mkdir(parents=True)
     env_path.write_text("ANTHROPIC_API_KEY=sk-ant-...\nAUTOCEDAR_EFFORT=high\n")
+
+    cli._cmd_apikey(
+        argparse.Namespace(
+            key="sk-ant-realvalue",
+            env=None,
+            clear=False,
+        ),
+    )
+
+    assert env_path.read_text() == "ANTHROPIC_API_KEY=sk-ant-realvalue\nAUTOCEDAR_EFFORT=high\n"
+
+
+def test_apikey_command_still_supports_explicit_env_file(tmp_path: Path) -> None:
+    env_path = tmp_path / ".env"
 
     cli._cmd_apikey(
         argparse.Namespace(
@@ -180,7 +200,7 @@ def test_apikey_command_replaces_existing_value(tmp_path: Path) -> None:
         ),
     )
 
-    assert env_path.read_text() == "ANTHROPIC_API_KEY=sk-ant-realvalue\nAUTOCEDAR_EFFORT=high\n"
+    assert env_path.read_text() == "ANTHROPIC_API_KEY=sk-ant-realvalue\n"
 
 
 def test_apikey_command_rejects_placeholder(tmp_path: Path) -> None:
