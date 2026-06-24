@@ -845,6 +845,8 @@ Slash shortcuts are available for repeatable control:
 | `/draft delete LINE` | Delete one draft/spec line from inside the TUI. |
 | `/draft insert LINE TEXT` | Insert a draft/spec line before `LINE`. |
 | `/artifacts` | Show the latest authoring session, schema, and policy paths. |
+| `/inspect [QUERY]` | Inspect the current workflow state, latest verification status, and key generated files. Optional `QUERY` searches those files too. |
+| `/search [QUERY]` | Search the latest workflow/generated files, including schema, policy, eval logs, atom records, plans, and session text files. |
 | `/schema [PATH]` | Show the latest generated Cedar schema, or a schema file you provide. |
 | `/policy [PATH]` | Show the latest synthesized Cedar policy, or a policy file you provide. |
 | `/copy last` | Copy the last assistant message. |

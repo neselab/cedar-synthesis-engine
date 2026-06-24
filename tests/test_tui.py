@@ -96,11 +96,15 @@ def test_setup_and_doctor_are_discoverable_in_tui_help() -> None:
     assert "provider" in COMMANDS
     assert "models" in COMMANDS
     assert "export" in COMMANDS
+    assert "inspect" in COMMANDS
+    assert "search" in COMMANDS
     assert "/setup" in HELP_TEXT
     assert "/doctor" in HELP_TEXT
     assert "/provider" in HELP_TEXT
     assert "/models" in HELP_TEXT
     assert "/export" in HELP_TEXT
+    assert "/inspect" in HELP_TEXT
+    assert "/search" in HELP_TEXT
 
 
 def test_tui_reviewer_property_counter_resets_after_schema_stage() -> None:
@@ -925,6 +929,9 @@ def test_tui_planner_receives_pre_planning_workflow_state(tmp_path: Path) -> Non
             assert state.latest_candidate_validated is True
             assert state.latest_policy_exists is True
             assert state.latest_schema_exists is True
+            assert any(tool["action"] == "export_artifacts" for tool in state.tools)
+            assert any(tool["action"] == "inspect_workflow" for tool in state.tools)
+            assert any(tool["action"] == "search_artifacts" for tool in state.tools)
             await pilot.exit(None)
 
     asyncio.run(run())
@@ -943,6 +950,51 @@ def test_tui_artifact_slash_commands_dispatch_to_latest_paths(tmp_path: Path) ->
     app._handle_command_input("/policy")
 
     assert calls == [(schema, "Cedar schema"), (policy, "Cedar policy")]
+
+
+def test_tui_inspect_workflow_reads_generated_status(tmp_path: Path) -> None:
+    app = AutoCedarApp()
+    session = tmp_path / "session"
+    schema = session / "stage1" / "final_schema.cedarschema"
+    policy = session / "harness_runs" / "scenario" / "candidate.cedar"
+    eval_log = session / "harness_runs" / "scenario" / "eval_log.json"
+    schema.parent.mkdir(parents=True)
+    policy.parent.mkdir(parents=True)
+    schema.write_text("entity User;\n")
+    policy.write_text("permit(principal, action == Action::\"view\", resource);\n")
+    eval_log.write_text(
+        '{"converged": true, "iterations": 1, "final_loss": 0, "checks_total": 3, "error": ""}',
+    )
+    app._update_status = lambda: None  # type: ignore[method-assign]
+    app._register_authoring_artifacts(session, policy, schema_override=None)
+    app._record_authoring_result(True)
+    writes: list[object] = []
+    app._write = writes.append  # type: ignore[method-assign]
+
+    app._handle_command_input("/inspect passed")
+
+    text = "\n".join(str(getattr(item, "renderable", item)) for item in writes)
+    assert "candidate validated[/]: True" in text
+    assert "Candidate passed all 3 recorded checks" in text
+    assert "eval_log.json" in text
+
+
+def test_tui_search_artifacts_finds_generated_text(tmp_path: Path) -> None:
+    app = AutoCedarApp()
+    session = tmp_path / "session"
+    policy = session / "harness_runs" / "scenario" / "candidate.cedar"
+    policy.parent.mkdir(parents=True)
+    policy.write_text("permit(principal, action == Action::\"editDocument\", resource);\n")
+    app.latest_session_dir = session
+    app.latest_policy_path = policy
+    writes: list[object] = []
+    app._write = writes.append  # type: ignore[method-assign]
+
+    app._handle_command_input("/search editDocument")
+
+    text = "\n".join(str(getattr(item, "renderable", item)) for item in writes)
+    assert "candidate.cedar:1" in text
+    assert "editDocument" in text
 
 
 def test_tui_copy_session_uses_clipboard_helper(

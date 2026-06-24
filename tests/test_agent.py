@@ -24,6 +24,7 @@ def test_agent_state_prompt_json_includes_pending_context() -> None:
         draft_excerpt=["Users can view documents.", "Owners can edit documents."],
         pending_confirmation="none",
         pending_review="Property review: owner_can_edit",
+        tools=[{"action": "inspect_workflow", "slash": "/inspect", "description": "inspect"}],
         api_key_set=True,
     )
 
@@ -32,6 +33,7 @@ def test_agent_state_prompt_json_includes_pending_context() -> None:
     assert '"drafting_active": true' in text
     assert "owner_can_edit" in text
     assert "Owners can edit documents." in text
+    assert "inspect_workflow" in text
 
 
 def test_provider_agent_planner_returns_structured_action() -> None:

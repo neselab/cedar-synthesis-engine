@@ -33,6 +33,8 @@ AgentActionKind = Literal[
     "show_schema",
     "show_policy",
     "show_artifacts",
+    "inspect_workflow",
+    "search_artifacts",
     "show_models",
     "export_artifacts",
     "copy",
@@ -74,6 +76,7 @@ class AgentState:
     latest_synthesis_iterations: int | None = None
     latest_synthesis_loss: int | None = None
     latest_status_summary: str = ""
+    tools: list[dict[str, str]] = field(default_factory=list)
     provider: str = "codex"
     model: str = ""
     effort: str = "high"
@@ -172,6 +175,15 @@ Critical rules:
   they can author the current draft or save it first.
 - Use show_schema, show_policy, show_artifacts, export_artifacts, or copy when
   users ask to inspect, export, copy, or retrieve generated artifacts or paths.
+- Use inspect_workflow for questions about whether the latest run finished,
+  whether generated artifacts exist, whether a candidate passed, what stage the
+  workflow is in, or what the user should inspect next.
+- Use search_artifacts when users ask to find text, check logs, inspect a named
+  atom/check/file, or search generated workflow files. Put the search terms in
+  content.
+- Every slash shortcut is exposed in the state tools list. Ordinary language
+  should choose the same actions as the matching slash shortcut instead of
+  describing what the user could type.
 - Use show_models when users ask what models are available, and set_provider
   when they ask to switch between Anthropic and Codex.
 - Use the current state fields to answer workflow-status questions. If

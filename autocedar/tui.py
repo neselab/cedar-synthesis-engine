@@ -88,6 +88,7 @@ COMMANDS = {
     "exit",
     "export",
     "help",
+    "inspect",
     "model",
     "models",
     "new",
@@ -96,6 +97,7 @@ COMMANDS = {
     "quit",
     "save",
     "schema",
+    "search",
     "settings",
     "setup",
     "synthesize",
@@ -116,6 +118,8 @@ SLASH_COMMAND_DESCRIPTIONS = {
     "/apikey": "set, show, or clear the saved API key",
     "/draft": "show, start, clear, edit, delete, or insert draft lines",
     "/artifacts": "show latest session/schema/policy paths",
+    "/inspect": "show workflow state, verification status, and key artifact files",
+    "/search": "search latest workflow/generated files",
     "/schema": "show latest or provided Cedar schema",
     "/policy": "show latest or provided Cedar policy",
     "/copy": "copy text or artifact paths",
@@ -171,6 +175,8 @@ Slash shortcuts are also available:
   [#f0c678]/draft delete 2[/]         delete line 2 from the working draft
   [#f0c678]/draft insert 2 TEXT[/]    insert TEXT before line 2
   [#f0c678]/artifacts[/]             show latest session/schema/policy paths
+  [#f0c678]/inspect[/] [QUERY]       inspect workflow status and generated files
+  [#f0c678]/search[/] [QUERY]        search latest workflow/generated files
   [#f0c678]/schema[/] [PATH]         show latest or provided Cedar schema
   [#f0c678]/policy[/] [PATH]         show latest or provided Cedar policy
   [#f0c678]/copy[/] last|transcript|session|schema|policy|draft [path] copy text or artifact path
@@ -974,6 +980,7 @@ class AutoCedarApp(App[None]):
             latest_synthesis_iterations=self.latest_synthesis_iterations,
             latest_synthesis_loss=self.latest_synthesis_loss,
             latest_status_summary=self.latest_status_summary,
+            tools=_agent_tool_catalog(),
             provider=self.llm_provider,
             model=self.llm_model,
             effort=self.llm_effort,
@@ -1069,6 +1076,10 @@ class AutoCedarApp(App[None]):
             )
         if command == "artifacts":
             return AgentAction(kind="show_artifacts")
+        if command == "inspect":
+            return AgentAction(kind="inspect_workflow", content=" ".join(args))
+        if command == "search":
+            return AgentAction(kind="search_artifacts", content=" ".join(args))
         if command == "schema":
             return AgentAction(kind="show_schema", path=str(args[0]) if args else None)
         if command == "policy":
@@ -1208,6 +1219,10 @@ class AutoCedarApp(App[None]):
                 self._show_policy_command([action.path] if action.path else [])
             elif action.kind == "show_artifacts":
                 self._show_artifacts()
+            elif action.kind == "inspect_workflow":
+                self._inspect_workflow(action.content or action.message)
+            elif action.kind == "search_artifacts":
+                self._search_artifacts(action.content or action.message)
             elif action.kind == "show_models":
                 self._show_models()
             elif action.kind == "export_artifacts":
@@ -1604,6 +1619,144 @@ class AutoCedarApp(App[None]):
                 padding=(1, 2),
             ),
         )
+
+    def _inspect_workflow(self, query: str = "") -> None:
+        lines = [
+            f"[bold {AMBER}]task[/]: {escape(self.active_task)}",
+            f"[bold {AMBER}]working[/]: {'yes' if self.busy else 'no'}",
+            f"[bold {AMBER}]draft[/]: {len(self.draft_lines)} line(s)",
+            f"[bold {AMBER}]pending confirmation[/]: {escape(self.pending_action.summary if self.pending_action else 'none')}",
+            f"[bold {AMBER}]pending review[/]: {escape(self._pending_review_summary())}",
+            "",
+            f"[bold {AMBER}]authoring complete[/]: {self.latest_authoring_complete}",
+            f"[bold {AMBER}]approved[/]: {self.latest_authoring_approved}",
+            f"[bold {AMBER}]candidate validated[/]: {self.latest_candidate_validated}",
+            f"[bold {AMBER}]synthesis converged[/]: {self.latest_synthesis_converged}",
+            f"[bold {AMBER}]iterations[/]: {self.latest_synthesis_iterations if self.latest_synthesis_iterations is not None else '(unknown)'}",
+            f"[bold {AMBER}]loss[/]: {self.latest_synthesis_loss if self.latest_synthesis_loss is not None else '(unknown)'}",
+        ]
+        if self.latest_status_summary:
+            lines.extend(["", f"[bold {AMBER}]status[/]: {escape(self.latest_status_summary)}"])
+        lines.extend(["", "[bold #f0c678]Artifacts[/]"])
+        lines.extend(self._artifact_index_lines(include_discovered=True))
+        query = query.strip()
+        if query:
+            matches = self._artifact_search_matches(query, max_matches=8)
+            lines.extend(["", f"[bold #f0c678]Search: {escape(query)}[/]"])
+            lines.extend(matches or [f"[dim {MUTED}]No matching artifact text found.[/]"])
+        lines.extend([
+            "",
+            f"[dim {MUTED}]Use /schema, /policy, /artifacts, /export, /copy session, or /search QUERY.[/]",
+        ])
+        self._write(
+            Panel(
+                "\n".join(lines),
+                title=f"[bold {COPPER}]Workflow inspection[/]",
+                border_style=TEAL,
+                padding=(1, 2),
+            ),
+        )
+
+    def _search_artifacts(self, query: str = "") -> None:
+        query = query.strip()
+        if not query:
+            lines = [
+                "[bold #f0c678]Searchable workflow files[/]",
+                *self._artifact_index_lines(include_discovered=True),
+                "",
+                f"[dim {MUTED}]Run /search QUERY to search schema, policy, eval logs, atoms, plans, and session files.[/]",
+            ]
+        else:
+            matches = self._artifact_search_matches(query, max_matches=40)
+            lines = [f"[bold #f0c678]Artifact search: {escape(query)}[/]"]
+            lines.extend(matches or [f"[dim {MUTED}]No matching artifact text found.[/]"])
+        self._write(
+            Panel(
+                "\n".join(lines),
+                title=f"[bold {COPPER}]Artifact search[/]",
+                border_style=TEAL,
+                padding=(1, 2),
+            ),
+        )
+
+    def _pending_review_summary(self) -> str:
+        if self.pending_review is None:
+            return "none"
+        atom_name = getattr(self.pending_review.current, "name", "?")
+        return f"{self.pending_review.stage_label}: {atom_name}"
+
+    def _artifact_index_lines(self, *, include_discovered: bool = False) -> list[str]:
+        rows: list[tuple[str, Path | None]] = [
+            ("session", self.latest_session_dir),
+            ("schema", self.latest_schema_path),
+            ("policy", self.latest_policy_path),
+        ]
+        if include_discovered:
+            for path in self._discover_artifact_files(limit=24):
+                rows.append(("file", path))
+        if not any(path for _, path in rows):
+            return [f"[dim {MUTED}]No authoring artifacts are registered yet.[/]"]
+        lines = []
+        seen: set[Path] = set()
+        for label, path in rows:
+            if path is None:
+                lines.append(f"[bold {AMBER}]{label}[/]: (not available)")
+                continue
+            resolved = path.resolve()
+            if resolved in seen:
+                continue
+            seen.add(resolved)
+            exists = "exists" if path.exists() else "missing"
+            lines.append(f"[bold {AMBER}]{label}[/]: {escape(str(path))} [dim {MUTED}]({exists})[/]")
+        return lines
+
+    def _artifact_search_matches(self, query: str, *, max_matches: int) -> list[str]:
+        needle = query.lower()
+        matches: list[str] = []
+        for path in self._discover_artifact_files(limit=80):
+            if not path.exists() or not path.is_file() or not _is_searchable_artifact(path):
+                continue
+            try:
+                text = path.read_text(errors="replace")
+            except Exception:
+                continue
+            rel = _display_artifact_path(path, self.latest_session_dir)
+            for lineno, line in enumerate(text.splitlines(), start=1):
+                if needle in line.lower():
+                    clipped = line.strip()
+                    if len(clipped) > 180:
+                        clipped = clipped[:177] + "..."
+                    matches.append(
+                        f"[bold {AMBER}]{escape(rel)}:{lineno}[/] {escape(clipped)}",
+                    )
+                    if len(matches) >= max_matches:
+                        return matches
+        return matches
+
+    def _discover_artifact_files(self, *, limit: int) -> list[Path]:
+        roots: list[Path] = []
+        for path in (self.latest_schema_path, self.latest_policy_path):
+            if path is not None:
+                roots.append(path)
+        if self.latest_session_dir is not None:
+            roots.append(self.latest_session_dir)
+        discovered: list[Path] = []
+        seen: set[Path] = set()
+        for root in roots:
+            if root is None or not root.exists():
+                continue
+            candidates = [root] if root.is_file() else sorted(root.rglob("*"))
+            for candidate in candidates:
+                if not candidate.is_file() or not _is_searchable_artifact(candidate):
+                    continue
+                resolved = candidate.resolve()
+                if resolved in seen:
+                    continue
+                seen.add(resolved)
+                discovered.append(candidate)
+                if len(discovered) >= limit:
+                    return discovered
+        return discovered
 
     def _show_schema_command(self, args: Sequence[str]) -> None:
         path = Path(args[0]) if args else self.latest_schema_path
@@ -2339,6 +2492,7 @@ class AutoCedarApp(App[None]):
             [
                 "AutoCedar uses one tool-action control plane: the model proposes a structured AgentAction, and the executor performs concrete actions such as draft capture, author, verify, synthesize, save, show, artifact inspection, clipboard copy, clear, quit, and slash shortcuts.",
                 "Slash commands are shortcuts into the same AgentAction executor as natural language.",
+                "All slash-command capabilities are available to the planner as tools. For workflow-status or generated-file questions, the planner should choose inspect_workflow or search_artifacts instead of answering from guesswork.",
                 "Authoring from prose without a schema override: AutoCedar saves the prose spec, runs Stage 1 schema atomization, proposes entity/action/attribute/type-alias atoms, and sends each proposed schema atom through HITL review before composing the schema.",
                 "Authoring with a schema path: AutoCedar uses that existing schema directly and skips Stage 1 schema atomization/review.",
                 "Stage 2 property atoms: AutoCedar proposes one property atom at a time from the spec, validated schema, approved prior atoms, and review history; symbolically verifies it; and sends it through HITL review before asking for the next one.",
@@ -2361,6 +2515,71 @@ class AutoCedarApp(App[None]):
 
 def _squash(text: str) -> str:
     return re.sub(r"\s+", " ", text.strip())
+
+
+def _agent_tool_catalog() -> list[dict[str, str]]:
+    """Return the model-visible tool/action catalog.
+
+    This intentionally mirrors the slash shortcuts. Natural language and slash
+    commands must share the same executor surface.
+    """
+
+    return [
+        {"action": "help", "slash": "/help", "description": "show help"},
+        {"action": "start_draft", "slash": "/draft start", "description": "start requirement capture"},
+        {"action": "append_requirements", "slash": "+ TEXT", "description": "append requirements to the current draft"},
+        {"action": "edit_draft", "slash": "/draft edit|delete|insert", "description": "edit the working draft"},
+        {"action": "show_draft", "slash": "/draft show", "description": "show the working draft"},
+        {"action": "clear_draft", "slash": "/clear draft", "description": "clear the working draft"},
+        {"action": "save_draft", "slash": "/save", "description": "save the current draft"},
+        {"action": "author_current_draft", "slash": "/author", "description": "run HITL authoring from the current draft"},
+        {"action": "author_spec", "slash": "/author SPEC", "description": "run HITL authoring from a spec file"},
+        {"action": "verify_workspace", "slash": "/verify", "description": "verify a workspace"},
+        {"action": "synthesize", "slash": "/synthesize", "description": "run the synthesis harness"},
+        {"action": "show_artifacts", "slash": "/artifacts", "description": "show latest artifact paths"},
+        {"action": "inspect_workflow", "slash": "/inspect", "description": "inspect workflow state and generated files"},
+        {"action": "search_artifacts", "slash": "/search", "description": "search latest workflow/generated files"},
+        {"action": "show_schema", "slash": "/schema", "description": "show latest or provided schema"},
+        {"action": "show_policy", "slash": "/policy", "description": "show latest or provided policy"},
+        {"action": "export_artifacts", "slash": "/export", "description": "export schema, policy, transcript, and artifact index"},
+        {"action": "copy", "slash": "/copy", "description": "copy artifact paths/text or transcript text"},
+        {"action": "show_settings", "slash": "/settings", "description": "show provider/model/auth settings"},
+        {"action": "set_provider", "slash": "/provider", "description": "switch model provider"},
+        {"action": "show_models", "slash": "/models", "description": "show models"},
+        {"action": "set_model", "slash": "/model", "description": "set model"},
+        {"action": "set_effort", "slash": "/effort", "description": "set reasoning effort"},
+        {"action": "set_api_key_prompt", "slash": "/apikey", "description": "prompt for an API key"},
+        {"action": "set_api_key", "slash": "/apikey KEY", "description": "save an API key"},
+        {"action": "clear_api_key", "slash": "/apikey clear", "description": "clear the saved API key"},
+        {"action": "api_key_status", "slash": "/apikey status", "description": "show API key status"},
+        {"action": "setup", "slash": "/setup", "description": "show dependency setup steps"},
+        {"action": "doctor", "slash": "/doctor", "description": "diagnose environment readiness"},
+        {"action": "clear_transcript", "slash": "/clear transcript", "description": "clear transcript display"},
+        {"action": "quit", "slash": "/quit", "description": "exit AutoCedar"},
+        {"action": "answer_review", "slash": "A|R|Q|S|V", "description": "answer pending atom review"},
+        {"action": "edit_atom", "slash": "E field=value", "description": "edit pending atom review"},
+        {"action": "respond", "slash": "", "description": "answer conversationally when no tool is needed"},
+    ]
+
+
+def _is_searchable_artifact(path: Path) -> bool:
+    return path.suffix.lower() in {
+        ".cedar",
+        ".cedarschema",
+        ".json",
+        ".jsonl",
+        ".log",
+        ".md",
+        ".py",
+        ".txt",
+    }
+
+
+def _display_artifact_path(path: Path, session_dir: Path | None) -> str:
+    if session_dir is not None:
+        with contextlib.suppress(ValueError):
+            return str(path.relative_to(session_dir))
+    return str(path)
 
 
 def _describe_start_draft_action() -> str:
