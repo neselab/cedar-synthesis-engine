@@ -1,0 +1,1 @@
+permit (principal, action == Action::"viewInternalGrade", resource) when { principal in Faculty::"Faculty" && resource is InternalGrade };

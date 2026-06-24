@@ -1,0 +1,1 @@
+permit (principal, action == Action::"setInactivityPeriodLength", resource) when { principal is Administrator && resource is SystemConfiguration };

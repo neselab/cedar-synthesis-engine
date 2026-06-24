@@ -1,0 +1,1 @@
+permit (principal, action == Action::"enrollInCourse", resource) when { !(principal in Faculty::"Faculty") && resource is Course };

@@ -1,0 +1,535 @@
+[
+  {
+    "gap": {
+      "atom_name": "hcp_cannot_view_patient_credentials",
+      "stage": "stage2_property_review",
+      "reason": "Stage 2 decomposition critic repair: The source requirement is materially useful, but the proposed atom uses `Credential.hasPassword` and `hasSecurityQuestion` as proxies for viewing the actual password/security-question contents. The schema does not expose a field/action/context boundary for the specific credential component being viewed, so denying `viewCredential` for any patient credential containing those components is broader than the source requirement and may also block viewing non-sensitive credential metadata such as MID. Repair by adding or using an explicit password/security-question component boundary before forming the disjointness property; also express the property as a prohibition target rather than a permissive Cedar rule for the complement.",
+      "critic_tags": [
+        "missing-credential-component-boundary",
+        "polarity-repair",
+        "schema-gap",
+        "too-broad"
+      ],
+      "required_action": "repair_schema_before_synthesis"
+    },
+    "proposed_atoms": [
+      {
+        "name": "CredentialComponent",
+        "rationale": "CredentialComponent represents the specific credential field being accessed so policies can distinguish password and security-question access from other credential metadata.",
+        "plain_english_summary": "The part of a user's login credentials that someone is trying to view or change.",
+        "source_excerpt": "The HCP must not enter, edit, or view the patient's security question or password.",
+        "members_of": [],
+        "attributes": {},
+        "enum_values": [
+          "Password",
+          "SecurityQuestion",
+          "MID"
+        ]
+      },
+      {
+        "name": "viewCredential",
+        "rationale": "The viewCredential action needs request context identifying which credential component is being viewed to express component-specific credential secrecy requirements.",
+        "plain_english_summary": "Viewing a credential now records whether the request is for the password, security question, MID, or another credential part represented by the enum.",
+        "source_excerpt": "The HCP must not enter, edit, or view the patient's security question or password.",
+        "principal_types": [
+          "HCP"
+        ],
+        "resource_types": [
+          "Credential"
+        ],
+        "context_attributes": {
+          "component": {
+            "name": "viewCredential__context__component",
+            "rationale": "Identifies the particular credential component targeted by the view request.",
+            "plain_english_summary": "The credential part being viewed, such as the password or security question.",
+            "source_excerpt": "The HCP must not enter, edit, or view the patient's security question or password.",
+            "on_entity": "",
+            "field_name": "component",
+            "cedar_type": "CredentialComponent",
+            "optional": false,
+            "alternatives_considered": []
+          }
+        },
+        "parent_groups": []
+      }
+    ],
+    "decisions": [
+      {
+        "atom_name": "CredentialComponent",
+        "action": "approve",
+        "reason": "",
+        "edit_delta": {},
+        "intent_acknowledged_by_user": true,
+        "symbolic_verified": false
+      },
+      {
+        "atom_name": "viewCredential",
+        "action": "approve",
+        "reason": "",
+        "edit_delta": {},
+        "intent_acknowledged_by_user": true,
+        "symbolic_verified": false
+      }
+    ],
+    "approved_atoms": [
+      {
+        "name": "CredentialComponent",
+        "rationale": "CredentialComponent represents the specific credential field being accessed so policies can distinguish password and security-question access from other credential metadata.",
+        "plain_english_summary": "The part of a user's login credentials that someone is trying to view or change.",
+        "source_excerpt": "The HCP must not enter, edit, or view the patient's security question or password.",
+        "members_of": [],
+        "attributes": {},
+        "enum_values": [
+          "Password",
+          "SecurityQuestion",
+          "MID"
+        ]
+      },
+      {
+        "name": "viewCredential",
+        "rationale": "The viewCredential action needs request context identifying which credential component is being viewed to express component-specific credential secrecy requirements.",
+        "plain_english_summary": "Viewing a credential now records whether the request is for the password, security question, MID, or another credential part represented by the enum.",
+        "source_excerpt": "The HCP must not enter, edit, or view the patient's security question or password.",
+        "principal_types": [
+          "HCP"
+        ],
+        "resource_types": [
+          "Credential"
+        ],
+        "context_attributes": {
+          "component": {
+            "name": "viewCredential__context__component",
+            "rationale": "Identifies the particular credential component targeted by the view request.",
+            "plain_english_summary": "The credential part being viewed, such as the password or security question.",
+            "source_excerpt": "The HCP must not enter, edit, or view the patient's security question or password.",
+            "on_entity": "",
+            "field_name": "component",
+            "cedar_type": "CredentialComponent",
+            "optional": false,
+            "alternatives_considered": []
+          }
+        },
+        "parent_groups": []
+      }
+    ],
+    "schema_validation": [
+      {
+        "attempt_number": 1,
+        "schema_text": "entity User;\n\nentity HCP in [User];\n\nentity LHCP in [HCP] {\n    specialty: String,\n    hospitals: Set<Hospital>,\n};\n\nentity Administrator in [User];\n\nentity Patient in [User] {\n    mid: String,\n    name: String,\n    email: String,\n    designatedProviders: Set<LHCP>,\n    visitedProviders: Set<LHCP>,\n};\n\nentity PersonalRepresentative in [User] {\n    representedPatients: Set<Patient>,\n};\n\nentity UAP in [User];\n\nentity EmergencyResponder in [User];\n\nentity PublicHealthAgent in [User];\n\nentity Hospital;\n\nentity Credential {\n    user: User,\n    mid: String,\n    hasPassword: Bool,\n    hasSecurityQuestion: Bool,\n};\n\nentity Session {\n    user: User,\n    isAuthenticated: Bool,\n    inactivityLimitExceeded: Bool,\n};\n\nentity SystemConfiguration {\n    inactivityPeriodLength: duration,\n};\n\nentity ProviderList {\n    patient: Patient,\n    providers: Set<HCP>,\n};\n\nentity AccessLog {\n    patient: Patient,\n    accessorName: String,\n    accessorRoleRelativeToPatient: String,\n    accessTimestamp: datetime,\n    transactionType: String,\n};\n\nentity MedicalRecord {\n    patient: Patient,\n    includesFamilyHistory: Bool,\n    hasPersonalHealthInformation: Bool,\n    hasImmunizations: Bool,\n    hasOfficeVisitInformation: Bool,\n};\n\nentity DemographicInformation {\n    patient: Patient,\n};\n\nentity CredentialComponent enum [\"Password\", \"SecurityQuestion\", \"MID\"];\n\naction createPatient appliesTo {\n    principal: [HCP],\n    resource: [Patient],\n};\n\naction editPatient appliesTo {\n    principal: [HCP],\n    resource: [Patient],\n};\n\naction viewCredential appliesTo {\n    principal: [HCP],\n    resource: [Credential],\n    context: {\n        component: CredentialComponent,\n    },\n};\n\naction editCredential appliesTo {\n    principal: [User, HCP],\n    resource: [Credential],\n};\n\naction createLHCP appliesTo {\n    principal: [Administrator],\n    resource: [LHCP],\n};\n\naction createEmergencyResponder appliesTo {\n    principal: [Administrator],\n    resource: [EmergencyResponder],\n};\n\naction createPublicHealthAgent appliesTo {\n    principal: [Administrator],\n    resource: [PublicHealthAgent],\n};\n\naction assignLHCPToHospital appliesTo {\n    principal: [Administrator],\n    resource: [LHCP],\n    context: {\n        hospital: Hospital,\n    },\n};\n\naction createUAP appliesTo {\n    principal: [LHCP],\n    resource: [UAP],\n};\n\naction login appliesTo {\n    principal: [User],\n    resource: [Session],\n    context: {\n        credential: Credential,\n    },\n};\n\naction requestPasswordChange appliesTo {\n    principal: [User],\n    resource: [Credential],\n};\n\naction logout appliesTo {\n    principal: [User],\n    resource: [Session],\n};\n\naction closeApplication appliesTo {\n    principal: [User],\n    resource: [Session],\n};\n\naction setInactivityPeriodLength appliesTo {\n    principal: [Administrator],\n    resource: [SystemConfiguration],\n};\n\naction viewProviderHistory appliesTo {\n    principal: [Patient],\n    resource: [Patient],\n};\n\naction addProviderToList appliesTo {\n    principal: [Patient],\n    resource: [ProviderList],\n    context: {\n        provider: HCP,\n        searchName: String,\n        searchSpecialty: String,\n        searchZipCode?: String,\n    },\n};\n\naction designateDLHCP appliesTo {\n    principal: [Patient],\n    resource: [LHCP],\n    context: {\n        patient: Patient,\n    },\n};\n\naction undesignateDLHCP appliesTo {\n    principal: [Patient],\n    resource: [LHCP],\n    context: {\n        patient: Patient,\n    },\n};\n\naction viewAccessLog appliesTo {\n    principal: [Patient],\n    resource: [AccessLog],\n    context: {\n        beginDate: datetime,\n        endDate: datetime,\n    },\n};\n\naction viewMedicalRecord appliesTo {\n    principal: [Patient, PersonalRepresentative],\n    resource: [MedicalRecord],\n};\n\naction viewDemographicInformation appliesTo {\n    principal: [HCP, Patient, PersonalRepresentative],\n    resource: [DemographicInformation],\n};\n\naction editDemographicInformation appliesTo {\n    principal: [HCP],\n    resource: [DemographicInformation],\n};\n",
+        "validator_passed": true,
+        "validator_error": "",
+        "llm_was_called": false,
+        "schema_override": false,
+        "schema_gap_repair": true
+      }
+    ]
+  },
+  {
+    "gap": {
+      "atom_name": "hcp_can_edit_patient",
+      "stage": "stage2_property_review",
+      "reason": "Stage 2 decomposition critic repair: The positive HCP edit requirement is materially useful and not covered by approved atoms, but the proposed floor is too broad. The source scopes editing to patient data according to the data format, and the adjacent requirement explicitly excludes editing the patient's MID. The schema's `editPatient` action has no context/resource boundary for data-format validity or for the specific patient field being edited, so a blanket HCP+editPatient+Patient permit could cover MID or invalid-format edits. Repair by adding/using explicit editable-field and data-format-validity boundaries, or otherwise decomposing the property to an exposed narrower hook such as demographic information if that is the intended editable patient data.",
+      "critic_tags": [
+        "missing-data-format-validity-boundary",
+        "missing-editable-patient-field-boundary",
+        "schema-gap",
+        "too-broad"
+      ],
+      "required_action": "repair_schema_before_synthesis"
+    },
+    "proposed_atoms": [
+      {
+        "name": "editPatient",
+        "rationale": "The editPatient action needs request context to constrain edits to a specific non-MID patient field and valid data format.",
+        "plain_english_summary": "When an HCP edits a patient, the request must say which patient field is being changed and whether the new value matches the required format.",
+        "source_excerpt": "The HCP can edit patient data according to the data format, but the patient's MID must not be editable.",
+        "principal_types": [
+          "HCP"
+        ],
+        "resource_types": [
+          "Patient"
+        ],
+        "context_attributes": {
+          "patientField": {
+            "name": "editPatient__context__patientField",
+            "rationale": "The edited patient field must be explicit so policies can exclude MID edits.",
+            "plain_english_summary": "The name of the patient data field the HCP is trying to edit.",
+            "source_excerpt": "The HCP can edit patient data according to the data format, but the patient's MID must not be editable.",
+            "on_entity": "",
+            "field_name": "patientField",
+            "cedar_type": "String",
+            "optional": false,
+            "alternatives_considered": []
+          },
+          "isDataFormatValid": {
+            "name": "editPatient__context__isDataFormatValid",
+            "rationale": "The edit request must expose whether the proposed patient data satisfies the required data format.",
+            "plain_english_summary": "Whether the new patient data value is in the correct format.",
+            "source_excerpt": "The HCP can edit patient data according to the data format, but the patient's MID must not be editable.",
+            "on_entity": "",
+            "field_name": "isDataFormatValid",
+            "cedar_type": "Bool",
+            "optional": false,
+            "alternatives_considered": []
+          }
+        },
+        "parent_groups": []
+      }
+    ],
+    "decisions": [
+      {
+        "atom_name": "editPatient",
+        "action": "approve",
+        "reason": "",
+        "edit_delta": {},
+        "intent_acknowledged_by_user": true,
+        "symbolic_verified": false
+      }
+    ],
+    "approved_atoms": [
+      {
+        "name": "editPatient",
+        "rationale": "The editPatient action needs request context to constrain edits to a specific non-MID patient field and valid data format.",
+        "plain_english_summary": "When an HCP edits a patient, the request must say which patient field is being changed and whether the new value matches the required format.",
+        "source_excerpt": "The HCP can edit patient data according to the data format, but the patient's MID must not be editable.",
+        "principal_types": [
+          "HCP"
+        ],
+        "resource_types": [
+          "Patient"
+        ],
+        "context_attributes": {
+          "patientField": {
+            "name": "editPatient__context__patientField",
+            "rationale": "The edited patient field must be explicit so policies can exclude MID edits.",
+            "plain_english_summary": "The name of the patient data field the HCP is trying to edit.",
+            "source_excerpt": "The HCP can edit patient data according to the data format, but the patient's MID must not be editable.",
+            "on_entity": "",
+            "field_name": "patientField",
+            "cedar_type": "String",
+            "optional": false,
+            "alternatives_considered": []
+          },
+          "isDataFormatValid": {
+            "name": "editPatient__context__isDataFormatValid",
+            "rationale": "The edit request must expose whether the proposed patient data satisfies the required data format.",
+            "plain_english_summary": "Whether the new patient data value is in the correct format.",
+            "source_excerpt": "The HCP can edit patient data according to the data format, but the patient's MID must not be editable.",
+            "on_entity": "",
+            "field_name": "isDataFormatValid",
+            "cedar_type": "Bool",
+            "optional": false,
+            "alternatives_considered": []
+          }
+        },
+        "parent_groups": []
+      }
+    ],
+    "schema_validation": [
+      {
+        "attempt_number": 1,
+        "schema_text": "entity User;\n\nentity HCP in [User];\n\nentity LHCP in [HCP] {\n    specialty: String,\n    hospitals: Set<Hospital>,\n};\n\nentity Administrator in [User];\n\nentity Patient in [User] {\n    mid: String,\n    name: String,\n    email: String,\n    designatedProviders: Set<LHCP>,\n    visitedProviders: Set<LHCP>,\n};\n\nentity PersonalRepresentative in [User] {\n    representedPatients: Set<Patient>,\n};\n\nentity UAP in [User];\n\nentity EmergencyResponder in [User];\n\nentity PublicHealthAgent in [User];\n\nentity Hospital;\n\nentity Credential {\n    user: User,\n    mid: String,\n    hasPassword: Bool,\n    hasSecurityQuestion: Bool,\n};\n\nentity Session {\n    user: User,\n    isAuthenticated: Bool,\n    inactivityLimitExceeded: Bool,\n};\n\nentity SystemConfiguration {\n    inactivityPeriodLength: duration,\n};\n\nentity ProviderList {\n    patient: Patient,\n    providers: Set<HCP>,\n};\n\nentity AccessLog {\n    patient: Patient,\n    accessorName: String,\n    accessorRoleRelativeToPatient: String,\n    accessTimestamp: datetime,\n    transactionType: String,\n};\n\nentity MedicalRecord {\n    patient: Patient,\n    includesFamilyHistory: Bool,\n    hasPersonalHealthInformation: Bool,\n    hasImmunizations: Bool,\n    hasOfficeVisitInformation: Bool,\n};\n\nentity DemographicInformation {\n    patient: Patient,\n};\n\nentity CredentialComponent enum [\"Password\", \"SecurityQuestion\", \"MID\"];\n\naction createPatient appliesTo {\n    principal: [HCP],\n    resource: [Patient],\n};\n\naction editPatient appliesTo {\n    principal: [HCP],\n    resource: [Patient],\n    context: {\n        patientField: String,\n        isDataFormatValid: Bool,\n    },\n};\n\naction viewCredential appliesTo {\n    principal: [HCP],\n    resource: [Credential],\n    context: {\n        component: CredentialComponent,\n    },\n};\n\naction editCredential appliesTo {\n    principal: [User, HCP],\n    resource: [Credential],\n};\n\naction createLHCP appliesTo {\n    principal: [Administrator],\n    resource: [LHCP],\n};\n\naction createEmergencyResponder appliesTo {\n    principal: [Administrator],\n    resource: [EmergencyResponder],\n};\n\naction createPublicHealthAgent appliesTo {\n    principal: [Administrator],\n    resource: [PublicHealthAgent],\n};\n\naction assignLHCPToHospital appliesTo {\n    principal: [Administrator],\n    resource: [LHCP],\n    context: {\n        hospital: Hospital,\n    },\n};\n\naction createUAP appliesTo {\n    principal: [LHCP],\n    resource: [UAP],\n};\n\naction login appliesTo {\n    principal: [User],\n    resource: [Session],\n    context: {\n        credential: Credential,\n    },\n};\n\naction requestPasswordChange appliesTo {\n    principal: [User],\n    resource: [Credential],\n};\n\naction logout appliesTo {\n    principal: [User],\n    resource: [Session],\n};\n\naction closeApplication appliesTo {\n    principal: [User],\n    resource: [Session],\n};\n\naction setInactivityPeriodLength appliesTo {\n    principal: [Administrator],\n    resource: [SystemConfiguration],\n};\n\naction viewProviderHistory appliesTo {\n    principal: [Patient],\n    resource: [Patient],\n};\n\naction addProviderToList appliesTo {\n    principal: [Patient],\n    resource: [ProviderList],\n    context: {\n        provider: HCP,\n        searchName: String,\n        searchSpecialty: String,\n        searchZipCode?: String,\n    },\n};\n\naction designateDLHCP appliesTo {\n    principal: [Patient],\n    resource: [LHCP],\n    context: {\n        patient: Patient,\n    },\n};\n\naction undesignateDLHCP appliesTo {\n    principal: [Patient],\n    resource: [LHCP],\n    context: {\n        patient: Patient,\n    },\n};\n\naction viewAccessLog appliesTo {\n    principal: [Patient],\n    resource: [AccessLog],\n    context: {\n        beginDate: datetime,\n        endDate: datetime,\n    },\n};\n\naction viewMedicalRecord appliesTo {\n    principal: [Patient, PersonalRepresentative],\n    resource: [MedicalRecord],\n};\n\naction viewDemographicInformation appliesTo {\n    principal: [HCP, Patient, PersonalRepresentative],\n    resource: [DemographicInformation],\n};\n\naction editDemographicInformation appliesTo {\n    principal: [HCP],\n    resource: [DemographicInformation],\n};\n",
+        "validator_passed": true,
+        "validator_error": "",
+        "llm_was_called": false,
+        "schema_override": false,
+        "schema_gap_repair": true
+      }
+    ]
+  },
+  {
+    "gap": {
+      "atom_name": "user_can_login_with_own_credentials",
+      "stage": "stage2_property_review",
+      "reason": "Stage 2 decomposition critic repair: The login workflow is materially useful, but the proposed floor accepts a proxy for the actual authentication requirement. The source says a user enters their MID and password to gain role-based entry, which requires a boundary for submitted MID/password matching or an authentication-success predicate. The schema exposes Credential.user and hasPassword, but hasPassword only says a password exists; it does not prove the user supplied the correct password or MID. Do not accept the own-credential/hasPassword proxy as equivalent. Repair the schema/property with an explicit submitted-MID and password-verification/authentication-success boundary, while retaining the own-session and own-credential ownership constraints if appropriate.",
+      "critic_tags": [
+        "authentication-boundary",
+        "missing-password-verification-boundary",
+        "missing-submitted-mid-boundary",
+        "proxy-haspassword",
+        "schema-gap"
+      ],
+      "required_action": "repair_schema_before_synthesis"
+    },
+    "proposed_atoms": [
+      {
+        "name": "login",
+        "rationale": "The login action needs request context for the submitted MID and successful password verification to express the authentication boundary.",
+        "plain_english_summary": "When a user logs in, the request records which MID they entered and whether the supplied password was verified.",
+        "source_excerpt": "Any user can enter their MID and password to gain role-based entry into iTrust.",
+        "principal_types": [
+          "User"
+        ],
+        "resource_types": [
+          "Session"
+        ],
+        "context_attributes": {
+          "credential": {
+            "name": "login__context__credential",
+            "rationale": "The login request must identify the credential record being used for authentication.",
+            "plain_english_summary": "The credential account the user is trying to use to log in.",
+            "source_excerpt": "Any user can enter their MID and password to gain role-based entry into iTrust.",
+            "on_entity": "",
+            "field_name": "credential",
+            "cedar_type": "Credential",
+            "optional": false,
+            "alternatives_considered": []
+          },
+          "submittedMID": {
+            "name": "login__context__submittedMID",
+            "rationale": "The submitted MID is required so policies can compare the login input against the credential MID.",
+            "plain_english_summary": "The MID typed by the user during login.",
+            "source_excerpt": "Any user can enter their MID and password to gain role-based entry into iTrust.",
+            "on_entity": "",
+            "field_name": "submittedMID",
+            "cedar_type": "String",
+            "optional": false,
+            "alternatives_considered": []
+          },
+          "passwordVerified": {
+            "name": "login__context__passwordVerified",
+            "rationale": "A password verification result is required so policies do not treat mere password existence as successful authentication.",
+            "plain_english_summary": "Whether the password typed by the user was checked and found correct.",
+            "source_excerpt": "Any user can enter their MID and password to gain role-based entry into iTrust.",
+            "on_entity": "",
+            "field_name": "passwordVerified",
+            "cedar_type": "Bool",
+            "optional": false,
+            "alternatives_considered": []
+          }
+        },
+        "parent_groups": []
+      }
+    ],
+    "decisions": [
+      {
+        "atom_name": "login",
+        "action": "approve",
+        "reason": "",
+        "edit_delta": {},
+        "intent_acknowledged_by_user": true,
+        "symbolic_verified": false
+      }
+    ],
+    "approved_atoms": [
+      {
+        "name": "login",
+        "rationale": "The login action needs request context for the submitted MID and successful password verification to express the authentication boundary.",
+        "plain_english_summary": "When a user logs in, the request records which MID they entered and whether the supplied password was verified.",
+        "source_excerpt": "Any user can enter their MID and password to gain role-based entry into iTrust.",
+        "principal_types": [
+          "User"
+        ],
+        "resource_types": [
+          "Session"
+        ],
+        "context_attributes": {
+          "credential": {
+            "name": "login__context__credential",
+            "rationale": "The login request must identify the credential record being used for authentication.",
+            "plain_english_summary": "The credential account the user is trying to use to log in.",
+            "source_excerpt": "Any user can enter their MID and password to gain role-based entry into iTrust.",
+            "on_entity": "",
+            "field_name": "credential",
+            "cedar_type": "Credential",
+            "optional": false,
+            "alternatives_considered": []
+          },
+          "submittedMID": {
+            "name": "login__context__submittedMID",
+            "rationale": "The submitted MID is required so policies can compare the login input against the credential MID.",
+            "plain_english_summary": "The MID typed by the user during login.",
+            "source_excerpt": "Any user can enter their MID and password to gain role-based entry into iTrust.",
+            "on_entity": "",
+            "field_name": "submittedMID",
+            "cedar_type": "String",
+            "optional": false,
+            "alternatives_considered": []
+          },
+          "passwordVerified": {
+            "name": "login__context__passwordVerified",
+            "rationale": "A password verification result is required so policies do not treat mere password existence as successful authentication.",
+            "plain_english_summary": "Whether the password typed by the user was checked and found correct.",
+            "source_excerpt": "Any user can enter their MID and password to gain role-based entry into iTrust.",
+            "on_entity": "",
+            "field_name": "passwordVerified",
+            "cedar_type": "Bool",
+            "optional": false,
+            "alternatives_considered": []
+          }
+        },
+        "parent_groups": []
+      }
+    ],
+    "schema_validation": [
+      {
+        "attempt_number": 1,
+        "schema_text": "entity User;\n\nentity HCP in [User];\n\nentity LHCP in [HCP] {\n    specialty: String,\n    hospitals: Set<Hospital>,\n};\n\nentity Administrator in [User];\n\nentity Patient in [User] {\n    mid: String,\n    name: String,\n    email: String,\n    designatedProviders: Set<LHCP>,\n    visitedProviders: Set<LHCP>,\n};\n\nentity PersonalRepresentative in [User] {\n    representedPatients: Set<Patient>,\n};\n\nentity UAP in [User];\n\nentity EmergencyResponder in [User];\n\nentity PublicHealthAgent in [User];\n\nentity Hospital;\n\nentity Credential {\n    user: User,\n    mid: String,\n    hasPassword: Bool,\n    hasSecurityQuestion: Bool,\n};\n\nentity Session {\n    user: User,\n    isAuthenticated: Bool,\n    inactivityLimitExceeded: Bool,\n};\n\nentity SystemConfiguration {\n    inactivityPeriodLength: duration,\n};\n\nentity ProviderList {\n    patient: Patient,\n    providers: Set<HCP>,\n};\n\nentity AccessLog {\n    patient: Patient,\n    accessorName: String,\n    accessorRoleRelativeToPatient: String,\n    accessTimestamp: datetime,\n    transactionType: String,\n};\n\nentity MedicalRecord {\n    patient: Patient,\n    includesFamilyHistory: Bool,\n    hasPersonalHealthInformation: Bool,\n    hasImmunizations: Bool,\n    hasOfficeVisitInformation: Bool,\n};\n\nentity DemographicInformation {\n    patient: Patient,\n};\n\nentity CredentialComponent enum [\"Password\", \"SecurityQuestion\", \"MID\"];\n\naction createPatient appliesTo {\n    principal: [HCP],\n    resource: [Patient],\n};\n\naction editPatient appliesTo {\n    principal: [HCP],\n    resource: [Patient],\n    context: {\n        patientField: String,\n        isDataFormatValid: Bool,\n    },\n};\n\naction viewCredential appliesTo {\n    principal: [HCP],\n    resource: [Credential],\n    context: {\n        component: CredentialComponent,\n    },\n};\n\naction editCredential appliesTo {\n    principal: [User, HCP],\n    resource: [Credential],\n};\n\naction createLHCP appliesTo {\n    principal: [Administrator],\n    resource: [LHCP],\n};\n\naction createEmergencyResponder appliesTo {\n    principal: [Administrator],\n    resource: [EmergencyResponder],\n};\n\naction createPublicHealthAgent appliesTo {\n    principal: [Administrator],\n    resource: [PublicHealthAgent],\n};\n\naction assignLHCPToHospital appliesTo {\n    principal: [Administrator],\n    resource: [LHCP],\n    context: {\n        hospital: Hospital,\n    },\n};\n\naction createUAP appliesTo {\n    principal: [LHCP],\n    resource: [UAP],\n};\n\naction login appliesTo {\n    principal: [User],\n    resource: [Session],\n    context: {\n        credential: Credential,\n        submittedMID: String,\n        passwordVerified: Bool,\n    },\n};\n\naction requestPasswordChange appliesTo {\n    principal: [User],\n    resource: [Credential],\n};\n\naction logout appliesTo {\n    principal: [User],\n    resource: [Session],\n};\n\naction closeApplication appliesTo {\n    principal: [User],\n    resource: [Session],\n};\n\naction setInactivityPeriodLength appliesTo {\n    principal: [Administrator],\n    resource: [SystemConfiguration],\n};\n\naction viewProviderHistory appliesTo {\n    principal: [Patient],\n    resource: [Patient],\n};\n\naction addProviderToList appliesTo {\n    principal: [Patient],\n    resource: [ProviderList],\n    context: {\n        provider: HCP,\n        searchName: String,\n        searchSpecialty: String,\n        searchZipCode?: String,\n    },\n};\n\naction designateDLHCP appliesTo {\n    principal: [Patient],\n    resource: [LHCP],\n    context: {\n        patient: Patient,\n    },\n};\n\naction undesignateDLHCP appliesTo {\n    principal: [Patient],\n    resource: [LHCP],\n    context: {\n        patient: Patient,\n    },\n};\n\naction viewAccessLog appliesTo {\n    principal: [Patient],\n    resource: [AccessLog],\n    context: {\n        beginDate: datetime,\n        endDate: datetime,\n    },\n};\n\naction viewMedicalRecord appliesTo {\n    principal: [Patient, PersonalRepresentative],\n    resource: [MedicalRecord],\n};\n\naction viewDemographicInformation appliesTo {\n    principal: [HCP, Patient, PersonalRepresentative],\n    resource: [DemographicInformation],\n};\n\naction editDemographicInformation appliesTo {\n    principal: [HCP],\n    resource: [DemographicInformation],\n};\n",
+        "validator_passed": true,
+        "validator_error": "",
+        "llm_was_called": false,
+        "schema_override": false,
+        "schema_gap_repair": true
+      }
+    ]
+  },
+  {
+    "gap": {
+      "atom_name": "patient_can_add_provider_to_own_list",
+      "stage": "stage2_property_review",
+      "reason": "Stage 2 decomposition critic repair: The provider-list workflow is materially useful and not already covered by approved atoms, and the proposed atom correctly includes the own-provider-list ownership boundary. However, the source requirement specifically scopes the add operation to adding a provider by searching by name, specialty, and optionally zip code. The schema exposes search inputs in context but lacks provider attributes needed to validate that the selected provider actually matched the search terms: HCP has no name, specialty, or zip-code fields, and only LHCP has specialty. Accepting a floor that ignores the search-match boundary would permit adding any HCP to the patient's own provider list, which is broader than the source workflow. Repair by adding schema support for provider search-match semantics or provider name/specialty/zip attributes across the relevant HCP/LHCP provider set, then include the selected-provider-matches-search boundary in the property.",
+      "critic_tags": [
+        "missing-provider-name-boundary",
+        "missing-provider-search-match-boundary",
+        "missing-provider-zip-code-boundary",
+        "ownership-boundary-present",
+        "schema-gap",
+        "too-broad-floor"
+      ],
+      "required_action": "repair_schema_before_synthesis"
+    },
+    "proposed_atoms": [
+      {
+        "name": "HCP__name",
+        "rationale": "Provider search by name requires the selected HCP's name to be represented on the provider entity.",
+        "plain_english_summary": "Stores the provider's name so a searched-for provider can be checked against the patient's search terms.",
+        "source_excerpt": "A patient can add a LHCP/HCP to their provider list by searching by name, specialty, and optionally zip code.",
+        "on_entity": "HCP",
+        "field_name": "name",
+        "cedar_type": "String",
+        "optional": false,
+        "alternatives_considered": [
+          "Using only action context searchName was rejected because the selected provider also needs a comparable stored name.",
+          "Adding a separate ProviderSearchResult entity was rejected as less minimal than provider attributes."
+        ]
+      },
+      {
+        "name": "HCP__specialty",
+        "rationale": "Provider search by specialty requires the selected HCP's specialty to be represented for match checks.",
+        "plain_english_summary": "Stores the provider's specialty so the system can confirm the provider matches the patient's specialty search.",
+        "source_excerpt": "A patient can add a LHCP/HCP to their provider list by searching by name, specialty, and optionally zip code.",
+        "on_entity": "HCP",
+        "field_name": "specialty",
+        "cedar_type": "String",
+        "optional": false,
+        "alternatives_considered": [
+          "Relying on the existing LHCP specialty was rejected because addProviderToList accepts an HCP provider.",
+          "Using only action context searchSpecialty was rejected because the selected provider also needs a comparable stored specialty."
+        ]
+      },
+      {
+        "name": "HCP__zipCode",
+        "rationale": "Optional provider search by zip code requires the selected HCP's zip code to be represented when supplied.",
+        "plain_english_summary": "Stores the provider's zip code so optional zip-code searches can be checked against the chosen provider.",
+        "source_excerpt": "A patient can add a LHCP/HCP to their provider list by searching by name, specialty, and optionally zip code.",
+        "on_entity": "HCP",
+        "field_name": "zipCode",
+        "cedar_type": "String",
+        "optional": true,
+        "alternatives_considered": [
+          "Using only action context searchZipCode was rejected because the selected provider also needs a comparable stored zip code.",
+          "Modeling zip code as Long was rejected because postal codes are identifiers and may contain leading zeros."
+        ]
+      }
+    ],
+    "decisions": [
+      {
+        "atom_name": "HCP__name",
+        "action": "approve",
+        "reason": "",
+        "edit_delta": {},
+        "intent_acknowledged_by_user": true,
+        "symbolic_verified": false
+      },
+      {
+        "atom_name": "HCP__specialty",
+        "action": "approve",
+        "reason": "",
+        "edit_delta": {},
+        "intent_acknowledged_by_user": true,
+        "symbolic_verified": false
+      },
+      {
+        "atom_name": "HCP__zipCode",
+        "action": "approve",
+        "reason": "",
+        "edit_delta": {},
+        "intent_acknowledged_by_user": true,
+        "symbolic_verified": false
+      }
+    ],
+    "approved_atoms": [
+      {
+        "name": "HCP__name",
+        "rationale": "Provider search by name requires the selected HCP's name to be represented on the provider entity.",
+        "plain_english_summary": "Stores the provider's name so a searched-for provider can be checked against the patient's search terms.",
+        "source_excerpt": "A patient can add a LHCP/HCP to their provider list by searching by name, specialty, and optionally zip code.",
+        "on_entity": "HCP",
+        "field_name": "name",
+        "cedar_type": "String",
+        "optional": false,
+        "alternatives_considered": [
+          "Using only action context searchName was rejected because the selected provider also needs a comparable stored name.",
+          "Adding a separate ProviderSearchResult entity was rejected as less minimal than provider attributes."
+        ]
+      },
+      {
+        "name": "HCP__specialty",
+        "rationale": "Provider search by specialty requires the selected HCP's specialty to be represented for match checks.",
+        "plain_english_summary": "Stores the provider's specialty so the system can confirm the provider matches the patient's specialty search.",
+        "source_excerpt": "A patient can add a LHCP/HCP to their provider list by searching by name, specialty, and optionally zip code.",
+        "on_entity": "HCP",
+        "field_name": "specialty",
+        "cedar_type": "String",
+        "optional": false,
+        "alternatives_considered": [
+          "Relying on the existing LHCP specialty was rejected because addProviderToList accepts an HCP provider.",
+          "Using only action context searchSpecialty was rejected because the selected provider also needs a comparable stored specialty."
+        ]
+      },
+      {
+        "name": "HCP__zipCode",
+        "rationale": "Optional provider search by zip code requires the selected HCP's zip code to be represented when supplied.",
+        "plain_english_summary": "Stores the provider's zip code so optional zip-code searches can be checked against the chosen provider.",
+        "source_excerpt": "A patient can add a LHCP/HCP to their provider list by searching by name, specialty, and optionally zip code.",
+        "on_entity": "HCP",
+        "field_name": "zipCode",
+        "cedar_type": "String",
+        "optional": true,
+        "alternatives_considered": [
+          "Using only action context searchZipCode was rejected because the selected provider also needs a comparable stored zip code.",
+          "Modeling zip code as Long was rejected because postal codes are identifiers and may contain leading zeros."
+        ]
+      }
+    ],
+    "schema_validation": [
+      {
+        "attempt_number": 1,
+        "schema_text": "entity User;\n\nentity HCP in [User] {\n    name: String,\n    specialty: String,\n    zipCode?: String,\n};\n\nentity LHCP in [HCP] {\n    specialty: String,\n    hospitals: Set<Hospital>,\n};\n\nentity Administrator in [User];\n\nentity Patient in [User] {\n    mid: String,\n    name: String,\n    email: String,\n    designatedProviders: Set<LHCP>,\n    visitedProviders: Set<LHCP>,\n};\n\nentity PersonalRepresentative in [User] {\n    representedPatients: Set<Patient>,\n};\n\nentity UAP in [User];\n\nentity EmergencyResponder in [User];\n\nentity PublicHealthAgent in [User];\n\nentity Hospital;\n\nentity Credential {\n    user: User,\n    mid: String,\n    hasPassword: Bool,\n    hasSecurityQuestion: Bool,\n};\n\nentity Session {\n    user: User,\n    isAuthenticated: Bool,\n    inactivityLimitExceeded: Bool,\n};\n\nentity SystemConfiguration {\n    inactivityPeriodLength: duration,\n};\n\nentity ProviderList {\n    patient: Patient,\n    providers: Set<HCP>,\n};\n\nentity AccessLog {\n    patient: Patient,\n    accessorName: String,\n    accessorRoleRelativeToPatient: String,\n    accessTimestamp: datetime,\n    transactionType: String,\n};\n\nentity MedicalRecord {\n    patient: Patient,\n    includesFamilyHistory: Bool,\n    hasPersonalHealthInformation: Bool,\n    hasImmunizations: Bool,\n    hasOfficeVisitInformation: Bool,\n};\n\nentity DemographicInformation {\n    patient: Patient,\n};\n\nentity CredentialComponent enum [\"Password\", \"SecurityQuestion\", \"MID\"];\n\naction createPatient appliesTo {\n    principal: [HCP],\n    resource: [Patient],\n};\n\naction editPatient appliesTo {\n    principal: [HCP],\n    resource: [Patient],\n    context: {\n        patientField: String,\n        isDataFormatValid: Bool,\n    },\n};\n\naction viewCredential appliesTo {\n    principal: [HCP],\n    resource: [Credential],\n    context: {\n        component: CredentialComponent,\n    },\n};\n\naction editCredential appliesTo {\n    principal: [User, HCP],\n    resource: [Credential],\n};\n\naction createLHCP appliesTo {\n    principal: [Administrator],\n    resource: [LHCP],\n};\n\naction createEmergencyResponder appliesTo {\n    principal: [Administrator],\n    resource: [EmergencyResponder],\n};\n\naction createPublicHealthAgent appliesTo {\n    principal: [Administrator],\n    resource: [PublicHealthAgent],\n};\n\naction assignLHCPToHospital appliesTo {\n    principal: [Administrator],\n    resource: [LHCP],\n    context: {\n        hospital: Hospital,\n    },\n};\n\naction createUAP appliesTo {\n    principal: [LHCP],\n    resource: [UAP],\n};\n\naction login appliesTo {\n    principal: [User],\n    resource: [Session],\n    context: {\n        credential: Credential,\n        submittedMID: String,\n        passwordVerified: Bool,\n    },\n};\n\naction requestPasswordChange appliesTo {\n    principal: [User],\n    resource: [Credential],\n};\n\naction logout appliesTo {\n    principal: [User],\n    resource: [Session],\n};\n\naction closeApplication appliesTo {\n    principal: [User],\n    resource: [Session],\n};\n\naction setInactivityPeriodLength appliesTo {\n    principal: [Administrator],\n    resource: [SystemConfiguration],\n};\n\naction viewProviderHistory appliesTo {\n    principal: [Patient],\n    resource: [Patient],\n};\n\naction addProviderToList appliesTo {\n    principal: [Patient],\n    resource: [ProviderList],\n    context: {\n        provider: HCP,\n        searchName: String,\n        searchSpecialty: String,\n        searchZipCode?: String,\n    },\n};\n\naction designateDLHCP appliesTo {\n    principal: [Patient],\n    resource: [LHCP],\n    context: {\n        patient: Patient,\n    },\n};\n\naction undesignateDLHCP appliesTo {\n    principal: [Patient],\n    resource: [LHCP],\n    context: {\n        patient: Patient,\n    },\n};\n\naction viewAccessLog appliesTo {\n    principal: [Patient],\n    resource: [AccessLog],\n    context: {\n        beginDate: datetime,\n        endDate: datetime,\n    },\n};\n\naction viewMedicalRecord appliesTo {\n    principal: [Patient, PersonalRepresentative],\n    resource: [MedicalRecord],\n};\n\naction viewDemographicInformation appliesTo {\n    principal: [HCP, Patient, PersonalRepresentative],\n    resource: [DemographicInformation],\n};\n\naction editDemographicInformation appliesTo {\n    principal: [HCP],\n    resource: [DemographicInformation],\n};\n",
+        "validator_passed": true,
+        "validator_error": "",
+        "llm_was_called": false,
+        "schema_override": false,
+        "schema_gap_repair": true
+      }
+    ]
+  },
+  {
+    "gap": {
+      "atom_name": "patient_can_undesignate_lhcp_for_self",
+      "stage": "stage2_property_review",
+      "reason": "Stage 2 decomposition critic repair: The undesignation workflow is materially useful and not covered by the approved designation atoms, and the schema exposes the self-patient boundary. However, the proposed floor permits a patient to undesignate any LHCP for themselves without requiring that the LHCP is currently designated as that patient's DLHCP. The source action is specifically to undesignate an LHCP as being a DLHCP for that patient, so the property should use the existing patient-specific designation relationship exposed by `Patient.designatedProviders`, e.g. require `context.patient == principal` and `resource in principal.designatedProviders` or the equivalent context-patient relationship. This is a property repair, not a schema gap.",
+      "critic_tags": [
+        "missing-existing-dlhcp-designation-boundary",
+        "ownership-boundary-present",
+        "relationship-boundary-present",
+        "too-broad-floor"
+      ],
+      "required_action": "repair_schema_before_synthesis"
+    },
+    "proposed_atoms": [],
+    "decisions": [],
+    "approved_atoms": [],
+    "schema_validation": []
+  }
+]

@@ -1,0 +1,49 @@
+{
+  "scenario": "scenario",
+  "model": "gpt-5.5",
+  "phase1_model": "gpt-5.5",
+  "phase2_model": "gpt-5.5",
+  "converged": true,
+  "iterations": 2,
+  "max_iterations": 20,
+  "total_time_s": 284.86,
+  "phase1_time_s": 0.45,
+  "phase2_time_s": 284.39,
+  "final_loss": 0,
+  "checks_total": 59,
+  "iteration_log": [
+    {
+      "iteration": 1,
+      "loss": 29,
+      "checks_passed": 30,
+      "checks_total": 59,
+      "solver_time_s": 0.662,
+      "counterexample_count": 29,
+      "syntax_valid": true,
+      "status": "fail",
+      "input_tokens": 8605,
+      "output_tokens": 12610
+    },
+    {
+      "iteration": 2,
+      "loss": 0,
+      "checks_passed": 59,
+      "checks_total": 59,
+      "solver_time_s": 0.583,
+      "counterexample_count": 0,
+      "syntax_valid": true,
+      "status": "pass",
+      "input_tokens": 28033,
+      "output_tokens": 2791
+    }
+  ],
+  "error": "",
+  "phase1_input_tokens": 0,
+  "phase1_output_tokens": 0,
+  "phase2_input_tokens": 36638,
+  "phase2_output_tokens": 15401,
+  "total_input_tokens": 36638,
+  "total_output_tokens": 15401,
+  "total_tokens": 52039,
+  "estimated_cost_usd": 0.3409
+}

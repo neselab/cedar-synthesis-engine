@@ -1,0 +1,145 @@
+[
+  {
+    "atom_name": "students_receive_external_grades_floor",
+    "clauses": [
+      "permit (\n    principal,\n    action == Action::\"receiveExternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is ExternalGrade &&\n    principal.roles.contains(Role::\"Student\")\n};",
+      "permit (\n    principal,\n    action == Action::\"receiveExternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is ExternalGrade &&\n    principal.roles.contains(Role::\"FacultyFamily\")\n};"
+    ],
+    "flags": [
+      "multi-clause-interaction"
+    ]
+  },
+  {
+    "atom_name": "students_not_assign_external_grades",
+    "clauses": [
+      "permit (\n    principal,\n    action == Action::\"assignExternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is ExternalGrade &&\n    principal.roles.contains(Role::\"Faculty\")\n};",
+      "forbid (\n    principal,\n    action == Action::\"assignExternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is ExternalGrade &&\n    (\n        principal.roles.contains(Role::\"Student\") ||\n        principal.roles.contains(Role::\"FacultyFamily\") ||\n        principal.roles.contains(Role::\"TeachingAssistant\")\n    )\n};"
+    ],
+    "flags": [
+      "multi-clause-interaction"
+    ]
+  },
+  {
+    "atom_name": "external_grade_receivers_not_assign_external_grades",
+    "clauses": [
+      "permit (\n    principal,\n    action == Action::\"assignExternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is ExternalGrade &&\n    principal.roles.contains(Role::\"Faculty\")\n};",
+      "forbid (\n    principal,\n    action == Action::\"assignExternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is ExternalGrade &&\n    (\n        principal.roles.contains(Role::\"Student\") ||\n        principal.roles.contains(Role::\"FacultyFamily\") ||\n        principal.roles.contains(Role::\"TeachingAssistant\")\n    )\n};"
+    ],
+    "flags": [
+      "multi-clause-interaction"
+    ]
+  },
+  {
+    "atom_name": "faculty_assign_internal_grades_floor",
+    "clauses": [
+      "permit (\n    principal,\n    action == Action::\"assignInternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is InternalGrade &&\n    principal.roles.contains(Role::\"Faculty\")\n};",
+      "permit (\n    principal,\n    action == Action::\"assignInternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is InternalGrade &&\n    principal.roles.contains(Role::\"TeachingAssistant\")\n};",
+      "forbid (\n    principal,\n    action == Action::\"assignInternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is InternalGrade &&\n    principal.roles.contains(Role::\"Student\")\n};"
+    ],
+    "flags": [
+      "multi-clause-interaction"
+    ]
+  },
+  {
+    "atom_name": "faculty_assign_external_grades_floor",
+    "clauses": [
+      "permit (\n    principal,\n    action == Action::\"assignExternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is ExternalGrade &&\n    principal.roles.contains(Role::\"Faculty\")\n};",
+      "forbid (\n    principal,\n    action == Action::\"assignExternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is ExternalGrade &&\n    (\n        principal.roles.contains(Role::\"Student\") ||\n        principal.roles.contains(Role::\"FacultyFamily\") ||\n        principal.roles.contains(Role::\"TeachingAssistant\")\n    )\n};"
+    ],
+    "flags": [
+      "multi-clause-interaction"
+    ]
+  },
+  {
+    "atom_name": "faculty_view_internal_grades_floor",
+    "clauses": [
+      "permit (\n    principal,\n    action == Action::\"viewInternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is InternalGrade &&\n    principal.roles.contains(Role::\"Faculty\")\n};",
+      "permit (\n    principal,\n    action == Action::\"viewInternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is InternalGrade &&\n    principal.roles.contains(Role::\"TeachingAssistant\")\n};"
+    ],
+    "flags": [
+      "multi-clause-interaction"
+    ]
+  },
+  {
+    "atom_name": "faculty_view_external_grades_floor",
+    "clauses": [
+      "permit (\n    principal,\n    action == Action::\"viewExternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is ExternalGrade &&\n    principal.roles.contains(Role::\"Faculty\")\n};",
+      "forbid (\n    principal,\n    action == Action::\"viewExternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is ExternalGrade &&\n    principal.roles.contains(Role::\"TeachingAssistant\")\n};"
+    ],
+    "flags": [
+      "multi-clause-interaction"
+    ]
+  },
+  {
+    "atom_name": "tas_assign_internal_grades_floor",
+    "clauses": [
+      "permit (\n    principal,\n    action == Action::\"assignInternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is InternalGrade &&\n    principal.roles.contains(Role::\"Faculty\")\n};",
+      "permit (\n    principal,\n    action == Action::\"assignInternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is InternalGrade &&\n    principal.roles.contains(Role::\"TeachingAssistant\")\n};",
+      "forbid (\n    principal,\n    action == Action::\"assignInternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is InternalGrade &&\n    principal.roles.contains(Role::\"Student\")\n};"
+    ],
+    "flags": [
+      "multi-clause-interaction"
+    ]
+  },
+  {
+    "atom_name": "tas_view_internal_grades_floor",
+    "clauses": [
+      "permit (\n    principal,\n    action == Action::\"viewInternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is InternalGrade &&\n    principal.roles.contains(Role::\"Faculty\")\n};",
+      "permit (\n    principal,\n    action == Action::\"viewInternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is InternalGrade &&\n    principal.roles.contains(Role::\"TeachingAssistant\")\n};"
+    ],
+    "flags": [
+      "multi-clause-interaction"
+    ]
+  },
+  {
+    "atom_name": "tas_not_assign_external_grades",
+    "clauses": [
+      "permit (\n    principal,\n    action == Action::\"assignExternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is ExternalGrade &&\n    principal.roles.contains(Role::\"Faculty\")\n};",
+      "forbid (\n    principal,\n    action == Action::\"assignExternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is ExternalGrade &&\n    (\n        principal.roles.contains(Role::\"Student\") ||\n        principal.roles.contains(Role::\"FacultyFamily\") ||\n        principal.roles.contains(Role::\"TeachingAssistant\")\n    )\n};"
+    ],
+    "flags": [
+      "multi-clause-interaction"
+    ]
+  },
+  {
+    "atom_name": "tas_not_view_external_grades",
+    "clauses": [
+      "permit (\n    principal,\n    action == Action::\"viewExternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is ExternalGrade &&\n    principal.roles.contains(Role::\"Faculty\")\n};",
+      "forbid (\n    principal,\n    action == Action::\"viewExternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is ExternalGrade &&\n    principal.roles.contains(Role::\"TeachingAssistant\")\n};"
+    ],
+    "flags": [
+      "multi-clause-interaction"
+    ]
+  },
+  {
+    "atom_name": "faculty_family_receive_external_grades_floor",
+    "clauses": [
+      "permit (\n    principal,\n    action == Action::\"receiveExternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is ExternalGrade &&\n    principal.roles.contains(Role::\"Student\")\n};",
+      "permit (\n    principal,\n    action == Action::\"receiveExternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is ExternalGrade &&\n    principal.roles.contains(Role::\"FacultyFamily\")\n};"
+    ],
+    "flags": [
+      "multi-clause-interaction"
+    ]
+  },
+  {
+    "atom_name": "students_not_assign_internal_grades",
+    "clauses": [
+      "permit (\n    principal,\n    action == Action::\"assignInternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is InternalGrade &&\n    principal.roles.contains(Role::\"Faculty\")\n};",
+      "permit (\n    principal,\n    action == Action::\"assignInternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is InternalGrade &&\n    principal.roles.contains(Role::\"TeachingAssistant\")\n};",
+      "forbid (\n    principal,\n    action == Action::\"assignInternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is InternalGrade &&\n    principal.roles.contains(Role::\"Student\")\n};"
+    ],
+    "flags": [
+      "multi-clause-interaction"
+    ]
+  },
+  {
+    "atom_name": "nonfaculty_enroll_in_courses_floor",
+    "clauses": [
+      "permit (\n    principal,\n    action == Action::\"enrollInCourse\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is Course &&\n    !principal.roles.contains(Role::\"Faculty\")\n};",
+      "forbid (\n    principal,\n    action == Action::\"enrollInCourse\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is Course &&\n    principal.roles.contains(Role::\"Faculty\")\n};"
+    ],
+    "flags": [
+      "multi-clause-interaction"
+    ]
+  }
+]

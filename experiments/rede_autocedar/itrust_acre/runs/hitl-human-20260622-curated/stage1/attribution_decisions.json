@@ -1,0 +1,584 @@
+[
+  {
+    "atom_name": "User",
+    "span_text": "Important actors include Patient, HCP, LHCP, DLHCP, Administrator, Emergency Responder, UAP, Personal Representative, Public Health Agent, Lab Technician, Software Tester, and ordinary authenticated User.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "User__mid",
+    "span_text": "A user authenticates with MID and password.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "User__password",
+    "span_text": "A user authenticates with MID and password.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "User__securityQuestion",
+    "span_text": "The HCP must not enter, edit, or view the patient's security question or password.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "Patient",
+    "span_text": "Important actors include Patient, HCP, LHCP, DLHCP, Administrator, Emergency Responder, UAP, Personal Representative, Public Health Agent, Lab Technician, Software Tester, and ordinary authenticated User.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "Patient__isActive",
+    "span_text": "A deactivated patient cannot be modified or log into the system and can only be reactivated by an administrator.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "Patient__designatedLhcps",
+    "span_text": "A patient can designate or undesignate any LHCP as a DLHCP for that patient.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "Patient__providerList",
+    "span_text": "A patient can add a LHCP to the patient provider list.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "Patient__visitedLhcps",
+    "span_text": "A patient can view all LHCPs the patient has ever had an office visit with and all LHCPs the patient has designated.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "HCP",
+    "span_text": "Doctors and other health-care workers can obtain and share essential patient information and view aggregate patient data.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "LHCP",
+    "span_text": "An administrator can create LHCPs, emergency responders, lab technicians, and public health agents.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "LHCP__hospitals",
+    "span_text": "An administrator can assign an LHCP to multiple hospitals, choosing only hospitals from the hospital list.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "Administrator",
+    "span_text": "An administrator can create LHCPs, emergency responders, lab technicians, and public health agents.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "EmergencyResponder",
+    "span_text": "An administrator can create LHCPs, emergency responders, lab technicians, and public health agents.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "UAP",
+    "span_text": "A LHCP can create UAP users.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "PersonalRepresentative",
+    "span_text": "A patient can view their own access log, or the access log for a person for whom they are a personal representative.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "PersonalRepresentative__representedPatients",
+    "span_text": "A patient or personal representative can view medical records, family history, personal health information, immunizations, and office-visit information for their own records and for patients they represent.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "PublicHealthAgent",
+    "span_text": "An administrator can create LHCPs, emergency responders, lab technicians, and public health agents.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "LabTechnician",
+    "span_text": "An administrator can create LHCPs, emergency responders, lab technicians, and public health agents.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "SoftwareTester",
+    "span_text": "Important actors include Patient, HCP, LHCP, DLHCP, Administrator, Emergency Responder, UAP, Personal Representative, Public Health Agent, Lab Technician, Software Tester, and ordinary authenticated User.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "Hospital",
+    "span_text": "An administrator can assign an LHCP to multiple hospitals, choosing only hospitals from the hospital list.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "Session",
+    "span_text": "Authenticated sessions terminate after inactivity, logout, or closing the application.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "Session__isActive",
+    "span_text": "After the inactivity limit is exceeded, authorization is disabled.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "Session__user",
+    "span_text": "A user authenticates with MID and password.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "Session__lastActivityAt",
+    "span_text": "Authenticated sessions terminate after inactivity, logout, or closing the application.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "SystemSettings",
+    "span_text": "The administrator can set the inactivity period length.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "SystemSettings__inactivityPeriod",
+    "span_text": "The administrator can set the inactivity period length.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "MedicalRecord",
+    "span_text": "A patient or personal representative can view medical records, family history, personal health information, immunizations, and office-visit information for their own records and for patients they represent.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "MedicalRecord__patient",
+    "span_text": "for their own records and for patients they represent",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "DiagnosticInformation",
+    "span_text": "Approved diagnostic information is diagnostic information that a patient allows a designated or other licensed health-care professional to view.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "DiagnosticInformation__patient",
+    "span_text": "Approved diagnostic information is diagnostic information that a patient allows a designated or other licensed health-care professional to view.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "DiagnosticInformation__isRestricted",
+    "span_text": "For selected diagnostic information, such as mental-illness, substance-abuse, or cosmetic surgery diagnoses, the patient can restrict viewing.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "DiagnosticInformation__restrictionAllowed",
+    "span_text": "A licensed health-care professional determines whether the patient is allowed to restrict viewing of a diagnosis.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "DiagnosticInformation__allowedViewers",
+    "span_text": "A patient can enable designated licensed health-care professionals, other licensed health-care professionals, or no one to view restricted diagnostic information.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "PersonalHealthInformation",
+    "span_text": "A patient or personal representative can view medical records, family history, personal health information, immunizations, and office-visit information for their own records and for patients they represent.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "PersonalHealthInformation__patient",
+    "span_text": "An HCP can enter and edit a patient's personal health records.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "FamilyHistory",
+    "span_text": "A patient or personal representative can view medical records, family history, personal health information, immunizations, and office-visit information for their own records and for patients they represent.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "FamilyHistory__patient",
+    "span_text": "for their own records and for patients they represent",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "Immunization",
+    "span_text": "An HCP can edit historical values, immunizations, office-visit information, family history, BMI, and death status for a selected patient.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "Immunization__patient",
+    "span_text": "for a selected patient",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "OfficeVisit",
+    "span_text": "An HCP can document and edit office visits for a selected patient, including date, hospital, notes, prescriptions, lab procedures, diagnoses, procedures, immunizations, and referrals.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "OfficeVisit__patient",
+    "span_text": "for a selected patient",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "OfficeVisit__hospital",
+    "span_text": "including date, hospital, notes, prescriptions, lab procedures, diagnoses, procedures, immunizations, and referrals",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "OfficeVisit__surveyTaken",
+    "span_text": "If a patient or personal representative has not taken an office-visit satisfaction survey, they may take the survey; after the survey has been taken, they cannot take or view the previously submitted survey through that path.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "AccessLog",
+    "span_text": "A patient can view their own access log, or the access log for a person for whom they are a personal representative.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "AccessLog__patient",
+    "span_text": "for themself or a represented person",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "AccessLog__accessorName",
+    "span_text": "Access logs include accessor name, accessor role relative to the patient, date/time, and transaction type.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "AccessLog__accessorRole",
+    "span_text": "Access logs include accessor name, accessor role relative to the patient, date/time, and transaction type.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "AccessLog__accessedAt",
+    "span_text": "Access logs include accessor name, accessor role relative to the patient, date/time, and transaction type.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "AccessLog__transactionType",
+    "span_text": "Access logs include accessor name, accessor role relative to the patient, date/time, and transaction type.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "ProviderDesignation",
+    "span_text": "Important resources include patient accounts, credentials, demographic information, medical records, diagnostic information, office visits, access logs, provider designations, personal-representative relationships, and authenticated sessions.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "ProviderDesignation__patient",
+    "span_text": "for that patient",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "ProviderDesignation__lhcp",
+    "span_text": "A patient can designate or undesignate any LHCP as a DLHCP for that patient.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "PersonalRepresentativeRelationship",
+    "span_text": "Important resources include patient accounts, credentials, demographic information, medical records, diagnostic information, office visits, access logs, provider designations, personal-representative relationships, and authenticated sessions.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "PersonalRepresentativeRelationship__patient",
+    "span_text": "for a selected patient",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "PersonalRepresentativeRelationship__representative",
+    "span_text": "An HCP can add or remove another registered user as a personal health representative for a selected patient.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "DemographicInformation",
+    "span_text": "UAP can enter and edit demographic information, diagnosis, office visit notes, and other medical information, and can view records.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "DemographicInformation__patient",
+    "span_text": "The HCP can enter a patient as a new user and can edit the patient according to the patient data format, but the patient MID cannot be edited.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "login",
+    "span_text": "A user authenticates with MID and password.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "logout",
+    "span_text": "Authenticated sessions terminate after inactivity, logout, or closing the application.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "createPatient",
+    "span_text": "An HCP can create or disable a selected patient.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "disablePatient",
+    "span_text": "An HCP can create or disable a selected patient.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "reactivatePatient",
+    "span_text": "A deactivated patient cannot be modified or log into the system and can only be reactivated by an administrator.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "editPatient",
+    "span_text": "The HCP can enter a patient as a new user and can edit the patient according to the patient data format, but the patient MID cannot be edited.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "viewCredential",
+    "span_text": "The HCP must not enter, edit, or view the patient's security question or password.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "createLHCP",
+    "span_text": "An administrator can create LHCPs, emergency responders, lab technicians, and public health agents.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "createEmergencyResponder",
+    "span_text": "An administrator can create LHCPs, emergency responders, lab technicians, and public health agents.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "createLabTechnician",
+    "span_text": "An administrator can create LHCPs, emergency responders, lab technicians, and public health agents.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "createPublicHealthAgent",
+    "span_text": "An administrator can create LHCPs, emergency responders, lab technicians, and public health agents.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "createUAP",
+    "span_text": "A LHCP can create UAP users.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "assignCredentials",
+    "span_text": "An administrator can assign medical identification numbers and passwords to LHCPs.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "assignHospital",
+    "span_text": "An administrator can assign an LHCP to multiple hospitals, choosing only hospitals from the hospital list.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "setInactivityPeriod",
+    "span_text": "The administrator can set the inactivity period length.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "requestPasswordChange",
+    "span_text": "The user may request a password change.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "viewLhcps",
+    "span_text": "A patient can view all LHCPs the patient has ever had an office visit with and all LHCPs the patient has designated.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "addProvider",
+    "span_text": "A patient can add a LHCP to the patient provider list.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "designateLHCP",
+    "span_text": "A patient can designate or undesignate any LHCP as a DLHCP for that patient.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "undesignateLHCP",
+    "span_text": "A patient can designate or undesignate any LHCP as a DLHCP for that patient.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "viewAccessLog",
+    "span_text": "A patient can view their own access log, or the access log for a person for whom they are a personal representative.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "viewMedicalRecord",
+    "span_text": "A patient or personal representative can view medical records, family history, personal health information, immunizations, and office-visit information for their own records and for patients they represent.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "viewDiagnosticInformation",
+    "span_text": "Approved diagnostic information is diagnostic information that a patient allows a designated or other licensed health-care professional to view.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "restrictDiagnosticInformation",
+    "span_text": "A patient can restrict viewing on selected diagnostic information.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "determineDiagnosisRestrictionAllowed",
+    "span_text": "A licensed health-care professional determines whether the patient is allowed to restrict viewing of a diagnosis.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "viewPersonalHealthInformation",
+    "span_text": "A patient or personal representative can view medical records, family history, personal health information, immunizations, and office-visit information for their own records and for patients they represent.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "viewFamilyHistory",
+    "span_text": "A patient or personal representative can view medical records, family history, personal health information, immunizations, and office-visit information for their own records and for patients they represent.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "viewImmunization",
+    "span_text": "A patient or personal representative can view medical records, family history, personal health information, immunizations, and office-visit information for their own records and for patients they represent.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "viewOfficeVisit",
+    "span_text": "A patient or personal representative can view medical records, family history, personal health information, immunizations, and office-visit information for their own records and for patients they represent.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "takeOfficeVisitSurvey",
+    "span_text": "If a patient or personal representative has not taken an office-visit satisfaction survey, they may take the survey; after the survey has been taken, they cannot take or view the previously submitted survey through that path.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "editPersonalHealthInformation",
+    "span_text": "An HCP can enter and edit a patient's personal health records.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "editImmunization",
+    "span_text": "An HCP can edit historical values, immunizations, office-visit information, family history, BMI, and death status for a selected patient.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "editFamilyHistory",
+    "span_text": "An HCP can edit historical values, immunizations, office-visit information, family history, BMI, and death status for a selected patient.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "documentOfficeVisit",
+    "span_text": "An HCP can document and edit office visits for a selected patient, including date, hospital, notes, prescriptions, lab procedures, diagnoses, procedures, immunizations, and referrals.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "editOfficeVisit",
+    "span_text": "An HCP can document and edit office visits for a selected patient, including date, hospital, notes, prescriptions, lab procedures, diagnoses, procedures, immunizations, and referrals.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "addPersonalRepresentative",
+    "span_text": "An HCP can add or remove another registered user as a personal health representative for a selected patient.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "removePersonalRepresentative",
+    "span_text": "An HCP can add or remove another registered user as a personal health representative for a selected patient.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "enterDemographicInformation",
+    "span_text": "UAP can enter and edit demographic information, diagnosis, office visit notes, and other medical information, and can view records.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "editDemographicInformation",
+    "span_text": "UAP can enter and edit demographic information, diagnosis, office visit notes, and other medical information, and can view records.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  }
+]

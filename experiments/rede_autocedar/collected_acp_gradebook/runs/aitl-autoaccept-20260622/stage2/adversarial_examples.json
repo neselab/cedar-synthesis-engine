@@ -1,0 +1,57 @@
+{
+  "students_receive_external_grades_floor": [],
+  "students_not_assign_external_grades": [
+    {
+      "description": "A user who has the Student role attempts to assign an external grade. Even if they have some other role, the student-specific prohibition should exclude this request from permitted assignExternalGrade cases.",
+      "request_dict": {},
+      "decision_under_chosen": "deny",
+      "decisions_under_alternatives": {},
+      "diagnostic_for": [
+        "student role must be excluded from external-grade assignment"
+      ]
+    }
+  ],
+  "external_grade_receivers_not_assign_external_grades": [],
+  "faculty_assign_internal_grades_floor": [],
+  "faculty_assign_external_grades_floor": [
+    {
+      "description": "A user who is Faculty only should be allowed to assign an external grade; a deny-only policy or a policy that forgets the faculty external-grade assignment success path would fail this floor.",
+      "request_dict": {},
+      "decision_under_chosen": "permit",
+      "decisions_under_alternatives": {},
+      "diagnostic_for": [
+        "missing faculty assign external grades permission"
+      ]
+    }
+  ],
+  "faculty_view_internal_grades_floor": [],
+  "faculty_view_external_grades_floor": [],
+  "tas_assign_internal_grades_floor": [],
+  "tas_view_internal_grades_floor": [],
+  "tas_not_assign_external_grades": [
+    {
+      "description": "A user who has both TeachingAssistant and Faculty roles attempts to assign an external grade. Under the repaired reading, the TA restriction applies to all TA-role principals, so the overlap case must not be permitted unless a separately reviewed precedence rule says otherwise.",
+      "request_dict": {},
+      "decision_under_chosen": "deny",
+      "decisions_under_alternatives": {},
+      "diagnostic_for": [
+        "TeachingAssistant role must be excluded from external-grade assignment, including Faculty+TeachingAssistant overlap"
+      ]
+    }
+  ],
+  "tas_not_view_external_grades": [],
+  "faculty_family_receive_external_grades_floor": [],
+  "students_not_assign_internal_grades": [
+    {
+      "description": "A user who is both a Student and a TeachingAssistant attempts to assign an internal grade. The TeachingAssistant floor would otherwise permit this, but the student prohibition on assigning grades should exclude it.",
+      "request_dict": {},
+      "decision_under_chosen": "deny",
+      "decisions_under_alternatives": {},
+      "diagnostic_for": [
+        "student-role-overlap",
+        "assign-grades-prohibition"
+      ]
+    }
+  ],
+  "nonfaculty_enroll_in_courses_floor": []
+}

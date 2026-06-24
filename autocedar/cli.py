@@ -30,7 +30,7 @@ from autocedar.env import (
 from autocedar.harness_adapter import make_harness_synthesizer
 from autocedar.llm import DEFAULT_EFFORT, LLMClient, default_model_for_provider, default_provider
 from autocedar.pipeline import author as author_pipeline
-from autocedar.property_atomizer import propose_property_atoms
+from autocedar.property_atomizer import propose_property_atom
 from autocedar.schema_atomizer import propose_schema_atoms
 from autocedar.ui.terminal import auto_approve, interactive_review_loop
 
@@ -319,8 +319,15 @@ def _cmd_author(args: argparse.Namespace) -> int:
     def schema_proposer(text: str):
         return propose_schema_atoms(text, llm)
 
-    def property_proposer(text: str, schema_path: str):
-        return propose_property_atoms(text, schema_path, llm)
+    def property_proposer(text: str, schema_path: str, prior_atoms, prior_decisions):
+        return propose_property_atom(text, schema_path, llm, prior_atoms, prior_decisions)
+
+    def schema_repairer(text: str, rejected_atom, reason: str, prior_atoms):
+        _ = prior_atoms
+        return llm.propose_alternative_atom(rejected_atom, reason, text)
+
+    def schema_fixer(schema_text: str, cedar_error: str, text: str) -> str:
+        return llm.fix_schema(schema_text, cedar_error, text)
 
     def property_repairer(
         text: str,
@@ -338,6 +345,15 @@ def _cmd_author(args: argparse.Namespace) -> int:
             prior_atoms,
         )
 
+    def property_critic(text: str, schema_path: str, atom, prior_atoms, prior_decisions):
+        return llm.critique_property_atom(
+            text,
+            Path(schema_path).read_text(),
+            atom,
+            prior_atoms=prior_atoms,
+            prior_decisions=prior_decisions,
+        )
+
     def reviewer(atom):
         if args.auto_approve:
             return auto_approve(atom)
@@ -348,16 +364,16 @@ def _cmd_author(args: argparse.Namespace) -> int:
         )
         return reviewed[0]
 
-    author_kwargs = {}
-    if args.schema is None:
-        author_kwargs["propose_schema_atoms"] = schema_proposer
-
     result = author_pipeline(
         spec_path=spec_path,
         output_dir=Path(args.out),
         session_id=args.session_id,
         review_atom=reviewer,
-        propose_property_atoms=property_proposer,
+        propose_schema_atoms=schema_proposer,
+        propose_property_atom=property_proposer,
+        repair_schema_atom=schema_repairer,
+        fix_schema=schema_fixer,
+        critique_property_atom=property_critic,
         repair_property_atom=property_repairer,
         synthesize=make_harness_synthesizer(
             phase1_model=args.model,
@@ -365,7 +381,6 @@ def _cmd_author(args: argparse.Namespace) -> int:
             no_review=True,
         ),
         schema_path_override=args.schema,
-        **author_kwargs,
     )
 
     print(f"session:   {result.session_dir}")

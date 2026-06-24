@@ -1,0 +1,721 @@
+[
+  {
+    "name": "students_receive_external_grades_floor",
+    "rationale": "The specification explicitly states a successful access path for students receiving external grades, so a floor is needed to prevent a synthesized policy from omitting this required permission.",
+    "plain_english_summary": "Students must be permitted to receive external grades.",
+    "source_excerpt": "Students receive external grades; Requests for students to Receive ExternalGrades ... will succeed.",
+    "constraint_type": "floor",
+    "action": "receiveExternalGrade",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "ExternalGrade"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"receiveExternalGrade\", resource) when { principal in Student };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": false,
+    "symbolic_verification_log": [
+      "type-correct: FAILED (cedar validate rc=1: \u00d7 failed to parse policy set\n  \u2570\u2500\u25b6 invalid variable: Student\n   \u256d\u2500\u2500\u2500\u2500\n 1 \u2502 permit (principal, action == Action::\"receiveExternalGrade\", resource) when { principal in Student };\n   \u00b7                                                                                            \u2500\u2500\u2500\u2500\u2500\u2500\u2500\n   \u2570\u2500\u2500\u2500\u2500\n  help: th)",
+      "satisfiable: FAILED (Cedar symcc setup error: Cedar symcc exited before producing a formal verification result. This is a verifier/tooling failure, not a policy counterexample. Check the Cedar and CVC5 installations, then rerun `uv run autocedar doctor`. Raw cedar output: Analysis failed: \u00d7 failed to parse policy set \u2570\u2500\u25b6 invalid variable: Student \u256d\u2500\u2500\u2500\u2500 1 \u2502 permit (principal, action == Action::\"receiveExternalGrade\", resource) when { principal in Student }; \u00b7 \u2500\u2500\u2500\u2500\u2500\u2500\u2500 \u2570\u2500\u2500\u2500\u2500 help: the valid Cedar variables are `principal`, `action`, `resource`, and `context`; did you mean to enclose `Student` in quotes to make a string?)",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": false,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "students_not_assign_external_grades_disjointness",
+    "rationale": "The specification explicitly forbids students from assigning external grades. This safety property prevents a candidate policy from permitting assignExternalGrade requests where the user is a member of Student, even if other roles might otherwise grant assignment permissions.",
+    "plain_english_summary": "Students must not be permitted to assign external grades.",
+    "source_excerpt": "Students receive external grades but must not assign external grades; There do not exist members of Student who can Assign ExternalGrades.",
+    "constraint_type": "disjointness",
+    "action": "assignExternalGrade",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "ExternalGrade"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"assignExternalGrade\", resource) when { !(principal in Student::\"Student\") && resource is ExternalGrade };",
+    "examples_adversarial": [
+      {
+        "description": "A user who is a Student attempts to assign an external grade. Even if another role or broad policy would allow assignment, this student-membership case should be excluded.",
+        "request_dict": {},
+        "decision_under_chosen": "deny",
+        "decisions_under_alternatives": {},
+        "diagnostic_for": [
+          "student external-grade assignment prohibition"
+        ]
+      }
+    ],
+    "alternatives_considered": [],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "sugar-universal: ok (syntactic disjointness sanity check ok)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": "students_assigning_external_grades",
+    "disjoint_target_body": "principal in Student::\"Student\""
+  },
+  {
+    "name": "faculty_assign_internal_grades_floor",
+    "rationale": "The specification explicitly states that faculty members can assign internal grades and that such requests will succeed. A floor is required so synthesis cannot satisfy the specification with only denials or unrelated permissions.",
+    "plain_english_summary": "Faculty members must be permitted to assign internal grades.",
+    "source_excerpt": "Faculty members can assign internal grades and external grades; Requests for ... faculty to Assign ... InternalGrades ... will succeed.",
+    "constraint_type": "floor",
+    "action": "assignInternalGrade",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "InternalGrade"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"assignInternalGrade\", resource) when { principal in Faculty::\"Faculty\" && resource is InternalGrade };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "faculty_assign_external_grades_floor",
+    "rationale": "The specification explicitly requires successful faculty assignment of external grades. Because already-approved safety properties forbid students from assigning external grades, and the spec also forbids any combination of roles that both receives and assigns external grades, this floor is scoped to faculty users who are not also in receiving-only roles exposed by the schema.",
+    "plain_english_summary": "Faculty members who are not students or Faculty Family members must be permitted to assign external grades.",
+    "source_excerpt": "Faculty members can assign internal grades and external grades; Requests for ... faculty to Assign ... ExternalGrades ... will succeed.",
+    "constraint_type": "floor",
+    "action": "assignExternalGrade",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "ExternalGrade"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"assignExternalGrade\", resource) when { principal in Faculty::\"Faculty\" && !(principal in Student::\"Student\") && !(principal in FacultyFamily::\"FacultyFamily\") && resource is ExternalGrade };",
+    "examples_adversarial": [
+      {
+        "description": "A user who is both Faculty and Student requests to assign an external grade. A broad faculty-only floor would require permitting this, conflicting with the approved student external-grade assignment prohibition.",
+        "request_dict": {},
+        "decision_under_chosen": "deny",
+        "decisions_under_alternatives": {},
+        "diagnostic_for": [
+          "faculty_assign_external_grades_floor",
+          "students_not_assign_external_grades_disjointness"
+        ]
+      }
+    ],
+    "alternatives_considered": [
+      {
+        "label": "broad_faculty_external_assignment",
+        "interpretive_choice": "Permit every faculty member to assign external grades without accounting for overlapping Student or FacultyFamily membership.",
+        "cedar_text": "permit (principal, action == Action::\"assignExternalGrade\", resource) when { principal in Faculty::\"Faculty\" && resource is ExternalGrade };"
+      }
+    ],
+    "symbolic_verified": false,
+    "symbolic_verification_log": [],
+    "intent_acknowledged_by_user": false,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "faculty_only_non_conflicting_assign_external_grades_floor",
+    "rationale": "The specification explicitly requires faculty assignment of external grades to succeed, but already-approved and source-stated safety boundaries forbid external-grade assignment by Students and TeachingAssistants, and the receive/assign separation also conflicts with FacultyFamily external-grade receivers. This repaired floor scopes the required successful faculty case to faculty users who are not in any schema role named by those conflicting external-grade assignment or receive boundaries.",
+    "plain_english_summary": "Faculty members who are not students, teaching assistants, or Faculty Family members must be permitted to assign external grades.",
+    "source_excerpt": "Faculty members can assign internal grades and external grades; Requests for ... faculty to Assign ... ExternalGrades ... will succeed; Teaching assistants must not ... assign external grades; Faculty Family can receive External-Grades.",
+    "constraint_type": "floor",
+    "action": "assignExternalGrade",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "ExternalGrade"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"assignExternalGrade\", resource) when { principal in Faculty::\"Faculty\" && !(principal in Student::\"Student\") && !(principal in TeachingAssistant::\"TeachingAssistant\") && !(principal in FacultyFamily::\"FacultyFamily\") && resource is ExternalGrade };",
+    "examples_adversarial": [
+      {
+        "description": "A user who is both Faculty and TeachingAssistant requests to assign an external grade. A faculty-only floor would require permitting this, conflicting with the source statement that teaching assistants must not assign external grades.",
+        "request_dict": {},
+        "decision_under_chosen": "deny",
+        "decisions_under_alternatives": {},
+        "diagnostic_for": [
+          "faculty_only_non_conflicting_assign_external_grades_floor",
+          "teaching_assistants_not_assign_external_grades"
+        ]
+      },
+      {
+        "description": "A user who is both Faculty and Student requests to assign an external grade. A broad faculty-only floor would require permitting this, conflicting with the approved student external-grade assignment prohibition.",
+        "request_dict": {},
+        "decision_under_chosen": "deny",
+        "decisions_under_alternatives": {},
+        "diagnostic_for": [
+          "faculty_only_non_conflicting_assign_external_grades_floor",
+          "students_not_assign_external_grades_disjointness"
+        ]
+      }
+    ],
+    "alternatives_considered": [
+      {
+        "label": "broad_faculty_external_assignment",
+        "interpretive_choice": "Permit every faculty member to assign external grades without accounting for overlapping Student, TeachingAssistant, or FacultyFamily membership.",
+        "cedar_text": "permit (principal, action == Action::\"assignExternalGrade\", resource) when { principal in Faculty::\"Faculty\" && resource is ExternalGrade };"
+      },
+      {
+        "label": "omit_teaching_assistant_exclusion",
+        "interpretive_choice": "Exclude Student and FacultyFamily role conflicts but not TeachingAssistant, leaving Faculty+TeachingAssistant principals required to be permitted despite the TA external-grade assignment prohibition.",
+        "cedar_text": "permit (principal, action == Action::\"assignExternalGrade\", resource) when { principal in Faculty::\"Faculty\" && !(principal in Student::\"Student\") && !(principal in FacultyFamily::\"FacultyFamily\") && resource is ExternalGrade };"
+      }
+    ],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "teaching_assistants_not_assign_external_grades_disjointness",
+    "rationale": "The specification explicitly forbids teaching assistants from assigning external grades. This safety boundary is not covered by the approved student-only external-grade assignment prohibition, and the approved faculty external-grade floor was intentionally scoped to exclude TeachingAssistant role overlap to remain compatible with this missing prohibition.",
+    "plain_english_summary": "Teaching assistants must not be permitted to assign external grades.",
+    "source_excerpt": "Teaching assistants can view and assign internal grades, but teaching assistants must not view or assign external grades.",
+    "constraint_type": "disjointness",
+    "action": "assignExternalGrade",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "ExternalGrade"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"assignExternalGrade\", resource) when { !(principal in TeachingAssistant::\"TeachingAssistant\") && resource is ExternalGrade };",
+    "examples_adversarial": [
+      {
+        "description": "A user who is both Faculty and TeachingAssistant attempts to assign an external grade; the TA prohibition should exclude this request even though faculty may assign external grades in non-conflicting cases.",
+        "request_dict": {},
+        "decision_under_chosen": "deny",
+        "decisions_under_alternatives": {},
+        "diagnostic_for": [
+          "role-overlap",
+          "teaching-assistant-external-grade-prohibition"
+        ]
+      }
+    ],
+    "alternatives_considered": [
+      {
+        "label": "faculty_only_floor_exclusion_only",
+        "interpretive_choice": "Rely only on excluding TeachingAssistant from the faculty external-grade assignment floor, without adding a separate safety property forbidding TAs from assigning external grades.",
+        "cedar_text": "permit (principal, action == Action::\"assignExternalGrade\", resource) when { principal in Faculty::\"Faculty\" && !(principal in TeachingAssistant::\"TeachingAssistant\") && resource is ExternalGrade };"
+      }
+    ],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "sugar-universal: ok (syntactic disjointness sanity check ok)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": "TeachingAssistant",
+    "disjoint_target_body": "principal in TeachingAssistant::\"TeachingAssistant\""
+  },
+  {
+    "name": "faculty_family_not_assign_external_grades_disjointness",
+    "rationale": "The spec permits Faculty Family members to receive external grades and separately states that no user should be able to both receive and assign external grades through any combination of roles. Since Faculty Family is an explicit receiving role, assignment of external grades by Faculty Family members must be excluded to preserve that disjointness.",
+    "plain_english_summary": "Faculty Family members must not be permitted to assign external grades.",
+    "source_excerpt": "No user should be able to both receive and assign external grades through any combination of roles; Members of the Faculty Family role can receive external grades.",
+    "constraint_type": "disjointness",
+    "action": "assignExternalGrade",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "ExternalGrade"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"assignExternalGrade\", resource) when { !(principal in FacultyFamily::\"FacultyFamily\") && resource is ExternalGrade };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "sugar-universal: ok (syntactic disjointness sanity check ok)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": "receiveExternalGrade",
+    "disjoint_target_body": "principal in FacultyFamily::\"FacultyFamily\""
+  },
+  {
+    "name": "faculty_view_internal_grades_floor",
+    "rationale": "The specification explicitly states that faculty requests to view internal grades will succeed. This positive workflow is not covered by the existing approved atoms, which only include faculty assignment of internal grades and external-grade assignment constraints.",
+    "plain_english_summary": "Faculty members must be permitted to view internal grades.",
+    "source_excerpt": "Faculty members can view internal grades and external grades; Requests for ... faculty to ... View ... InternalGrades ... will succeed.",
+    "constraint_type": "floor",
+    "action": "viewInternalGrade",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "InternalGrade"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"viewInternalGrade\", resource) when { principal in Faculty::\"Faculty\" && resource is InternalGrade };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "faculty_non_ta_view_external_grades_floor",
+    "rationale": "The spec explicitly requires successful requests for faculty to view external grades. Because the same spec also says teaching assistants must not view external grades, the floor must exclude principals who are also TeachingAssistant to avoid requiring permission for a role-overlap case that is safety-forbidden.",
+    "plain_english_summary": "Faculty members who are not teaching assistants must be permitted to view external grades.",
+    "source_excerpt": "Faculty members can view internal grades and external grades; Requests for ... faculty to ... View ... ExternalGrades ... will succeed; Teaching assistants must not view ... external grades.",
+    "constraint_type": "floor",
+    "action": "viewExternalGrade",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "ExternalGrade"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"viewExternalGrade\", resource) when { principal in Faculty::\"Faculty\" && !(principal in TeachingAssistant::\"TeachingAssistant\") && resource is ExternalGrade };",
+    "examples_adversarial": [],
+    "alternatives_considered": [
+      {
+        "label": "broad_faculty_view_external_floor",
+        "interpretive_choice": "Permit every faculty member to view external grades, including users who are also teaching assistants.",
+        "cedar_text": "permit (principal, action == Action::\"viewExternalGrade\", resource) when { principal in Faculty::\"Faculty\" && resource is ExternalGrade };"
+      }
+    ],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "teaching_assistants_not_view_external_grades_disjointness",
+    "rationale": "The specification explicitly forbids teaching assistants from viewing external grades. Existing approved atoms include a floor for faculty who are not TAs to view external grades, but there is not yet a same-action safety atom preventing TA users from being permitted to view external grades through another role combination.",
+    "plain_english_summary": "Teaching assistants must not be permitted to view external grades.",
+    "source_excerpt": "Teaching assistants can view and assign internal grades, but teaching assistants must not view or assign external grades.",
+    "constraint_type": "disjointness",
+    "action": "viewExternalGrade",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "ExternalGrade"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"viewExternalGrade\", resource) when { !(principal in TeachingAssistant::\"TeachingAssistant\") && resource is ExternalGrade };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "sugar-universal: ok (syntactic disjointness sanity check ok)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": "viewExternalGrade",
+    "disjoint_target_body": "principal in TeachingAssistant::\"TeachingAssistant\""
+  },
+  {
+    "name": "teaching_assistants_view_internal_grades_floor",
+    "rationale": "The spec explicitly states that teaching assistants can view internal grades. Existing atoms include the TA prohibition for viewing external grades, but no floor yet ensures the intended successful TA internal-grade viewing workflow is permitted.",
+    "plain_english_summary": "Teaching assistants must be permitted to view internal grades.",
+    "source_excerpt": "Teaching assistants can view and assign InternalGrades but not ExternalGrades.",
+    "constraint_type": "floor",
+    "action": "viewInternalGrade",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "InternalGrade"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"viewInternalGrade\", resource) when { principal in TeachingAssistant::\"TeachingAssistant\" && resource is InternalGrade };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "teaching_assistants_assign_internal_grades_floor",
+    "rationale": "The specification explicitly grants teaching assistants the ability to assign internal grades. Existing approved atoms cover TA viewing internal grades and TA prohibitions on external grades, but they do not yet require successful TA assignment of internal grades.",
+    "plain_english_summary": "Teaching assistants must be permitted to assign internal grades.",
+    "source_excerpt": "Teaching assistants can view and assign InternalGrades but not ExternalGrades.",
+    "constraint_type": "floor",
+    "action": "assignInternalGrade",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "InternalGrade"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"assignInternalGrade\", resource) when { principal in TeachingAssistant::\"TeachingAssistant\" && resource is InternalGrade };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": false,
+    "symbolic_verification_log": [],
+    "intent_acknowledged_by_user": false,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "teaching_assistants_non_student_assign_internal_grades_floor",
+    "rationale": "The specification explicitly grants teaching assistants the ability to assign internal grades, but it also states that if the subject is a student, that subject must not assign grades. Because the schema allows User membership in both TeachingAssistant and Student, this floor is scoped to TeachingAssistant users who are not Students so it does not require permitting a Student+TeachingAssistant role-overlap case that falls within the student no-assign-grades boundary.",
+    "plain_english_summary": "Teaching assistants who are not students must be permitted to assign internal grades.",
+    "source_excerpt": "Teaching assistants can view and assign InternalGrades but not ExternalGrades; If the subject is a student, that subject must not assign grades.",
+    "constraint_type": "floor",
+    "action": "assignInternalGrade",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "InternalGrade"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"assignInternalGrade\", resource) when { principal in TeachingAssistant::\"TeachingAssistant\" && !(principal in Student::\"Student\") && resource is InternalGrade };",
+    "examples_adversarial": [
+      {
+        "description": "A user who is both TeachingAssistant and Student attempts to assign an internal grade. A broad TA floor would require permitting this request, conflicting with the source statement that students must not assign grades.",
+        "request_dict": {},
+        "decision_under_chosen": "deny",
+        "decisions_under_alternatives": {},
+        "diagnostic_for": [
+          "role-overlap",
+          "student-no-assign-grades-boundary",
+          "teaching-assistant-internal-grade-assignment-floor"
+        ]
+      }
+    ],
+    "alternatives_considered": [
+      {
+        "label": "broad_teaching_assistant_internal_assignment",
+        "interpretive_choice": "Permit every teaching assistant to assign internal grades without accounting for overlapping Student membership.",
+        "cedar_text": "permit (principal, action == Action::\"assignInternalGrade\", resource) when { principal in TeachingAssistant::\"TeachingAssistant\" && resource is InternalGrade };"
+      }
+    ],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "faculty_family_receive_external_grades_floor",
+    "rationale": "The specification explicitly states that members of the Faculty Family role can receive external grades. Existing atoms include a safety property preventing Faculty Family members from assigning external grades, but no floor yet requires their receiveExternalGrade requests to succeed.",
+    "plain_english_summary": "Faculty Family members must be permitted to receive external grades.",
+    "source_excerpt": "Members of the Faculty Family role can receive external grades; All members of role Faculty Family can receive External-Grades.",
+    "constraint_type": "floor",
+    "action": "receiveExternalGrade",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "ExternalGrade"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"receiveExternalGrade\", resource) when { principal in FacultyFamily::\"FacultyFamily\" && resource is ExternalGrade };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "external_grades_assigned_only_by_faculty_ceiling",
+    "rationale": "The approved floors require a non-conflicting faculty member to be able to assign external grades, and the approved disjointness atoms exclude students, teaching assistants, and Faculty Family members. A remaining safety boundary is that external-grade assignment is tied to faculty responsibility; without this ceiling, a user in none of the forbidden roles and not in Faculty could still be permitted to assign external grades, contrary to the faculty-responsibility wording.",
+    "plain_english_summary": "Only faculty members may be permitted to assign external grades.",
+    "source_excerpt": "Faculty members can assign internal grades and external grades; Faculty members take final responsibility for external grades; If a subject is a faculty member, that subject may assign grades.",
+    "constraint_type": "ceiling",
+    "action": "assignExternalGrade",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "ExternalGrade"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"assignExternalGrade\", resource) when { principal in Faculty::\"Faculty\" && resource is ExternalGrade };",
+    "examples_adversarial": [
+      {
+        "description": "A user who is not a faculty member, student, teaching assistant, or Faculty Family member attempts to assign an external grade. The role-specific prohibitions do not catch this user, so this ceiling tests the faculty-only boundary.",
+        "request_dict": {},
+        "decision_under_chosen": "deny",
+        "decisions_under_alternatives": {},
+        "diagnostic_for": [
+          "non-faculty-external-grade-assignment",
+          "faculty-responsibility-boundary"
+        ]
+      }
+    ],
+    "alternatives_considered": [
+      {
+        "label": "only_exclude_student_ta_faculty_family",
+        "interpretive_choice": "Rely only on the already-approved disjointness atoms for students, teaching assistants, and Faculty Family members. This would leave unclassified non-faculty users able to assign external grades, which misses the faculty-responsibility boundary.",
+        "cedar_text": "permit (principal, action == Action::\"assignExternalGrade\", resource) when { !(principal in Student::\"Student\") && !(principal in TeachingAssistant::\"TeachingAssistant\") && !(principal in FacultyFamily::\"FacultyFamily\") && resource is ExternalGrade };"
+      }
+    ],
+    "symbolic_verified": false,
+    "symbolic_verification_log": [],
+    "intent_acknowledged_by_user": false,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "students_not_assign_internal_grades_disjointness",
+    "rationale": "The approved atoms prohibit students from assigning external grades, but the spec also states a broader grade-assignment prohibition for students. Because the schema has a separate assignInternalGrade action and role overlap is possible, a candidate policy could still permit a Student user to assign internal grades unless this safety boundary is captured.",
+    "plain_english_summary": "Students must not be permitted to assign internal grades.",
+    "source_excerpt": "If the subject is a student, that subject must not assign grades.",
+    "constraint_type": "disjointness",
+    "action": "assignInternalGrade",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "InternalGrade"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"assignInternalGrade\", resource) when { !(principal in Student::\"Student\") && resource is InternalGrade };",
+    "examples_adversarial": [
+      {
+        "description": "A user who is both a Student and a TeachingAssistant attempts to assign an internal grade. The TA floor permits only non-student TAs, and this disjointness ensures the student no-assign-grades rule is not bypassed through role overlap.",
+        "request_dict": {},
+        "decision_under_chosen": "deny",
+        "decisions_under_alternatives": {},
+        "diagnostic_for": [
+          "role-overlap",
+          "student-grade-assignment-prohibition",
+          "assignInternalGrade"
+        ]
+      }
+    ],
+    "alternatives_considered": [
+      {
+        "label": "omit_internal_grade_student_boundary",
+        "interpretive_choice": "Rely only on the already-approved external-grade student prohibition. This would miss the separate sentence forbidding students from assigning grades generally and would leave assignInternalGrade uncovered.",
+        "cedar_text": ""
+      },
+      {
+        "label": "student_not_assign_any_grade_single_policy",
+        "interpretive_choice": "Use one atom to cover both internal and external grade assignment. This would bundle multiple schema actions into one HITL review unit, so the internal-grade action is proposed separately.",
+        "cedar_text": "permit (principal, action, resource) when { !(principal in Student::\"Student\") && (action == Action::\"assignInternalGrade\" || action == Action::\"assignExternalGrade\") };"
+      }
+    ],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "sugar-universal: ok (syntactic disjointness sanity check ok)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": "students assigning grades",
+    "disjoint_target_body": "principal in Student::\"Student\""
+  },
+  {
+    "name": "external_grade_assigning_faculty_not_receive_external_grades_disjointness",
+    "rationale": "The specification explicitly forbids any user from both receiving and assigning external grades through role combinations. Existing floors require non-conflicting faculty to assign external grades, while students and Faculty Family members may receive them. To avoid conflicting with those receive floors, this disjointness targets faculty users who are not in the receiving roles and not teaching assistants, matching the approved assignExternalGrade floor's assign-capable faculty scope.",
+    "plain_english_summary": "Faculty users who are in the assign-capable external-grade role combination must not be permitted to receive external grades.",
+    "source_excerpt": "No user should be able to both receive and assign external grades through any combination of roles.",
+    "constraint_type": "disjointness",
+    "action": "receiveExternalGrade",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "ExternalGrade"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"receiveExternalGrade\", resource) when { !(principal in Faculty::\"Faculty\" && !(principal in Student::\"Student\") && !(principal in TeachingAssistant::\"TeachingAssistant\") && !(principal in FacultyFamily::\"FacultyFamily\")) && resource is ExternalGrade };",
+    "examples_adversarial": [],
+    "alternatives_considered": [
+      {
+        "label": "deny_all_faculty_receive_external_grades",
+        "interpretive_choice": "A broader faculty receive prohibition would better prevent faculty from receiving external grades, but it would conflict with already-approved floors for principals who are both Faculty and Student or both Faculty and FacultyFamily.",
+        "cedar_text": "permit (principal, action == Action::\"receiveExternalGrade\", resource) when { !(principal in Faculty::\"Faculty\") && resource is ExternalGrade };"
+      }
+    ],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "sugar-universal: ok (syntactic disjointness sanity check ok)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": "assignExternalGrade",
+    "disjoint_target_body": "principal in Faculty::\"Faculty\" && !(principal in Student::\"Student\") && !(principal in TeachingAssistant::\"TeachingAssistant\") && !(principal in FacultyFamily::\"FacultyFamily\")"
+  },
+  {
+    "name": "non_faculty_enroll_in_courses_floor",
+    "rationale": "The specification explicitly grants course enrollment to subjects who are not faculty members. No approved atom currently covers enrollInCourse, so a policy could otherwise omit all enrollment permissions while satisfying the grade-related atoms.",
+    "plain_english_summary": "Users who are not faculty members must be permitted to enroll in courses.",
+    "source_excerpt": "If a subject is not a faculty member, then permit that subject to enroll in courses.",
+    "constraint_type": "floor",
+    "action": "enrollInCourse",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "Course"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"enrollInCourse\", resource) when { !(principal in Faculty::\"Faculty\") && resource is Course };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "faculty_not_enroll_in_courses_disjointness",
+    "rationale": "The approved non-faculty enrollment floor covers the positive workflow, but the selected NLACP labels also include a negative faculty-enrollment constraint. Because role membership can overlap and the schema exposes Faculty membership, the enrollment permission boundary should explicitly prevent faculty users from being permitted to enroll in courses.",
+    "plain_english_summary": "Faculty members must not be permitted to enroll in courses.",
+    "source_excerpt": "If a subject is not a faculty member, then permit that subject to enroll in courses; faculty;enroll;course;NEG-not - C.",
+    "constraint_type": "disjointness",
+    "action": "enrollInCourse",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "Course"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"enrollInCourse\", resource) when { !(principal in Faculty::\"Faculty\") && resource is Course };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": false,
+    "symbolic_verification_log": [],
+    "intent_acknowledged_by_user": false,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": "non_faculty_enroll_in_courses_floor",
+    "disjoint_target_body": "principal in Faculty::\"Faculty\""
+  }
+]

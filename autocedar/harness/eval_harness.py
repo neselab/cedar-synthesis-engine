@@ -20,7 +20,7 @@ Usage:
     python eval_harness.py --scenario experiments/github --gen-references
 
     # Multiple scenarios with a specific model
-    python eval_harness.py --scenario experiments/github workspace --model claude-sonnet-4-20250514
+    python eval_harness.py --scenario experiments/github workspace --model gpt-5.5
 
     # All discovered scenarios
     python eval_harness.py --all --max-iters 20
@@ -29,7 +29,7 @@ Usage:
     python eval_harness.py --scenario experiments/github --no-review
 
     # Compare models (automated)
-    python eval_harness.py --all --no-review --model claude-sonnet-4-20250514 claude-haiku-4-5-20251001
+    python eval_harness.py --all --no-review --model gpt-5.5
 """
 from __future__ import annotations
 
@@ -43,32 +43,53 @@ import sys
 import time
 from dataclasses import dataclass, asdict
 from datetime import datetime, timezone
+from typing import Any
 
 from anthropic import Anthropic
 
+from autocedar.codex_auth import CodexAuthClient, is_codex_provider
 from autocedar.harness.orchestrator import load_checks, run_verification
 from autocedar.harness.solver_wrapper import (
     CheckResult,
     VerificationResult,
     run_syntax_check,
 )
+from autocedar.llm import default_model_for_provider, default_provider
 
 # In the packaged harness, default run/discovery paths are relative to the
 # caller's project directory instead of the installed package directory.
 ROOT_DIR = os.path.abspath(os.environ.get("AUTOCEDAR_ROOT", os.getcwd()))
 EVAL_RUNS_DIR = os.path.join(ROOT_DIR, "eval_runs")
 
-DEFAULT_MODEL = "claude-sonnet-4-20250514"
-DEFAULT_PHASE1_MODEL = "claude-opus-4-6"  # Phase 1 is a heavy one-shot reasoning task
+DEFAULT_MODEL = default_model_for_provider()
+DEFAULT_PHASE1_MODEL = DEFAULT_MODEL
 MAX_ITERATIONS = 20
 
 # Pricing per million tokens (USD)
 MODEL_PRICING = {
     "claude-haiku-4-5-20251001": {"input": 0.80, "output": 4.00},
-    "claude-sonnet-4-20250514": {"input": 3.00, "output": 15.00},
+    "claude-sonnet-4-6": {"input": 3.00, "output": 15.00},
     "claude-opus-4-20250514": {"input": 15.00, "output": 75.00},
     "claude-opus-4-6": {"input": 15.00, "output": 75.00},
 }
+
+
+def _make_harness_llm_client() -> Any:
+    """Return the configured provider client for Phase 1 and Stage 3.
+
+    The harness still uses an Anthropic-message-shaped interface internally
+    (``client.messages.create(...)``). ``CodexAuthClient`` intentionally
+    implements that same small shape, so the synthesis loop does not need a
+    separate Codex shim.
+    """
+    provider = default_provider()
+    if is_codex_provider(provider):
+        return CodexAuthClient()
+    if provider != "anthropic":
+        raise ValueError(
+            f"Unsupported AUTOCEDAR_PROVIDER={provider!r}; expected 'codex' or 'anthropic'.",
+        )
+    return Anthropic()
 
 
 def _estimate_cost(model: str, input_tokens: int, output_tokens: int) -> float:
@@ -233,7 +254,7 @@ def _extract_json(text: str) -> dict:
 
 
 def generate_references(
-    client: Anthropic,
+    client: Any,
     model: str,
     schema: str,
     policy_spec: str,
@@ -598,6 +619,11 @@ Rules:
 - Cedar denies by default — you only need permit and forbid rules.
 - `forbid` always overrides `permit` in Cedar.
 - Use `unless` clauses for exceptions to forbid rules.
+- Prefer auditable, explicit permit guards. If a rule is meant for a specific
+  principal or resource type, write that type condition in the policy
+  (`principal is Registrar`, `resource is Document`, etc.) even when the action
+  schema already implies it. Avoid broad-looking unconditional permits unless
+  the spec truly intends unconditional access for that action shape.
 
 Cedar quick reference:
   permit (principal, action == Action::"act", resource) when { conditions };
@@ -1433,7 +1459,7 @@ def run_scenario(
                 "from the schema alone. First line: " + first_real[:120]
             )
 
-    client = Anthropic()
+    client = _make_harness_llm_client()
 
     # ── Phase 1: Reference Generation ─────────────────────────────────────
     phase1_time = 0.0
@@ -1802,7 +1828,7 @@ def main():
         epilog="""\
 Examples:
   python eval_harness.py --scenario experiments/github --no-review
-  python eval_harness.py --scenario experiments/github --phase1-model claude-sonnet-4-20250514 --phase2-model claude-haiku-4-5-20251001 --gen-references --no-review
+  python eval_harness.py --scenario experiments/github --phase1-model gpt-5.5 --phase2-model gpt-5.5 --gen-references --no-review
   python eval_harness.py --all --gen-references --no-review --max-iters 20
   python eval_harness.py --scenario workspace --run-id my_test_run""",
     )

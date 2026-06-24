@@ -1,0 +1,1 @@
+permit (principal, action == Action::"viewMedicalRecord", resource) when { principal is PersonalRepresentative && resource is MedicalRecord && resource.includesFamilyHistory && principal in resource.patient.personalRepresentatives };

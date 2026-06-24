@@ -1,0 +1,1 @@
+permit (principal, action == Action::"assignHospital", resource) when { context.session.isActive && context.session.user == principal && context.hospital in context.hospitalList.hospitals };

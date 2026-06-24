@@ -1,0 +1,1 @@
+permit (principal, action == Action::"requestPasswordChange", resource) when { principal is User && resource is User && principal == resource };

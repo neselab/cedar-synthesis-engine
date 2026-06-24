@@ -1,0 +1,1 @@
+permit (principal is User, action == Action::"viewInternalGrade", resource is InternalGrade) when { principal.roles.contains(Role::"Faculty") };

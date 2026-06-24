@@ -1,0 +1,111 @@
+[
+  {
+    "atom_name": "students_receive_external_grades",
+    "decision": "accept",
+    "reason": "The atom captures an explicit positive requirement that student requests to receive ExternalGrades succeed. It is not merely schema typing, is not redundant with any approved atom, and the source excerpt does not name additional ownership, lifecycle, network, authentication, or conflict boundaries for this floor. The schema can represent the needed role and resource/action slice using User membership in Student and receiveExternalGrade on ExternalGrade.",
+    "tags": [
+      "useful-floor",
+      "explicit-source",
+      "tightly-scoped"
+    ]
+  },
+  {
+    "atom_name": "students_must_not_assign_external_grades",
+    "decision": "accept",
+    "reason": "The atom captures an explicit safety requirement that students must not be permitted to assign external grades. It is not implied by the approved students_receive_external_grades floor, and the validated schema directly supports the relevant boundaries: Student membership, assignExternalGrade action, and ExternalGrade resource. For this disjointness atom, the disjoint_target_body correctly names the forbidden principal slice; the action and resource are scoped by the atom fields.",
+    "tags": [
+      "safety-boundary",
+      "explicit-source",
+      "schema-supported"
+    ]
+  },
+  {
+    "atom_name": "faculty_assign_internal_grades",
+    "decision": "accept",
+    "reason": "The atom captures an explicit positive requirement that faculty requests to assign internal grades must succeed. It is not implied by the schema typing alone and is not covered by the existing student receive/forbid atoms. The action, principal role boundary, and resource grade-type boundary are all represented in the schema and are included in the proposed floor.",
+    "tags": []
+  },
+  {
+    "atom_name": "faculty_assign_external_grades",
+    "decision": "repair",
+    "reason": "The faculty external-grade assignment floor is materially useful, but the proposed non-student scope only partially accounts for the named role-combination boundary: no user should be able to both receive and assign external grades. The spec also says FacultyFamily members can receive external grades, so a faculty member who is also FacultyFamily should not be forced by this floor to assign external grades. Repair the floor to avoid all source-named receive-role overlaps, at least Student and FacultyFamily, or otherwise coordinate it with the receive/assign disjointness property.",
+    "tags": [
+      "missing-boundary",
+      "role-overlap-conflict",
+      "receive-assign-disjointness"
+    ]
+  },
+  {
+    "atom_name": "faculty_non_receivers_assign_external_grades",
+    "decision": "accept",
+    "reason": "The atom is materially useful and tightly scoped: it captures the source-required faculty external-grade assignment floor while explicitly avoiding the source-named receive-side role overlaps, Student and FacultyFamily, that would conflict with the external-grade receive/assign disjointness requirement. It is not schema-implied and is a valid repair of the previously rejected unqualified faculty external assignment floor.",
+    "tags": [
+      "useful-floor",
+      "conflict-aware",
+      "role-overlap-boundary",
+      "receive-assign-disjointness"
+    ]
+  },
+  {
+    "atom_name": "external_grade_receivers_must_not_assign",
+    "decision": "repair",
+    "reason": "The source requirement is a global receive/assign separation-of-duty rule: no user should be able to both receive and assign ExternalGrade through any role combination. This atom usefully adds FacultyFamily beyond the already-approved student assignment ban, but its forbidden slice is only the source-named receiver roles and partially duplicates the approved Student ceiling. Because the property format already has a disjoint_with hook for receiveExternalGrade, the atom should be repaired to express the action-level disjointness between receiveExternalGrade and assignExternalGrade over ExternalGrade users/resources, or otherwise make a narrowly scoped FacultyFamily-only ceiling separate from the global disjointness. Do not treat the complement permit as an affirmative grant.",
+    "tags": [
+      "missing-boundary",
+      "role-overlap-conflict",
+      "receive-assign-disjointness",
+      "partial-duplicate"
+    ]
+  },
+  {
+    "atom_name": "external_grade_receive_assign_action_disjointness",
+    "decision": "accept",
+    "reason": "The atom materially captures the source-named global separation-of-duty requirement between receiveExternalGrade and assignExternalGrade over ExternalGrade resources. It is not redundant with the approved Student-specific assignment ceiling, and the schema has the needed action and resource hooks. For a disjointness atom, the relevant forbidden slice is the disjoint_target_body, and `resource is ExternalGrade` correctly names the ExternalGrade slice for the receive/assign conflict; the reference Cedar complement should not be treated as an affirmative permission grant.",
+    "tags": [
+      "global-disjointness",
+      "receive-assign-disjointness",
+      "not-duplicate"
+    ]
+  },
+  {
+    "atom_name": "faculty_view_internal_grades",
+    "decision": "accept",
+    "reason": "The atom is materially useful and tightly scoped: the source explicitly requires faculty view requests for InternalGrades to succeed, the validated schema has a dedicated viewInternalGrade action and InternalGrade resource type, and no approved atom already covers this view permission. It does not omit any named source boundary for internal-grade faculty viewing.",
+    "tags": [
+      "required-floor",
+      "faculty",
+      "internal-grade",
+      "view"
+    ]
+  },
+  {
+    "atom_name": "faculty_view_external_grades",
+    "decision": "accept",
+    "reason": "The atom captures an explicit required successful workflow: faculty requests to view ExternalGrade must succeed. It is not implied by the schema or by the approved faculty_view_internal_grades atom, and no source-named receive/assign disjointness boundary applies to this viewExternalGrade floor.",
+    "tags": [
+      "useful-floor",
+      "explicit-source-support",
+      "not-duplicate"
+    ]
+  },
+  {
+    "atom_name": "teaching_assistants_assign_internal_grades",
+    "decision": "repair",
+    "reason": "The TA internal-grade assignment floor is materially useful and not implied by the existing faculty floor, but as written it grants all TeachingAssistant users assignment permission without addressing the source-named conflict boundary that students must not assign grades. Because users can have combinations of roles, a user who is both Student and TeachingAssistant would be forced by this floor to assign internal grades despite the student assignment prohibition. Repair by scoping the floor to teaching assistants outside the Student role, or otherwise explicitly resolving the TA/student assignment conflict.",
+    "tags": [
+      "missing-boundary",
+      "role-overlap-conflict",
+      "student-assignment-ban"
+    ]
+  },
+  {
+    "atom_name": "non_student_teaching_assistants_assign_internal_grades",
+    "decision": "accept",
+    "reason": "The atom is materially useful and tightly scoped: it captures the explicit TA internal-grade assignment success requirement while respecting the source-named student assignment prohibition in a schema where users may hold multiple roles. It is not implied by the approved faculty internal-grade floor, because TeachingAssistant and Faculty are distinct role groups, and the non-student boundary repairs the prior role-overlap conflict.",
+    "tags": [
+      "useful-floor",
+      "role-overlap-conflict-addressed",
+      "student-assignment-ban-addressed"
+    ]
+  }
+]

@@ -1,0 +1,180 @@
+[
+  {
+    "name": "User",
+    "rationale": "A generic principal entity is needed because requirements refer to users and subjects with combinations of roles.",
+    "plain_english_summary": "A person using the gradebook system.",
+    "source_excerpt": "No user should be able to both receive and assign external grades through any combination of roles.",
+    "members_of": [
+      "Student",
+      "Faculty",
+      "TeachingAssistant",
+      "FacultyFamily"
+    ],
+    "attributes": {},
+    "enum_values": null
+  },
+  {
+    "name": "Student",
+    "rationale": "Student is a role-like entity type used for role membership checks on principals.",
+    "plain_english_summary": "The role for users who are students.",
+    "source_excerpt": "Students receive external grades but must not assign external grades.",
+    "members_of": [],
+    "attributes": {},
+    "enum_values": null
+  },
+  {
+    "name": "Faculty",
+    "rationale": "Faculty is a role-like entity type used for role membership checks on principals.",
+    "plain_english_summary": "The role for users who are faculty members.",
+    "source_excerpt": "Faculty members can assign internal grades and external grades.",
+    "members_of": [],
+    "attributes": {},
+    "enum_values": null
+  },
+  {
+    "name": "TeachingAssistant",
+    "rationale": "TeachingAssistant is a role-like entity type used for role membership checks on principals.",
+    "plain_english_summary": "The role for users who are teaching assistants.",
+    "source_excerpt": "Teaching assistants can view and assign internal grades, but teaching assistants must not view or assign external grades.",
+    "members_of": [],
+    "attributes": {},
+    "enum_values": null
+  },
+  {
+    "name": "FacultyFamily",
+    "rationale": "FacultyFamily is a role-like entity type used for role membership checks on principals.",
+    "plain_english_summary": "The role for members of the faculty family group.",
+    "source_excerpt": "Members of the Faculty Family role can receive external grades.",
+    "members_of": [],
+    "attributes": {},
+    "enum_values": null
+  },
+  {
+    "name": "Grade",
+    "rationale": "A common grade resource type is needed for requirements that refer to assigning grades without distinguishing internal from external grades.",
+    "plain_english_summary": "A grade record in the gradebook.",
+    "source_excerpt": "If a subject is a faculty member, that subject may assign grades.",
+    "members_of": [],
+    "attributes": {},
+    "enum_values": null
+  },
+  {
+    "name": "InternalGrade",
+    "rationale": "InternalGrade is a distinct grade resource category with different permissions from external grades.",
+    "plain_english_summary": "A grade used internally by the institution or teaching staff.",
+    "source_excerpt": "Faculty members can assign internal grades and external grades.",
+    "members_of": [
+      "Grade"
+    ],
+    "attributes": {},
+    "enum_values": null
+  },
+  {
+    "name": "ExternalGrade",
+    "rationale": "ExternalGrade is a distinct grade resource category subject to receive/assign separation and faculty responsibility requirements.",
+    "plain_english_summary": "A grade that is externally visible or externally assigned in the scenario.",
+    "source_excerpt": "Students receive external grades but must not assign external grades.",
+    "members_of": [
+      "Grade"
+    ],
+    "attributes": {},
+    "enum_values": null
+  },
+  {
+    "name": "Course",
+    "rationale": "Course is the resource type needed for enrollment requirements.",
+    "plain_english_summary": "A course that a non-faculty subject may enroll in.",
+    "source_excerpt": "If a subject is not a faculty member, then permit that subject to enroll in courses.",
+    "members_of": [],
+    "attributes": {},
+    "enum_values": null
+  },
+  {
+    "name": "assignInternalGrade",
+    "rationale": "This action represents assigning an internal grade resource.",
+    "plain_english_summary": "Assign an internal grade.",
+    "source_excerpt": "Faculty members can assign internal grades and external grades.",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "InternalGrade"
+    ],
+    "context_attributes": {},
+    "parent_groups": [
+      "assignGrade"
+    ]
+  },
+  {
+    "name": "assignExternalGrade",
+    "rationale": "This action represents assigning an external grade resource.",
+    "plain_english_summary": "Assign an external grade.",
+    "source_excerpt": "Students receive external grades but must not assign external grades.",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "ExternalGrade"
+    ],
+    "context_attributes": {},
+    "parent_groups": [
+      "assignGrade"
+    ]
+  },
+  {
+    "name": "viewInternalGrade",
+    "rationale": "This action represents viewing an internal grade resource.",
+    "plain_english_summary": "View an internal grade.",
+    "source_excerpt": "Faculty members can view internal grades and external grades.",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "InternalGrade"
+    ],
+    "context_attributes": {},
+    "parent_groups": []
+  },
+  {
+    "name": "viewExternalGrade",
+    "rationale": "This action represents viewing an external grade resource.",
+    "plain_english_summary": "View an external grade.",
+    "source_excerpt": "Faculty members can view internal grades and external grades.",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "ExternalGrade"
+    ],
+    "context_attributes": {},
+    "parent_groups": []
+  },
+  {
+    "name": "receiveExternalGrade",
+    "rationale": "This action represents receiving an external grade resource.",
+    "plain_english_summary": "Receive an external grade.",
+    "source_excerpt": "Members of the Faculty Family role can receive external grades.",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "ExternalGrade"
+    ],
+    "context_attributes": {},
+    "parent_groups": []
+  },
+  {
+    "name": "enrollInCourse",
+    "rationale": "This action represents enrolling in a course resource.",
+    "plain_english_summary": "Enroll in a course.",
+    "source_excerpt": "If a subject is not a faculty member, then permit that subject to enroll in courses.",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "Course"
+    ],
+    "context_attributes": {},
+    "parent_groups": []
+  }
+]

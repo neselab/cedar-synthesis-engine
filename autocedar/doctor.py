@@ -14,6 +14,7 @@ import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from autocedar.codex_auth import codex_runtime_info, is_codex_provider
 from autocedar.env import ANTHROPIC_API_KEY, find_dotenv, is_real_anthropic_api_key
 from autocedar.grounding import CEDAR_PATH, CVC5_PATH, _run_symcc
 from autocedar.llm import default_model_for_provider, default_provider
@@ -91,11 +92,25 @@ def _dotenv_check(cwd: Path) -> DoctorCheck:
 def _llm_check() -> DoctorCheck:
     provider = default_provider()
     model = default_model_for_provider(provider)
-    if provider in {"codex", "openai-codex"}:
+    if is_codex_provider(provider):
+        info = codex_runtime_info()
+        if info.auth_available:
+            visible = ", ".join(info.models[:6])
+            if len(info.models) > 6:
+                visible += ", ..."
+            return DoctorCheck(
+                name="LLM provider",
+                status="OK",
+                detail=(
+                    f"{provider} using model {model}; Codex OAuth found at "
+                    f"{info.auth_source}; visible models: {visible}"
+                ),
+            )
         return DoctorCheck(
             name="LLM provider",
-            status="OK",
-            detail=f"{provider} using model {model}; auth is delegated to the Codex CLI",
+            status="FAIL",
+            detail=f"{provider} using model {model}; Codex OAuth is not available at {info.auth_source}",
+            fix="run `codex login`, then retry `autocedar doctor` or use `/provider anthropic` with `/apikey`",
         )
 
     if is_real_anthropic_api_key(os.environ.get(ANTHROPIC_API_KEY)):

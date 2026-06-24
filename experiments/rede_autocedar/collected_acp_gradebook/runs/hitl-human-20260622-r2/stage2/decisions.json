@@ -1,0 +1,191 @@
+[
+  {
+    "atom_name": "students_receive_external_grades_floor",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {
+      "edits": [
+        {
+          "field": "reference_cedar",
+          "old": "permit (principal, action == Action::\"receiveExternalGrade\", resource) when { principal in Student };",
+          "new": "permit (principal, action == Action::\"receiveExternalGrade\", resource) when { principal in Student::\"Student\" && resource is ExternalGrade };"
+        }
+      ]
+    },
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "students_not_assign_external_grades_disjointness",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "faculty_assign_internal_grades_floor",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "faculty_assign_external_grades_floor",
+    "action": "reject",
+    "reason": "Stage 2 decomposition critic repair: The faculty external-grade assignment floor is materially useful, but its satisfiable scope is incomplete relative to the other named role-conflict boundaries in the source. It excludes Student and FacultyFamily to avoid receive/assign and student-assignment conflicts, but it does not exclude TeachingAssistant even though the source says TAs must not assign external grades. A Faculty+TeachingAssistant principal would be required permitted by this floor and forbidden by the TA external-grade prohibition. Repair by adding the TeachingAssistant exclusion or otherwise scoping the floor to faculty users not in roles that are forbidden to assign external grades.",
+    "edit_delta": {
+      "critic_decision": "repair",
+      "critic_tags": [
+        "missing-boundary",
+        "role-overlap",
+        "teaching-assistant-external-grade-prohibition"
+      ]
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "faculty_only_non_conflicting_assign_external_grades_floor",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "teaching_assistants_not_assign_external_grades_disjointness",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "faculty_family_not_assign_external_grades_disjointness",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "faculty_view_internal_grades_floor",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "faculty_non_ta_view_external_grades_floor",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "teaching_assistants_not_view_external_grades_disjointness",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "teaching_assistants_view_internal_grades_floor",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "teaching_assistants_assign_internal_grades_floor",
+    "action": "reject",
+    "reason": "Stage 2 decomposition critic repair: The TA internal-grade assignment floor is materially useful and not redundant, but it should be scoped to avoid the named student-assignment prohibition. The source also states that if the subject is a student, that subject must not assign grades; because the schema permits role overlap and exposes Student membership plus assignInternalGrade, a Student+TeachingAssistant principal would otherwise be required to be permitted to assign internal grades by this floor while falling within the broader student no-assign-grades boundary. Repair by adding a Student exclusion or otherwise explicitly resolving that role-overlap boundary.",
+    "edit_delta": {
+      "critic_decision": "repair",
+      "critic_tags": [
+        "missing-boundary",
+        "role-overlap",
+        "student-grade-assignment-prohibition"
+      ]
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "teaching_assistants_non_student_assign_internal_grades_floor",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "faculty_family_receive_external_grades_floor",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "external_grades_assigned_only_by_faculty_ceiling",
+    "action": "reject",
+    "reason": "Stage 2 decomposition critic repair: The proposed ceiling turns the source's faculty external-grade responsibility/permission wording into an exclusive 'only faculty may assign external grades' rule. That exclusivity is not stated tightly enough by the cited excerpts: existing approved disjointness atoms already cover the named forbidden assigners (students, teaching assistants, and Faculty Family receive/assign conflict), while 'faculty take final responsibility for external grades' is a distinct responsibility/lifecycle boundary rather than a Cedar assignExternalGrade-only ceiling. The validated schema has no action or relationship hook for taking final responsibility for external grades, so using non-faculty assignExternalGrade denial as a proxy should not be accepted.",
+    "edit_delta": {
+      "critic_decision": "repair",
+      "critic_tags": [
+        "schema-gap",
+        "unsupported-exclusivity",
+        "proxy-boundary",
+        "missing-boundary:faculty-final-responsibility-for-external-grades"
+      ]
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "students_not_assign_internal_grades_disjointness",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "external_grade_assigning_faculty_not_receive_external_grades_disjointness",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "non_faculty_enroll_in_courses_floor",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "faculty_not_enroll_in_courses_disjointness",
+    "action": "reject",
+    "reason": "Unsupported converse. The source says non-faculty may enroll; it does not clearly say faculty are forbidden to enroll, and the REDE NEG label is only weak provenance.",
+    "edit_delta": {
+      "reject_history": [
+        {
+          "atom_name": "faculty_not_enroll_in_courses_disjointness",
+          "reason": "Unsupported converse. The source says non-faculty may enroll; it does not clearly say faculty are forbidden to enroll, and the REDE NEG label is only weak provenance."
+        }
+      ]
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": true
+  }
+]

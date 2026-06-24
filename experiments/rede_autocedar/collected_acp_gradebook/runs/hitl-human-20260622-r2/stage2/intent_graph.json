@@ -1,0 +1,796 @@
+{
+  "schema_version": 1,
+  "nodes": [
+    {
+      "id": "property:students_receive_external_grades_floor",
+      "kind": "property",
+      "name": "students_receive_external_grades_floor",
+      "constraint_type": "floor",
+      "summary": "Students must be permitted to receive external grades.",
+      "source_excerpt": "Students receive external grades; Requests for students to Receive ExternalGrades ... will succeed.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "action:receiveExternalGrade",
+      "kind": "action",
+      "name": "receiveExternalGrade"
+    },
+    {
+      "id": "principal_type:User",
+      "kind": "principal_type",
+      "name": "User"
+    },
+    {
+      "id": "resource_type:ExternalGrade",
+      "kind": "resource_type",
+      "name": "ExternalGrade"
+    },
+    {
+      "id": "property:students_not_assign_external_grades_disjointness",
+      "kind": "property",
+      "name": "students_not_assign_external_grades_disjointness",
+      "constraint_type": "disjointness",
+      "summary": "Students must not be permitted to assign external grades.",
+      "source_excerpt": "Students receive external grades but must not assign external grades; There do not exist members of Student who can Assign ExternalGrades.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "action:assignExternalGrade",
+      "kind": "action",
+      "name": "assignExternalGrade"
+    },
+    {
+      "id": "property:students_assigning_external_grades",
+      "kind": "property_ref",
+      "name": "students_assigning_external_grades"
+    },
+    {
+      "id": "property:faculty_assign_internal_grades_floor",
+      "kind": "property",
+      "name": "faculty_assign_internal_grades_floor",
+      "constraint_type": "floor",
+      "summary": "Faculty members must be permitted to assign internal grades.",
+      "source_excerpt": "Faculty members can assign internal grades and external grades; Requests for ... faculty to Assign ... InternalGrades ... will succeed.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "action:assignInternalGrade",
+      "kind": "action",
+      "name": "assignInternalGrade"
+    },
+    {
+      "id": "resource_type:InternalGrade",
+      "kind": "resource_type",
+      "name": "InternalGrade"
+    },
+    {
+      "id": "property:faculty_only_non_conflicting_assign_external_grades_floor",
+      "kind": "property",
+      "name": "faculty_only_non_conflicting_assign_external_grades_floor",
+      "constraint_type": "floor",
+      "summary": "Faculty members who are not students, teaching assistants, or Faculty Family members must be permitted to assign external grades.",
+      "source_excerpt": "Faculty members can assign internal grades and external grades; Requests for ... faculty to Assign ... ExternalGrades ... will succeed; Teaching assistants must not ... assign external grades; Faculty Family can receive External-Grades.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "property:teaching_assistants_not_assign_external_grades_disjointness",
+      "kind": "property",
+      "name": "teaching_assistants_not_assign_external_grades_disjointness",
+      "constraint_type": "disjointness",
+      "summary": "Teaching assistants must not be permitted to assign external grades.",
+      "source_excerpt": "Teaching assistants can view and assign internal grades, but teaching assistants must not view or assign external grades.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "property:TeachingAssistant",
+      "kind": "property_ref",
+      "name": "TeachingAssistant"
+    },
+    {
+      "id": "property:faculty_family_not_assign_external_grades_disjointness",
+      "kind": "property",
+      "name": "faculty_family_not_assign_external_grades_disjointness",
+      "constraint_type": "disjointness",
+      "summary": "Faculty Family members must not be permitted to assign external grades.",
+      "source_excerpt": "No user should be able to both receive and assign external grades through any combination of roles; Members of the Faculty Family role can receive external grades.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "property:receiveExternalGrade",
+      "kind": "property_ref",
+      "name": "receiveExternalGrade"
+    },
+    {
+      "id": "property:faculty_view_internal_grades_floor",
+      "kind": "property",
+      "name": "faculty_view_internal_grades_floor",
+      "constraint_type": "floor",
+      "summary": "Faculty members must be permitted to view internal grades.",
+      "source_excerpt": "Faculty members can view internal grades and external grades; Requests for ... faculty to ... View ... InternalGrades ... will succeed.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "action:viewInternalGrade",
+      "kind": "action",
+      "name": "viewInternalGrade"
+    },
+    {
+      "id": "property:faculty_non_ta_view_external_grades_floor",
+      "kind": "property",
+      "name": "faculty_non_ta_view_external_grades_floor",
+      "constraint_type": "floor",
+      "summary": "Faculty members who are not teaching assistants must be permitted to view external grades.",
+      "source_excerpt": "Faculty members can view internal grades and external grades; Requests for ... faculty to ... View ... ExternalGrades ... will succeed; Teaching assistants must not view ... external grades.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "action:viewExternalGrade",
+      "kind": "action",
+      "name": "viewExternalGrade"
+    },
+    {
+      "id": "property:teaching_assistants_not_view_external_grades_disjointness",
+      "kind": "property",
+      "name": "teaching_assistants_not_view_external_grades_disjointness",
+      "constraint_type": "disjointness",
+      "summary": "Teaching assistants must not be permitted to view external grades.",
+      "source_excerpt": "Teaching assistants can view and assign internal grades, but teaching assistants must not view or assign external grades.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "property:viewExternalGrade",
+      "kind": "property_ref",
+      "name": "viewExternalGrade"
+    },
+    {
+      "id": "property:teaching_assistants_view_internal_grades_floor",
+      "kind": "property",
+      "name": "teaching_assistants_view_internal_grades_floor",
+      "constraint_type": "floor",
+      "summary": "Teaching assistants must be permitted to view internal grades.",
+      "source_excerpt": "Teaching assistants can view and assign InternalGrades but not ExternalGrades.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "property:teaching_assistants_non_student_assign_internal_grades_floor",
+      "kind": "property",
+      "name": "teaching_assistants_non_student_assign_internal_grades_floor",
+      "constraint_type": "floor",
+      "summary": "Teaching assistants who are not students must be permitted to assign internal grades.",
+      "source_excerpt": "Teaching assistants can view and assign InternalGrades but not ExternalGrades; If the subject is a student, that subject must not assign grades.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "property:faculty_family_receive_external_grades_floor",
+      "kind": "property",
+      "name": "faculty_family_receive_external_grades_floor",
+      "constraint_type": "floor",
+      "summary": "Faculty Family members must be permitted to receive external grades.",
+      "source_excerpt": "Members of the Faculty Family role can receive external grades; All members of role Faculty Family can receive External-Grades.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "property:students_not_assign_internal_grades_disjointness",
+      "kind": "property",
+      "name": "students_not_assign_internal_grades_disjointness",
+      "constraint_type": "disjointness",
+      "summary": "Students must not be permitted to assign internal grades.",
+      "source_excerpt": "If the subject is a student, that subject must not assign grades.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "property:students assigning grades",
+      "kind": "property_ref",
+      "name": "students assigning grades"
+    },
+    {
+      "id": "property:external_grade_assigning_faculty_not_receive_external_grades_disjointness",
+      "kind": "property",
+      "name": "external_grade_assigning_faculty_not_receive_external_grades_disjointness",
+      "constraint_type": "disjointness",
+      "summary": "Faculty users who are in the assign-capable external-grade role combination must not be permitted to receive external grades.",
+      "source_excerpt": "No user should be able to both receive and assign external grades through any combination of roles.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "property:assignExternalGrade",
+      "kind": "property_ref",
+      "name": "assignExternalGrade"
+    },
+    {
+      "id": "property:non_faculty_enroll_in_courses_floor",
+      "kind": "property",
+      "name": "non_faculty_enroll_in_courses_floor",
+      "constraint_type": "floor",
+      "summary": "Users who are not faculty members must be permitted to enroll in courses.",
+      "source_excerpt": "If a subject is not a faculty member, then permit that subject to enroll in courses.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "action:enrollInCourse",
+      "kind": "action",
+      "name": "enrollInCourse"
+    },
+    {
+      "id": "resource_type:Course",
+      "kind": "resource_type",
+      "name": "Course"
+    },
+    {
+      "id": "critic:1:students_receive_external_grades_floor",
+      "kind": "critic_review",
+      "atom_name": "students_receive_external_grades_floor",
+      "decision": "accept",
+      "reason": "The atom captures an explicit liveness/floor requirement that student requests to receive external grades must succeed. It is not implied by the schema, is not redundant with any approved atom, and the source condition is expressible and included via `principal in Student` with the correct `receiveExternalGrade` action and `ExternalGrade` resource boundary.",
+      "tags": [
+        "floor",
+        "source-supported",
+        "tightly-scoped"
+      ]
+    },
+    {
+      "id": "critic:2:students_not_assign_external_grades_disjointness",
+      "kind": "critic_review",
+      "atom_name": "students_not_assign_external_grades_disjointness",
+      "decision": "accept",
+      "reason": "The atom captures a distinct, explicitly stated safety requirement: users who are members of Student must not be permitted to assign ExternalGrade resources. It is not implied by the approved receive floor, is not merely restating schema typing, and the schema has the needed role-membership and action/resource hooks. For this disjointness atom, the forbidden slice is correctly named by disjoint_target_body as Student membership, with the action and resource bounds supplied by the atom fields.",
+      "tags": [
+        "material-safety-property",
+        "student-boundary",
+        "external-grade-boundary",
+        "disjointness-target-correct"
+      ]
+    },
+    {
+      "id": "critic:3:faculty_assign_internal_grades_floor",
+      "kind": "critic_review",
+      "atom_name": "faculty_assign_internal_grades_floor",
+      "decision": "accept",
+      "reason": "The atom captures a distinct, explicit liveness/floor requirement that faculty requests to assign internal grades must succeed. It is not implied by the schema or by the already-approved student receive/deny atoms, and it includes the relevant source boundaries: Faculty role, assign-internal-grade action, and InternalGrade resource.",
+      "tags": []
+    },
+    {
+      "id": "critic:4:faculty_assign_external_grades_floor",
+      "kind": "critic_review",
+      "atom_name": "faculty_assign_external_grades_floor",
+      "decision": "repair",
+      "reason": "The faculty external-grade assignment floor is materially useful, but its satisfiable scope is incomplete relative to the other named role-conflict boundaries in the source. It excludes Student and FacultyFamily to avoid receive/assign and student-assignment conflicts, but it does not exclude TeachingAssistant even though the source says TAs must not assign external grades. A Faculty+TeachingAssistant principal would be required permitted by this floor and forbidden by the TA external-grade prohibition. Repair by adding the TeachingAssistant exclusion or otherwise scoping the floor to faculty users not in roles that are forbidden to assign external grades.",
+      "tags": [
+        "missing-boundary",
+        "role-overlap",
+        "teaching-assistant-external-grade-prohibition"
+      ]
+    },
+    {
+      "id": "critic:5:faculty_only_non_conflicting_assign_external_grades_floor",
+      "kind": "critic_review",
+      "atom_name": "faculty_only_non_conflicting_assign_external_grades_floor",
+      "decision": "accept",
+      "reason": "The repaired floor is materially useful and tightly scoped to the source requirement that faculty external-grade assignment requests succeed while respecting the named overlapping-role safety boundaries for Students, TeachingAssistants, and FacultyFamily external-grade receivers. It is not redundant with approved atoms and directly repairs the prior missing TeachingAssistant boundary.",
+      "tags": [
+        "useful-floor",
+        "role-overlap-scoped",
+        "external-grade-assignment"
+      ]
+    },
+    {
+      "id": "critic:6:teaching_assistants_not_assign_external_grades_disjointness",
+      "kind": "critic_review",
+      "atom_name": "teaching_assistants_not_assign_external_grades_disjointness",
+      "decision": "accept",
+      "reason": "The atom captures an explicit source safety boundary: teaching assistants must not assign external grades. It is not redundant with the approved student external-grade assignment prohibition, and the approved faculty external-grade floor was deliberately scoped to avoid TeachingAssistant overlap rather than enforcing the TA prohibition itself. The schema has direct hooks for the named role, action, and resource, and the disjoint_target_body correctly names the forbidden slice as principals in TeachingAssistant for assignExternalGrade on ExternalGrade resources.",
+      "tags": [
+        "safety-boundary",
+        "teaching-assistant-external-grade-prohibition",
+        "role-overlap"
+      ]
+    },
+    {
+      "id": "critic:7:faculty_family_not_assign_external_grades_disjointness",
+      "kind": "critic_review",
+      "atom_name": "faculty_family_not_assign_external_grades_disjointness",
+      "decision": "accept",
+      "reason": "The atom is materially useful and tightly scoped: FacultyFamily is an explicit receiving role in the source, and the source also requires that no user be able to both receive and assign external grades through any combination of roles. The disjoint_target_body correctly names the forbidden slice for the assignExternalGrade ceiling as FacultyFamily membership, and this is not already implied by the approved Student or TeachingAssistant external-grade assignment ceilings or by the scoped faculty floor.",
+      "tags": [
+        "role-conflict",
+        "receive-assign-disjointness",
+        "faculty-family"
+      ]
+    },
+    {
+      "id": "critic:8:faculty_view_internal_grades_floor",
+      "kind": "critic_review",
+      "atom_name": "faculty_view_internal_grades_floor",
+      "decision": "accept",
+      "reason": "The atom captures a distinct positive requirement that faculty requests to view internal grades must succeed. It is not implied by the schema or by the approved faculty assignment floor, uses the correct action and resource type, and includes the relevant Faculty role boundary named in the source excerpt. No additional conflict or lifecycle boundary is named for faculty viewing internal grades in the provided requirements.",
+      "tags": []
+    },
+    {
+      "id": "critic:9:faculty_non_ta_view_external_grades_floor",
+      "kind": "critic_review",
+      "atom_name": "faculty_non_ta_view_external_grades_floor",
+      "decision": "accept",
+      "reason": "The atom is materially useful and tightly scoped: the source explicitly requires faculty view-external-grade requests to succeed, while also naming a TeachingAssistant boundary that forbids viewing external grades. Excluding TeachingAssistant role-overlap avoids a direct floor/ceiling conflict. The validated schema exposes the needed Faculty, TeachingAssistant, viewExternalGrade, and ExternalGrade hooks, and no approved atom already implies this external-grade view floor.",
+      "tags": [
+        "useful-floor",
+        "role-overlap-handled",
+        "teaching-assistant-external-grade-prohibition"
+      ]
+    },
+    {
+      "id": "critic:10:teaching_assistants_not_view_external_grades_disjointness",
+      "kind": "critic_review",
+      "atom_name": "teaching_assistants_not_view_external_grades_disjointness",
+      "decision": "accept",
+      "reason": "The atom is materially useful and tightly scoped to an explicit source prohibition: teaching assistants must not view external grades. It is not implied by the schema or by the approved faculty_non_ta_view_external_grades_floor, which only scopes a positive faculty floor and does not prevent TA users from gaining viewExternalGrade permission through another role. The disjoint_target_body correctly names the forbidden slice, principal membership in TeachingAssistant for the viewExternalGrade action on ExternalGrade resources, and the validated schema supports this boundary.",
+      "tags": []
+    },
+    {
+      "id": "critic:11:teaching_assistants_view_internal_grades_floor",
+      "kind": "critic_review",
+      "atom_name": "teaching_assistants_view_internal_grades_floor",
+      "decision": "accept",
+      "reason": "The atom captures an explicit, materially useful successful-request requirement from the source: teaching assistants can view InternalGrades. It is not merely schema-implied, is not already covered by the approved faculty internal-grade floor or TA external-grade prohibitions, and it is tightly scoped to the named TA role, viewInternalGrade action, and InternalGrade resource. No missing lifecycle, ownership, network, authentication, or conflict boundary is apparent for this source excerpt.",
+      "tags": []
+    },
+    {
+      "id": "critic:12:teaching_assistants_assign_internal_grades_floor",
+      "kind": "critic_review",
+      "atom_name": "teaching_assistants_assign_internal_grades_floor",
+      "decision": "repair",
+      "reason": "The TA internal-grade assignment floor is materially useful and not redundant, but it should be scoped to avoid the named student-assignment prohibition. The source also states that if the subject is a student, that subject must not assign grades; because the schema permits role overlap and exposes Student membership plus assignInternalGrade, a Student+TeachingAssistant principal would otherwise be required to be permitted to assign internal grades by this floor while falling within the broader student no-assign-grades boundary. Repair by adding a Student exclusion or otherwise explicitly resolving that role-overlap boundary.",
+      "tags": [
+        "missing-boundary",
+        "role-overlap",
+        "student-grade-assignment-prohibition"
+      ]
+    },
+    {
+      "id": "critic:13:teaching_assistants_non_student_assign_internal_grades_floor",
+      "kind": "critic_review",
+      "atom_name": "teaching_assistants_non_student_assign_internal_grades_floor",
+      "decision": "accept",
+      "reason": "The atom is materially useful and not redundant with the approved properties: it covers the still-needed TA internal-grade assignment floor. It is tightly scoped to the source grant for TeachingAssistants assigning InternalGrades while preserving the explicitly named overlapping Student no-assign-grades boundary using schema-expressible role membership. The action and resource type match the validated schema, and no additional named lifecycle, ownership, network, authentication, or conflict boundary is omitted for this requirement.",
+      "tags": [
+        "useful-floor",
+        "role-overlap-handled",
+        "student-grade-assignment-boundary"
+      ]
+    },
+    {
+      "id": "critic:14:faculty_family_receive_external_grades_floor",
+      "kind": "critic_review",
+      "atom_name": "faculty_family_receive_external_grades_floor",
+      "decision": "accept",
+      "reason": "The atom captures an explicit, distinct floor requirement that Faculty Family members can receive external grades. It is not implied by the schema or by the existing student receive floor, and the approved Faculty Family external-grade assignment disjointness addresses the relevant receive/assign conflict boundary without requiring this floor to be narrowed further.",
+      "tags": []
+    },
+    {
+      "id": "critic:15:external_grades_assigned_only_by_faculty_ceiling",
+      "kind": "critic_review",
+      "atom_name": "external_grades_assigned_only_by_faculty_ceiling",
+      "decision": "repair",
+      "reason": "The proposed ceiling turns the source's faculty external-grade responsibility/permission wording into an exclusive 'only faculty may assign external grades' rule. That exclusivity is not stated tightly enough by the cited excerpts: existing approved disjointness atoms already cover the named forbidden assigners (students, teaching assistants, and Faculty Family receive/assign conflict), while 'faculty take final responsibility for external grades' is a distinct responsibility/lifecycle boundary rather than a Cedar assignExternalGrade-only ceiling. The validated schema has no action or relationship hook for taking final responsibility for external grades, so using non-faculty assignExternalGrade denial as a proxy should not be accepted.",
+      "tags": [
+        "schema-gap",
+        "unsupported-exclusivity",
+        "proxy-boundary",
+        "missing-boundary:faculty-final-responsibility-for-external-grades"
+      ]
+    },
+    {
+      "id": "critic:16:students_not_assign_internal_grades_disjointness",
+      "kind": "critic_review",
+      "atom_name": "students_not_assign_internal_grades_disjointness",
+      "decision": "accept",
+      "reason": "The atom captures a materially useful and schema-expressible slice of the broader source requirement that students must not assign grades. It is not redundant with the already-approved external-grade student disjointness because assignInternalGrade is a separate action, and role overlap with TeachingAssistant or Faculty could otherwise bypass the student no-assignment boundary. For this disjointness atom, the forbidden slice named by disjoint_target_body, principal in Student::\"Student\", is correct for the cited requirement, with the InternalGrade/action scope supplied by the atom metadata.",
+      "tags": [
+        "student-grade-assignment-prohibition",
+        "assignInternalGrade",
+        "role-overlap",
+        "non-duplicate"
+      ]
+    },
+    {
+      "id": "critic:17:external_grade_assigning_faculty_not_receive_external_grades_disjointness",
+      "kind": "critic_review",
+      "atom_name": "external_grade_assigning_faculty_not_receive_external_grades_disjointness",
+      "decision": "accept",
+      "reason": "The atom is a materially useful disjointness decomposition for the explicit no receive-and-assign external grades conflict. Its disjoint_target_body names the assign-capable faculty slice already approved for external-grade assignment, while excluding Student, TeachingAssistant, and FacultyFamily role-overlap boundaries that are separately forbidden from assigning or are receive-capable. It is not merely schema-implied and is not duplicated by existing approved atoms, which mostly prevent receiving roles from assigning rather than preventing assign-capable faculty from receiving.",
+      "tags": [
+        "disjointness",
+        "role-conflict",
+        "receive-assign-external-grades"
+      ]
+    },
+    {
+      "id": "critic:18:non_faculty_enroll_in_courses_floor",
+      "kind": "critic_review",
+      "atom_name": "non_faculty_enroll_in_courses_floor",
+      "decision": "accept",
+      "reason": "The atom is materially useful and tightly scoped to the explicit source requirement that non-faculty subjects may enroll in courses. It uses the schema-exposed Faculty role boundary, enrollInCourse action, and Course resource directly; it is not redundant with any approved grade-related atom and is not merely restating principal/resource typing.",
+      "tags": []
+    },
+    {
+      "id": "critic:19:faculty_not_enroll_in_courses_disjointness",
+      "kind": "critic_review",
+      "atom_name": "faculty_not_enroll_in_courses_disjointness",
+      "decision": "accept",
+      "reason": "The atom captures a distinct negative enrollment boundary from the selected NLACP label 52 rather than merely restating the approved non-faculty enrollment floor. The schema exposes Faculty membership, enrollInCourse, and Course, and the disjoint_target_body correctly identifies the forbidden slice as faculty principals enrolling in courses. It is not implied by the existing floor and does not omit a named source condition.",
+      "tags": []
+    }
+  ],
+  "edges": [
+    {
+      "source": "property:students_receive_external_grades_floor",
+      "target": "action:receiveExternalGrade",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:students_receive_external_grades_floor",
+      "target": "principal_type:User",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:students_receive_external_grades_floor",
+      "target": "resource_type:ExternalGrade",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:students_not_assign_external_grades_disjointness",
+      "target": "action:assignExternalGrade",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:students_not_assign_external_grades_disjointness",
+      "target": "principal_type:User",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:students_not_assign_external_grades_disjointness",
+      "target": "resource_type:ExternalGrade",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:students_not_assign_external_grades_disjointness",
+      "target": "property:students_assigning_external_grades",
+      "type": "disjoint_with"
+    },
+    {
+      "source": "property:faculty_assign_internal_grades_floor",
+      "target": "action:assignInternalGrade",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:faculty_assign_internal_grades_floor",
+      "target": "principal_type:User",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:faculty_assign_internal_grades_floor",
+      "target": "resource_type:InternalGrade",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:faculty_only_non_conflicting_assign_external_grades_floor",
+      "target": "action:assignExternalGrade",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:faculty_only_non_conflicting_assign_external_grades_floor",
+      "target": "principal_type:User",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:faculty_only_non_conflicting_assign_external_grades_floor",
+      "target": "resource_type:ExternalGrade",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:teaching_assistants_not_assign_external_grades_disjointness",
+      "target": "action:assignExternalGrade",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:teaching_assistants_not_assign_external_grades_disjointness",
+      "target": "principal_type:User",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:teaching_assistants_not_assign_external_grades_disjointness",
+      "target": "resource_type:ExternalGrade",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:teaching_assistants_not_assign_external_grades_disjointness",
+      "target": "property:TeachingAssistant",
+      "type": "disjoint_with"
+    },
+    {
+      "source": "property:faculty_family_not_assign_external_grades_disjointness",
+      "target": "action:assignExternalGrade",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:faculty_family_not_assign_external_grades_disjointness",
+      "target": "principal_type:User",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:faculty_family_not_assign_external_grades_disjointness",
+      "target": "resource_type:ExternalGrade",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:faculty_family_not_assign_external_grades_disjointness",
+      "target": "property:receiveExternalGrade",
+      "type": "disjoint_with"
+    },
+    {
+      "source": "property:faculty_view_internal_grades_floor",
+      "target": "action:viewInternalGrade",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:faculty_view_internal_grades_floor",
+      "target": "principal_type:User",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:faculty_view_internal_grades_floor",
+      "target": "resource_type:InternalGrade",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:faculty_non_ta_view_external_grades_floor",
+      "target": "action:viewExternalGrade",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:faculty_non_ta_view_external_grades_floor",
+      "target": "principal_type:User",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:faculty_non_ta_view_external_grades_floor",
+      "target": "resource_type:ExternalGrade",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:teaching_assistants_not_view_external_grades_disjointness",
+      "target": "action:viewExternalGrade",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:teaching_assistants_not_view_external_grades_disjointness",
+      "target": "principal_type:User",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:teaching_assistants_not_view_external_grades_disjointness",
+      "target": "resource_type:ExternalGrade",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:teaching_assistants_not_view_external_grades_disjointness",
+      "target": "property:viewExternalGrade",
+      "type": "disjoint_with"
+    },
+    {
+      "source": "property:teaching_assistants_view_internal_grades_floor",
+      "target": "action:viewInternalGrade",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:teaching_assistants_view_internal_grades_floor",
+      "target": "principal_type:User",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:teaching_assistants_view_internal_grades_floor",
+      "target": "resource_type:InternalGrade",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:teaching_assistants_non_student_assign_internal_grades_floor",
+      "target": "action:assignInternalGrade",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:teaching_assistants_non_student_assign_internal_grades_floor",
+      "target": "principal_type:User",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:teaching_assistants_non_student_assign_internal_grades_floor",
+      "target": "resource_type:InternalGrade",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:faculty_family_receive_external_grades_floor",
+      "target": "action:receiveExternalGrade",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:faculty_family_receive_external_grades_floor",
+      "target": "principal_type:User",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:faculty_family_receive_external_grades_floor",
+      "target": "resource_type:ExternalGrade",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:students_not_assign_internal_grades_disjointness",
+      "target": "action:assignInternalGrade",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:students_not_assign_internal_grades_disjointness",
+      "target": "principal_type:User",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:students_not_assign_internal_grades_disjointness",
+      "target": "resource_type:InternalGrade",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:students_not_assign_internal_grades_disjointness",
+      "target": "property:students assigning grades",
+      "type": "disjoint_with"
+    },
+    {
+      "source": "property:external_grade_assigning_faculty_not_receive_external_grades_disjointness",
+      "target": "action:receiveExternalGrade",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:external_grade_assigning_faculty_not_receive_external_grades_disjointness",
+      "target": "principal_type:User",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:external_grade_assigning_faculty_not_receive_external_grades_disjointness",
+      "target": "resource_type:ExternalGrade",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:external_grade_assigning_faculty_not_receive_external_grades_disjointness",
+      "target": "property:assignExternalGrade",
+      "type": "disjoint_with"
+    },
+    {
+      "source": "property:non_faculty_enroll_in_courses_floor",
+      "target": "action:enrollInCourse",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:non_faculty_enroll_in_courses_floor",
+      "target": "principal_type:User",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:non_faculty_enroll_in_courses_floor",
+      "target": "resource_type:Course",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "critic:1:students_receive_external_grades_floor",
+      "target": "property:students_receive_external_grades_floor",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:2:students_not_assign_external_grades_disjointness",
+      "target": "property:students_not_assign_external_grades_disjointness",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:3:faculty_assign_internal_grades_floor",
+      "target": "property:faculty_assign_internal_grades_floor",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:4:faculty_assign_external_grades_floor",
+      "target": "property:faculty_assign_external_grades_floor",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:5:faculty_only_non_conflicting_assign_external_grades_floor",
+      "target": "property:faculty_only_non_conflicting_assign_external_grades_floor",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:6:teaching_assistants_not_assign_external_grades_disjointness",
+      "target": "property:teaching_assistants_not_assign_external_grades_disjointness",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:7:faculty_family_not_assign_external_grades_disjointness",
+      "target": "property:faculty_family_not_assign_external_grades_disjointness",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:8:faculty_view_internal_grades_floor",
+      "target": "property:faculty_view_internal_grades_floor",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:9:faculty_non_ta_view_external_grades_floor",
+      "target": "property:faculty_non_ta_view_external_grades_floor",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:10:teaching_assistants_not_view_external_grades_disjointness",
+      "target": "property:teaching_assistants_not_view_external_grades_disjointness",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:11:teaching_assistants_view_internal_grades_floor",
+      "target": "property:teaching_assistants_view_internal_grades_floor",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:12:teaching_assistants_assign_internal_grades_floor",
+      "target": "property:teaching_assistants_assign_internal_grades_floor",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:13:teaching_assistants_non_student_assign_internal_grades_floor",
+      "target": "property:teaching_assistants_non_student_assign_internal_grades_floor",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:14:faculty_family_receive_external_grades_floor",
+      "target": "property:faculty_family_receive_external_grades_floor",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:15:external_grades_assigned_only_by_faculty_ceiling",
+      "target": "property:external_grades_assigned_only_by_faculty_ceiling",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:16:students_not_assign_internal_grades_disjointness",
+      "target": "property:students_not_assign_internal_grades_disjointness",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:17:external_grade_assigning_faculty_not_receive_external_grades_disjointness",
+      "target": "property:external_grade_assigning_faculty_not_receive_external_grades_disjointness",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:18:non_faculty_enroll_in_courses_floor",
+      "target": "property:non_faculty_enroll_in_courses_floor",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:19:faculty_not_enroll_in_courses_disjointness",
+      "target": "property:faculty_not_enroll_in_courses_disjointness",
+      "type": "reviews"
+    }
+  ],
+  "summary": {
+    "properties": 15,
+    "critic_reviews": 19,
+    "critic_rejects": 0,
+    "critic_repairs": 3
+  }
+}

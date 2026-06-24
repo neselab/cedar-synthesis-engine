@@ -1,0 +1,22 @@
+[
+  {
+    "atom_name": "hcp_can_create_patient",
+    "decision": "accept",
+    "reason": "The atom is a materially useful positive floor for an explicit source grant that is not implied merely by the schema's appliesTo typing. It is tightly scoped to the HCP createPatient action on Patient resources and includes the schema-expressible authenticated active-session boundary via context.session.user == principal and context.session.isActive.",
+    "tags": [
+      "useful-floor",
+      "explicit-source-grant",
+      "session-scoped"
+    ]
+  },
+  {
+    "atom_name": "create_patient_requires_active_own_session",
+    "decision": "accept",
+    "reason": "This is a materially useful ceiling distinct from the approved floor: it prevents role-only createPatient authorization when the HCP lacks an active session tied to that principal. The schema exposes a Session.isActive lifecycle hook and Session.user ownership hook, so the atom is tightly scoped and schema-expressible for this action.",
+    "tags": [
+      "session-boundary",
+      "ownership-boundary",
+      "not-duplicate"
+    ]
+  }
+]

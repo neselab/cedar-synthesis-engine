@@ -1,0 +1,800 @@
+[
+  {
+    "atom_name": "User",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "User__mid",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "User__password",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "User__securityQuestion",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "Patient",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "Patient__isActive",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "Patient__designatedLhcps",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "Patient__providerList",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "Patient__visitedLhcps",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "HCP",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "LHCP",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "LHCP__hospitals",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "Administrator",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "EmergencyResponder",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "UAP",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "PersonalRepresentative",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "PersonalRepresentative__representedPatients",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "PublicHealthAgent",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "LabTechnician",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "SoftwareTester",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "Hospital",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "Session",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "Session__isActive",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "Session__user",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "Session__lastActivityAt",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "SystemSettings",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "SystemSettings__inactivityPeriod",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "MedicalRecord",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "MedicalRecord__patient",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "DiagnosticInformation",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "DiagnosticInformation__patient",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "DiagnosticInformation__isRestricted",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "DiagnosticInformation__restrictionAllowed",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "DiagnosticInformation__allowedViewers",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "PersonalHealthInformation",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "PersonalHealthInformation__patient",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "FamilyHistory",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "FamilyHistory__patient",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "Immunization",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "Immunization__patient",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "OfficeVisit",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "OfficeVisit__patient",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "OfficeVisit__hospital",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "OfficeVisit__surveyTaken",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "AccessLog",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "AccessLog__patient",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "AccessLog__accessorName",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "AccessLog__accessorRole",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "AccessLog__accessedAt",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "AccessLog__transactionType",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "ProviderDesignation",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "ProviderDesignation__patient",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "ProviderDesignation__lhcp",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "PersonalRepresentativeRelationship",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "PersonalRepresentativeRelationship__patient",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "PersonalRepresentativeRelationship__representative",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "DemographicInformation",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "DemographicInformation__patient",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "login",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "logout",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "createPatient",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "disablePatient",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "reactivatePatient",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "editPatient",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "viewCredential",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "createLHCP",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "createEmergencyResponder",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "createLabTechnician",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "createPublicHealthAgent",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "createUAP",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "assignCredentials",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "assignHospital",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "setInactivityPeriod",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "requestPasswordChange",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "viewLhcps",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "addProvider",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "designateLHCP",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "undesignateLHCP",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "viewAccessLog",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "viewMedicalRecord",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "viewDiagnosticInformation",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "restrictDiagnosticInformation",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "determineDiagnosisRestrictionAllowed",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "viewPersonalHealthInformation",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "viewFamilyHistory",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "viewImmunization",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "viewOfficeVisit",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "takeOfficeVisitSurvey",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "editPersonalHealthInformation",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "editImmunization",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "editFamilyHistory",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "documentOfficeVisit",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "editOfficeVisit",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "addPersonalRepresentative",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "removePersonalRepresentative",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "enterDemographicInformation",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "editDemographicInformation",
+    "action": "approve",
+    "reason": "Manual HITL schema review: atom is needed for the bounded iTrust ACRE healthcare slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "Session__typed_owner_hooks",
+    "action": "approve",
+    "reason": "Manual HITL schema repair: generic Session.user: User is not equalable with role-specific principals; add typed optional session-owner hooks.",
+    "edit_delta": {
+      "removed": "Session.user: User",
+      "added": [
+        "patientUser",
+        "hcpUser",
+        "lhcpUser",
+        "administratorUser",
+        "emergencyResponderUser",
+        "uapUser",
+        "personalRepresentativeUser",
+        "publicHealthAgentUser",
+        "labTechnicianUser",
+        "softwareTesterUser"
+      ]
+    },
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  }
+]

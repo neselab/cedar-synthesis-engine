@@ -1,0 +1,1 @@
+permit (principal, action == Action::"viewLhcps", resource) when { context.session.isActive && context.session.user == principal && resource == principal };

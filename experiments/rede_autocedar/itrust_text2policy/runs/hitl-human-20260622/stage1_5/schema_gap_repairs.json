@@ -1,0 +1,464 @@
+[
+  {
+    "gap": {
+      "atom_name": "create_patient_requires_active_own_session",
+      "stage": "stage2_property_review",
+      "reason": "Stage 2 decomposition critic repair: The same-action ceiling is useful and not redundant with the approved floor, but it collapses the inactivity-limit requirement into the proxy field context.session.isActive. The source boundary is specifically that authorization is disabled after the configured inactivity period is exceeded. The schema exposes lastActivityAt and inactivityPeriodSeconds on Session, but createPatient context has no current request time or equivalent hook needed to express timeout expiration directly. Repair should either add a schema/context hook for current time or otherwise model the timeout-expired lifecycle boundary explicitly, rather than accepting isActive alone as equivalent.",
+      "critic_tags": [
+        "missing-boundary:inactivity-limit-exceeded",
+        "not-duplicate",
+        "schema-gap"
+      ],
+      "required_action": "repair_schema_before_synthesis"
+    },
+    "proposed_atoms": [
+      {
+        "name": "createPatient",
+        "rationale": "Adds request time to the existing session context so timeout expiration can be compared directly for patient creation authorization.",
+        "plain_english_summary": "When an HCP creates a patient, the request includes the current time so the system can check whether the session has timed out.",
+        "source_excerpt": "Electronic sessions must terminate after the configured inactivity period; after the inactivity limit is exceeded, all authorization is disabled.",
+        "principal_types": [
+          "HCP"
+        ],
+        "resource_types": [
+          "Patient"
+        ],
+        "context_attributes": {
+          "currentTime": {
+            "name": "createPatient__context__currentTime",
+            "rationale": "Current request time is needed to evaluate whether the session inactivity period has been exceeded.",
+            "plain_english_summary": "The time at which this create-patient request is being made.",
+            "source_excerpt": "Electronic sessions must terminate after the configured inactivity period; after the inactivity limit is exceeded, all authorization is disabled.",
+            "on_entity": "",
+            "field_name": "currentTime",
+            "cedar_type": "datetime",
+            "optional": false,
+            "alternatives_considered": []
+          }
+        },
+        "parent_groups": []
+      },
+      {
+        "name": "editPatientData",
+        "rationale": "Adds request time to the existing session context so timeout expiration can be compared directly for patient-data edits.",
+        "plain_english_summary": "When an HCP edits patient data, the request includes the current time so the system can check whether the session has timed out.",
+        "source_excerpt": "Electronic sessions must terminate after the configured inactivity period; after the inactivity limit is exceeded, all authorization is disabled.",
+        "principal_types": [
+          "HCP"
+        ],
+        "resource_types": [
+          "DemographicInformation"
+        ],
+        "context_attributes": {
+          "currentTime": {
+            "name": "editPatientData__context__currentTime",
+            "rationale": "Current request time is needed to evaluate whether the session inactivity period has been exceeded.",
+            "plain_english_summary": "The time at which this edit-patient-data request is being made.",
+            "source_excerpt": "Electronic sessions must terminate after the configured inactivity period; after the inactivity limit is exceeded, all authorization is disabled.",
+            "on_entity": "",
+            "field_name": "currentTime",
+            "cedar_type": "datetime",
+            "optional": false,
+            "alternatives_considered": []
+          }
+        },
+        "parent_groups": []
+      },
+      {
+        "name": "viewCredentials",
+        "rationale": "Adds request time to the existing session context so timeout expiration can be compared directly for credential viewing authorization.",
+        "plain_english_summary": "When credentials are viewed, the request includes the current time so the system can check whether the session has timed out.",
+        "source_excerpt": "Electronic sessions must terminate after the configured inactivity period; after the inactivity limit is exceeded, all authorization is disabled.",
+        "principal_types": [
+          "User"
+        ],
+        "resource_types": [
+          "Credentials"
+        ],
+        "context_attributes": {
+          "currentTime": {
+            "name": "viewCredentials__context__currentTime",
+            "rationale": "Current request time is needed to evaluate whether the session inactivity period has been exceeded.",
+            "plain_english_summary": "The time at which this view-credentials request is being made.",
+            "source_excerpt": "Electronic sessions must terminate after the configured inactivity period; after the inactivity limit is exceeded, all authorization is disabled.",
+            "on_entity": "",
+            "field_name": "currentTime",
+            "cedar_type": "datetime",
+            "optional": false,
+            "alternatives_considered": []
+          }
+        },
+        "parent_groups": []
+      },
+      {
+        "name": "editCredentials",
+        "rationale": "Adds request time to the existing session context so timeout expiration can be compared directly for credential editing authorization.",
+        "plain_english_summary": "When credentials are edited, the request includes the current time so the system can check whether the session has timed out.",
+        "source_excerpt": "Electronic sessions must terminate after the configured inactivity period; after the inactivity limit is exceeded, all authorization is disabled.",
+        "principal_types": [
+          "User"
+        ],
+        "resource_types": [
+          "Credentials"
+        ],
+        "context_attributes": {
+          "currentTime": {
+            "name": "editCredentials__context__currentTime",
+            "rationale": "Current request time is needed to evaluate whether the session inactivity period has been exceeded.",
+            "plain_english_summary": "The time at which this edit-credentials request is being made.",
+            "source_excerpt": "Electronic sessions must terminate after the configured inactivity period; after the inactivity limit is exceeded, all authorization is disabled.",
+            "on_entity": "",
+            "field_name": "currentTime",
+            "cedar_type": "datetime",
+            "optional": false,
+            "alternatives_considered": []
+          }
+        },
+        "parent_groups": []
+      },
+      {
+        "name": "createLHCP",
+        "rationale": "Adds request time to the existing session context so timeout expiration can be compared directly for LHCP creation authorization.",
+        "plain_english_summary": "When an administrator creates an LHCP, the request includes the current time so the system can check whether the session has timed out.",
+        "source_excerpt": "Electronic sessions must terminate after the configured inactivity period; after the inactivity limit is exceeded, all authorization is disabled.",
+        "principal_types": [
+          "Administrator"
+        ],
+        "resource_types": [
+          "LHCP"
+        ],
+        "context_attributes": {
+          "currentTime": {
+            "name": "createLHCP__context__currentTime",
+            "rationale": "Current request time is needed to evaluate whether the session inactivity period has been exceeded.",
+            "plain_english_summary": "The time at which this create-LHCP request is being made.",
+            "source_excerpt": "Electronic sessions must terminate after the configured inactivity period; after the inactivity limit is exceeded, all authorization is disabled.",
+            "on_entity": "",
+            "field_name": "currentTime",
+            "cedar_type": "datetime",
+            "optional": false,
+            "alternatives_considered": []
+          }
+        },
+        "parent_groups": []
+      },
+      {
+        "name": "createEmergencyResponder",
+        "rationale": "Adds request time to the existing session context so timeout expiration can be compared directly for emergency-responder creation authorization.",
+        "plain_english_summary": "When an administrator creates an emergency responder, the request includes the current time so the system can check whether the session has timed out.",
+        "source_excerpt": "Electronic sessions must terminate after the configured inactivity period; after the inactivity limit is exceeded, all authorization is disabled.",
+        "principal_types": [
+          "Administrator"
+        ],
+        "resource_types": [
+          "EmergencyResponder"
+        ],
+        "context_attributes": {
+          "currentTime": {
+            "name": "createEmergencyResponder__context__currentTime",
+            "rationale": "Current request time is needed to evaluate whether the session inactivity period has been exceeded.",
+            "plain_english_summary": "The time at which this create-emergency-responder request is being made.",
+            "source_excerpt": "Electronic sessions must terminate after the configured inactivity period; after the inactivity limit is exceeded, all authorization is disabled.",
+            "on_entity": "",
+            "field_name": "currentTime",
+            "cedar_type": "datetime",
+            "optional": false,
+            "alternatives_considered": []
+          }
+        },
+        "parent_groups": []
+      },
+      {
+        "name": "createPublicHealthAgent",
+        "rationale": "Adds request time to the existing session context so timeout expiration can be compared directly for public-health-agent creation authorization.",
+        "plain_english_summary": "When an administrator creates a public health agent, the request includes the current time so the system can check whether the session has timed out.",
+        "source_excerpt": "Electronic sessions must terminate after the configured inactivity period; after the inactivity limit is exceeded, all authorization is disabled.",
+        "principal_types": [
+          "Administrator"
+        ],
+        "resource_types": [
+          "PublicHealthAgent"
+        ],
+        "context_attributes": {
+          "currentTime": {
+            "name": "createPublicHealthAgent__context__currentTime",
+            "rationale": "Current request time is needed to evaluate whether the session inactivity period has been exceeded.",
+            "plain_english_summary": "The time at which this create-public-health-agent request is being made.",
+            "source_excerpt": "Electronic sessions must terminate after the configured inactivity period; after the inactivity limit is exceeded, all authorization is disabled.",
+            "on_entity": "",
+            "field_name": "currentTime",
+            "cedar_type": "datetime",
+            "optional": false,
+            "alternatives_considered": []
+          }
+        },
+        "parent_groups": []
+      },
+      {
+        "name": "assignLHCPToHospital",
+        "rationale": "Adds request time to the existing session context so timeout expiration can be compared directly for LHCP-to-hospital assignment authorization.",
+        "plain_english_summary": "When an administrator assigns an LHCP to a hospital, the request includes the current time so the system can check whether the session has timed out.",
+        "source_excerpt": "Electronic sessions must terminate after the configured inactivity period; after the inactivity limit is exceeded, all authorization is disabled.",
+        "principal_types": [
+          "Administrator"
+        ],
+        "resource_types": [
+          "LHCP"
+        ],
+        "context_attributes": {
+          "currentTime": {
+            "name": "assignLHCPToHospital__context__currentTime",
+            "rationale": "Current request time is needed to evaluate whether the session inactivity period has been exceeded.",
+            "plain_english_summary": "The time at which this LHCP hospital-assignment request is being made.",
+            "source_excerpt": "Electronic sessions must terminate after the configured inactivity period; after the inactivity limit is exceeded, all authorization is disabled.",
+            "on_entity": "",
+            "field_name": "currentTime",
+            "cedar_type": "datetime",
+            "optional": false,
+            "alternatives_considered": []
+          }
+        },
+        "parent_groups": []
+      },
+      {
+        "name": "createUAP",
+        "rationale": "Adds request time to the existing session context so timeout expiration can be compared directly for UAP creation authorization.",
+        "plain_english_summary": "When an LHCP creates a UAP user, the request includes the current time so the system can check whether the session has timed out.",
+        "source_excerpt": "Electronic sessions must terminate after the configured inactivity period; after the inactivity limit is exceeded, all authorization is disabled.",
+        "principal_types": [
+          "LHCP"
+        ],
+        "resource_types": [
+          "UAP"
+        ],
+        "context_attributes": {
+          "currentTime": {
+            "name": "createUAP__context__currentTime",
+            "rationale": "Current request time is needed to evaluate whether the session inactivity period has been exceeded.",
+            "plain_english_summary": "The time at which this create-UAP request is being made.",
+            "source_excerpt": "Electronic sessions must terminate after the configured inactivity period; after the inactivity limit is exceeded, all authorization is disabled.",
+            "on_entity": "",
+            "field_name": "currentTime",
+            "cedar_type": "datetime",
+            "optional": false,
+            "alternatives_considered": []
+          }
+        },
+        "parent_groups": []
+      },
+      {
+        "name": "setInactivityPeriod",
+        "rationale": "Adds request time to the existing administrator session context so timeout expiration can be compared directly before changing the inactivity period.",
+        "plain_english_summary": "When an administrator sets the inactivity period, the request includes the current time so the system can check whether the session has timed out.",
+        "source_excerpt": "Electronic sessions must terminate after the configured inactivity period; after the inactivity limit is exceeded, all authorization is disabled.",
+        "principal_types": [
+          "Administrator"
+        ],
+        "resource_types": [
+          "Session"
+        ],
+        "context_attributes": {
+          "currentTime": {
+            "name": "setInactivityPeriod__context__currentTime",
+            "rationale": "Current request time is needed to evaluate whether the session inactivity period has been exceeded.",
+            "plain_english_summary": "The time at which this set-inactivity-period request is being made.",
+            "source_excerpt": "Electronic sessions must terminate after the configured inactivity period; after the inactivity limit is exceeded, all authorization is disabled.",
+            "on_entity": "",
+            "field_name": "currentTime",
+            "cedar_type": "datetime",
+            "optional": false,
+            "alternatives_considered": []
+          }
+        },
+        "parent_groups": []
+      },
+      {
+        "name": "viewProviderList",
+        "rationale": "Adds request time to the existing session context so timeout expiration can be compared directly for provider-list viewing authorization.",
+        "plain_english_summary": "When a patient views their provider list, the request includes the current time so the system can check whether the session has timed out.",
+        "source_excerpt": "Electronic sessions must terminate after the configured inactivity period; after the inactivity limit is exceeded, all authorization is disabled.",
+        "principal_types": [
+          "Patient"
+        ],
+        "resource_types": [
+          "ProviderList"
+        ],
+        "context_attributes": {
+          "currentTime": {
+            "name": "viewProviderList__context__currentTime",
+            "rationale": "Current request time is needed to evaluate whether the session inactivity period has been exceeded.",
+            "plain_english_summary": "The time at which this view-provider-list request is being made.",
+            "source_excerpt": "Electronic sessions must terminate after the configured inactivity period; after the inactivity limit is exceeded, all authorization is disabled.",
+            "on_entity": "",
+            "field_name": "currentTime",
+            "cedar_type": "datetime",
+            "optional": false,
+            "alternatives_considered": []
+          }
+        },
+        "parent_groups": []
+      },
+      {
+        "name": "addProviderToList",
+        "rationale": "Adds request time to the existing session context so timeout expiration can be compared directly for provider-list updates.",
+        "plain_english_summary": "When a patient adds a provider to their provider list, the request includes the current time so the system can check whether the session has timed out.",
+        "source_excerpt": "Electronic sessions must terminate after the configured inactivity period; after the inactivity limit is exceeded, all authorization is disabled.",
+        "principal_types": [
+          "Patient"
+        ],
+        "resource_types": [
+          "ProviderList"
+        ],
+        "context_attributes": {
+          "currentTime": {
+            "name": "addProviderToList__context__currentTime",
+            "rationale": "Current request time is needed to evaluate whether the session inactivity period has been exceeded.",
+            "plain_english_summary": "The time at which this add-provider request is being made.",
+            "source_excerpt": "Electronic sessions must terminate after the configured inactivity period; after the inactivity limit is exceeded, all authorization is disabled.",
+            "on_entity": "",
+            "field_name": "currentTime",
+            "cedar_type": "datetime",
+            "optional": false,
+            "alternatives_considered": []
+          }
+        },
+        "parent_groups": []
+      },
+      {
+        "name": "designateProvider",
+        "rationale": "Adds request time to the existing session context so timeout expiration can be compared directly for provider designation authorization.",
+        "plain_english_summary": "When a patient designates a provider, the request includes the current time so the system can check whether the session has timed out.",
+        "source_excerpt": "Electronic sessions must terminate after the configured inactivity period; after the inactivity limit is exceeded, all authorization is disabled.",
+        "principal_types": [
+          "Patient"
+        ],
+        "resource_types": [
+          "ProviderDesignation"
+        ],
+        "context_attributes": {
+          "currentTime": {
+            "name": "designateProvider__context__currentTime",
+            "rationale": "Current request time is needed to evaluate whether the session inactivity period has been exceeded.",
+            "plain_english_summary": "The time at which this designate-provider request is being made.",
+            "source_excerpt": "Electronic sessions must terminate after the configured inactivity period; after the inactivity limit is exceeded, all authorization is disabled.",
+            "on_entity": "",
+            "field_name": "currentTime",
+            "cedar_type": "datetime",
+            "optional": false,
+            "alternatives_considered": []
+          }
+        },
+        "parent_groups": []
+      },
+      {
+        "name": "undesignateProvider",
+        "rationale": "Adds request time to the existing session context so timeout expiration can be compared directly for provider undesignation authorization.",
+        "plain_english_summary": "When a patient undesignates a provider, the request includes the current time so the system can check whether the session has timed out.",
+        "source_excerpt": "Electronic sessions must terminate after the configured inactivity period; after the inactivity limit is exceeded, all authorization is disabled.",
+        "principal_types": [
+          "Patient"
+        ],
+        "resource_types": [
+          "ProviderDesignation"
+        ],
+        "context_attributes": {
+          "currentTime": {
+            "name": "undesignateProvider__context__currentTime",
+            "rationale": "Current request time is needed to evaluate whether the session inactivity period has been exceeded.",
+            "plain_english_summary": "The time at which this undesignate-provider request is being made.",
+            "source_excerpt": "Electronic sessions must terminate after the configured inactivity period; after the inactivity limit is exceeded, all authorization is disabled.",
+            "on_entity": "",
+            "field_name": "currentTime",
+            "cedar_type": "datetime",
+            "optional": false,
+            "alternatives_considered": []
+          }
+        },
+        "parent_groups": []
+      },
+      {
+        "name": "viewAccessLog",
+        "rationale": "Adds request time to the existing session context so timeout expiration can be compared directly for access-log viewing authorization.",
+        "plain_english_summary": "When a patient views their access log, the request includes the current time so the system can check whether the session has timed out.",
+        "source_excerpt": "Electronic sessions must terminate after the configured inactivity period; after the inactivity limit is exceeded, all authorization is disabled.",
+        "principal_types": [
+          "Patient"
+        ],
+        "resource_types": [
+          "AccessLog"
+        ],
+        "context_attributes": {
+          "currentTime": {
+            "name": "viewAccessLog__context__currentTime",
+            "rationale": "Current request time is needed to evaluate whether the session inactivity period has been exceeded.",
+            "plain_english_summary": "The time at which this view-access-log request is being made.",
+            "source_excerpt": "Electronic sessions must terminate after the configured inactivity period; after the inactivity limit is exceeded, all authorization is disabled.",
+            "on_entity": "",
+            "field_name": "currentTime",
+            "cedar_type": "datetime",
+            "optional": false,
+            "alternatives_considered": []
+          }
+        },
+        "parent_groups": []
+      },
+      {
+        "name": "viewMedicalRecord",
+        "rationale": "Adds request time to the existing session context so timeout expiration can be compared directly for medical-record viewing authorization.",
+        "plain_english_summary": "When a patient or personal representative views a medical record, the request includes the current time so the system can check whether the session has timed out.",
+        "source_excerpt": "Electronic sessions must terminate after the configured inactivity period; after the inactivity limit is exceeded, all authorization is disabled.",
+        "principal_types": [
+          "Patient",
+          "PersonalRepresentative"
+        ],
+        "resource_types": [
+          "MedicalRecord"
+        ],
+        "context_attributes": {
+          "currentTime": {
+            "name": "viewMedicalRecord__context__currentTime",
+            "rationale": "Current request time is needed to evaluate whether the session inactivity period has been exceeded.",
+            "plain_english_summary": "The time at which this view-medical-record request is being made.",
+            "source_excerpt": "Electronic sessions must terminate after the configured inactivity period; after the inactivity limit is exceeded, all authorization is disabled.",
+            "on_entity": "",
+            "field_name": "currentTime",
+            "cedar_type": "datetime",
+            "optional": false,
+            "alternatives_considered": []
+          }
+        },
+        "parent_groups": []
+      },
+      {
+        "name": "seeRecordDetails",
+        "rationale": "Adds request time to the existing session context so timeout expiration can be compared directly for record-detail viewing authorization.",
+        "plain_english_summary": "When a patient or personal representative sees medical-record details, the request includes the current time so the system can check whether the session has timed out.",
+        "source_excerpt": "Electronic sessions must terminate after the configured inactivity period; after the inactivity limit is exceeded, all authorization is disabled.",
+        "principal_types": [
+          "Patient",
+          "PersonalRepresentative"
+        ],
+        "resource_types": [
+          "MedicalRecord"
+        ],
+        "context_attributes": {
+          "currentTime": {
+            "name": "seeRecordDetails__context__currentTime",
+            "rationale": "Current request time is needed to evaluate whether the session inactivity period has been exceeded.",
+            "plain_english_summary": "The time at which this see-record-details request is being made.",
+            "source_excerpt": "Electronic sessions must terminate after the configured inactivity period; after the inactivity limit is exceeded, all authorization is disabled.",
+            "on_entity": "",
+            "field_name": "currentTime",
+            "cedar_type": "datetime",
+            "optional": false,
+            "alternatives_considered": []
+          }
+        },
+        "parent_groups": []
+      }
+    ],
+    "decisions": [],
+    "approved_atoms": [],
+    "schema_validation": []
+  }
+]

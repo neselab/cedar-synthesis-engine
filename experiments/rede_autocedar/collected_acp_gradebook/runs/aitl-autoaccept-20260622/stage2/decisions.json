@@ -1,0 +1,160 @@
+[
+  {
+    "atom_name": "students_receive_external_grades_floor",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "students_not_assign_external_grades",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "external_grade_receivers_not_assign_external_grades",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "faculty_assign_internal_grades_floor",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "faculty_assign_external_grades_floor",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "faculty_view_internal_grades_floor",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "faculty_view_external_grades_floor",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "tas_assign_internal_grades_floor",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "tas_view_internal_grades_floor",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "nonfaculty_tas_not_assign_external_grades",
+    "action": "reject",
+    "reason": "Stage 2 decomposition critic repair: The source requirement says teaching assistants must not assign external grades, not only teaching assistants who are not faculty. The proposed disjoint_target_body omits the Faculty+TeachingAssistant overlap slice. If the intended model gives faculty precedence over TA restrictions, that precedence boundary must be explicitly justified or represented; otherwise this should be repaired to target all principals with the TeachingAssistant role for assignExternalGrade.",
+    "edit_delta": {
+      "critic_decision": "repair",
+      "critic_tags": [
+        "under-scoped",
+        "missing-role-overlap-boundary",
+        "disjointness-target-too-narrow"
+      ]
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "tas_not_assign_external_grades",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "tas_not_view_external_grades",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "faculty_family_receive_external_grades_floor",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "students_not_assign_internal_grades",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "nonfaculty_enroll_in_courses_floor",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "external_grade_assignment_requires_faculty",
+    "action": "reject",
+    "reason": "Stage 2 decomposition critic repair: The atom turns the source's 'faculty take final responsibility for external grades' and one-way faculty assignment permissions into a broad 'only faculty may assign external grades' ceiling. That may be a useful responsibility/ownership boundary, but the validated schema has no explicit hook for final responsibility or responsible faculty ownership, and using assignExternalGrade membership as a proxy would overstate the source. Repair should either cite a source that explicitly says external-grade assignment is faculty-only, or add/schema-repair a representation of the external-grade final-responsibility boundary before proposing a property over it.",
+    "edit_delta": {
+      "critic_decision": "repair",
+      "critic_tags": [
+        "too-broad-for-source",
+        "schema-gap",
+        "missing-final-responsibility-boundary",
+        "proxy-for-ownership-boundary"
+      ]
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "enroll_in_courses_requires_nonfaculty",
+    "action": "reject",
+    "reason": "Stage 2 decomposition critic reject: The atom converts the one-way source statement 'If a subject is not a faculty member, then permit enrollment' into an exclusive ceiling that forbids faculty enrollment. That converse is not stated in the natural-language requirement, and the nonfaculty enrollment floor already captures the supported sufficient-condition permission. This would over-constrain candidate policies by treating an omitted faculty permission as a prohibition.",
+    "edit_delta": {
+      "critic_decision": "reject",
+      "critic_tags": [
+        "too-broad-for-source",
+        "unsupported-converse",
+        "floor-already-approved"
+      ]
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": false
+  }
+]

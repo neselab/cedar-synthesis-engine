@@ -1,0 +1,1 @@
+permit (principal, action == Action::"createEmergencyResponder", resource) when { principal is Administrator && resource is EmergencyResponder };

@@ -104,6 +104,177 @@ def compose_schema(draft: SchemaDraft) -> str:
     return "\n\n".join(blocks) + "\n"
 
 
+def apply_schema_atoms_to_text(
+    schema_text: str,
+    atoms: list[Stage1Atom],
+) -> str | None:
+    """Apply approved schema-repair atoms to existing schema text.
+
+    This is deliberately conservative. It exists for ``--schema`` workflows
+    where AutoCedar starts from a user-supplied schema rather than a
+    ``SchemaDraft``. Repairs are deterministic and atom-bounded: add approved
+    entity attributes, add approved action context fields, or append whole new
+    entities/actions/type aliases. If an atom cannot be applied without a risky
+    rewrite, return ``None`` and let the pipeline stop before synthesis.
+    """
+    patched = schema_text
+    for atom in atoms:
+        next_text = _apply_one_schema_atom_to_text(patched, atom)
+        if next_text is None:
+            return None
+        patched = next_text
+    return _ensure_trailing_newline(patched)
+
+
+def _apply_one_schema_atom_to_text(schema_text: str, atom: Stage1Atom) -> str | None:
+    if isinstance(atom, AttributeAtom):
+        return _add_entity_attribute(schema_text, atom)
+    if isinstance(atom, EntityAtom):
+        patched = schema_text
+        if not _entity_exists(patched, atom.name):
+            patched = _append_block(patched, _render_entity(atom))
+        for attr in atom.attributes.values():
+            patched = _add_entity_attribute(patched, attr)
+            if patched is None:
+                return None
+        return patched
+    if isinstance(atom, ActionAtom):
+        return _merge_action_atom(schema_text, atom)
+    if isinstance(atom, TypeAliasAtom):
+        if re.search(rf"\btype\s+{re.escape(atom.name)}\b", schema_text):
+            return schema_text
+        return _append_block(schema_text, _render_type_alias(atom))
+    return None
+
+
+def _entity_exists(schema_text: str, name: str) -> bool:
+    return bool(
+        re.search(rf"\bentity\s+{re.escape(name)}\b", schema_text),
+    )
+
+
+def _action_exists(schema_text: str, name: str) -> bool:
+    return bool(
+        re.search(rf"\baction\s+{re.escape(name)}\s+appliesTo\b", schema_text),
+    )
+
+
+def _add_entity_attribute(schema_text: str, attr: AttributeAtom) -> str | None:
+    entity = attr.on_entity
+    if not entity:
+        return None
+    if _entity_has_attribute(schema_text, entity, attr.field_name):
+        return schema_text
+
+    block_pattern = re.compile(
+        rf"(?P<head>\bentity\s+{re.escape(entity)}(?:\s+in\s+\[[^\]]*\])?\s*\{{)"
+        rf"(?P<body>.*?)"
+        rf"(?P<tail>\n?\s*\}};)",
+        re.DOTALL,
+    )
+    match = block_pattern.search(schema_text)
+    if match:
+        insertion = "\n" + _render_attribute(attr)
+        return (
+            schema_text[:match.start("tail")]
+            + insertion
+            + schema_text[match.start("tail"):]
+        )
+
+    bare_pattern = re.compile(
+        rf"(?P<head>\bentity\s+{re.escape(entity)}(?:\s+in\s+\[[^\]]*\])?)\s*;",
+    )
+    match = bare_pattern.search(schema_text)
+    if match:
+        replacement = f"{match.group('head')} {{\n{_render_attribute(attr)}\n}};"
+        return schema_text[:match.start()] + replacement + schema_text[match.end():]
+
+    return None
+
+
+def _entity_has_attribute(schema_text: str, entity: str, field_name: str) -> bool:
+    block_pattern = re.compile(
+        rf"\bentity\s+{re.escape(entity)}(?:\s+in\s+\[[^\]]*\])?\s*\{{"
+        rf"(?P<body>.*?)"
+        rf"\n?\s*\}};",
+        re.DOTALL,
+    )
+    match = block_pattern.search(schema_text)
+    if not match:
+        return False
+    return bool(re.search(rf"\b{re.escape(field_name)}\??\s*:", match.group("body")))
+
+
+def _merge_action_atom(schema_text: str, atom: ActionAtom) -> str | None:
+    if not _action_exists(schema_text, atom.name):
+        return _append_block(schema_text, _render_action(atom))
+    if not atom.context_attributes:
+        return schema_text
+
+    block_pattern = re.compile(
+        rf"(?P<head>\baction\s+{re.escape(atom.name)}\s+appliesTo\s*\{{)"
+        rf"(?P<body>.*?)"
+        rf"(?P<tail>\n?\s*\}};)",
+        re.DOTALL,
+    )
+    match = block_pattern.search(schema_text)
+    if not match:
+        return None
+
+    body = match.group("body")
+    attrs_to_add = [
+        attr
+        for attr in atom.context_attributes.values()
+        if not _action_context_has_attribute(body, attr.field_name)
+    ]
+    if not attrs_to_add:
+        return schema_text
+
+    context_pattern = re.compile(
+        r"(?P<head>\n\s*context\s*:\s*\{)"
+        r"(?P<body>.*?)"
+        r"(?P<tail>\n\s*\},)",
+        re.DOTALL,
+    )
+    context_match = context_pattern.search(body)
+    if context_match:
+        insertion = "".join("\n" + _render_attribute(attr, indent="        ") for attr in attrs_to_add)
+        new_body = (
+            body[:context_match.start("tail")]
+            + insertion
+            + body[context_match.start("tail"):]
+        )
+    else:
+        context_lines = ["    context: {"]
+        context_lines.extend(_render_attribute(attr, indent="        ") for attr in attrs_to_add)
+        context_lines.append("    },")
+        new_body = body.rstrip() + "\n" + "\n".join(context_lines)
+
+    return schema_text[:match.start("body")] + new_body + schema_text[match.end("body"):]
+
+
+def _action_context_has_attribute(action_body: str, field_name: str) -> bool:
+    context_pattern = re.compile(
+        r"\n\s*context\s*:\s*\{(?P<body>.*?)\n\s*\},",
+        re.DOTALL,
+    )
+    match = context_pattern.search(action_body)
+    if not match:
+        return False
+    return bool(re.search(rf"\b{re.escape(field_name)}\??\s*:", match.group("body")))
+
+
+def _append_block(schema_text: str, block: str) -> str:
+    stripped = schema_text.rstrip()
+    if not stripped:
+        return _ensure_trailing_newline(block)
+    return stripped + "\n\n" + block + "\n"
+
+
+def _ensure_trailing_newline(text: str) -> str:
+    return text if text.endswith("\n") else text + "\n"
+
+
 # ---------------------------------------------------------------------------
 # LLM integration.
 # ---------------------------------------------------------------------------

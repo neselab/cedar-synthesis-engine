@@ -1,0 +1,1 @@
+permit (principal, action == Action::"logout", resource) when { resource.user == principal && resource.isActive };

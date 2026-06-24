@@ -1,0 +1,586 @@
+[
+  {
+    "atom_name": "User",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "User__mid",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "User__name",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "User__email",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "Patient",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "Patient__providerList",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "Hcp",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "Lhcp",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "Lhcp__specialty",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "Lhcp__hospitals",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "Lhcp__zipCode",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "Administrator",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "Uap",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "EmergencyResponder",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "PublicHealthAgent",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "PersonalRepresentative",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "PersonalRepresentative__representedPatients",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "Hospital",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "ProviderList",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "ProviderList__patient",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "ProviderList__providers",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "ProviderDesignation",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "ProviderDesignation__patient",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "ProviderDesignation__lhcp",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "ProviderDesignation__isDesignated",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "MedicalRecord",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "MedicalRecord__patient",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "MedicalRecord__hasFamilyHistory",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "MedicalRecord__hasPersonalHealthInformation",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "MedicalRecord__hasImmunizations",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "MedicalRecord__hasOfficeVisitInformation",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "DemographicInformation",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "DemographicInformation__patient",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "Credential",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "Credential__user",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "Credential__hasPassword",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "Credential__hasSecurityQuestion",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "AccessLog",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "AccessLog__patient",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "AccessLog__accessorName",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "AccessLog__accessorRoleRelativeToPatient",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "AccessLog__accessTimestamp",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "AccessLog__transactionType",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "Session",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "Session__user",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "Session__isActive",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "Session__inactivityPeriodLength",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "Session__lastActivityAt",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "createPatient",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "editPatientData",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "enterCredential",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "editCredential",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "viewCredential",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "createLhcp",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "createEmergencyResponder",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "createPublicHealthAgent",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "createUap",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "assignLhcpToHospital",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "login",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "requestPasswordChange",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "logout",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "closeApplication",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "setInactivityPeriodLength",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "viewPriorAndDesignatedLhcps",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "addProviderToList",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "designateDlhcp",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "undesignateDlhcp",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "viewAccessLog",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "viewMedicalRecord",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "viewFamilyHistory",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "viewPersonalHealthInformation",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "viewImmunizations",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "viewOfficeVisitInformation",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  }
+]

@@ -1,0 +1,1 @@
+permit (principal, action == Action::"viewPersonalHealthInformation", resource) when { context.session.isActive && resource.patient == principal && resource.hasPersonalHealthInformation };

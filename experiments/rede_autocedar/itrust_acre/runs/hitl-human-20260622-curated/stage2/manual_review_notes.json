@@ -1,0 +1,5 @@
+{
+  "reviewer": "Codex acting as human admin",
+  "method": "Manually compared iTrust ACRE selected requirements, reviewed generated schema, repaired session-owner type modeling, curated property floors/ceilings/safety checks, then ran Stage 3 harness.",
+  "checks_total": 82
+}

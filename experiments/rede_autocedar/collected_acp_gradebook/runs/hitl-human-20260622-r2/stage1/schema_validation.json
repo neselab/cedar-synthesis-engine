@@ -1,0 +1,11 @@
+[
+  {
+    "attempt_number": 1,
+    "schema_text": "entity User in [Student, Faculty, TeachingAssistant, FacultyFamily];\n\nentity Student;\n\nentity Faculty;\n\nentity TeachingAssistant;\n\nentity FacultyFamily;\n\nentity Grade;\n\nentity InternalGrade in [Grade];\n\nentity ExternalGrade in [Grade] {\n    responsibleFaculty: User,\n};\n\nentity Course;\n\naction assignInternalGrade appliesTo {\n    principal: [User],\n    resource: [InternalGrade],\n};\n\naction assignExternalGrade appliesTo {\n    principal: [User],\n    resource: [ExternalGrade],\n};\n\naction viewInternalGrade appliesTo {\n    principal: [User],\n    resource: [InternalGrade],\n};\n\naction viewExternalGrade appliesTo {\n    principal: [User],\n    resource: [ExternalGrade],\n};\n\naction receiveExternalGrade appliesTo {\n    principal: [User],\n    resource: [ExternalGrade],\n};\n\naction enrollInCourse appliesTo {\n    principal: [User],\n    resource: [Course],\n};\n",
+    "validator_passed": true,
+    "validator_error": "",
+    "llm_was_called": false,
+    "schema_override": false,
+    "schema_gap_repair": true
+  }
+]

@@ -48,13 +48,24 @@ Use this if you just want to run the AutoCedar agent. This installs a persistent
    `python3 --version`. AutoCedar requires Python 3.11+, and older Python
    interpreters will not see compatible PyPI releases.
 
-3. Save your Anthropic API key:
+3. Sign in to Codex for model-backed authoring:
+
+   ```bash
+   codex login
+   autocedar doctor
+   ```
+
+   AutoCedar uses local Codex OAuth by default and reads the same
+   `~/.codex/auth.json` cache used by Codex. No `OPENAI_API_KEY` is required.
+
+   Anthropic is still available as an explicit opt-in provider. If you want
+   that path, run:
 
    ```bash
    autocedar apikey
    ```
 
-   Paste the key when prompted. AutoCedar writes it to your user config
+   Paste the Anthropic key when prompted. AutoCedar writes it to your user config
    (`~/.config/autocedar/.env` by default), redacts it in the terminal output,
    validates it with Anthropic before saving, and uses it immediately and on
    later launches.
@@ -122,12 +133,17 @@ working directly with repo-local examples/datasets.
    cd cedar-synthesis-engine
    ```
 
-2. Install the Python environment and save your Anthropic API key:
+2. Install the Python environment and sign in to Codex:
 
    ```bash
    uv sync
-   uv run autocedar apikey
+   codex login
+   uv run autocedar doctor
    ```
+
+   AutoCedar uses Codex OAuth by default. Anthropic is optional and explicit:
+   use `AUTOCEDAR_PROVIDER=anthropic` or `/provider anthropic`, then run
+   `uv run autocedar apikey` only if you intentionally want the Anthropic path.
 
 3. Install/check the verifier tools:
 
@@ -179,7 +195,7 @@ working directly with repo-local examples/datasets.
    ```
 
 `autocedar setup` installs or prints the missing verifier-tool install steps.
-`autocedar doctor` checks the exact Cedar, SymCC, CVC5, and API-key state
+`autocedar doctor` checks the exact Cedar, SymCC, CVC5, and model auth state
 AutoCedar will use. Fix any `FAIL` lines before authoring. After that, you
 should see the AutoCedar interactive terminal UI.
 
@@ -193,6 +209,7 @@ Without cloning the repo:
 ```bash
 docker run --rm -it \
   --env-file .env \
+  -v "$HOME/.codex:/root/.codex:ro" \
   -v "$PWD:/work" \
   -w /work \
   ghcr.io/neselab/autocedar:latest
@@ -218,8 +235,8 @@ Once the TUI opens, try:
 
 ```text
 /settings
-/apikey
-/model claude-opus-4-7
+/models
+/model gpt-5.5
 /effort high
 start a policy draft
 Doctors can read records for patients on their care team.
@@ -276,9 +293,10 @@ graph LR
 | File | Role |
 | --- | --- |
 | `autocedar/tui.py` | Interactive conversational terminal agent. This is what `autocedar` opens by default. |
+| `autocedar/agent.py` | Structured terminal-agent control plane: model-produced `AgentAction`s, state snapshots, and planner validation. |
 | `autocedar/cli.py` | Console entry point for `autocedar`, plus scriptable `author`, `verify`, and `synthesize` subcommands. |
 | `autocedar/pipeline.py` | End-to-end authoring pipeline: schema atoms, property atoms, review, harness compile, Stage 3 synthesis hook. |
-| `autocedar/llm.py` | Anthropic-backed chat and structured LLM calls for schema/property atomization. |
+| `autocedar/llm.py` | Provider-backed structured LLM calls for schema/property atomization and repair. |
 | `autocedar/schema_atomizer.py` | Stage 1 schema atom proposal, composition, and schema validation helpers. |
 | `autocedar/property_atomizer.py` | Stage 2 property atom proposal from prose plus validated schema. |
 | `autocedar/ui/terminal.py` | HITL review loop for schema and property atoms. |
@@ -387,8 +405,10 @@ be a boolean flag, use `E cedar_type=Bool`. AutoCedar re-presents the edited
 atom before you approve it. If you edit a property atom, symbolic checks are
 rerun after approval so stale verification results are not reused.
 
-After the schema is established, AutoCedar proposes Stage 2 property atoms from
-the spec plus schema. These become the formal verification harness:
+After the schema is established, AutoCedar proposes Stage 2 property atoms one
+at a time from the spec plus schema. Each proposal is symbolically checked and
+sent through HITL review before AutoCedar asks the model for the next property.
+The approved atoms become the formal verification harness:
 
 - `verification_plan.py` — check descriptors such as `implies`,
   `always-denies-liveness`, and `never-errors`
@@ -564,13 +584,18 @@ AutoCedar's symbolic verification path. Reinstall with:
 cargo install cedar-policy-cli --locked --version 4.10.0 --features analyze --force
 ```
 
-### API Keys And Local Config
+### LLM Providers And Local Config
 
-AutoCedar uses Anthropic models for the conversational TUI, schema
-atomization, property atomization, and optional harness translation. The key is
-read from `ANTHROPIC_API_KEY`.
+AutoCedar supports two live model providers:
 
-The easiest path is the CLI helper:
+- **OpenAI Codex** by local Codex OAuth. This is the default provider. It reuses the login cache created by
+  `codex login` and defaults to `gpt-5.5`.
+- **Anthropic** by API key. This is explicit opt-in via
+  `AUTOCEDAR_PROVIDER=anthropic` or `/provider anthropic`.
+
+#### Anthropic API Key
+
+The easiest explicit Anthropic path is the CLI helper:
 
 ```bash
 uv run autocedar apikey
@@ -607,8 +632,8 @@ autocedar
 Or create a `.env` file in the directory where you run AutoCedar:
 
 ```dotenv
-ANTHROPIC_API_KEY=sk-ant-...
-AUTOCEDAR_MODEL=claude-opus-4-7
+AUTOCEDAR_PROVIDER=codex
+AUTOCEDAR_CODEX_MODEL=gpt-5.5
 AUTOCEDAR_EFFORT=high
 CEDAR=/usr/local/bin/cedar
 CVC5=/usr/bin/cvc5
@@ -622,22 +647,68 @@ For a normal project, the path is simply:
 your-policy-project/.env
 ```
 
-The interactive agent can also configure the current session from inside the
-TUI:
+#### OpenAI Codex OAuth
+
+To use the default Codex provider, sign in once with the Codex CLI:
+
+```bash
+codex login
+```
+
+Codex stores the local login under `~/.codex/auth.json` by default. Treat that
+file like a password; it contains OAuth tokens. AutoCedar reads that cache,
+refreshes it when needed, calls the Codex backend directly, and discovers the
+models visible to that token. No `OPENAI_API_KEY` is required for this path.
+
+Inside AutoCedar, these commands show or adjust the default path:
+
+```text
+/provider codex
+/models
+/model gpt-5.5
+/effort high
+```
+
+`/models` lists the models visible to your Codex OAuth token and shows each
+model's supported reasoning levels, default reasoning level, context window,
+speed/service tiers, and verbosity support. AutoCedar keeps the UI spelling
+`max`; when the selected provider is Codex, `/effort max` sends Codex's
+token-visible `xhigh` reasoning level.
+
+To switch to Anthropic explicitly:
+
+```text
+/provider anthropic
+```
+
+If your Codex auth file lives somewhere else, set one of:
+
+```bash
+export CODEX_HOME=/path/to/codex-home
+export AUTOCEDAR_CODEX_AUTH_PATH=/path/to/auth.json
+```
+
+#### TUI Settings
+
+The interactive agent can configure the current session from inside the TUI:
 
 ```text
 /settings
-/model claude-opus-4-7
+/provider anthropic|codex
+/models
+/model gpt-5.5
 /effort low|medium|high|max
 /apikey
 /apikey clear
 ```
 
-`/apikey` prompts for the key, redacts it in the transcript, and validates it
+`/apikey` prompts for the Anthropic key, redacts it in the transcript, and validates it
 with Anthropic before saving. `/apikey sk-ant-...` also works for one-line
 setup. Rejected keys are not persisted. Valid keys save to the same user-level
 AutoCedar config, so the key persists across new `uvx` sessions and package
-upgrades.
+upgrades. `/provider codex` uses the Codex OAuth cache instead of the Anthropic
+API key; `/models` shows the token-visible Codex models, reasoning levels,
+context windows, and speed/service tiers.
 
 ### Docker
 
@@ -657,6 +728,7 @@ Manual equivalent:
 docker build -t autocedar .
 docker run --rm -it \
   --env-file .env \
+  -v "$HOME/.codex:/root/.codex:ro" \
   -v "$PWD:/work" \
   -w /work \
   autocedar
@@ -667,7 +739,7 @@ That error is usually caused by hidden Unicode spaces or broken line
 continuations in a copied multi-line command:
 
 ```bash
-docker run --rm -it --env-file .env -v "$PWD:/work" -w /work autocedar
+docker run --rm -it --env-file .env -v "$HOME/.codex:/root/.codex:ro" -v "$PWD:/work" -w /work autocedar
 ```
 
 Tagged releases publish the same image to GitHub Container Registry:
@@ -675,13 +747,16 @@ Tagged releases publish the same image to GitHub Container Registry:
 ```bash
 docker run --rm -it \
   --env-file .env \
+  -v "$HOME/.codex:/root/.codex:ro" \
   -v "$PWD:/work" \
   -w /work \
   ghcr.io/neselab/autocedar:latest
 ```
 
-Docker users can either pass the key as `-e ANTHROPIC_API_KEY=...` or mount a
-project directory containing `.env`; AutoCedar will load that mounted `.env`
+Docker users who want the default Codex provider should mount their Codex auth
+cache into the container, for example `-v "$HOME/.codex:/root/.codex:ro"`.
+If you explicitly switch to Anthropic, pass `-e ANTHROPIC_API_KEY=...` or mount
+a project directory containing `.env`; AutoCedar will load that mounted `.env`
 from the container working directory.
 
 ## How To Use AutoCedar
@@ -712,10 +787,11 @@ summarizes the inferred action and waits for "yes" / "no". The conversational
 layer can answer questions about the current TUI state, while `author` still
 runs with clean authoring inputs: the saved prose spec, optional schema, and
 HITL review decisions. `verify` and `synthesize` wrap the v1 CEGIS harness.
-The CLI/TUI authoring path uses LLM-backed Stage 1 schema atomization and Stage
-2 property atomization, then runs Stage 3 through the packaged v1 CEGIS harness
-adapter. The Stage 3 hook remains injectable for library users and tests; the
-explicit `synthesize` command also wraps the v1 CEGIS harness directly.
+The CLI/TUI authoring path uses LLM-backed Stage 1 schema atomization and
+one-at-a-time Stage 2 property atomization, then runs Stage 3 through the
+packaged v1 CEGIS harness adapter. The Stage 3 hook remains injectable for
+library users and tests; the explicit `synthesize` command also wraps the v1
+CEGIS harness directly.
 
 ### Interactive Agent Usage
 
@@ -725,7 +801,11 @@ Start the agent:
 uv run autocedar
 ```
 
-Inside the TUI, normal language is the primary interface:
+Inside the TUI, normal language is the primary interface once Codex OAuth is
+available through `codex login`, or once you explicitly switch to Anthropic and
+configure an Anthropic key. The live planner maps
+each message to one validated tool action; AutoCedar does not run a separate
+local phrase router.
 
 ```text
 start a policy draft
@@ -752,13 +832,18 @@ Slash shortcuts are available for repeatable control:
 
 | Command | Purpose |
 | --- | --- |
-| `/settings` | Show selected model, effort, and API-key status. |
-| `/model MODEL` | Set the default model for chat, authoring atomization, and default TUI synthesis phases. |
-| `/effort low\|medium\|high\|max` | Set adaptive thinking effort for chat/authoring calls that support it. |
+| `/settings` | Show selected provider, model, effort, and auth status. |
+| `/provider anthropic\|codex` | Switch between Anthropic API-key mode and local Codex OAuth mode. |
+| `/models` | Show available models for the active provider. For Codex, this queries the token-backed Codex model endpoint and shows reasoning levels, context windows, and speed/service tiers. |
+| `/model MODEL` | Set the default model for the agent planner, authoring atomization, and default TUI synthesis phases. |
+| `/effort low\|medium\|high\|max` | Set adaptive thinking effort for planner/authoring calls that support it. |
 | `/apikey` | Prompt for `ANTHROPIC_API_KEY`; save it to user config and redact it in the transcript. |
 | `/apikey KEY` | Save `ANTHROPIC_API_KEY` to user config. |
 | `/apikey clear` | Remove the key from user config and the current process. |
-| `/draft` | Show the current prose draft. |
+| `/draft` | Start draft capture when empty, otherwise show the current prose draft with line numbers. |
+| `/draft edit LINE TEXT` | Replace one draft/spec line from inside the TUI. |
+| `/draft delete LINE` | Delete one draft/spec line from inside the TUI. |
+| `/draft insert LINE TEXT` | Insert a draft/spec line before `LINE`. |
 | `/artifacts` | Show the latest authoring session, schema, and policy paths. |
 | `/schema [PATH]` | Show the latest generated Cedar schema, or a schema file you provide. |
 | `/policy [PATH]` | Show the latest synthesized Cedar policy, or a policy file you provide. |
@@ -769,11 +854,16 @@ Slash shortcuts are available for repeatable control:
 | `/copy policy [path]` | Copy the latest policy text, or use `/copy policy path` to copy its path. |
 | `/save [PATH]` | Save the draft, defaulting to `autocedar-spec.md`. |
 | `/new` | Clear the draft and leave drafting mode. |
-| `/author SPEC --out DIR [--schema PATH] [--model MODEL] [--effort high]` | Run HITL authoring from a spec file. |
+| `/author [SPEC] --out DIR [--schema PATH] [--model MODEL] [--effort high]` | Run HITL authoring from a spec file, or from the current draft when no spec is supplied. |
 | `/verify [WORKSPACE]` | Verify an existing workspace, defaulting to `workspace`. |
 | `/synthesize SCENARIO... [--out DIR] [--max-iters N] [--no-review]` | Run the v1 CEGIS harness on one or more scenarios. |
 | `/clear` | Clear the transcript. |
 | `/quit` | Exit. |
+
+You can also say this in ordinary language, for example: `change line 2 to
+Nurses can update vitals only during their shift`, `delete draft line 3`, or
+`insert before line 2 Patients can view their own records`. The model planner
+turns that into the same draft-edit action as the slash shortcuts.
 
 During HITL atom review, the prompt accepts one-line review commands:
 
@@ -813,7 +903,7 @@ Use explicit subcommands for scripts and repeatable experiments:
 uv run autocedar author policy_spec.md \
   --out ./autocedar-runs \
   --schema workspace/schema.cedarschema \
-  --model claude-opus-4-7 \
+  --model gpt-5.5 \
   --effort high
 
 uv run autocedar verify workspace
@@ -821,8 +911,8 @@ uv run autocedar verify workspace
 uv run autocedar synthesize cedarbench/scenarios/realworld/emergency_break_glass \
   --no-review \
   --max-iters 20 \
-  --phase1-model claude-opus-4-7 \
-  --phase2-model claude-sonnet-4-20250514
+  --phase1-model gpt-5.5 \
+  --phase2-model gpt-5.5
 ```
 
 ### Output Files
@@ -843,8 +933,8 @@ Authoring writes session artifacts under the `--out` directory, usually
 
 | Symptom | Fix |
 | --- | --- |
-| Chat says no API key is loaded | Run `autocedar apikey`, use `/apikey` in the TUI, or export `ANTHROPIC_API_KEY`. AutoCedar loads `~/.config/autocedar/.env` on startup. |
-| API key works in shell but not TUI | Run `autocedar doctor` to confirm what AutoCedar sees. Shell env wins first; otherwise the saved AutoCedar user config key wins over a stale project `.env` key. |
+| Chat says auth is not configured | Default path: run `codex login`, then `autocedar doctor`. Explicit Anthropic path: run `autocedar apikey`, use `/apikey` in the TUI, or export `ANTHROPIC_API_KEY`. |
+| API key works in shell but not TUI | This applies only after `/provider anthropic`. Run `autocedar doctor` to confirm what AutoCedar sees. Shell env wins first; otherwise the saved AutoCedar user config key wins over a stale project `.env` key. |
 | Cannot select/copy from the TUI | Textual full-screen apps can intercept mouse selection. Use `/copy last`, `/copy transcript`, `/copy session`, `/copy schema path`, `/copy policy path`, `/copy schema`, or `/copy policy`. Some terminals also allow mouse selection while holding Shift. If your terminal/container has no clipboard command, AutoCedar shows a copy fallback panel for manual selection. |
 | Verification says Cedar is missing | Set `CEDAR=/path/to/cedar` or install the Cedar CLI. |
 | Verification says CVC5 is missing | Install CVC5, confirm `cvc5 --version` works, then set `CVC5=$(command -v cvc5)` in `.env` if needed. |

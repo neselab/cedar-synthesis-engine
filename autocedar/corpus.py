@@ -153,6 +153,11 @@ class Session:
         (self.base / "stage1" / "final_schema.cedarschema").write_text(schema_text)
         self._event("stage1.schema_written", {"size": len(schema_text)})
 
+    def write_stage1_schema_validation(self, attempts: list[dict[str, Any]]) -> None:
+        path = self.base / "stage1" / "schema_validation.json"
+        path.write_text(json.dumps(attempts, indent=2))
+        self._event("stage1.schema_validation", {"attempts": len(attempts)})
+
     # -----------------------------------------------------------------
     # Stage 1.5 — schema amendments forced by Stage 2 sugars.
     # -----------------------------------------------------------------
@@ -161,6 +166,16 @@ class Session:
         path = self.base / "stage1_5" / "amendments.json"
         path.write_text(json.dumps(amendments, indent=2))
         self._event("stage1_5.amendments", {"count": len(amendments)})
+
+    def write_stage1_5_schema_gaps(self, gaps: list[dict[str, Any]]) -> None:
+        path = self.base / "stage1_5" / "schema_gaps.json"
+        path.write_text(json.dumps(gaps, indent=2))
+        self._event("stage1_5.schema_gaps", {"count": len(gaps)})
+
+    def write_stage1_5_schema_gap_repairs(self, repairs: list[dict[str, Any]]) -> None:
+        path = self.base / "stage1_5" / "schema_gap_repairs.json"
+        path.write_text(json.dumps(repairs, indent=2))
+        self._event("stage1_5.schema_gap_repairs", {"count": len(repairs)})
 
     # -----------------------------------------------------------------
     # Stage 2.
@@ -182,6 +197,17 @@ class Session:
         path = self.base / "stage2" / "decisions.json"
         path.write_text(json.dumps([to_dict(d) for d in decisions], indent=2))
         self._event("stage2.decisions_logged", {"count": len(decisions)})
+
+    def write_stage2_critic_reviews(self, reviews: list[dict[str, Any]]) -> None:
+        path = self.base / "stage2" / "critic_reviews.json"
+        path.write_text(json.dumps(reviews, indent=2))
+        self._event("stage2.critic_reviews", {"count": len(reviews)})
+
+    def write_stage2_intent_graph(self, graph: dict[str, Any]) -> None:
+        path = self.base / "stage2" / "intent_graph.json"
+        path.write_text(json.dumps(graph, indent=2))
+        summary = graph.get("summary", {})
+        self._event("stage2.intent_graph", summary if isinstance(summary, dict) else {})
 
     def write_stage2_symbolic_verification_logs(
         self, logs: dict[str, list[str]],

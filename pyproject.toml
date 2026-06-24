@@ -1,6 +1,6 @@
 [project]
 name = "autocedar"
-version = "0.1.19"
+version = "0.1.20"
 description = "Human-in-the-loop Cedar policy authoring with symbolic verification."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -57,8 +57,9 @@ requires = ["setuptools>=77", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-include = ["autocedar*"]
+include = ["autocedar", "autocedar.*"]
 exclude = [
+    "autocedar-runs*",
     "cedarbench*",
     "dataset*",
     "experiments*",

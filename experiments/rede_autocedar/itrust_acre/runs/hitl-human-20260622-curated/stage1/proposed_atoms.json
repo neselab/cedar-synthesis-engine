@@ -1,0 +1,1865 @@
+[
+  {
+    "name": "User",
+    "rationale": "Authenticated actors share a common user identity for login and session-bound authorization.",
+    "plain_english_summary": "A person who can authenticate to iTrust.",
+    "source_excerpt": "Important actors include Patient, HCP, LHCP, DLHCP, Administrator, Emergency Responder, UAP, Personal Representative, Public Health Agent, Lab Technician, Software Tester, and ordinary authenticated User.",
+    "members_of": [],
+    "attributes": {},
+    "enum_values": null
+  },
+  {
+    "name": "User__mid",
+    "rationale": "MID is the login identifier and is assigned to some users.",
+    "plain_english_summary": "The user's medical identification number used for login.",
+    "source_excerpt": "A user authenticates with MID and password.",
+    "on_entity": "User",
+    "field_name": "mid",
+    "cedar_type": "String",
+    "optional": false,
+    "alternatives_considered": [
+      "Modeled credentials as a separate resource, but MID is also a stable user identifier."
+    ]
+  },
+  {
+    "name": "User__password",
+    "rationale": "Password is part of authentication and credential secrecy requirements.",
+    "plain_english_summary": "The user's password credential.",
+    "source_excerpt": "A user authenticates with MID and password.",
+    "on_entity": "User",
+    "field_name": "password",
+    "cedar_type": "String",
+    "optional": false,
+    "alternatives_considered": [
+      "Modeled only a passwordHash field, but the spec names password directly."
+    ]
+  },
+  {
+    "name": "User__securityQuestion",
+    "rationale": "Security question must be representable for HCP non-access requirements.",
+    "plain_english_summary": "The user's account security question.",
+    "source_excerpt": "The HCP must not enter, edit, or view the patient's security question or password.",
+    "on_entity": "User",
+    "field_name": "securityQuestion",
+    "cedar_type": "String",
+    "optional": true,
+    "alternatives_considered": [
+      "Placed only on Patient, but the wording describes account credentials."
+    ]
+  },
+  {
+    "name": "Patient",
+    "rationale": "Patients are principals and resources with patient-specific privacy relationships.",
+    "plain_english_summary": "A patient whose account and medical information are managed in iTrust.",
+    "source_excerpt": "Important actors include Patient, HCP, LHCP, DLHCP, Administrator, Emergency Responder, UAP, Personal Representative, Public Health Agent, Lab Technician, Software Tester, and ordinary authenticated User.",
+    "members_of": [
+      "User"
+    ],
+    "attributes": {},
+    "enum_values": null
+  },
+  {
+    "name": "Patient__isActive",
+    "rationale": "Deactivated patient restrictions require lifecycle state on the patient account.",
+    "plain_english_summary": "Whether the patient account is active or deactivated.",
+    "source_excerpt": "A deactivated patient cannot be modified or log into the system and can only be reactivated by an administrator.",
+    "on_entity": "Patient",
+    "field_name": "isActive",
+    "cedar_type": "Bool",
+    "optional": false,
+    "alternatives_considered": [
+      "Modeled status as a string enum, but the spec only distinguishes deactivated versus not."
+    ]
+  },
+  {
+    "name": "Patient__designatedLhcps",
+    "rationale": "DLHCP is patient-specific and must be represented as a relationship rather than a global role only.",
+    "plain_english_summary": "The licensed health-care professionals this patient has designated.",
+    "source_excerpt": "A patient can designate or undesignate any LHCP as a DLHCP for that patient.",
+    "on_entity": "Patient",
+    "field_name": "designatedLhcps",
+    "cedar_type": "Set<LHCP>",
+    "optional": false,
+    "alternatives_considered": [
+      "Modeled DLHCP only as a principal entity type, but the spec says designation is for that patient."
+    ]
+  },
+  {
+    "name": "Patient__providerList",
+    "rationale": "The patient provider list is needed for viewing and adding patient providers.",
+    "plain_english_summary": "The LHCPs on the patient's provider list.",
+    "source_excerpt": "A patient can add a LHCP to the patient provider list.",
+    "on_entity": "Patient",
+    "field_name": "providerList",
+    "cedar_type": "Set<LHCP>",
+    "optional": false,
+    "alternatives_considered": [
+      "Used office visits alone, but the spec separately names a provider list."
+    ]
+  },
+  {
+    "name": "Patient__visitedLhcps",
+    "rationale": "The patient can view LHCPs they have ever had office visits with.",
+    "plain_english_summary": "LHCPs the patient has previously visited.",
+    "source_excerpt": "A patient can view all LHCPs the patient has ever had an office visit with and all LHCPs the patient has designated.",
+    "on_entity": "Patient",
+    "field_name": "visitedLhcps",
+    "cedar_type": "Set<LHCP>",
+    "optional": false,
+    "alternatives_considered": [
+      "Derived from OfficeVisit records, but the spec directly asks to view this set."
+    ]
+  },
+  {
+    "name": "HCP",
+    "rationale": "HCPs are principals for patient account and medical-record actions.",
+    "plain_english_summary": "A health-care professional using iTrust.",
+    "source_excerpt": "Doctors and other health-care workers can obtain and share essential patient information and view aggregate patient data.",
+    "members_of": [
+      "User"
+    ],
+    "attributes": {},
+    "enum_values": null
+  },
+  {
+    "name": "LHCP",
+    "rationale": "Licensed HCPs have special patient-designation and administrative creation semantics.",
+    "plain_english_summary": "A licensed health-care professional.",
+    "source_excerpt": "An administrator can create LHCPs, emergency responders, lab technicians, and public health agents.",
+    "members_of": [
+      "HCP"
+    ],
+    "attributes": {},
+    "enum_values": null
+  },
+  {
+    "name": "LHCP__hospitals",
+    "rationale": "Hospital assignment constraints require the LHCP-to-hospital relationship.",
+    "plain_english_summary": "The hospitals an LHCP is assigned to.",
+    "source_excerpt": "An administrator can assign an LHCP to multiple hospitals, choosing only hospitals from the hospital list.",
+    "on_entity": "LHCP",
+    "field_name": "hospitals",
+    "cedar_type": "Set<Hospital>",
+    "optional": false,
+    "alternatives_considered": []
+  },
+  {
+    "name": "Administrator",
+    "rationale": "Administrators create staff, assign credentials, reactivate patients, and configure inactivity limits.",
+    "plain_english_summary": "An administrative user who manages accounts and system settings.",
+    "source_excerpt": "An administrator can create LHCPs, emergency responders, lab technicians, and public health agents.",
+    "members_of": [
+      "User"
+    ],
+    "attributes": {},
+    "enum_values": null
+  },
+  {
+    "name": "EmergencyResponder",
+    "rationale": "Emergency responders are named actor types requiring account creation and likely emergency access distinctions.",
+    "plain_english_summary": "A user who responds to emergencies.",
+    "source_excerpt": "An administrator can create LHCPs, emergency responders, lab technicians, and public health agents.",
+    "members_of": [
+      "User"
+    ],
+    "attributes": {},
+    "enum_values": null
+  },
+  {
+    "name": "UAP",
+    "rationale": "UAP users are created by LHCPs and can access demographic and medical information.",
+    "plain_english_summary": "Unlicensed assistive personnel user.",
+    "source_excerpt": "A LHCP can create UAP users.",
+    "members_of": [
+      "User"
+    ],
+    "attributes": {},
+    "enum_values": null
+  },
+  {
+    "name": "PersonalRepresentative",
+    "rationale": "Personal representative principals need patient-specific represented-person relationships.",
+    "plain_english_summary": "A user who may act on behalf of a patient they represent.",
+    "source_excerpt": "A patient can view their own access log, or the access log for a person for whom they are a personal representative.",
+    "members_of": [
+      "User"
+    ],
+    "attributes": {},
+    "enum_values": null
+  },
+  {
+    "name": "PersonalRepresentative__representedPatients",
+    "rationale": "Representative authority is patient-specific and reused across record and access-log actions.",
+    "plain_english_summary": "The patients this person is authorized to represent.",
+    "source_excerpt": "A patient or personal representative can view medical records, family history, personal health information, immunizations, and office-visit information for their own records and for patients they represent.",
+    "on_entity": "PersonalRepresentative",
+    "field_name": "representedPatients",
+    "cedar_type": "Set<Patient>",
+    "optional": false,
+    "alternatives_considered": [
+      "Flattened personal representative into a global role, but the spec says representation is for particular patients."
+    ]
+  },
+  {
+    "name": "PublicHealthAgent",
+    "rationale": "Public health agents are named users created by administrators.",
+    "plain_english_summary": "A public-health user account.",
+    "source_excerpt": "An administrator can create LHCPs, emergency responders, lab technicians, and public health agents.",
+    "members_of": [
+      "User"
+    ],
+    "attributes": {},
+    "enum_values": null
+  },
+  {
+    "name": "LabTechnician",
+    "rationale": "Lab technicians are named users created by administrators.",
+    "plain_english_summary": "A lab technician user account.",
+    "source_excerpt": "An administrator can create LHCPs, emergency responders, lab technicians, and public health agents.",
+    "members_of": [
+      "User"
+    ],
+    "attributes": {},
+    "enum_values": null
+  },
+  {
+    "name": "SoftwareTester",
+    "rationale": "Software Tester is an important actor named in the slice.",
+    "plain_english_summary": "A software tester user account.",
+    "source_excerpt": "Important actors include Patient, HCP, LHCP, DLHCP, Administrator, Emergency Responder, UAP, Personal Representative, Public Health Agent, Lab Technician, Software Tester, and ordinary authenticated User.",
+    "members_of": [
+      "User"
+    ],
+    "attributes": {},
+    "enum_values": null
+  },
+  {
+    "name": "Hospital",
+    "rationale": "Hospitals are resources in LHCP assignment constraints.",
+    "plain_english_summary": "A hospital from the approved hospital list.",
+    "source_excerpt": "An administrator can assign an LHCP to multiple hospitals, choosing only hospitals from the hospital list.",
+    "members_of": [],
+    "attributes": {},
+    "enum_values": null
+  },
+  {
+    "name": "Session",
+    "rationale": "Global authenticated-session lifecycle rules require a reusable session boundary for protected actions.",
+    "plain_english_summary": "An authenticated login session that may expire or terminate.",
+    "source_excerpt": "Authenticated sessions terminate after inactivity, logout, or closing the application.",
+    "members_of": [],
+    "attributes": {},
+    "enum_values": null
+  },
+  {
+    "name": "Session__isActive",
+    "rationale": "Authorization is disabled after session expiry, so actions need active-session state.",
+    "plain_english_summary": "Whether the session is currently active.",
+    "source_excerpt": "After the inactivity limit is exceeded, authorization is disabled.",
+    "on_entity": "Session",
+    "field_name": "isActive",
+    "cedar_type": "Bool",
+    "optional": false,
+    "alternatives_considered": [
+      "Used only an expiresAt timestamp, but the spec directly states authorization is disabled after inactivity."
+    ]
+  },
+  {
+    "name": "Session__user",
+    "rationale": "Protected actions need to bind the session to the requesting user.",
+    "plain_english_summary": "The user who owns the authenticated session.",
+    "source_excerpt": "A user authenticates with MID and password.",
+    "on_entity": "Session",
+    "field_name": "user",
+    "cedar_type": "User",
+    "optional": false,
+    "alternatives_considered": []
+  },
+  {
+    "name": "Session__lastActivityAt",
+    "rationale": "Inactivity-based termination depends on when the session was last active.",
+    "plain_english_summary": "The time of the user's last activity in this session.",
+    "source_excerpt": "Authenticated sessions terminate after inactivity, logout, or closing the application.",
+    "on_entity": "Session",
+    "field_name": "lastActivityAt",
+    "cedar_type": "datetime",
+    "optional": true,
+    "alternatives_considered": []
+  },
+  {
+    "name": "SystemSettings",
+    "rationale": "The administrator-configured inactivity period is a system-level resource.",
+    "plain_english_summary": "System-wide configurable settings for iTrust.",
+    "source_excerpt": "The administrator can set the inactivity period length.",
+    "members_of": [],
+    "attributes": {},
+    "enum_values": null
+  },
+  {
+    "name": "SystemSettings__inactivityPeriod",
+    "rationale": "Authorization expiry depends on the configured inactivity period length.",
+    "plain_english_summary": "How long a session may be inactive before authorization is disabled.",
+    "source_excerpt": "The administrator can set the inactivity period length.",
+    "on_entity": "SystemSettings",
+    "field_name": "inactivityPeriod",
+    "cedar_type": "duration",
+    "optional": false,
+    "alternatives_considered": []
+  },
+  {
+    "name": "MedicalRecord",
+    "rationale": "Medical records are central protected patient resources.",
+    "plain_english_summary": "A patient's medical record.",
+    "source_excerpt": "A patient or personal representative can view medical records, family history, personal health information, immunizations, and office-visit information for their own records and for patients they represent.",
+    "members_of": [],
+    "attributes": {},
+    "enum_values": null
+  },
+  {
+    "name": "MedicalRecord__patient",
+    "rationale": "Own-record and represented-record access requires linking records to the patient.",
+    "plain_english_summary": "The patient whose record this is.",
+    "source_excerpt": "for their own records and for patients they represent",
+    "on_entity": "MedicalRecord",
+    "field_name": "patient",
+    "cedar_type": "Patient",
+    "optional": false,
+    "alternatives_considered": [
+      "Used action context only, but ownership is persistent on the record."
+    ]
+  },
+  {
+    "name": "DiagnosticInformation",
+    "rationale": "Diagnostic information has patient-controlled restrictions and LHCP viewing rules.",
+    "plain_english_summary": "Diagnosis-related information in a patient's record.",
+    "source_excerpt": "Approved diagnostic information is diagnostic information that a patient allows a designated or other licensed health-care professional to view.",
+    "members_of": [],
+    "attributes": {},
+    "enum_values": null
+  },
+  {
+    "name": "DiagnosticInformation__patient",
+    "rationale": "Diagnosis access restrictions are controlled by the affected patient.",
+    "plain_english_summary": "The patient this diagnostic information belongs to.",
+    "source_excerpt": "Approved diagnostic information is diagnostic information that a patient allows a designated or other licensed health-care professional to view.",
+    "on_entity": "DiagnosticInformation",
+    "field_name": "patient",
+    "cedar_type": "Patient",
+    "optional": false,
+    "alternatives_considered": []
+  },
+  {
+    "name": "DiagnosticInformation__isRestricted",
+    "rationale": "Selected diagnoses can have restricted viewing.",
+    "plain_english_summary": "Whether viewing this diagnosis has been restricted.",
+    "source_excerpt": "For selected diagnostic information, such as mental-illness, substance-abuse, or cosmetic surgery diagnoses, the patient can restrict viewing.",
+    "on_entity": "DiagnosticInformation",
+    "field_name": "isRestricted",
+    "cedar_type": "Bool",
+    "optional": false,
+    "alternatives_considered": [
+      "Modeled diagnosis category enum, but policy needs the selected restricted state."
+    ]
+  },
+  {
+    "name": "DiagnosticInformation__restrictionAllowed",
+    "rationale": "An LHCP determines whether a patient is allowed to restrict a diagnosis.",
+    "plain_english_summary": "Whether the patient may restrict viewing of this diagnosis.",
+    "source_excerpt": "A licensed health-care professional determines whether the patient is allowed to restrict viewing of a diagnosis.",
+    "on_entity": "DiagnosticInformation",
+    "field_name": "restrictionAllowed",
+    "cedar_type": "Bool",
+    "optional": false,
+    "alternatives_considered": []
+  },
+  {
+    "name": "DiagnosticInformation__allowedViewers",
+    "rationale": "The patient can choose designated LHCPs, other LHCPs, or no one for restricted diagnostic viewing.",
+    "plain_english_summary": "Which LHCPs may view this restricted diagnostic information.",
+    "source_excerpt": "A patient can enable designated licensed health-care professionals, other licensed health-care professionals, or no one to view restricted diagnostic information.",
+    "on_entity": "DiagnosticInformation",
+    "field_name": "allowedViewers",
+    "cedar_type": "Set<LHCP>",
+    "optional": false,
+    "alternatives_considered": [
+      "Modeled as a coarse visibility enum, but explicit viewer set supports patient-specific permissions."
+    ]
+  },
+  {
+    "name": "PersonalHealthInformation",
+    "rationale": "Personal health information is a separately named protected resource.",
+    "plain_english_summary": "Personal health information belonging to a patient.",
+    "source_excerpt": "A patient or personal representative can view medical records, family history, personal health information, immunizations, and office-visit information for their own records and for patients they represent.",
+    "members_of": [],
+    "attributes": {},
+    "enum_values": null
+  },
+  {
+    "name": "PersonalHealthInformation__patient",
+    "rationale": "Access and edit rules are for a selected or represented patient.",
+    "plain_english_summary": "The patient this personal health information belongs to.",
+    "source_excerpt": "An HCP can enter and edit a patient's personal health records.",
+    "on_entity": "PersonalHealthInformation",
+    "field_name": "patient",
+    "cedar_type": "Patient",
+    "optional": false,
+    "alternatives_considered": []
+  },
+  {
+    "name": "FamilyHistory",
+    "rationale": "Family history is named as viewable medical information.",
+    "plain_english_summary": "A patient's family medical history.",
+    "source_excerpt": "A patient or personal representative can view medical records, family history, personal health information, immunizations, and office-visit information for their own records and for patients they represent.",
+    "members_of": [],
+    "attributes": {},
+    "enum_values": null
+  },
+  {
+    "name": "FamilyHistory__patient",
+    "rationale": "Own and represented access requires the family history owner.",
+    "plain_english_summary": "The patient this family history belongs to.",
+    "source_excerpt": "for their own records and for patients they represent",
+    "on_entity": "FamilyHistory",
+    "field_name": "patient",
+    "cedar_type": "Patient",
+    "optional": false,
+    "alternatives_considered": []
+  },
+  {
+    "name": "Immunization",
+    "rationale": "Immunizations are separately viewable and editable medical data.",
+    "plain_english_summary": "A patient's immunization information.",
+    "source_excerpt": "An HCP can edit historical values, immunizations, office-visit information, family history, BMI, and death status for a selected patient.",
+    "members_of": [],
+    "attributes": {},
+    "enum_values": null
+  },
+  {
+    "name": "Immunization__patient",
+    "rationale": "Immunization access and editing are scoped to a selected patient.",
+    "plain_english_summary": "The patient this immunization belongs to.",
+    "source_excerpt": "for a selected patient",
+    "on_entity": "Immunization",
+    "field_name": "patient",
+    "cedar_type": "Patient",
+    "optional": false,
+    "alternatives_considered": []
+  },
+  {
+    "name": "OfficeVisit",
+    "rationale": "Office visits are protected resources documented, edited, viewed, and surveyed.",
+    "plain_english_summary": "An office visit recorded for a patient.",
+    "source_excerpt": "An HCP can document and edit office visits for a selected patient, including date, hospital, notes, prescriptions, lab procedures, diagnoses, procedures, immunizations, and referrals.",
+    "members_of": [],
+    "attributes": {},
+    "enum_values": null
+  },
+  {
+    "name": "OfficeVisit__patient",
+    "rationale": "Office visits are for selected patients and patient-owned views.",
+    "plain_english_summary": "The patient associated with the office visit.",
+    "source_excerpt": "for a selected patient",
+    "on_entity": "OfficeVisit",
+    "field_name": "patient",
+    "cedar_type": "Patient",
+    "optional": false,
+    "alternatives_considered": []
+  },
+  {
+    "name": "OfficeVisit__hospital",
+    "rationale": "The office-visit record includes hospital information.",
+    "plain_english_summary": "The hospital where the office visit occurred.",
+    "source_excerpt": "including date, hospital, notes, prescriptions, lab procedures, diagnoses, procedures, immunizations, and referrals",
+    "on_entity": "OfficeVisit",
+    "field_name": "hospital",
+    "cedar_type": "Hospital",
+    "optional": true,
+    "alternatives_considered": []
+  },
+  {
+    "name": "OfficeVisit__surveyTaken",
+    "rationale": "Survey authorization depends on whether the survey has already been taken.",
+    "plain_english_summary": "Whether the satisfaction survey for this office visit has already been submitted.",
+    "source_excerpt": "If a patient or personal representative has not taken an office-visit satisfaction survey, they may take the survey; after the survey has been taken, they cannot take or view the previously submitted survey through that path.",
+    "on_entity": "OfficeVisit",
+    "field_name": "surveyTaken",
+    "cedar_type": "Bool",
+    "optional": false,
+    "alternatives_considered": [
+      "Created a separate Survey resource, but the rule is tied to each office visit."
+    ]
+  },
+  {
+    "name": "AccessLog",
+    "rationale": "Access logs are patient-related resources that patients and representatives may view.",
+    "plain_english_summary": "A record of access to a patient's information.",
+    "source_excerpt": "A patient can view their own access log, or the access log for a person for whom they are a personal representative.",
+    "members_of": [],
+    "attributes": {},
+    "enum_values": null
+  },
+  {
+    "name": "AccessLog__patient",
+    "rationale": "Access-log viewing is scoped to the patient or represented person.",
+    "plain_english_summary": "The patient whose access log this is.",
+    "source_excerpt": "for themself or a represented person",
+    "on_entity": "AccessLog",
+    "field_name": "patient",
+    "cedar_type": "Patient",
+    "optional": false,
+    "alternatives_considered": []
+  },
+  {
+    "name": "AccessLog__accessorName",
+    "rationale": "The spec describes accessor name as part of access logs.",
+    "plain_english_summary": "The name of the person who accessed the information.",
+    "source_excerpt": "Access logs include accessor name, accessor role relative to the patient, date/time, and transaction type.",
+    "on_entity": "AccessLog",
+    "field_name": "accessorName",
+    "cedar_type": "String",
+    "optional": false,
+    "alternatives_considered": []
+  },
+  {
+    "name": "AccessLog__accessorRole",
+    "rationale": "The spec describes accessor role relative to the patient as logged data.",
+    "plain_english_summary": "The accessor's role relative to the patient.",
+    "source_excerpt": "Access logs include accessor name, accessor role relative to the patient, date/time, and transaction type.",
+    "on_entity": "AccessLog",
+    "field_name": "accessorRole",
+    "cedar_type": "String",
+    "optional": false,
+    "alternatives_considered": []
+  },
+  {
+    "name": "AccessLog__accessedAt",
+    "rationale": "The spec describes date/time as part of access logs.",
+    "plain_english_summary": "When the access occurred.",
+    "source_excerpt": "Access logs include accessor name, accessor role relative to the patient, date/time, and transaction type.",
+    "on_entity": "AccessLog",
+    "field_name": "accessedAt",
+    "cedar_type": "datetime",
+    "optional": false,
+    "alternatives_considered": []
+  },
+  {
+    "name": "AccessLog__transactionType",
+    "rationale": "The spec describes transaction type as part of access logs.",
+    "plain_english_summary": "The kind of transaction that was logged.",
+    "source_excerpt": "Access logs include accessor name, accessor role relative to the patient, date/time, and transaction type.",
+    "on_entity": "AccessLog",
+    "field_name": "transactionType",
+    "cedar_type": "String",
+    "optional": false,
+    "alternatives_considered": []
+  },
+  {
+    "name": "ProviderDesignation",
+    "rationale": "Provider designations are explicit resources for designating or undesignating patient-specific DLHCP relationships.",
+    "plain_english_summary": "A record that an LHCP is designated for a patient.",
+    "source_excerpt": "Important resources include patient accounts, credentials, demographic information, medical records, diagnostic information, office visits, access logs, provider designations, personal-representative relationships, and authenticated sessions.",
+    "members_of": [],
+    "attributes": {},
+    "enum_values": null
+  },
+  {
+    "name": "ProviderDesignation__patient",
+    "rationale": "A provider designation belongs to a particular patient.",
+    "plain_english_summary": "The patient who made the designation.",
+    "source_excerpt": "for that patient",
+    "on_entity": "ProviderDesignation",
+    "field_name": "patient",
+    "cedar_type": "Patient",
+    "optional": false,
+    "alternatives_considered": []
+  },
+  {
+    "name": "ProviderDesignation__lhcp",
+    "rationale": "A provider designation names the LHCP being designated.",
+    "plain_english_summary": "The LHCP designated by the patient.",
+    "source_excerpt": "A patient can designate or undesignate any LHCP as a DLHCP for that patient.",
+    "on_entity": "ProviderDesignation",
+    "field_name": "lhcp",
+    "cedar_type": "LHCP",
+    "optional": false,
+    "alternatives_considered": []
+  },
+  {
+    "name": "PersonalRepresentativeRelationship",
+    "rationale": "Personal-representative status is patient-specific and is managed as a resource.",
+    "plain_english_summary": "A relationship showing that a user represents a patient.",
+    "source_excerpt": "Important resources include patient accounts, credentials, demographic information, medical records, diagnostic information, office visits, access logs, provider designations, personal-representative relationships, and authenticated sessions.",
+    "members_of": [],
+    "attributes": {},
+    "enum_values": null
+  },
+  {
+    "name": "PersonalRepresentativeRelationship__patient",
+    "rationale": "Representative relationships are for selected patients.",
+    "plain_english_summary": "The patient being represented.",
+    "source_excerpt": "for a selected patient",
+    "on_entity": "PersonalRepresentativeRelationship",
+    "field_name": "patient",
+    "cedar_type": "Patient",
+    "optional": false,
+    "alternatives_considered": []
+  },
+  {
+    "name": "PersonalRepresentativeRelationship__representative",
+    "rationale": "Representative relationships identify the registered user who represents the patient.",
+    "plain_english_summary": "The user who is the patient's personal representative.",
+    "source_excerpt": "An HCP can add or remove another registered user as a personal health representative for a selected patient.",
+    "on_entity": "PersonalRepresentativeRelationship",
+    "field_name": "representative",
+    "cedar_type": "User",
+    "optional": false,
+    "alternatives_considered": [
+      "Typed as PersonalRepresentative only, but the spec says another registered user can be added."
+    ]
+  },
+  {
+    "name": "DemographicInformation",
+    "rationale": "Demographic information is a named resource entered and edited by UAPs.",
+    "plain_english_summary": "A patient's demographic data.",
+    "source_excerpt": "UAP can enter and edit demographic information, diagnosis, office visit notes, and other medical information, and can view records.",
+    "members_of": [],
+    "attributes": {},
+    "enum_values": null
+  },
+  {
+    "name": "DemographicInformation__patient",
+    "rationale": "Demographic information is patient data and must be scoped to a patient.",
+    "plain_english_summary": "The patient this demographic information belongs to.",
+    "source_excerpt": "The HCP can enter a patient as a new user and can edit the patient according to the patient data format, but the patient MID cannot be edited.",
+    "on_entity": "DemographicInformation",
+    "field_name": "patient",
+    "cedar_type": "Patient",
+    "optional": false,
+    "alternatives_considered": []
+  },
+  {
+    "name": "login",
+    "rationale": "Authentication with MID and password is a resource-less session action represented using Session.",
+    "plain_english_summary": "Log in to create or use an authenticated session.",
+    "source_excerpt": "A user authenticates with MID and password.",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "Session"
+    ],
+    "context_attributes": {},
+    "parent_groups": []
+  },
+  {
+    "name": "logout",
+    "rationale": "Logout terminates authenticated sessions.",
+    "plain_english_summary": "Log out of an authenticated session.",
+    "source_excerpt": "Authenticated sessions terminate after inactivity, logout, or closing the application.",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "Session"
+    ],
+    "context_attributes": {
+      "session": {
+        "name": "logout__context__session",
+        "rationale": "Logout operates on the current authenticated session.",
+        "plain_english_summary": "The session being logged out.",
+        "source_excerpt": "Authenticated sessions terminate after inactivity, logout, or closing the application.",
+        "on_entity": "",
+        "field_name": "session",
+        "cedar_type": "Session",
+        "optional": false,
+        "alternatives_considered": []
+      }
+    },
+    "parent_groups": []
+  },
+  {
+    "name": "createPatient",
+    "rationale": "HCPs can create patient accounts.",
+    "plain_english_summary": "Create a new patient user account.",
+    "source_excerpt": "An HCP can create or disable a selected patient.",
+    "principal_types": [
+      "HCP"
+    ],
+    "resource_types": [
+      "Patient"
+    ],
+    "context_attributes": {
+      "session": {
+        "name": "createPatient__context__session",
+        "rationale": "Patient creation is a protected action by an authenticated HCP.",
+        "plain_english_summary": "The active session for the requester.",
+        "source_excerpt": "An HCP can create or disable a selected patient.",
+        "on_entity": "",
+        "field_name": "session",
+        "cedar_type": "Session",
+        "optional": false,
+        "alternatives_considered": []
+      }
+    },
+    "parent_groups": []
+  },
+  {
+    "name": "disablePatient",
+    "rationale": "HCPs can disable selected patients.",
+    "plain_english_summary": "Deactivate a patient account.",
+    "source_excerpt": "An HCP can create or disable a selected patient.",
+    "principal_types": [
+      "HCP"
+    ],
+    "resource_types": [
+      "Patient"
+    ],
+    "context_attributes": {
+      "session": {
+        "name": "disablePatient__context__session",
+        "rationale": "Patient disablement is a protected action.",
+        "plain_english_summary": "The active session for the requester.",
+        "source_excerpt": "An HCP can create or disable a selected patient.",
+        "on_entity": "",
+        "field_name": "session",
+        "cedar_type": "Session",
+        "optional": false,
+        "alternatives_considered": []
+      }
+    },
+    "parent_groups": []
+  },
+  {
+    "name": "reactivatePatient",
+    "rationale": "Only administrators can reactivate deactivated patients in later policy.",
+    "plain_english_summary": "Reactivate a deactivated patient account.",
+    "source_excerpt": "A deactivated patient cannot be modified or log into the system and can only be reactivated by an administrator.",
+    "principal_types": [
+      "Administrator"
+    ],
+    "resource_types": [
+      "Patient"
+    ],
+    "context_attributes": {
+      "session": {
+        "name": "reactivatePatient__context__session",
+        "rationale": "Patient reactivation is a protected administrative action.",
+        "plain_english_summary": "The active session for the requester.",
+        "source_excerpt": "A deactivated patient cannot be modified or log into the system and can only be reactivated by an administrator.",
+        "on_entity": "",
+        "field_name": "session",
+        "cedar_type": "Session",
+        "optional": false,
+        "alternatives_considered": []
+      }
+    },
+    "parent_groups": []
+  },
+  {
+    "name": "editPatient",
+    "rationale": "Patient profile editing is allowed except for immutable MID and credential secrecy rules.",
+    "plain_english_summary": "Edit patient account data.",
+    "source_excerpt": "The HCP can enter a patient as a new user and can edit the patient according to the patient data format, but the patient MID cannot be edited.",
+    "principal_types": [
+      "HCP"
+    ],
+    "resource_types": [
+      "Patient"
+    ],
+    "context_attributes": {
+      "session": {
+        "name": "editPatient__context__session",
+        "rationale": "Editing patient data is a protected action.",
+        "plain_english_summary": "The active session for the requester.",
+        "source_excerpt": "The HCP can enter a patient as a new user and can edit the patient according to the patient data format, but the patient MID cannot be edited.",
+        "on_entity": "",
+        "field_name": "session",
+        "cedar_type": "Session",
+        "optional": false,
+        "alternatives_considered": []
+      }
+    },
+    "parent_groups": []
+  },
+  {
+    "name": "viewCredential",
+    "rationale": "Credential viewing must be modeled so policy can forbid HCP access to security questions and passwords.",
+    "plain_english_summary": "View a user's credential or security-question information.",
+    "source_excerpt": "The HCP must not enter, edit, or view the patient's security question or password.",
+    "principal_types": [
+      "HCP",
+      "Administrator",
+      "User"
+    ],
+    "resource_types": [
+      "User"
+    ],
+    "context_attributes": {
+      "session": {
+        "name": "viewCredential__context__session",
+        "rationale": "Credential access is session-bound.",
+        "plain_english_summary": "The active session for the requester.",
+        "source_excerpt": "The HCP must not enter, edit, or view the patient's security question or password.",
+        "on_entity": "",
+        "field_name": "session",
+        "cedar_type": "Session",
+        "optional": false,
+        "alternatives_considered": []
+      }
+    },
+    "parent_groups": []
+  },
+  {
+    "name": "createLHCP",
+    "rationale": "Administrators can create LHCP accounts.",
+    "plain_english_summary": "Create an LHCP user account.",
+    "source_excerpt": "An administrator can create LHCPs, emergency responders, lab technicians, and public health agents.",
+    "principal_types": [
+      "Administrator"
+    ],
+    "resource_types": [
+      "LHCP"
+    ],
+    "context_attributes": {
+      "session": {
+        "name": "createLHCP__context__session",
+        "rationale": "Administrative account creation is protected.",
+        "plain_english_summary": "The active session for the requester.",
+        "source_excerpt": "An administrator can create LHCPs, emergency responders, lab technicians, and public health agents.",
+        "on_entity": "",
+        "field_name": "session",
+        "cedar_type": "Session",
+        "optional": false,
+        "alternatives_considered": []
+      }
+    },
+    "parent_groups": []
+  },
+  {
+    "name": "createEmergencyResponder",
+    "rationale": "Administrators can create emergency responder accounts.",
+    "plain_english_summary": "Create an emergency responder user account.",
+    "source_excerpt": "An administrator can create LHCPs, emergency responders, lab technicians, and public health agents.",
+    "principal_types": [
+      "Administrator"
+    ],
+    "resource_types": [
+      "EmergencyResponder"
+    ],
+    "context_attributes": {
+      "session": {
+        "name": "createEmergencyResponder__context__session",
+        "rationale": "Administrative account creation is protected.",
+        "plain_english_summary": "The active session for the requester.",
+        "source_excerpt": "An administrator can create LHCPs, emergency responders, lab technicians, and public health agents.",
+        "on_entity": "",
+        "field_name": "session",
+        "cedar_type": "Session",
+        "optional": false,
+        "alternatives_considered": []
+      }
+    },
+    "parent_groups": []
+  },
+  {
+    "name": "createLabTechnician",
+    "rationale": "Administrators can create lab technician accounts.",
+    "plain_english_summary": "Create a lab technician user account.",
+    "source_excerpt": "An administrator can create LHCPs, emergency responders, lab technicians, and public health agents.",
+    "principal_types": [
+      "Administrator"
+    ],
+    "resource_types": [
+      "LabTechnician"
+    ],
+    "context_attributes": {
+      "session": {
+        "name": "createLabTechnician__context__session",
+        "rationale": "Administrative account creation is protected.",
+        "plain_english_summary": "The active session for the requester.",
+        "source_excerpt": "An administrator can create LHCPs, emergency responders, lab technicians, and public health agents.",
+        "on_entity": "",
+        "field_name": "session",
+        "cedar_type": "Session",
+        "optional": false,
+        "alternatives_considered": []
+      }
+    },
+    "parent_groups": []
+  },
+  {
+    "name": "createPublicHealthAgent",
+    "rationale": "Administrators can create public health agent accounts.",
+    "plain_english_summary": "Create a public health agent user account.",
+    "source_excerpt": "An administrator can create LHCPs, emergency responders, lab technicians, and public health agents.",
+    "principal_types": [
+      "Administrator"
+    ],
+    "resource_types": [
+      "PublicHealthAgent"
+    ],
+    "context_attributes": {
+      "session": {
+        "name": "createPublicHealthAgent__context__session",
+        "rationale": "Administrative account creation is protected.",
+        "plain_english_summary": "The active session for the requester.",
+        "source_excerpt": "An administrator can create LHCPs, emergency responders, lab technicians, and public health agents.",
+        "on_entity": "",
+        "field_name": "session",
+        "cedar_type": "Session",
+        "optional": false,
+        "alternatives_considered": []
+      }
+    },
+    "parent_groups": []
+  },
+  {
+    "name": "createUAP",
+    "rationale": "LHCPs can create UAP users.",
+    "plain_english_summary": "Create a UAP user account.",
+    "source_excerpt": "A LHCP can create UAP users.",
+    "principal_types": [
+      "LHCP"
+    ],
+    "resource_types": [
+      "UAP"
+    ],
+    "context_attributes": {
+      "session": {
+        "name": "createUAP__context__session",
+        "rationale": "UAP account creation is protected.",
+        "plain_english_summary": "The active session for the requester.",
+        "source_excerpt": "A LHCP can create UAP users.",
+        "on_entity": "",
+        "field_name": "session",
+        "cedar_type": "Session",
+        "optional": false,
+        "alternatives_considered": []
+      }
+    },
+    "parent_groups": []
+  },
+  {
+    "name": "assignCredentials",
+    "rationale": "Administrators assign medical identification numbers and passwords to LHCPs.",
+    "plain_english_summary": "Assign an MID and password to an LHCP.",
+    "source_excerpt": "An administrator can assign medical identification numbers and passwords to LHCPs.",
+    "principal_types": [
+      "Administrator"
+    ],
+    "resource_types": [
+      "LHCP"
+    ],
+    "context_attributes": {
+      "session": {
+        "name": "assignCredentials__context__session",
+        "rationale": "Credential assignment is protected.",
+        "plain_english_summary": "The active session for the requester.",
+        "source_excerpt": "An administrator can assign medical identification numbers and passwords to LHCPs.",
+        "on_entity": "",
+        "field_name": "session",
+        "cedar_type": "Session",
+        "optional": false,
+        "alternatives_considered": []
+      }
+    },
+    "parent_groups": []
+  },
+  {
+    "name": "assignHospital",
+    "rationale": "Administrators assign LHCPs to hospitals from the hospital list.",
+    "plain_english_summary": "Assign an LHCP to a hospital.",
+    "source_excerpt": "An administrator can assign an LHCP to multiple hospitals, choosing only hospitals from the hospital list.",
+    "principal_types": [
+      "Administrator"
+    ],
+    "resource_types": [
+      "LHCP"
+    ],
+    "context_attributes": {
+      "session": {
+        "name": "assignHospital__context__session",
+        "rationale": "Hospital assignment is protected.",
+        "plain_english_summary": "The active session for the requester.",
+        "source_excerpt": "An administrator can assign an LHCP to multiple hospitals, choosing only hospitals from the hospital list.",
+        "on_entity": "",
+        "field_name": "session",
+        "cedar_type": "Session",
+        "optional": false,
+        "alternatives_considered": []
+      },
+      "hospital": {
+        "name": "assignHospital__context__hospital",
+        "rationale": "The chosen hospital must be available to the policy decision.",
+        "plain_english_summary": "The hospital being assigned.",
+        "source_excerpt": "An administrator can assign an LHCP to multiple hospitals, choosing only hospitals from the hospital list.",
+        "on_entity": "",
+        "field_name": "hospital",
+        "cedar_type": "Hospital",
+        "optional": false,
+        "alternatives_considered": []
+      }
+    },
+    "parent_groups": []
+  },
+  {
+    "name": "setInactivityPeriod",
+    "rationale": "Administrators configure the inactivity period length.",
+    "plain_english_summary": "Change the system inactivity timeout.",
+    "source_excerpt": "The administrator can set the inactivity period length.",
+    "principal_types": [
+      "Administrator"
+    ],
+    "resource_types": [
+      "SystemSettings"
+    ],
+    "context_attributes": {
+      "session": {
+        "name": "setInactivityPeriod__context__session",
+        "rationale": "System settings changes are protected.",
+        "plain_english_summary": "The active session for the requester.",
+        "source_excerpt": "The administrator can set the inactivity period length.",
+        "on_entity": "",
+        "field_name": "session",
+        "cedar_type": "Session",
+        "optional": false,
+        "alternatives_considered": []
+      }
+    },
+    "parent_groups": []
+  },
+  {
+    "name": "requestPasswordChange",
+    "rationale": "Users may request password changes.",
+    "plain_english_summary": "Request a password change.",
+    "source_excerpt": "The user may request a password change.",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "User"
+    ],
+    "context_attributes": {
+      "session": {
+        "name": "requestPasswordChange__context__session",
+        "rationale": "Password-change requests are tied to an authenticated requester.",
+        "plain_english_summary": "The active session for the requester.",
+        "source_excerpt": "The user may request a password change.",
+        "on_entity": "",
+        "field_name": "session",
+        "cedar_type": "Session",
+        "optional": false,
+        "alternatives_considered": []
+      }
+    },
+    "parent_groups": []
+  },
+  {
+    "name": "viewLhcps",
+    "rationale": "Patients can view LHCPs they visited and designated.",
+    "plain_english_summary": "View LHCPs associated with the patient.",
+    "source_excerpt": "A patient can view all LHCPs the patient has ever had an office visit with and all LHCPs the patient has designated.",
+    "principal_types": [
+      "Patient"
+    ],
+    "resource_types": [
+      "Patient"
+    ],
+    "context_attributes": {
+      "session": {
+        "name": "viewLhcps__context__session",
+        "rationale": "Viewing provider relationships is protected.",
+        "plain_english_summary": "The active session for the requester.",
+        "source_excerpt": "A patient can view all LHCPs the patient has ever had an office visit with and all LHCPs the patient has designated.",
+        "on_entity": "",
+        "field_name": "session",
+        "cedar_type": "Session",
+        "optional": false,
+        "alternatives_considered": []
+      }
+    },
+    "parent_groups": []
+  },
+  {
+    "name": "addProvider",
+    "rationale": "Patients can add LHCPs to their provider list.",
+    "plain_english_summary": "Add an LHCP to the patient's provider list.",
+    "source_excerpt": "A patient can add a LHCP to the patient provider list.",
+    "principal_types": [
+      "Patient"
+    ],
+    "resource_types": [
+      "Patient"
+    ],
+    "context_attributes": {
+      "session": {
+        "name": "addProvider__context__session",
+        "rationale": "Provider-list modification is protected.",
+        "plain_english_summary": "The active session for the requester.",
+        "source_excerpt": "A patient can add a LHCP to the patient provider list.",
+        "on_entity": "",
+        "field_name": "session",
+        "cedar_type": "Session",
+        "optional": false,
+        "alternatives_considered": []
+      },
+      "lhcp": {
+        "name": "addProvider__context__lhcp",
+        "rationale": "The LHCP being added must be available to the authorization decision.",
+        "plain_english_summary": "The provider being added.",
+        "source_excerpt": "A patient can add a LHCP to the patient provider list.",
+        "on_entity": "",
+        "field_name": "lhcp",
+        "cedar_type": "LHCP",
+        "optional": false,
+        "alternatives_considered": []
+      }
+    },
+    "parent_groups": []
+  },
+  {
+    "name": "designateLHCP",
+    "rationale": "Patients designate LHCPs as DLHCPs for that patient.",
+    "plain_english_summary": "Designate an LHCP for the patient.",
+    "source_excerpt": "A patient can designate or undesignate any LHCP as a DLHCP for that patient.",
+    "principal_types": [
+      "Patient"
+    ],
+    "resource_types": [
+      "ProviderDesignation"
+    ],
+    "context_attributes": {
+      "session": {
+        "name": "designateLHCP__context__session",
+        "rationale": "Provider designation is protected.",
+        "plain_english_summary": "The active session for the requester.",
+        "source_excerpt": "A patient can designate or undesignate any LHCP as a DLHCP for that patient.",
+        "on_entity": "",
+        "field_name": "session",
+        "cedar_type": "Session",
+        "optional": false,
+        "alternatives_considered": []
+      }
+    },
+    "parent_groups": []
+  },
+  {
+    "name": "undesignateLHCP",
+    "rationale": "Patients can remove a patient-specific LHCP designation.",
+    "plain_english_summary": "Remove an LHCP designation for the patient.",
+    "source_excerpt": "A patient can designate or undesignate any LHCP as a DLHCP for that patient.",
+    "principal_types": [
+      "Patient"
+    ],
+    "resource_types": [
+      "ProviderDesignation"
+    ],
+    "context_attributes": {
+      "session": {
+        "name": "undesignateLHCP__context__session",
+        "rationale": "Provider undesignation is protected.",
+        "plain_english_summary": "The active session for the requester.",
+        "source_excerpt": "A patient can designate or undesignate any LHCP as a DLHCP for that patient.",
+        "on_entity": "",
+        "field_name": "session",
+        "cedar_type": "Session",
+        "optional": false,
+        "alternatives_considered": []
+      }
+    },
+    "parent_groups": []
+  },
+  {
+    "name": "viewAccessLog",
+    "rationale": "Patients and representatives can view access logs for themselves or represented patients.",
+    "plain_english_summary": "View a patient's access log.",
+    "source_excerpt": "A patient can view their own access log, or the access log for a person for whom they are a personal representative.",
+    "principal_types": [
+      "Patient",
+      "PersonalRepresentative"
+    ],
+    "resource_types": [
+      "AccessLog"
+    ],
+    "context_attributes": {
+      "session": {
+        "name": "viewAccessLog__context__session",
+        "rationale": "Access-log viewing is protected.",
+        "plain_english_summary": "The active session for the requester.",
+        "source_excerpt": "A patient can view their own access log, or the access log for a person for whom they are a personal representative.",
+        "on_entity": "",
+        "field_name": "session",
+        "cedar_type": "Session",
+        "optional": false,
+        "alternatives_considered": []
+      },
+      "patient": {
+        "name": "viewAccessLog__context__patient",
+        "rationale": "Patient-specific ownership or representation must be checked.",
+        "plain_english_summary": "The patient whose log is being viewed.",
+        "source_excerpt": "A patient can view their own access log, or the access log for a person for whom they are a personal representative.",
+        "on_entity": "",
+        "field_name": "patient",
+        "cedar_type": "Patient",
+        "optional": false,
+        "alternatives_considered": []
+      }
+    },
+    "parent_groups": []
+  },
+  {
+    "name": "viewMedicalRecord",
+    "rationale": "Patients and representatives can view own or represented medical records.",
+    "plain_english_summary": "View a patient's medical record.",
+    "source_excerpt": "A patient or personal representative can view medical records, family history, personal health information, immunizations, and office-visit information for their own records and for patients they represent.",
+    "principal_types": [
+      "Patient",
+      "PersonalRepresentative",
+      "LHCP",
+      "EmergencyResponder",
+      "UAP"
+    ],
+    "resource_types": [
+      "MedicalRecord"
+    ],
+    "context_attributes": {
+      "session": {
+        "name": "viewMedicalRecord__context__session",
+        "rationale": "Medical-record viewing is protected.",
+        "plain_english_summary": "The active session for the requester.",
+        "source_excerpt": "A patient or personal representative can view medical records, family history, personal health information, immunizations, and office-visit information for their own records and for patients they represent.",
+        "on_entity": "",
+        "field_name": "session",
+        "cedar_type": "Session",
+        "optional": false,
+        "alternatives_considered": []
+      },
+      "patient": {
+        "name": "viewMedicalRecord__context__patient",
+        "rationale": "Patient-specific ownership, designation, or representation must be checked.",
+        "plain_english_summary": "The patient whose record is being viewed.",
+        "source_excerpt": "A patient or personal representative can view medical records, family history, personal health information, immunizations, and office-visit information for their own records and for patients they represent.",
+        "on_entity": "",
+        "field_name": "patient",
+        "cedar_type": "Patient",
+        "optional": false,
+        "alternatives_considered": []
+      }
+    },
+    "parent_groups": []
+  },
+  {
+    "name": "viewDiagnosticInformation",
+    "rationale": "Diagnostic information viewing depends on patient approval and restrictions.",
+    "plain_english_summary": "View diagnostic information.",
+    "source_excerpt": "Approved diagnostic information is diagnostic information that a patient allows a designated or other licensed health-care professional to view.",
+    "principal_types": [
+      "LHCP",
+      "Patient",
+      "PersonalRepresentative"
+    ],
+    "resource_types": [
+      "DiagnosticInformation"
+    ],
+    "context_attributes": {
+      "session": {
+        "name": "viewDiagnosticInformation__context__session",
+        "rationale": "Diagnostic-information viewing is protected.",
+        "plain_english_summary": "The active session for the requester.",
+        "source_excerpt": "Approved diagnostic information is diagnostic information that a patient allows a designated or other licensed health-care professional to view.",
+        "on_entity": "",
+        "field_name": "session",
+        "cedar_type": "Session",
+        "optional": false,
+        "alternatives_considered": []
+      },
+      "patient": {
+        "name": "viewDiagnosticInformation__context__patient",
+        "rationale": "Patient-specific designation and ownership must be checked.",
+        "plain_english_summary": "The patient whose diagnosis is being viewed.",
+        "source_excerpt": "Approved diagnostic information is diagnostic information that a patient allows a designated or other licensed health-care professional to view.",
+        "on_entity": "",
+        "field_name": "patient",
+        "cedar_type": "Patient",
+        "optional": false,
+        "alternatives_considered": []
+      }
+    },
+    "parent_groups": []
+  },
+  {
+    "name": "restrictDiagnosticInformation",
+    "rationale": "Patients can restrict selected diagnostic information when allowed.",
+    "plain_english_summary": "Restrict who can view a diagnosis.",
+    "source_excerpt": "A patient can restrict viewing on selected diagnostic information.",
+    "principal_types": [
+      "Patient"
+    ],
+    "resource_types": [
+      "DiagnosticInformation"
+    ],
+    "context_attributes": {
+      "session": {
+        "name": "restrictDiagnosticInformation__context__session",
+        "rationale": "Diagnostic restriction changes are protected.",
+        "plain_english_summary": "The active session for the requester.",
+        "source_excerpt": "A patient can restrict viewing on selected diagnostic information.",
+        "on_entity": "",
+        "field_name": "session",
+        "cedar_type": "Session",
+        "optional": false,
+        "alternatives_considered": []
+      }
+    },
+    "parent_groups": []
+  },
+  {
+    "name": "determineDiagnosisRestrictionAllowed",
+    "rationale": "LHCPs determine whether patients may restrict diagnosis viewing.",
+    "plain_english_summary": "Decide whether a diagnosis can be restricted by the patient.",
+    "source_excerpt": "A licensed health-care professional determines whether the patient is allowed to restrict viewing of a diagnosis.",
+    "principal_types": [
+      "LHCP"
+    ],
+    "resource_types": [
+      "DiagnosticInformation"
+    ],
+    "context_attributes": {
+      "session": {
+        "name": "determineDiagnosisRestrictionAllowed__context__session",
+        "rationale": "Restriction determinations are protected clinical actions.",
+        "plain_english_summary": "The active session for the requester.",
+        "source_excerpt": "A licensed health-care professional determines whether the patient is allowed to restrict viewing of a diagnosis.",
+        "on_entity": "",
+        "field_name": "session",
+        "cedar_type": "Session",
+        "optional": false,
+        "alternatives_considered": []
+      }
+    },
+    "parent_groups": []
+  },
+  {
+    "name": "viewPersonalHealthInformation",
+    "rationale": "Patients and representatives can view own or represented personal health information.",
+    "plain_english_summary": "View personal health information.",
+    "source_excerpt": "A patient or personal representative can view medical records, family history, personal health information, immunizations, and office-visit information for their own records and for patients they represent.",
+    "principal_types": [
+      "Patient",
+      "PersonalRepresentative"
+    ],
+    "resource_types": [
+      "PersonalHealthInformation"
+    ],
+    "context_attributes": {
+      "session": {
+        "name": "viewPersonalHealthInformation__context__session",
+        "rationale": "Personal health information viewing is protected.",
+        "plain_english_summary": "The active session for the requester.",
+        "source_excerpt": "A patient or personal representative can view medical records, family history, personal health information, immunizations, and office-visit information for their own records and for patients they represent.",
+        "on_entity": "",
+        "field_name": "session",
+        "cedar_type": "Session",
+        "optional": false,
+        "alternatives_considered": []
+      },
+      "patient": {
+        "name": "viewPersonalHealthInformation__context__patient",
+        "rationale": "Own-record and represented-record checks need the target patient.",
+        "plain_english_summary": "The patient whose information is being viewed.",
+        "source_excerpt": "A patient or personal representative can view medical records, family history, personal health information, immunizations, and office-visit information for their own records and for patients they represent.",
+        "on_entity": "",
+        "field_name": "patient",
+        "cedar_type": "Patient",
+        "optional": false,
+        "alternatives_considered": []
+      }
+    },
+    "parent_groups": []
+  },
+  {
+    "name": "viewFamilyHistory",
+    "rationale": "Family history is viewable by patients and representatives for own or represented records.",
+    "plain_english_summary": "View family history.",
+    "source_excerpt": "A patient or personal representative can view medical records, family history, personal health information, immunizations, and office-visit information for their own records and for patients they represent.",
+    "principal_types": [
+      "Patient",
+      "PersonalRepresentative"
+    ],
+    "resource_types": [
+      "FamilyHistory"
+    ],
+    "context_attributes": {
+      "session": {
+        "name": "viewFamilyHistory__context__session",
+        "rationale": "Family history viewing is protected.",
+        "plain_english_summary": "The active session for the requester.",
+        "source_excerpt": "A patient or personal representative can view medical records, family history, personal health information, immunizations, and office-visit information for their own records and for patients they represent.",
+        "on_entity": "",
+        "field_name": "session",
+        "cedar_type": "Session",
+        "optional": false,
+        "alternatives_considered": []
+      },
+      "patient": {
+        "name": "viewFamilyHistory__context__patient",
+        "rationale": "Own-record and represented-record checks need the target patient.",
+        "plain_english_summary": "The patient whose family history is being viewed.",
+        "source_excerpt": "A patient or personal representative can view medical records, family history, personal health information, immunizations, and office-visit information for their own records and for patients they represent.",
+        "on_entity": "",
+        "field_name": "patient",
+        "cedar_type": "Patient",
+        "optional": false,
+        "alternatives_considered": []
+      }
+    },
+    "parent_groups": []
+  },
+  {
+    "name": "viewImmunization",
+    "rationale": "Immunizations are viewable by patients and representatives for own or represented records.",
+    "plain_english_summary": "View immunization information.",
+    "source_excerpt": "A patient or personal representative can view medical records, family history, personal health information, immunizations, and office-visit information for their own records and for patients they represent.",
+    "principal_types": [
+      "Patient",
+      "PersonalRepresentative"
+    ],
+    "resource_types": [
+      "Immunization"
+    ],
+    "context_attributes": {
+      "session": {
+        "name": "viewImmunization__context__session",
+        "rationale": "Immunization viewing is protected.",
+        "plain_english_summary": "The active session for the requester.",
+        "source_excerpt": "A patient or personal representative can view medical records, family history, personal health information, immunizations, and office-visit information for their own records and for patients they represent.",
+        "on_entity": "",
+        "field_name": "session",
+        "cedar_type": "Session",
+        "optional": false,
+        "alternatives_considered": []
+      },
+      "patient": {
+        "name": "viewImmunization__context__patient",
+        "rationale": "Own-record and represented-record checks need the target patient.",
+        "plain_english_summary": "The patient whose immunization is being viewed.",
+        "source_excerpt": "A patient or personal representative can view medical records, family history, personal health information, immunizations, and office-visit information for their own records and for patients they represent.",
+        "on_entity": "",
+        "field_name": "patient",
+        "cedar_type": "Patient",
+        "optional": false,
+        "alternatives_considered": []
+      }
+    },
+    "parent_groups": []
+  },
+  {
+    "name": "viewOfficeVisit",
+    "rationale": "Office-visit information is viewable by patients and representatives for own or represented records.",
+    "plain_english_summary": "View office-visit information.",
+    "source_excerpt": "A patient or personal representative can view medical records, family history, personal health information, immunizations, and office-visit information for their own records and for patients they represent.",
+    "principal_types": [
+      "Patient",
+      "PersonalRepresentative"
+    ],
+    "resource_types": [
+      "OfficeVisit"
+    ],
+    "context_attributes": {
+      "session": {
+        "name": "viewOfficeVisit__context__session",
+        "rationale": "Office-visit viewing is protected.",
+        "plain_english_summary": "The active session for the requester.",
+        "source_excerpt": "A patient or personal representative can view medical records, family history, personal health information, immunizations, and office-visit information for their own records and for patients they represent.",
+        "on_entity": "",
+        "field_name": "session",
+        "cedar_type": "Session",
+        "optional": false,
+        "alternatives_considered": []
+      },
+      "patient": {
+        "name": "viewOfficeVisit__context__patient",
+        "rationale": "Own-record and represented-record checks need the target patient.",
+        "plain_english_summary": "The patient whose office visit is being viewed.",
+        "source_excerpt": "A patient or personal representative can view medical records, family history, personal health information, immunizations, and office-visit information for their own records and for patients they represent.",
+        "on_entity": "",
+        "field_name": "patient",
+        "cedar_type": "Patient",
+        "optional": false,
+        "alternatives_considered": []
+      }
+    },
+    "parent_groups": []
+  },
+  {
+    "name": "takeOfficeVisitSurvey",
+    "rationale": "Survey taking depends on whether the office-visit survey has already been taken.",
+    "plain_english_summary": "Take an office-visit satisfaction survey.",
+    "source_excerpt": "If a patient or personal representative has not taken an office-visit satisfaction survey, they may take the survey; after the survey has been taken, they cannot take or view the previously submitted survey through that path.",
+    "principal_types": [
+      "Patient",
+      "PersonalRepresentative"
+    ],
+    "resource_types": [
+      "OfficeVisit"
+    ],
+    "context_attributes": {
+      "session": {
+        "name": "takeOfficeVisitSurvey__context__session",
+        "rationale": "Survey submission is protected.",
+        "plain_english_summary": "The active session for the requester.",
+        "source_excerpt": "If a patient or personal representative has not taken an office-visit satisfaction survey, they may take the survey; after the survey has been taken, they cannot take or view the previously submitted survey through that path.",
+        "on_entity": "",
+        "field_name": "session",
+        "cedar_type": "Session",
+        "optional": false,
+        "alternatives_considered": []
+      },
+      "patient": {
+        "name": "takeOfficeVisitSurvey__context__patient",
+        "rationale": "Own or represented patient relationship must be checked.",
+        "plain_english_summary": "The patient whose office visit is being surveyed.",
+        "source_excerpt": "If a patient or personal representative has not taken an office-visit satisfaction survey, they may take the survey; after the survey has been taken, they cannot take or view the previously submitted survey through that path.",
+        "on_entity": "",
+        "field_name": "patient",
+        "cedar_type": "Patient",
+        "optional": false,
+        "alternatives_considered": []
+      }
+    },
+    "parent_groups": []
+  },
+  {
+    "name": "editPersonalHealthInformation",
+    "rationale": "HCPs can enter and edit selected patients' personal health records.",
+    "plain_english_summary": "Enter or edit personal health information for a patient.",
+    "source_excerpt": "An HCP can enter and edit a patient's personal health records.",
+    "principal_types": [
+      "HCP"
+    ],
+    "resource_types": [
+      "PersonalHealthInformation"
+    ],
+    "context_attributes": {
+      "session": {
+        "name": "editPersonalHealthInformation__context__session",
+        "rationale": "Editing personal health information is protected.",
+        "plain_english_summary": "The active session for the requester.",
+        "source_excerpt": "An HCP can enter and edit a patient's personal health records.",
+        "on_entity": "",
+        "field_name": "session",
+        "cedar_type": "Session",
+        "optional": false,
+        "alternatives_considered": []
+      },
+      "patient": {
+        "name": "editPersonalHealthInformation__context__patient",
+        "rationale": "The selected patient must be explicit for patient-scoped authorization.",
+        "plain_english_summary": "The selected patient.",
+        "source_excerpt": "An HCP can enter and edit a patient's personal health records.",
+        "on_entity": "",
+        "field_name": "patient",
+        "cedar_type": "Patient",
+        "optional": false,
+        "alternatives_considered": []
+      }
+    },
+    "parent_groups": []
+  },
+  {
+    "name": "editImmunization",
+    "rationale": "HCPs can edit immunizations for selected patients.",
+    "plain_english_summary": "Edit a patient's immunization information.",
+    "source_excerpt": "An HCP can edit historical values, immunizations, office-visit information, family history, BMI, and death status for a selected patient.",
+    "principal_types": [
+      "HCP"
+    ],
+    "resource_types": [
+      "Immunization"
+    ],
+    "context_attributes": {
+      "session": {
+        "name": "editImmunization__context__session",
+        "rationale": "Editing immunizations is protected.",
+        "plain_english_summary": "The active session for the requester.",
+        "source_excerpt": "An HCP can edit historical values, immunizations, office-visit information, family history, BMI, and death status for a selected patient.",
+        "on_entity": "",
+        "field_name": "session",
+        "cedar_type": "Session",
+        "optional": false,
+        "alternatives_considered": []
+      },
+      "patient": {
+        "name": "editImmunization__context__patient",
+        "rationale": "The selected patient must be explicit for patient-scoped authorization.",
+        "plain_english_summary": "The selected patient.",
+        "source_excerpt": "An HCP can edit historical values, immunizations, office-visit information, family history, BMI, and death status for a selected patient.",
+        "on_entity": "",
+        "field_name": "patient",
+        "cedar_type": "Patient",
+        "optional": false,
+        "alternatives_considered": []
+      }
+    },
+    "parent_groups": []
+  },
+  {
+    "name": "editFamilyHistory",
+    "rationale": "HCPs can edit family history for selected patients.",
+    "plain_english_summary": "Edit a patient's family history.",
+    "source_excerpt": "An HCP can edit historical values, immunizations, office-visit information, family history, BMI, and death status for a selected patient.",
+    "principal_types": [
+      "HCP"
+    ],
+    "resource_types": [
+      "FamilyHistory"
+    ],
+    "context_attributes": {
+      "session": {
+        "name": "editFamilyHistory__context__session",
+        "rationale": "Editing family history is protected.",
+        "plain_english_summary": "The active session for the requester.",
+        "source_excerpt": "An HCP can edit historical values, immunizations, office-visit information, family history, BMI, and death status for a selected patient.",
+        "on_entity": "",
+        "field_name": "session",
+        "cedar_type": "Session",
+        "optional": false,
+        "alternatives_considered": []
+      },
+      "patient": {
+        "name": "editFamilyHistory__context__patient",
+        "rationale": "The selected patient must be explicit for patient-scoped authorization.",
+        "plain_english_summary": "The selected patient.",
+        "source_excerpt": "An HCP can edit historical values, immunizations, office-visit information, family history, BMI, and death status for a selected patient.",
+        "on_entity": "",
+        "field_name": "patient",
+        "cedar_type": "Patient",
+        "optional": false,
+        "alternatives_considered": []
+      }
+    },
+    "parent_groups": []
+  },
+  {
+    "name": "documentOfficeVisit",
+    "rationale": "HCPs can document office visits for selected patients.",
+    "plain_english_summary": "Create an office-visit record.",
+    "source_excerpt": "An HCP can document and edit office visits for a selected patient, including date, hospital, notes, prescriptions, lab procedures, diagnoses, procedures, immunizations, and referrals.",
+    "principal_types": [
+      "HCP"
+    ],
+    "resource_types": [
+      "OfficeVisit"
+    ],
+    "context_attributes": {
+      "session": {
+        "name": "documentOfficeVisit__context__session",
+        "rationale": "Documenting office visits is protected.",
+        "plain_english_summary": "The active session for the requester.",
+        "source_excerpt": "An HCP can document and edit office visits for a selected patient, including date, hospital, notes, prescriptions, lab procedures, diagnoses, procedures, immunizations, and referrals.",
+        "on_entity": "",
+        "field_name": "session",
+        "cedar_type": "Session",
+        "optional": false,
+        "alternatives_considered": []
+      },
+      "patient": {
+        "name": "documentOfficeVisit__context__patient",
+        "rationale": "The selected patient must be explicit for patient-scoped authorization.",
+        "plain_english_summary": "The selected patient.",
+        "source_excerpt": "An HCP can document and edit office visits for a selected patient, including date, hospital, notes, prescriptions, lab procedures, diagnoses, procedures, immunizations, and referrals.",
+        "on_entity": "",
+        "field_name": "patient",
+        "cedar_type": "Patient",
+        "optional": false,
+        "alternatives_considered": []
+      }
+    },
+    "parent_groups": []
+  },
+  {
+    "name": "editOfficeVisit",
+    "rationale": "HCPs can edit office visits for selected patients.",
+    "plain_english_summary": "Edit an office-visit record.",
+    "source_excerpt": "An HCP can document and edit office visits for a selected patient, including date, hospital, notes, prescriptions, lab procedures, diagnoses, procedures, immunizations, and referrals.",
+    "principal_types": [
+      "HCP"
+    ],
+    "resource_types": [
+      "OfficeVisit"
+    ],
+    "context_attributes": {
+      "session": {
+        "name": "editOfficeVisit__context__session",
+        "rationale": "Editing office visits is protected.",
+        "plain_english_summary": "The active session for the requester.",
+        "source_excerpt": "An HCP can document and edit office visits for a selected patient, including date, hospital, notes, prescriptions, lab procedures, diagnoses, procedures, immunizations, and referrals.",
+        "on_entity": "",
+        "field_name": "session",
+        "cedar_type": "Session",
+        "optional": false,
+        "alternatives_considered": []
+      },
+      "patient": {
+        "name": "editOfficeVisit__context__patient",
+        "rationale": "The selected patient must be explicit for patient-scoped authorization.",
+        "plain_english_summary": "The selected patient.",
+        "source_excerpt": "An HCP can document and edit office visits for a selected patient, including date, hospital, notes, prescriptions, lab procedures, diagnoses, procedures, immunizations, and referrals.",
+        "on_entity": "",
+        "field_name": "patient",
+        "cedar_type": "Patient",
+        "optional": false,
+        "alternatives_considered": []
+      }
+    },
+    "parent_groups": []
+  },
+  {
+    "name": "addPersonalRepresentative",
+    "rationale": "HCPs can add a registered user as a representative for a selected patient.",
+    "plain_english_summary": "Add a personal representative for a patient.",
+    "source_excerpt": "An HCP can add or remove another registered user as a personal health representative for a selected patient.",
+    "principal_types": [
+      "HCP"
+    ],
+    "resource_types": [
+      "PersonalRepresentativeRelationship"
+    ],
+    "context_attributes": {
+      "session": {
+        "name": "addPersonalRepresentative__context__session",
+        "rationale": "Managing representatives is protected.",
+        "plain_english_summary": "The active session for the requester.",
+        "source_excerpt": "An HCP can add or remove another registered user as a personal health representative for a selected patient.",
+        "on_entity": "",
+        "field_name": "session",
+        "cedar_type": "Session",
+        "optional": false,
+        "alternatives_considered": []
+      },
+      "patient": {
+        "name": "addPersonalRepresentative__context__patient",
+        "rationale": "The selected patient must be explicit for patient-specific representative authority.",
+        "plain_english_summary": "The selected patient.",
+        "source_excerpt": "An HCP can add or remove another registered user as a personal health representative for a selected patient.",
+        "on_entity": "",
+        "field_name": "patient",
+        "cedar_type": "Patient",
+        "optional": false,
+        "alternatives_considered": []
+      }
+    },
+    "parent_groups": []
+  },
+  {
+    "name": "removePersonalRepresentative",
+    "rationale": "HCPs can remove a representative for a selected patient.",
+    "plain_english_summary": "Remove a personal representative for a patient.",
+    "source_excerpt": "An HCP can add or remove another registered user as a personal health representative for a selected patient.",
+    "principal_types": [
+      "HCP"
+    ],
+    "resource_types": [
+      "PersonalRepresentativeRelationship"
+    ],
+    "context_attributes": {
+      "session": {
+        "name": "removePersonalRepresentative__context__session",
+        "rationale": "Managing representatives is protected.",
+        "plain_english_summary": "The active session for the requester.",
+        "source_excerpt": "An HCP can add or remove another registered user as a personal health representative for a selected patient.",
+        "on_entity": "",
+        "field_name": "session",
+        "cedar_type": "Session",
+        "optional": false,
+        "alternatives_considered": []
+      },
+      "patient": {
+        "name": "removePersonalRepresentative__context__patient",
+        "rationale": "The selected patient must be explicit for patient-specific representative authority.",
+        "plain_english_summary": "The selected patient.",
+        "source_excerpt": "An HCP can add or remove another registered user as a personal health representative for a selected patient.",
+        "on_entity": "",
+        "field_name": "patient",
+        "cedar_type": "Patient",
+        "optional": false,
+        "alternatives_considered": []
+      }
+    },
+    "parent_groups": []
+  },
+  {
+    "name": "enterDemographicInformation",
+    "rationale": "UAP can enter demographic information.",
+    "plain_english_summary": "Enter patient demographic information.",
+    "source_excerpt": "UAP can enter and edit demographic information, diagnosis, office visit notes, and other medical information, and can view records.",
+    "principal_types": [
+      "UAP"
+    ],
+    "resource_types": [
+      "DemographicInformation"
+    ],
+    "context_attributes": {
+      "session": {
+        "name": "enterDemographicInformation__context__session",
+        "rationale": "Entering demographic information is protected.",
+        "plain_english_summary": "The active session for the requester.",
+        "source_excerpt": "UAP can enter and edit demographic information, diagnosis, office visit notes, and other medical information, and can view records.",
+        "on_entity": "",
+        "field_name": "session",
+        "cedar_type": "Session",
+        "optional": false,
+        "alternatives_considered": []
+      },
+      "patient": {
+        "name": "enterDemographicInformation__context__patient",
+        "rationale": "Demographic information is patient-scoped.",
+        "plain_english_summary": "The patient whose demographic information is being entered.",
+        "source_excerpt": "UAP can enter and edit demographic information, diagnosis, office visit notes, and other medical information, and can view records.",
+        "on_entity": "",
+        "field_name": "patient",
+        "cedar_type": "Patient",
+        "optional": false,
+        "alternatives_considered": []
+      }
+    },
+    "parent_groups": []
+  },
+  {
+    "name": "editDemographicInformation",
+    "rationale": "UAP can edit demographic information.",
+    "plain_english_summary": "Edit patient demographic information.",
+    "source_excerpt": "UAP can enter and edit demographic information, diagnosis, office visit notes, and other medical information, and can view records.",
+    "principal_types": [
+      "UAP"
+    ],
+    "resource_types": [
+      "DemographicInformation"
+    ],
+    "context_attributes": {
+      "session": {
+        "name": "editDemographicInformation__context__session",
+        "rationale": "Editing demographic information is protected.",
+        "plain_english_summary": "The active session for the requester.",
+        "source_excerpt": "UAP can enter and edit demographic information, diagnosis, office visit notes, and other medical information, and can view records.",
+        "on_entity": "",
+        "field_name": "session",
+        "cedar_type": "Session",
+        "optional": false,
+        "alternatives_considered": []
+      },
+      "patient": {
+        "name": "editDemographicInformation__context__patient",
+        "rationale": "Demographic information is patient-scoped.",
+        "plain_english_summary": "The patient whose demographic information is being edited.",
+        "source_excerpt": "UAP can enter and edit demographic information, diagnosis, office visit notes, and other medical information, and can view records.",
+        "on_entity": "",
+        "field_name": "patient",
+        "cedar_type": "Patient",
+        "optional": false,
+        "alternatives_considered": []
+      }
+    },
+    "parent_groups": []
+  }
+]

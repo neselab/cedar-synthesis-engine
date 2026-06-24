@@ -1,0 +1,101 @@
+{
+  "hcp_create_patient_floor": [],
+  "deactivated_patient_not_edited_disjointness": [
+    {
+      "description": "An HCP attempts to edit a deactivated patient account. A policy that broadly permits HCPs to edit patients would violate the deactivated-patient safety rule.",
+      "request_dict": {},
+      "decision_under_chosen": "deny",
+      "decisions_under_alternatives": {},
+      "diagnostic_for": [
+        "deactivated-patient-modification-boundary"
+      ]
+    }
+  ],
+  "deactivated_patient_not_login_disjointness": [],
+  "hcp_disable_active_patient_floor": [],
+  "admin_reactivate_deactivated_patient_floor": [],
+  "patient_view_own_access_log_active_session_floor": [
+    {
+      "description": "A patient attempts to view another patient's access log even though their session is active; the own-log equality should prevent this floor from requiring permission.",
+      "request_dict": {},
+      "decision_under_chosen": "deny",
+      "decisions_under_alternatives": {},
+      "diagnostic_for": [
+        "own-access-log-boundary"
+      ]
+    },
+    {
+      "description": "A patient attempts to view their own access log using an inactive session; the active-session condition should prevent this floor from requiring permission after authorization is disabled.",
+      "request_dict": {},
+      "decision_under_chosen": "deny",
+      "decisions_under_alternatives": {},
+      "diagnostic_for": [
+        "active-session-boundary"
+      ]
+    }
+  ],
+  "personal_representative_view_represented_access_log_active_session_floor": [
+    {
+      "description": "A personal representative attempts to view a represented patient's access log with an inactive representative relationship; this floor should not require permission for that case.",
+      "request_dict": {},
+      "decision_under_chosen": "deny",
+      "decisions_under_alternatives": {},
+      "diagnostic_for": [
+        "active-representative-relationship-boundary"
+      ]
+    }
+  ],
+  "access_log_active_session_own_or_represented_ceiling": [
+    {
+      "description": "A patient attempts to view another patient's access log without an active personal-representative relationship.",
+      "request_dict": {},
+      "decision_under_chosen": "deny",
+      "decisions_under_alternatives": {},
+      "diagnostic_for": [
+        "own-or-represented-patient-boundary"
+      ]
+    },
+    {
+      "description": "A personal representative attempts to view a represented patient's access log after their session has become inactive.",
+      "request_dict": {},
+      "decision_under_chosen": "deny",
+      "decisions_under_alternatives": {},
+      "diagnostic_for": [
+        "active-session-boundary"
+      ]
+    }
+  ],
+  "patient_view_own_medical_record_active_session_floor": [],
+  "medical_record_active_session_own_or_represented_ceiling": [
+    {
+      "description": "A patient attempts to view another patient's medical record using an active session but without an active representative relationship for that patient.",
+      "request_dict": {},
+      "decision_under_chosen": "deny",
+      "decisions_under_alternatives": {},
+      "diagnostic_for": [
+        "ownership-boundary",
+        "represented-patient-boundary"
+      ]
+    },
+    {
+      "description": "A personal representative attempts to view a represented patient's medical record after their representative relationship has become inactive.",
+      "request_dict": {},
+      "decision_under_chosen": "deny",
+      "decisions_under_alternatives": {},
+      "diagnostic_for": [
+        "active-representative-relationship-boundary"
+      ]
+    },
+    {
+      "description": "A patient attempts to view their own medical record through an inactive session after authorization should be disabled.",
+      "request_dict": {},
+      "decision_under_chosen": "deny",
+      "decisions_under_alternatives": {},
+      "diagnostic_for": [
+        "active-session-boundary"
+      ]
+    }
+  ],
+  "personal_representative_view_represented_medical_record_active_session_floor": [],
+  "restricted_diagnostic_none_audience_lhcp_disjointness": []
+}

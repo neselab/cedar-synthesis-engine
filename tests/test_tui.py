@@ -11,16 +11,19 @@ from typing import Sequence
 import pytest
 from textual import events
 
-from autocedar.atoms import PropertyAtom
+from autocedar.agent import AgentAction
+from autocedar.atoms import EntityAtom, PropertyAtom
+from autocedar.corpus import AtomDecision
 from autocedar.tui import (
     AutoCedarApp,
     ClipboardResult,
     COMMANDS,
     CommandInput,
     HELP_TEXT,
+    ReviewedAtom,
+    TuiAtomReviewer,
     _describe_author_action,
     _draft_lines_from_text,
-    _chat_failure_message,
     _property_overview_text,
     _redact_sensitive_input,
     _render_cedar_for_review,
@@ -29,11 +32,53 @@ from autocedar.tui import (
     _slash_command_palette_text,
     _split_review_input,
     _strip_rich_markup,
-    interpret_natural_language,
     parse_author_args,
     parse_synthesize_args,
     tokenize,
 )
+
+
+class FakePlanner:
+    def __init__(self, action: AgentAction | Sequence[AgentAction]) -> None:
+        self.actions = list(action) if isinstance(action, Sequence) else [action]
+        self.calls: list[tuple[str, object]] = []
+
+    def plan(self, user_input: str, state: object) -> AgentAction:
+        self.calls.append((user_input, state))
+        if len(self.actions) > 1:
+            return self.actions.pop(0)
+        return self.actions[0]
+
+
+class _ImmediateReviewApp:
+    def __init__(self) -> None:
+        self.requests = []
+        self.stage_events = []
+        self.messages = []
+
+    def call_from_thread(self, callback, *args):
+        return callback(*args)
+
+    def begin_review_stage(self, label: str, total: int | None) -> None:
+        self.stage_events.append((label, total))
+
+    def end_review_stage(self, label: str, approved: int, rejected: int) -> None:
+        self.stage_events.append((label, approved, rejected))
+
+    def begin_review(self, request) -> None:
+        self.requests.append(request)
+        request.result = ReviewedAtom(
+            atom=request.current,
+            decision=AtomDecision(
+                atom_name=request.current.name,
+                action="approve",
+                symbolic_verified=True,
+            ),
+        )
+        request.event.set()
+
+    def _say(self, message: str) -> None:
+        self.messages.append(message)
 
 
 def test_tokenize_accepts_slash_commands_and_quotes() -> None:
@@ -48,8 +93,54 @@ def test_tokenize_accepts_slash_commands_and_quotes() -> None:
 def test_setup_and_doctor_are_discoverable_in_tui_help() -> None:
     assert "setup" in COMMANDS
     assert "doctor" in COMMANDS
+    assert "provider" in COMMANDS
+    assert "models" in COMMANDS
     assert "/setup" in HELP_TEXT
     assert "/doctor" in HELP_TEXT
+    assert "/provider" in HELP_TEXT
+    assert "/models" in HELP_TEXT
+
+
+def test_tui_reviewer_property_counter_resets_after_schema_stage() -> None:
+    app = _ImmediateReviewApp()
+    reviewer = TuiAtomReviewer(app)  # type: ignore[arg-type]
+
+    reviewer.begin_stage("Schema atom review", 2)
+    reviewer(
+        EntityAtom(
+            name="User",
+            rationale="user entity",
+            plain_english_summary="Users exist.",
+            source_excerpt="Users exist.",
+        ),
+    )
+    reviewer(
+        EntityAtom(
+            name="Document",
+            rationale="document entity",
+            plain_english_summary="Documents exist.",
+            source_excerpt="Documents exist.",
+        ),
+    )
+
+    reviewer.begin_stage("Property intent review", None)
+    reviewer(
+        PropertyAtom(
+            name="owner_can_view",
+            rationale="owner view",
+            plain_english_summary="Owners can view documents.",
+            source_excerpt="The owner can view the document.",
+            constraint_type="floor",
+            action="view",
+            principal_types=["User"],
+            resource_types=["Document"],
+            reference_cedar='permit(principal, action == Action::"view", resource);',
+        ),
+    )
+
+    assert [request.index for request in app.requests] == [1, 2, 1]
+    assert app.requests[-1].sequence == 3
+    assert app.requests[-1].stage_label == "Property intent review"
 
 
 def test_slash_command_palette_filters_commands() -> None:
@@ -204,148 +295,45 @@ def test_render_cedar_for_liveness_property_is_explanatory() -> None:
     assert "unknown atom kind" not in preview
 
 
-def test_natural_language_verify_workspace() -> None:
-    intent = interpret_natural_language("verify the workspace", has_draft=False)
-    assert intent.kind == "verify"
-    assert intent.workspace == Path("workspace")
+def test_natural_language_without_api_key_requires_live_planner(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("AUTOCEDAR_PROVIDER", "anthropic")
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    app = AutoCedarApp()
+    messages: list[str] = []
+    app._say = messages.append  # type: ignore[method-assign]
+
+    app._handle_natural_language_input("start a policy draft")
+
+    assert app.pending_action is None
+    assert app.draft_lines == []
+    assert "Natural-language control needs the live agent planner" in messages[0]
 
 
-def test_natural_language_save_draft_path() -> None:
-    intent = interpret_natural_language("save this as policy.md", has_draft=True)
-    assert intent.kind == "save_draft"
-    assert intent.path == Path("policy.md")
+def test_draft_mode_routes_requirements_through_planner() -> None:
+    async def run() -> None:
+        app = AutoCedarApp()
+        planner = FakePlanner(
+            AgentAction(
+                kind="append_requirements",
+                content="Doctors can read records for patients on their care team.",
+            ),
+        )
+        app.agent_planner_factory = lambda: planner
+        async with app.run_test() as pilot:
+            app._start_drafting()
+            app._submit_command_text("Doctors can read records for patients on their care team.")
+            await pilot.pause()
+            assert app.draft_lines == [
+                "Doctors can read records for patients on their care team.",
+            ]
+            assert [call[0] for call in planner.calls] == [
+                "Doctors can read records for patients on their care team.",
+            ]
+            await pilot.exit(None)
 
-
-def test_natural_language_author_current_draft_with_schema() -> None:
-    intent = interpret_natural_language(
-        "author this with schema workspace/schema.cedarschema",
-        has_draft=True,
-    )
-    assert intent.kind == "author"
-    assert intent.from_draft is True
-    assert intent.author_options is not None
-    assert intent.author_options.spec == Path("autocedar-spec.md")
-    assert intent.author_options.schema == Path("workspace/schema.cedarschema")
-
-
-def test_natural_language_author_parses_model_output_and_review_mode() -> None:
-    intent = interpret_natural_language(
-        "author spec.md with schema workspace/schema.cedarschema output runs model claude-opus session id demo auto approve",
-        has_draft=False,
-    )
-    assert intent.kind == "author"
-    assert intent.author_options is not None
-    assert intent.author_options.spec == Path("spec.md")
-    assert intent.author_options.schema == Path("workspace/schema.cedarschema")
-    assert intent.author_options.out == Path("runs")
-    assert intent.author_options.model == "claude-opus"
-    assert intent.author_options.session_id == "demo"
-    assert intent.author_options.auto_approve is True
-
-
-def test_natural_language_policy_text_requests_draft_capture() -> None:
-    intent = interpret_natural_language(
-        "Doctors can read records for patients on their care team.",
-        has_draft=False,
-    )
-    assert intent.kind == "append_draft"
-
-
-def test_natural_language_schema_setup_statement_requests_draft_capture() -> None:
-    intent = interpret_natural_language(
-        "A document management system has Users and Documents.",
-        has_draft=False,
-    )
-
-    assert intent.kind == "append_draft"
-
-
-def test_natural_language_start_draft_request() -> None:
-    intent = interpret_natural_language("start a policy draft", has_draft=False)
-    assert intent.kind == "start_draft"
-
-
-def test_natural_language_show_the_draft_request() -> None:
-    intent = interpret_natural_language("show the draft", has_draft=True)
-    assert intent.kind == "show_draft"
-
-
-def test_natural_language_runtime_status_routes_to_chat() -> None:
-    intent = interpret_natural_language("are you drafting?", has_draft=False)
-    assert intent.kind == "message"
-
-
-def test_natural_language_greeting_is_not_added_to_draft() -> None:
-    intent = interpret_natural_language("Hey", has_draft=False)
-    assert intent.kind == "message"
-
-
-def test_natural_language_ambiguous_short_reply_is_not_added_to_draft() -> None:
-    intent = interpret_natural_language("really?", has_draft=False)
-    assert intent.kind == "message"
-
-
-def test_natural_language_spec_schema_question_is_answered() -> None:
-    intent = interpret_natural_language("Just the spec or the schema too?", has_draft=False)
-    assert intent.kind == "message"
-
-
-def test_natural_language_schema_atomization_question_uses_chat_context() -> None:
-    intent = interpret_natural_language(
-        "can you atomize and verify a schema too?",
-        has_draft=False,
-    )
-
-    assert intent.kind == "message"
-    assert "Stage 1 schema atomization" not in intent.message
-
-
-def test_natural_language_question_is_not_added_to_draft() -> None:
-    intent = interpret_natural_language("what can you do for me?", has_draft=False)
-    assert intent.kind == "message"
-    intent = interpret_natural_language("why is this failing?", has_draft=True)
-    assert intent.kind == "message"
-
-
-def test_natural_language_clear_it_clears_existing_draft() -> None:
-    intent = interpret_natural_language("clear it", has_draft=True)
-    assert intent.kind == "clear_draft"
-
-
-def test_natural_language_synthesize_scenario() -> None:
-    intent = interpret_natural_language(
-        "synthesize emergency_break_glass no review max iters 7 output runs run id trial phase1 model opus phase2 model haiku generate references",
-        has_draft=False,
-    )
-    assert intent.kind == "synthesize"
-    assert intent.synthesize_options is not None
-    assert intent.synthesize_options.scenarios == [
-        Path("cedarbench/scenarios/realworld/emergency_break_glass"),
-    ]
-    assert intent.synthesize_options.no_review is True
-    assert intent.synthesize_options.max_iters == 7
-    assert intent.synthesize_options.out == Path("runs")
-    assert intent.synthesize_options.run_id == "trial"
-    assert intent.synthesize_options.phase1_model == "opus"
-    assert intent.synthesize_options.phase2_model == "haiku"
-    assert intent.synthesize_options.gen_references is True
-
-
-def test_natural_language_settings_updates() -> None:
-    intent = interpret_natural_language("set model to claude-sonnet-4-6", has_draft=False)
-    assert intent.kind == "settings"
-    assert intent.settings_update is not None
-    assert intent.settings_update.model == "claude-sonnet-4-6"
-
-    intent = interpret_natural_language("use effort max", has_draft=False)
-    assert intent.kind == "settings"
-    assert intent.settings_update is not None
-    assert intent.settings_update.effort == "max"
-
-    intent = interpret_natural_language("set api key sk-ant-secret123", has_draft=False)
-    assert intent.kind == "settings"
-    assert intent.settings_update is not None
-    assert intent.settings_update.api_key == "sk-ant-secret123"
+    asyncio.run(run())
 
 
 def test_sensitive_input_redaction() -> None:
@@ -370,8 +358,10 @@ def test_textual_app_mounts() -> None:
 def test_textual_app_gates_plain_english_before_draft_capture() -> None:
     async def run() -> None:
         app = AutoCedarApp()
+        app.agent_planner_factory = lambda: FakePlanner(AgentAction(kind="start_draft"))
         async with app.run_test() as pilot:
             app._handle_shell_input("Doctors can read assigned patient records.")
+            await pilot.pause()
             assert app.draft_lines == []
             assert app.drafting_active is False
             assert app.pending_action is not None
@@ -386,13 +376,23 @@ def test_textual_app_gates_plain_english_before_draft_capture() -> None:
 def test_textual_app_does_not_capture_mode_trigger_as_requirement() -> None:
     async def run() -> None:
         app = AutoCedarApp()
+        planner = FakePlanner([
+            AgentAction(kind="start_draft"),
+            AgentAction(
+                kind="append_requirements",
+                content="The owner of a document can both view and edit it.",
+            ),
+        ])
+        app.agent_planner_factory = lambda: planner
         async with app.run_test() as pilot:
             app._handle_shell_input("A policy and a schema from a bunch of nl requirements I have")
+            await pilot.pause()
             assert app.pending_action is not None
             app._handle_confirmation_input("yes")
             assert app.drafting_active is True
             assert app.draft_lines == []
             app._handle_shell_input("The owner of a document can both view and edit it.")
+            await pilot.pause()
             assert app.draft_lines == [
                 "The owner of a document can both view and edit it.",
             ]
@@ -404,9 +404,16 @@ def test_textual_app_does_not_capture_mode_trigger_as_requirement() -> None:
 def test_textual_app_appends_policy_text_after_drafting_is_active() -> None:
     async def run() -> None:
         app = AutoCedarApp()
+        app.agent_planner_factory = lambda: FakePlanner(
+            AgentAction(
+                kind="append_requirements",
+                content="Doctors can read assigned patient records.",
+            ),
+        )
         async with app.run_test() as pilot:
             app._start_drafting()
             app._handle_shell_input("Doctors can read assigned patient records.")
+            await pilot.pause()
             assert app.pending_action is None
             assert app.draft_lines == [
                 "Doctors can read assigned patient records.",
@@ -419,9 +426,16 @@ def test_textual_app_appends_policy_text_after_drafting_is_active() -> None:
 def test_textual_app_appends_schema_setup_statement_after_drafting_is_active() -> None:
     async def run() -> None:
         app = AutoCedarApp()
+        app.agent_planner_factory = lambda: FakePlanner(
+            AgentAction(
+                kind="append_requirements",
+                content="A document management system has Users and Documents.",
+            ),
+        )
         async with app.run_test() as pilot:
             app._start_drafting()
             app._handle_shell_input("A document management system has Users and Documents.")
+            await pilot.pause()
             assert app.pending_action is None
             assert app.draft_lines == [
                 "A document management system has Users and Documents.",
@@ -444,9 +458,13 @@ Only Professors can enter grades for students.
 
     async def run() -> None:
         app = AutoCedarApp()
+        app.agent_planner_factory = lambda: FakePlanner(
+            AgentAction(kind="append_requirements", content=requirements),
+        )
         async with app.run_test() as pilot:
             app._start_drafting()
             app._handle_shell_input(requirements)
+            await pilot.pause()
             assert app.pending_action is None
             assert app.draft_lines == [
                 "The new system will allow students to register for courses and view report cards from personal computers attached to the campus LAN.",
@@ -512,10 +530,11 @@ Only Professors can enter grades for students.
 
     async def run() -> None:
         app = AutoCedarApp()
+        app.agent_planner_factory = lambda: FakePlanner(
+            AgentAction(kind="append_requirements", content=requirements),
+        )
         async with app.run_test() as pilot:
-            app._submit_command_text("start a policy draft")
-            assert app.pending_action is not None
-            app._submit_command_text("yes")
+            app._submit_command_text("/draft")
             assert app.drafting_active is True
             command = app.query_one("#command", CommandInput)
             command._on_paste(events.Paste(requirements))
@@ -532,6 +551,9 @@ Only Professors can enter grades for students.
 def test_textual_app_keeps_complaint_out_of_active_draft() -> None:
     async def run() -> None:
         app = AutoCedarApp()
+        app.agent_planner_factory = lambda: FakePlanner(
+            AgentAction(kind="respond", message="I understand; the draft is unchanged."),
+        )
         async with app.run_test() as pilot:
             app._start_drafting()
             app._handle_shell_input("I said start a policy draft, you said it was active.")
@@ -560,7 +582,7 @@ def test_textual_app_clear_draft_disables_drafting() -> None:
         app = AutoCedarApp()
         async with app.run_test() as pilot:
             app._start_drafting()
-            app._handle_shell_input("Doctors can read assigned patient records.")
+            app._append_draft_text("Doctors can read assigned patient records.")
             assert app.drafting_active is True
             app._clear_draft()
             assert app.draft_lines == []
@@ -573,9 +595,30 @@ def test_textual_app_clear_draft_disables_drafting() -> None:
 def test_textual_app_clear_it_while_drafting_requests_draft_clear() -> None:
     async def run() -> None:
         app = AutoCedarApp()
+        app.agent_planner_factory = lambda: FakePlanner(AgentAction(kind="clear_draft"))
         async with app.run_test() as pilot:
             app._start_drafting()
             app._handle_shell_input("clear it")
+            await pilot.pause()
+            assert app.pending_action is not None
+            app._handle_confirmation_input("yes")
+            assert app.draft_lines == []
+            assert app.drafting_active is False
+            await pilot.exit(None)
+
+    asyncio.run(run())
+
+
+def test_textual_app_delete_draft_while_drafting_requests_draft_clear() -> None:
+    async def run() -> None:
+        app = AutoCedarApp()
+        app.agent_planner_factory = lambda: FakePlanner(AgentAction(kind="clear_draft"))
+        async with app.run_test() as pilot:
+            app._start_drafting()
+            app._append_draft_text("Doctors can read assigned patient records.")
+            app._handle_shell_input("I want to delete the draft")
+            await pilot.pause()
+            assert app.draft_lines == ["Doctors can read assigned patient records."]
             assert app.pending_action is not None
             app._handle_confirmation_input("yes")
             assert app.draft_lines == []
@@ -590,12 +633,80 @@ def test_textual_app_clear_draft_command_requests_draft_clear() -> None:
         app = AutoCedarApp()
         async with app.run_test() as pilot:
             app._start_drafting()
-            app._handle_shell_input("Doctors can read assigned patient records.")
+            app._append_draft_text("Doctors can read assigned patient records.")
             app._handle_command_input("/clear draft")
             assert app.pending_action is not None
             app._handle_confirmation_input("yes")
             assert app.draft_lines == []
             assert app.drafting_active is False
+            await pilot.exit(None)
+
+    asyncio.run(run())
+
+
+def test_textual_app_draft_edit_command_replaces_line() -> None:
+    async def run() -> None:
+        app = AutoCedarApp()
+        async with app.run_test() as pilot:
+            app.draft_lines = [
+                "Doctors can read records.",
+                "Nurses can update vitals.",
+            ]
+            app._handle_command_input("/draft edit 2 Nurses can update vitals only during their shift.")
+            assert app.draft_lines == [
+                "Doctors can read records.",
+                "Nurses can update vitals only during their shift.",
+            ]
+            await pilot.exit(None)
+
+    asyncio.run(run())
+
+
+def test_textual_app_draft_delete_command_removes_line() -> None:
+    async def run() -> None:
+        app = AutoCedarApp()
+        async with app.run_test() as pilot:
+            app.draft_lines = [
+                "Doctors can read records.",
+                "This line should go.",
+                "Patients can view their own records.",
+            ]
+            app._handle_command_input("/draft delete 2")
+            assert app.draft_lines == [
+                "Doctors can read records.",
+                "Patients can view their own records.",
+            ]
+            await pilot.exit(None)
+
+    asyncio.run(run())
+
+
+def test_textual_app_natural_language_draft_edit_goes_through_planner() -> None:
+    async def run() -> None:
+        app = AutoCedarApp()
+        planner = FakePlanner(
+            AgentAction(
+                kind="edit_draft",
+                mode="set_line",
+                line=2,
+                value="Nurses can update vitals only during their shift.",
+            ),
+        )
+        app.agent_planner_factory = lambda: planner
+        async with app.run_test() as pilot:
+            app.draft_lines = [
+                "Doctors can read records.",
+                "Nurses can update vitals.",
+            ]
+            app._handle_shell_input("change line 2 to Nurses can update vitals only during their shift")
+            await pilot.pause()
+            assert [call[0] for call in planner.calls] == [
+                "change line 2 to Nurses can update vitals only during their shift",
+            ]
+            assert app.draft_lines == [
+                "Doctors can read records.",
+                "Nurses can update vitals only during their shift.",
+            ]
             await pilot.exit(None)
 
     asyncio.run(run())
@@ -618,10 +729,98 @@ def test_textual_app_clear_transcript_does_not_clear_draft() -> None:
         app = AutoCedarApp()
         async with app.run_test() as pilot:
             app._start_drafting()
-            app._handle_shell_input("Doctors can read assigned patient records.")
+            app._append_draft_text("Doctors can read assigned patient records.")
             app._handle_command_input("/clear")
             assert app.draft_lines == ["Doctors can read assigned patient records."]
             assert app.drafting_active is True
+            await pilot.exit(None)
+
+    asyncio.run(run())
+
+
+def test_textual_author_current_draft_is_real_action_not_chat(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+
+    async def run() -> None:
+        app = AutoCedarApp()
+        started: list[Path] = []
+        planner = FakePlanner([
+            AgentAction(
+                kind="append_requirements",
+                content="The owner of a document can view it.",
+            ),
+            AgentAction(kind="author_current_draft", spec=str(Path("autocedar-spec.md"))),
+        ])
+        app.agent_planner_factory = lambda: planner
+        async with app.run_test() as pilot:
+            app._start_author = lambda options: started.append(options.spec)  # type: ignore[method-assign]
+            app._submit_command_text("/draft")
+            app._submit_command_text("The owner of a document can view it.")
+            await pilot.pause()
+            app._submit_command_text("Ok let's author")
+            await pilot.pause()
+            assert app.pending_action is not None
+            assert "HITL authoring" in app.pending_action.summary
+            app._submit_command_text("yes")
+            assert started == [Path("autocedar-spec.md")]
+            assert Path("autocedar-spec.md").read_text() == (
+                "The owner of a document can view it.\n"
+            )
+            await pilot.exit(None)
+
+    asyncio.run(run())
+
+
+def test_textual_slash_author_without_args_uses_current_draft(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+
+    async def run() -> None:
+        app = AutoCedarApp()
+        started: list[Path] = []
+        async with app.run_test() as pilot:
+            app._start_author = lambda options: started.append(options.spec)  # type: ignore[method-assign]
+            app.draft_lines = ["The owner of a document can view it."]
+            app._submit_command_text("/author")
+            assert app.pending_action is not None
+            app._submit_command_text("yes")
+            assert started == [Path("autocedar-spec.md")]
+            assert Path("autocedar-spec.md").read_text() == (
+                "The owner of a document can view it.\n"
+            )
+            await pilot.exit(None)
+
+    asyncio.run(run())
+
+
+def test_textual_slash_author_option_only_args_use_current_draft(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+
+    async def run() -> None:
+        app = AutoCedarApp()
+        started: list[tuple[Path, Path, str | None]] = []
+        async with app.run_test() as pilot:
+            app._start_author = (
+                lambda options: started.append((options.spec, options.out, options.session_id))
+            )  # type: ignore[method-assign]
+            app.draft_lines = ["The owner of a document can view it."]
+            app._submit_command_text(
+                "/author --out runs --session-id draft-session --model claude-opus-4-7",
+            )
+            assert app.pending_action is not None
+            app._submit_command_text("yes")
+            assert started == [(Path("autocedar-spec.md"), Path("runs"), "draft-session")]
+            assert Path("autocedar-spec.md").read_text() == (
+                "The owner of a document can view it.\n"
+            )
             await pilot.exit(None)
 
     asyncio.run(run())
@@ -631,14 +830,13 @@ def test_textual_app_show_the_draft_uses_buffer_not_chat() -> None:
     async def run() -> None:
         app = AutoCedarApp()
         shown: list[bool] = []
+        app.agent_planner_factory = lambda: FakePlanner(AgentAction(kind="show_draft"))
         async with app.run_test() as pilot:
             app._start_drafting()
-            app._handle_shell_input("Doctors can read assigned patient records.")
+            app.draft_lines = ["Doctors can read assigned patient records."]
             app._show_draft = lambda: shown.append(True)  # type: ignore[method-assign]
-            app._start_chat_response = (  # type: ignore[method-assign]
-                lambda raw, fallback: (_ for _ in ()).throw(AssertionError("chat should not handle draft display"))
-            )
-            app._handle_shell_input("show the draft")
+            app._submit_command_text("show the draft")
+            await pilot.pause()
             assert shown == [True]
             await pilot.exit(None)
 
@@ -731,20 +929,29 @@ def test_draft_lines_from_text_filters_blank_lines() -> None:
 
 
 def test_tui_natural_language_show_schema_routes_to_artifact_command() -> None:
-    app = AutoCedarApp()
-    calls: list[Sequence[str]] = []
-    app._show_schema_command = lambda args: calls.append(args)  # type: ignore[method-assign]
+    async def run() -> None:
+        app = AutoCedarApp()
+        planner = FakePlanner(AgentAction(kind="show_schema"))
+        calls: list[Sequence[str]] = []
+        app.agent_planner_factory = lambda: planner
+        async with app.run_test() as pilot:
+            app._show_schema_command = lambda args: calls.append(args)  # type: ignore[method-assign]
+            app._submit_command_text("show the schema")
+            await pilot.pause()
+            assert calls == [[]]
+            assert planner.calls
+            await pilot.exit(None)
 
-    app._handle_shell_input("show the schema")
-
-    assert calls == [[]]
+    asyncio.run(run())
 
 
 def test_textual_app_state_snapshot_includes_drafting_and_pending_action() -> None:
     async def run() -> None:
         app = AutoCedarApp()
+        app.agent_planner_factory = lambda: FakePlanner(AgentAction(kind="start_draft"))
         async with app.run_test() as pilot:
             app._handle_shell_input("Doctors can read assigned patient records.")
+            await pilot.pause()
             state = app._state_snapshot()
             assert "drafting: off" in state
             assert "draft lines: 0" in state
@@ -753,25 +960,6 @@ def test_textual_app_state_snapshot_includes_drafting_and_pending_action() -> No
             await pilot.exit(None)
 
     asyncio.run(run())
-
-
-def test_chat_request_includes_backend_process_and_tui_context() -> None:
-    app = AutoCedarApp()
-    app.llm_model = "claude-test"
-    app.llm_effort = "max"
-    system, messages = app._chat_request("can you atomize and verify a schema too?")
-    user_context = messages[0]["content"]
-
-    assert "model: claude-test" in user_context
-    assert "effort: max" in user_context
-    assert "process context" in user_context
-    assert "Stage 1 schema atomization" in user_context
-    assert "HITL review" in user_context
-    assert "Stage 2 property atoms" in user_context
-    assert "symbolically verifies each atom" in user_context
-    assert "TUI legend context" in user_context
-    assert "HITL means human-in-the-loop review" in user_context
-    assert "Do not invent capabilities" in system
 
 
 def test_author_confirmation_describes_schema_mode() -> None:
@@ -785,9 +973,9 @@ def test_author_confirmation_describes_schema_mode() -> None:
     ])
 
     assert "propose schema atoms" in _describe_author_action(no_schema, from_draft=False)
-    assert "Stage 2 property atoms" in _describe_author_action(no_schema, from_draft=False)
+    assert "one Stage 2 property atom at a time" in _describe_author_action(no_schema, from_draft=False)
     assert "skip Stage 1 schema atomization" in _describe_author_action(with_schema, from_draft=False)
-    assert "Stage 2 property atoms" in _describe_author_action(with_schema, from_draft=False)
+    assert "one Stage 2 property atom at a time" in _describe_author_action(with_schema, from_draft=False)
 
 
 def test_textual_settings_commands_update_runtime(
@@ -817,6 +1005,9 @@ def test_textual_settings_commands_update_runtime(
             assert app.llm_effort == "max"
             assert os.environ["AUTOCEDAR_EFFORT"] == "max"
 
+            app._handle_command_input("/effort xhigh")
+            assert app.llm_effort == "max"
+
             app._handle_command_input("/apikey sk-ant-secret123")
             assert os.environ["ANTHROPIC_API_KEY"] == "sk-ant-secret123"
             assert app.active_api_key == "sk-ant-secret123"
@@ -830,6 +1021,84 @@ def test_textual_settings_commands_update_runtime(
             assert "ANTHROPIC_API_KEY" not in os.environ
             assert app.active_api_key == ""
             assert env_path.read_text() == ""
+            await pilot.exit(None)
+
+    asyncio.run(run())
+
+
+def test_textual_provider_and_models_commands_use_codex_bridge(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("AUTOCEDAR_PROVIDER", "anthropic")
+    monkeypatch.delenv("AUTOCEDAR_MODEL", raising=False)
+    monkeypatch.setattr("autocedar.tui.codex_auth_available", lambda: True)
+
+    class FakeRuntimeInfo:
+        auth_available = True
+        provider = "openai-codex"
+        model = "gpt-5.5"
+        base_url = "https://chatgpt.com/backend-api/codex"
+        auth_source = "/tmp/codex/auth.json"
+        models = ["gpt-5.5", "gpt-5.4"]
+        thinking_efforts = ("low", "medium", "high", "max")
+        model_details = [
+            type("Model", (), {
+                "slug": "gpt-5.5",
+                "display_name": "GPT-5.5",
+                "supported_reasoning_levels": (
+                    ("low", "Fast responses with lighter reasoning"),
+                    ("xhigh", "Extra high reasoning depth"),
+                ),
+                "default_reasoning_level": "medium",
+                "context_window": 272000,
+                "max_context_window": 272000,
+                "service_tiers": ("Fast",),
+                "speed_tiers": ("fast",),
+                "default_verbosity": "low",
+                "support_verbosity": True,
+                "supports_reasoning_summaries": True,
+            })(),
+            type("Model", (), {
+                "slug": "gpt-5.4",
+                "display_name": "GPT-5.4",
+                "supported_reasoning_levels": (("medium", ""),),
+                "default_reasoning_level": "medium",
+                "context_window": 272000,
+                "max_context_window": 1000000,
+                "service_tiers": (),
+                "speed_tiers": (),
+                "default_verbosity": "medium",
+                "support_verbosity": True,
+                "supports_reasoning_summaries": True,
+            })(),
+        ]
+        error = None
+
+    monkeypatch.setattr("autocedar.tui.codex_runtime_info", lambda: FakeRuntimeInfo())
+
+    async def run() -> None:
+        app = AutoCedarApp()
+        written: list[object] = []
+
+        def capture(content: object) -> None:
+            written.append(getattr(content, "renderable", content))
+
+        async with app.run_test() as pilot:
+            app._write = capture  # type: ignore[method-assign]
+            app._handle_command_input("/provider codex")
+            assert app.llm_provider == "codex"
+            assert app.llm_model == "gpt-5.5"
+            assert os.environ["AUTOCEDAR_PROVIDER"] == "codex"
+
+            app._handle_command_input("/models")
+
+            rendered = "\n".join(str(item) for item in written)
+            assert "gpt-5.5" in rendered
+            assert "gpt-5.4" in rendered
+            assert "openai-codex" in rendered
+            assert "max (Extra high reasoning depth)" in rendered
+            assert "Fast" in rendered
+            assert "272,000 default, 1,000,000 max" in rendered
             await pilot.exit(None)
 
     asyncio.run(run())
@@ -955,25 +1224,6 @@ def test_runtime_settings_resolve_author_and_synthesis_defaults() -> None:
     assert synth.phase2_model == "claude-selected"
 
 
-def test_local_chat_response_answers_identity_without_api_key(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
-    app = AutoCedarApp()
-
-    answer = app._local_chat_response("are you an llm?", fallback="fallback")
-
-    assert "Anthropic chat model" in answer
-    assert "fallback" not in answer
-
-
-def test_local_chat_response_admits_prior_fallback_failure(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
-    app = AutoCedarApp()
-
-    answer = app._local_chat_response("you didn't answer my question", fallback="fallback")
-
-    assert "fallback response" in answer
-
-
 def test_speaker_label_is_autocedar() -> None:
     app = AutoCedarApp()
     written: list[str] = []
@@ -985,122 +1235,38 @@ def test_speaker_label_is_autocedar() -> None:
     assert "[bold #f0c678]cedar[/]" not in written[0]
 
 
-def test_stream_chat_model_emits_incremental_text() -> None:
-    class FakeStream:
-        text_stream = ["Hel", "lo"]
-
-        def __enter__(self):
-            return self
-
-        def __exit__(self, *args):
-            return None
-
-    seen_kwargs = {}
-
-    class FakeMessages:
-        def stream(self, **kwargs):
-            seen_kwargs.update(kwargs)
-            return FakeStream()
-
-    class FakeClient:
-        messages = FakeMessages()
-
-    app = AutoCedarApp()
-    app.llm_model = "claude-test"
-    app.llm_effort = "max"
-    events: list[tuple[str, str]] = []
-    app.call_from_thread = lambda func, *args: func(*args)  # type: ignore[method-assign]
-    app._make_anthropic_client = lambda: FakeClient()  # type: ignore[method-assign]
-    app._start_stream_output = lambda: events.append(("start", ""))  # type: ignore[method-assign]
-    app._update_stream_output = lambda text: events.append(("update", text))  # type: ignore[method-assign]
-    app._finish_stream_output = lambda text: events.append(("finish", text))  # type: ignore[method-assign]
-
-    answer = app._stream_chat_model("say hello")
-
-    assert answer == "Hello"
-    assert seen_kwargs["model"] == "claude-test"
-    assert seen_kwargs["output_config"] == {"effort": "max"}
-    assert events == [
-        ("start", ""),
-        ("update", "Hel"),
-        ("update", "Hello"),
-        ("finish", "Hello"),
-    ]
-
-
-def test_answer_chat_uses_streaming_when_api_key_is_loaded(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
-    app = AutoCedarApp()
-    said: list[str] = []
-    finished: list[bool] = []
-    app.call_from_thread = lambda func, *args: func(*args)  # type: ignore[method-assign]
-    app._stream_chat_model = lambda raw: "streamed answer"  # type: ignore[method-assign]
-    app._say = said.append  # type: ignore[method-assign]
-    app._finish_task = lambda: finished.append(True)  # type: ignore[method-assign]
-
-    app._answer_chat("are you there?", fallback="fallback")
-
-    assert app.chat_history == [("are you there?", "streamed answer")]
-    assert said == []
-    assert finished == [True]
-
-
-def test_answer_chat_clears_saved_key_on_authentication_error(
-    monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
-) -> None:
-    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-invalid123")
-    monkeypatch.setenv("AUTOCEDAR_CONFIG_DIR", str(tmp_path / "config"))
-    env_path = tmp_path / "config" / ".env"
-    env_path.parent.mkdir(parents=True)
-    env_path.write_text("ANTHROPIC_API_KEY=sk-ant-invalid123\n")
-
-    class AuthenticationError(Exception):
-        pass
-
-    app = AutoCedarApp()
-    said: list[str] = []
-    status_updates: list[bool] = []
-    finished: list[bool] = []
-    app.call_from_thread = lambda func, *args: func(*args)  # type: ignore[method-assign]
-    app._stream_chat_model = lambda raw: (_ for _ in ()).throw(  # type: ignore[method-assign]
-        AuthenticationError("invalid x-api-key"),
-    )
-    app._clear_stream_output = lambda: None  # type: ignore[method-assign]
-    app._say = said.append  # type: ignore[method-assign]
-    app._update_status = lambda: status_updates.append(True)  # type: ignore[method-assign]
-    app._finish_task = lambda: finished.append(True)  # type: ignore[method-assign]
-
-    app._answer_chat("hey", fallback="fallback")
-
-    assert "ANTHROPIC_API_KEY" not in os.environ
-    assert env_path.read_text() == ""
-    assert "cleared it" in said[0]
-    assert status_updates == [True]
-    assert finished == [True]
-
-
-def test_chat_failure_message_hides_raw_auth_exception() -> None:
-    class AuthenticationError(Exception):
-        pass
-
-    message = _chat_failure_message(AuthenticationError("Error code: 401 invalid x-api-key"))
-
-    assert "invalid x-api-key" not in message
-    assert "full key from the Anthropic console" in message
-
-
-def test_stream_output_mounts_and_clears() -> None:
+def test_textual_activity_indicator_updates_while_busy() -> None:
     async def run() -> None:
         app = AutoCedarApp()
         async with app.run_test() as pilot:
             stream = app.query_one("#stream")
-            assert stream.display is False
-            app._start_stream_output()
+            app._start_activity("authoring")
             assert stream.display is True
-            app._update_stream_output("Hello")
-            app._finish_stream_output("Hello")
+            first = app.activity_frame
+            app._tick_activity()
+            second = app.activity_frame
+            assert app.activity_message == "authoring"
+            assert first != second
+            app._stop_activity()
             assert stream.display is False
+            await pilot.exit(None)
+
+    asyncio.run(run())
+
+
+def test_textual_busy_blocks_premature_review_or_slash_commands() -> None:
+    async def run() -> None:
+        app = AutoCedarApp()
+        written: list[str] = []
+        async with app.run_test() as pilot:
+            app._say = written.append  # type: ignore[method-assign]
+            app.busy = True
+            app.active_task = "author autocedar-spec.md"
+            app.pending_review = None
+            app._submit_command_text("/author")
+            app._submit_command_text("A")
+            assert any("still working" in item for item in written)
+            assert all("Usage: /author" not in item for item in written)
             await pilot.exit(None)
 
     asyncio.run(run())
@@ -1119,11 +1285,19 @@ def test_textual_app_does_not_store_greeting_as_draft_text(monkeypatch: pytest.M
     asyncio.run(run())
 
 
-def test_textual_app_requires_confirmation_before_natural_language_verify() -> None:
+def test_textual_app_requires_confirmation_before_natural_language_verify(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+
     async def run() -> None:
         app = AutoCedarApp()
+        app.agent_planner_factory = lambda: FakePlanner(
+            AgentAction(kind="verify_workspace", workspace="workspace"),
+        )
         async with app.run_test() as pilot:
             app._handle_shell_input("verify the workspace")
+            await pilot.pause()
             assert app.pending_action is not None
             assert app.busy is False
             app._handle_confirmation_input("no")

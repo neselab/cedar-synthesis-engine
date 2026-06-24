@@ -1,0 +1,1 @@
+permit (principal, action == Action::"editDemographicInformation", resource) when { context.session.isActive && context.session has uapUser && context.session.uapUser == principal && context.patient == resource.patient && resource.patient.isActive };

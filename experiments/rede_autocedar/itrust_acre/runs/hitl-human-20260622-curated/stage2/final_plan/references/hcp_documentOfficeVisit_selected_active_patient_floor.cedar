@@ -1,0 +1,1 @@
+permit (principal, action == Action::"documentOfficeVisit", resource) when { context.session.isActive && context.session has hcpUser && context.session.hcpUser == principal && context.patient == resource.patient && resource.patient.isActive };

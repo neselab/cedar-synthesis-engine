@@ -536,12 +536,23 @@ def _review_one_atom(
     """Per-atom review loop. See ``interactive_review_loop`` for the contract."""
     current = atom
     edit_log: dict[str, Any] = {}
+    force_approve_failed_property = False
 
     while True:
         output_fn(_render_review_atom(current, index, total))
         key = (input_fn("> ") or "").strip().upper()[:1]
 
         if key == "A":
+            if _approval_needs_failed_property_confirmation(
+                current,
+                force_approve_failed_property,
+            ):
+                output_fn(
+                    "Symbolic checks failed for this property. "
+                    "Edit or reject it, or press A again to force approval.",
+                )
+                force_approve_failed_property = True
+                continue
             return ReviewedAtom(
                 atom=current,
                 decision=AtomDecision(
@@ -586,6 +597,7 @@ def _review_one_atom(
             edit_input = (input_fn("Edit (field=value): ") or "").strip()
             try:
                 current = _apply_field_edit(current, edit_input, edit_log)
+                force_approve_failed_property = False
                 output_fn("(atom updated; re-presenting)")
             except ValueError as e:
                 output_fn(f"(edit rejected: {e}; atom unchanged)")
@@ -621,6 +633,18 @@ def _review_one_atom(
             continue
         # Unknown key.
         output_fn(f"unknown key {key!r}; valid: A / R / E / Q / S / V")
+        force_approve_failed_property = False
+
+
+def _approval_needs_failed_property_confirmation(
+    atom: ReviewableAtom,
+    already_confirmed: bool,
+) -> bool:
+    if already_confirmed or not isinstance(atom, PropertyAtom):
+        return False
+    if atom.symbolic_verified:
+        return False
+    return any("FAILED" in line for line in atom.symbolic_verification_log)
 
 
 def _render_review_atom(atom: ReviewableAtom, index: int, total: int) -> str:
@@ -646,7 +670,8 @@ def _apply_field_edit(
     - AttributeAtom: ``on_entity``, ``field_name``, ``cedar_type``,
       ``optional`` (``true``/``false``).
     - ActionAtom: ``principal_types`` (comma-separated),
-      ``resource_types`` (comma-separated).
+      ``resource_types`` (comma-separated), and context attributes with
+      ``context.field=Type`` or optional ``context.field?=Type``.
     - TypeAliasAtom: ``cedar_type``.
 
     For more complex edits (adding context attributes, editing
@@ -665,6 +690,8 @@ def _apply_field_edit(
     common_fields = {"name", "rationale", "plain_english_summary", "source_excerpt"}
 
     new_value: Any
+    target_field = field_name
+    old_value: Any = getattr(atom, field_name, None)
     if field_name in common_fields:
         new_value = value
     elif field_name == "optional" and isinstance(atom, AttributeAtom):
@@ -675,6 +702,33 @@ def _apply_field_edit(
         new_value = value
     elif field_name in ("principal_types", "resource_types") and isinstance(atom, ActionAtom):
         new_value = [t.strip() for t in value.split(",") if t.strip()]
+    elif field_name.startswith("context.") and isinstance(atom, ActionAtom):
+        context_name = field_name[len("context."):].strip()
+        optional = False
+        if context_name.endswith("?"):
+            optional = True
+            context_name = context_name[:-1].strip()
+        if not context_name:
+            raise ValueError("context edit expects `context.field=Type`")
+        target_field = "context_attributes"
+        old_value = dict(atom.context_attributes)
+        updated_context = dict(atom.context_attributes)
+        if value.lower() in {"", "none", "remove", "delete"}:
+            updated_context.pop(context_name, None)
+        else:
+            updated_context[context_name] = AttributeAtom(
+                name=f"{atom.name}__context__{context_name}",
+                rationale=f"context attribute on action {atom.name}",
+                plain_english_summary=(
+                    f"The {atom.name} request carries context.{context_name}."
+                ),
+                source_excerpt=atom.source_excerpt,
+                on_entity="",
+                field_name=context_name,
+                cedar_type=value,
+                optional=optional,
+            )
+        new_value = updated_context
     elif field_name == "cedar_type" and isinstance(atom, TypeAliasAtom):
         new_value = value
     elif field_name == "constraint_type" and isinstance(atom, PropertyAtom):
@@ -702,14 +756,14 @@ def _apply_field_edit(
             f"field {field_name!r} is not editable on {type(atom).__name__}",
         )
 
-    updated = dataclasses.replace(atom, **{field_name: new_value})
+    updated = dataclasses.replace(atom, **{target_field: new_value})
     if isinstance(updated, PropertyAtom):
         updated.symbolic_verified = False
         updated.symbolic_verification_log = [
             "edited after symbolic verification; checks will be rerun after approval",
         ]
     edit_log.setdefault("edits", []).append(
-        {"field": field_name, "old": getattr(atom, field_name), "new": new_value},
+        {"field": field_name, "old": old_value, "new": new_value},
     )
     return updated
 

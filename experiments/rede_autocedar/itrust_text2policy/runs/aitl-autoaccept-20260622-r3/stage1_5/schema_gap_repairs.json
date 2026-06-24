@@ -1,0 +1,186 @@
+[
+  {
+    "gap": {
+      "atom_name": "hcp_can_edit_patient_data",
+      "stage": "stage2_property_review",
+      "reason": "Stage 2 decomposition critic repair: The positive HCP edit floor is materially relevant, but the source requirement includes a named field-level boundary: the patient's MID must not be editable. The proposed atom permits editPatientData for any HCP/Patient without any way to exclude MID edits. The validated schema/action lacks an edited-field or data-field context hook for editPatientData, so this cannot be repaired as a scoped property without a schema change.",
+      "critic_tags": [
+        "field-level-edit-scope",
+        "mid-not-editable",
+        "missing-boundary",
+        "schema-gap"
+      ],
+      "required_action": "repair_schema_before_synthesis"
+    },
+    "proposed_atoms": [
+      {
+        "name": "editPatientData",
+        "rationale": "The editPatientData action needs request context identifying which patient data field is being edited so policies can exclude MID edits.",
+        "plain_english_summary": "This lets an HCP edit patient data while making clear which field the HCP is trying to change.",
+        "source_excerpt": "The HCP can edit patient data according to the data format, but the patient's MID must not be editable.",
+        "principal_types": [
+          "HCP"
+        ],
+        "resource_types": [
+          "Patient"
+        ],
+        "context_attributes": {
+          "editedField": {
+            "name": "editPatientData__context__editedField",
+            "rationale": "The edited field name is required to distinguish MID edits from other patient-data edits.",
+            "plain_english_summary": "The request says which patient data field is being edited.",
+            "source_excerpt": "The HCP can edit patient data according to the data format, but the patient's MID must not be editable.",
+            "on_entity": "",
+            "field_name": "editedField",
+            "cedar_type": "String",
+            "optional": false,
+            "alternatives_considered": []
+          }
+        },
+        "parent_groups": []
+      }
+    ],
+    "decisions": [
+      {
+        "atom_name": "editPatientData",
+        "action": "approve",
+        "reason": "",
+        "edit_delta": {},
+        "intent_acknowledged_by_user": true,
+        "symbolic_verified": false
+      }
+    ],
+    "approved_atoms": [
+      {
+        "name": "editPatientData",
+        "rationale": "The editPatientData action needs request context identifying which patient data field is being edited so policies can exclude MID edits.",
+        "plain_english_summary": "This lets an HCP edit patient data while making clear which field the HCP is trying to change.",
+        "source_excerpt": "The HCP can edit patient data according to the data format, but the patient's MID must not be editable.",
+        "principal_types": [
+          "HCP"
+        ],
+        "resource_types": [
+          "Patient"
+        ],
+        "context_attributes": {
+          "editedField": {
+            "name": "editPatientData__context__editedField",
+            "rationale": "The edited field name is required to distinguish MID edits from other patient-data edits.",
+            "plain_english_summary": "The request says which patient data field is being edited.",
+            "source_excerpt": "The HCP can edit patient data according to the data format, but the patient's MID must not be editable.",
+            "on_entity": "",
+            "field_name": "editedField",
+            "cedar_type": "String",
+            "optional": false,
+            "alternatives_considered": []
+          }
+        },
+        "parent_groups": []
+      }
+    ],
+    "schema_validation": [
+      {
+        "attempt_number": 1,
+        "schema_text": "entity User {\n    mid: String,\n    password: String,\n    securityQuestion?: String,\n};\n\nentity HCP in [User];\n\nentity LHCP in [HCP] {\n    specialty: String,\n    hospitals: Set<Hospital>,\n};\n\nentity Administrator in [User];\n\nentity Patient in [User] {\n    name: String,\n    email: String,\n    mid: String,\n    designatedProviders: Set<LHCP>,\n    providerList: Set<HCP>,\n    visitedProviders: Set<LHCP>,\n    personalRepresentatives: Set<PersonalRepresentative>,\n};\n\nentity PersonalRepresentative in [User];\n\nentity UAP in [User];\n\nentity EmergencyResponder in [User];\n\nentity PublicHealthAgent in [User];\n\nentity Hospital;\n\nentity MedicalRecord {\n    patient: Patient,\n    includesFamilyHistory: Bool,\n    hasPersonalHealthInformation: Bool,\n    hasImmunizations: Bool,\n    hasOfficeVisitInformation: Bool,\n};\n\nentity AccessLog {\n    patient: Patient,\n    accessorName: String,\n    accessorRole: String,\n    accessTimestamp: datetime,\n    transactionType: String,\n};\n\nentity Session {\n    user: User,\n    isAuthenticated: Bool,\n    lastActivityAt: datetime,\n};\n\nentity SystemConfiguration {\n    inactivityPeriodLength: duration,\n};\n\nentity ProviderSearch {\n    name: String,\n    specialty: String,\n    zipCode?: String,\n};\n\naction createPatient appliesTo {\n    principal: [HCP],\n    resource: [Patient],\n};\n\naction editPatientData appliesTo {\n    principal: [HCP],\n    resource: [Patient],\n    context: {\n        editedField: String,\n    },\n};\n\naction viewPatientCredential appliesTo {\n    principal: [HCP],\n    resource: [Patient],\n    context: {\n        credentialField: String,\n    },\n};\n\naction editPatientCredential appliesTo {\n    principal: [HCP],\n    resource: [Patient],\n    context: {\n        credentialField: String,\n    },\n};\n\naction createLHCP appliesTo {\n    principal: [Administrator],\n    resource: [LHCP],\n};\n\naction createEmergencyResponder appliesTo {\n    principal: [Administrator],\n    resource: [EmergencyResponder],\n};\n\naction createPublicHealthAgent appliesTo {\n    principal: [Administrator],\n    resource: [PublicHealthAgent],\n};\n\naction assignLHCPToHospitals appliesTo {\n    principal: [Administrator],\n    resource: [LHCP],\n    context: {\n        hospitals: Set<Hospital>,\n    },\n};\n\naction createUAP appliesTo {\n    principal: [LHCP],\n    resource: [UAP],\n};\n\naction login appliesTo {\n    principal: [User],\n    resource: [Session],\n    context: {\n        mid: String,\n        password: String,\n    },\n};\n\naction requestPasswordChange appliesTo {\n    principal: [User],\n    resource: [User],\n};\n\naction logout appliesTo {\n    principal: [User],\n    resource: [Session],\n};\n\naction closeApplication appliesTo {\n    principal: [User],\n    resource: [Session],\n};\n\naction setInactivityPeriodLength appliesTo {\n    principal: [Administrator],\n    resource: [SystemConfiguration],\n    context: {\n        newLength: duration,\n    },\n};\n\naction viewPastAndDesignatedLHCPs appliesTo {\n    principal: [Patient],\n    resource: [Patient],\n};\n\naction searchProviders appliesTo {\n    principal: [Patient],\n    resource: [ProviderSearch],\n};\n\naction addProviderToList appliesTo {\n    principal: [Patient],\n    resource: [Patient],\n    context: {\n        provider: HCP,\n    },\n};\n\naction designateDLHCP appliesTo {\n    principal: [Patient],\n    resource: [Patient],\n    context: {\n        lhcp: LHCP,\n    },\n};\n\naction undesignateDLHCP appliesTo {\n    principal: [Patient],\n    resource: [Patient],\n    context: {\n        lhcp: LHCP,\n    },\n};\n\naction viewAccessLog appliesTo {\n    principal: [Patient],\n    resource: [AccessLog],\n    context: {\n        beginDate: datetime,\n        endDate: datetime,\n    },\n};\n\naction viewMedicalRecord appliesTo {\n    principal: [Patient, PersonalRepresentative],\n    resource: [MedicalRecord],\n};\n\naction seeRecordHealthInformation appliesTo {\n    principal: [Patient, PersonalRepresentative],\n    resource: [MedicalRecord],\n    context: {\n        informationCategory: String,\n    },\n};\n",
+        "validator_passed": true,
+        "validator_error": "",
+        "llm_was_called": false,
+        "schema_override": false,
+        "schema_gap_repair": true
+      }
+    ]
+  },
+  {
+    "gap": {
+      "atom_name": "admin_can_assign_lhcp_to_nonempty_chosen_hospitals",
+      "stage": "stage2_property_review",
+      "reason": "Stage 2 decomposition critic repair: The atom targets a real uncovered requirement and uses the existing context.hospitals payload, but it replaces the source's named 'multiple hospitals' boundary with a weaker nonempty-set proxy. `context.hospitals.containsAny(context.hospitals)` only distinguishes empty from nonempty and does not express that the administrator may assign an LHCP to multiple hospitals. If the intended property is about the chosen/requested hospital payload, repair it without inventing a nonempty-only boundary; if the property must enforce true multiplicity, the validated schema/Cedar hook lacks a cardinality/count boundary for the hospital set.",
+      "critic_tags": [
+        "chosen-hospital-set",
+        "hospital-set-cardinality",
+        "missing-boundary",
+        "multiple-hospitals",
+        "nonempty-proxy",
+        "schema-gap"
+      ],
+      "required_action": "repair_schema_before_synthesis"
+    },
+    "proposed_atoms": [
+      {
+        "name": "assignLHCPToHospitals",
+        "rationale": "Adds an explicit request-time multiplicity flag so policies can distinguish assigning multiple hospitals from assigning only one hospital.",
+        "plain_english_summary": "This captures whether the administrator's hospital assignment request includes multiple hospitals.",
+        "source_excerpt": "The administrator can assign an LHCP to multiple hospitals and choose the hospitals.",
+        "principal_types": [
+          "Administrator"
+        ],
+        "resource_types": [
+          "LHCP"
+        ],
+        "context_attributes": {
+          "assignsMultipleHospitals": {
+            "name": "assignLHCPToHospitals__context__assignsMultipleHospitals",
+            "rationale": "Cedar sets do not expose cardinality, so this context field represents the named multiple-hospitals boundary directly.",
+            "plain_english_summary": "True when the request is to assign the LHCP to more than one hospital.",
+            "source_excerpt": "The administrator can assign an LHCP to multiple hospitals and choose the hospitals.",
+            "on_entity": "",
+            "field_name": "assignsMultipleHospitals",
+            "cedar_type": "Bool",
+            "optional": false,
+            "alternatives_considered": []
+          }
+        },
+        "parent_groups": []
+      }
+    ],
+    "decisions": [
+      {
+        "atom_name": "assignLHCPToHospitals",
+        "action": "approve",
+        "reason": "",
+        "edit_delta": {},
+        "intent_acknowledged_by_user": true,
+        "symbolic_verified": false
+      }
+    ],
+    "approved_atoms": [
+      {
+        "name": "assignLHCPToHospitals",
+        "rationale": "Adds an explicit request-time multiplicity flag so policies can distinguish assigning multiple hospitals from assigning only one hospital.",
+        "plain_english_summary": "This captures whether the administrator's hospital assignment request includes multiple hospitals.",
+        "source_excerpt": "The administrator can assign an LHCP to multiple hospitals and choose the hospitals.",
+        "principal_types": [
+          "Administrator"
+        ],
+        "resource_types": [
+          "LHCP"
+        ],
+        "context_attributes": {
+          "assignsMultipleHospitals": {
+            "name": "assignLHCPToHospitals__context__assignsMultipleHospitals",
+            "rationale": "Cedar sets do not expose cardinality, so this context field represents the named multiple-hospitals boundary directly.",
+            "plain_english_summary": "True when the request is to assign the LHCP to more than one hospital.",
+            "source_excerpt": "The administrator can assign an LHCP to multiple hospitals and choose the hospitals.",
+            "on_entity": "",
+            "field_name": "assignsMultipleHospitals",
+            "cedar_type": "Bool",
+            "optional": false,
+            "alternatives_considered": []
+          }
+        },
+        "parent_groups": []
+      }
+    ],
+    "schema_validation": [
+      {
+        "attempt_number": 1,
+        "schema_text": "entity User {\n    mid: String,\n    password: String,\n    securityQuestion?: String,\n};\n\nentity HCP in [User];\n\nentity LHCP in [HCP] {\n    specialty: String,\n    hospitals: Set<Hospital>,\n};\n\nentity Administrator in [User];\n\nentity Patient in [User] {\n    name: String,\n    email: String,\n    mid: String,\n    designatedProviders: Set<LHCP>,\n    providerList: Set<HCP>,\n    visitedProviders: Set<LHCP>,\n    personalRepresentatives: Set<PersonalRepresentative>,\n};\n\nentity PersonalRepresentative in [User];\n\nentity UAP in [User];\n\nentity EmergencyResponder in [User];\n\nentity PublicHealthAgent in [User];\n\nentity Hospital;\n\nentity MedicalRecord {\n    patient: Patient,\n    includesFamilyHistory: Bool,\n    hasPersonalHealthInformation: Bool,\n    hasImmunizations: Bool,\n    hasOfficeVisitInformation: Bool,\n};\n\nentity AccessLog {\n    patient: Patient,\n    accessorName: String,\n    accessorRole: String,\n    accessTimestamp: datetime,\n    transactionType: String,\n};\n\nentity Session {\n    user: User,\n    isAuthenticated: Bool,\n    lastActivityAt: datetime,\n};\n\nentity SystemConfiguration {\n    inactivityPeriodLength: duration,\n};\n\nentity ProviderSearch {\n    name: String,\n    specialty: String,\n    zipCode?: String,\n};\n\naction createPatient appliesTo {\n    principal: [HCP],\n    resource: [Patient],\n};\n\naction editPatientData appliesTo {\n    principal: [HCP],\n    resource: [Patient],\n    context: {\n        editedField: String,\n    },\n};\n\naction viewPatientCredential appliesTo {\n    principal: [HCP],\n    resource: [Patient],\n    context: {\n        credentialField: String,\n    },\n};\n\naction editPatientCredential appliesTo {\n    principal: [HCP],\n    resource: [Patient],\n    context: {\n        credentialField: String,\n    },\n};\n\naction createLHCP appliesTo {\n    principal: [Administrator],\n    resource: [LHCP],\n};\n\naction createEmergencyResponder appliesTo {\n    principal: [Administrator],\n    resource: [EmergencyResponder],\n};\n\naction createPublicHealthAgent appliesTo {\n    principal: [Administrator],\n    resource: [PublicHealthAgent],\n};\n\naction assignLHCPToHospitals appliesTo {\n    principal: [Administrator],\n    resource: [LHCP],\n    context: {\n        hospitals: Set<Hospital>,\n        assignsMultipleHospitals: Bool,\n    },\n};\n\naction createUAP appliesTo {\n    principal: [LHCP],\n    resource: [UAP],\n};\n\naction login appliesTo {\n    principal: [User],\n    resource: [Session],\n    context: {\n        mid: String,\n        password: String,\n    },\n};\n\naction requestPasswordChange appliesTo {\n    principal: [User],\n    resource: [User],\n};\n\naction logout appliesTo {\n    principal: [User],\n    resource: [Session],\n};\n\naction closeApplication appliesTo {\n    principal: [User],\n    resource: [Session],\n};\n\naction setInactivityPeriodLength appliesTo {\n    principal: [Administrator],\n    resource: [SystemConfiguration],\n    context: {\n        newLength: duration,\n    },\n};\n\naction viewPastAndDesignatedLHCPs appliesTo {\n    principal: [Patient],\n    resource: [Patient],\n};\n\naction searchProviders appliesTo {\n    principal: [Patient],\n    resource: [ProviderSearch],\n};\n\naction addProviderToList appliesTo {\n    principal: [Patient],\n    resource: [Patient],\n    context: {\n        provider: HCP,\n    },\n};\n\naction designateDLHCP appliesTo {\n    principal: [Patient],\n    resource: [Patient],\n    context: {\n        lhcp: LHCP,\n    },\n};\n\naction undesignateDLHCP appliesTo {\n    principal: [Patient],\n    resource: [Patient],\n    context: {\n        lhcp: LHCP,\n    },\n};\n\naction viewAccessLog appliesTo {\n    principal: [Patient],\n    resource: [AccessLog],\n    context: {\n        beginDate: datetime,\n        endDate: datetime,\n    },\n};\n\naction viewMedicalRecord appliesTo {\n    principal: [Patient, PersonalRepresentative],\n    resource: [MedicalRecord],\n};\n\naction seeRecordHealthInformation appliesTo {\n    principal: [Patient, PersonalRepresentative],\n    resource: [MedicalRecord],\n    context: {\n        informationCategory: String,\n    },\n};\n",
+        "validator_passed": true,
+        "validator_error": "",
+        "llm_was_called": false,
+        "schema_override": false,
+        "schema_gap_repair": true
+      }
+    ]
+  }
+]

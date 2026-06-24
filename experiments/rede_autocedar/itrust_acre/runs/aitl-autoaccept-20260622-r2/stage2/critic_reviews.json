@@ -1,0 +1,837 @@
+[
+  {
+    "atom_name": "patient_view_own_access_log_floor",
+    "decision": "accept",
+    "reason": "The atom is materially useful and tightly scoped to the patient-self branch of sentence 197. It uses the schema's patient-specific ownership hook (`resource.patient == principal`) and session binding rather than merely restating the `Patient` principal type. The represented-person branch is a separate boundary and need not be included in this narrowly named floor.",
+    "tags": [
+      "useful-floor",
+      "patient-ownership-boundary",
+      "access-log"
+    ]
+  },
+  {
+    "atom_name": "patient_view_access_log_own_ceiling",
+    "decision": "accept",
+    "reason": "This is a materially useful ceiling distinct from the already-approved floor: the approved atom establishes a permitted own-log case, while this atom bounds Patient-principal access so unrelated patients' access logs cannot be reached through the own-access-log path. It uses the schema's explicit ownership hooks (`resource.patient`, `context.patient`) and session hook, and is tightly scoped to the Patient-as-self branch rather than the separate personal-representative branch.",
+    "tags": [
+      "ownership-boundary",
+      "session-boundary",
+      "not-duplicate-floor"
+    ]
+  },
+  {
+    "atom_name": "personal_representative_view_represented_access_log_floor",
+    "decision": "accept",
+    "reason": "The atom captures a distinct, source-backed floor not covered by the approved patient-own access-log atoms. It is tightly scoped to active sessions, the representative principal, the patient-specific representedPatients relationship, and consistency between context.patient and resource.patient, avoiding a role-only PersonalRepresentative permission.",
+    "tags": [
+      "patient-specific-relationship",
+      "access-log",
+      "floor"
+    ]
+  },
+  {
+    "atom_name": "personal_representative_view_represented_access_log_ceiling",
+    "decision": "accept",
+    "reason": "The atom adds a materially useful ceiling corresponding to an already-approved floor, and it captures the patient-specific personal-representative boundary explicitly using schema-exposed hooks: active session ownership, context.patient membership in principal.representedPatients, and resource.patient matching that context patient. It is not merely restating principal/resource types and is not already covered by an approved ceiling.",
+    "tags": [
+      "patient-specific-boundary",
+      "personal-representative",
+      "access-log",
+      "ceiling"
+    ]
+  },
+  {
+    "atom_name": "hcp_no_patient_credential_view_disjointness",
+    "decision": "repair",
+    "reason": "The source boundary is field-specific: HCPs must not view a patient's password or security question. The proposed atom substitutes a broader proxy that forbids HCP viewCredential access to Patient resources generally because the schema lacks a way to distinguish which credential field is being viewed. That proxy is too broad for the source excerpt and should not be accepted as equivalent. Repair the schema/property to expose the missing field-level credential boundary, such as a credential-field selector or separate actions/resources for password and securityQuestion viewing, then state the disjointness only for those patient credential fields.",
+    "tags": [
+      "schema-gap",
+      "missing-boundary:credential-field-selector",
+      "patient-credential-secrecy",
+      "too-broad-proxy"
+    ]
+  },
+  {
+    "atom_name": "hcp_no_patient_password_or_security_question_view_disjointness",
+    "decision": "repair",
+    "reason": "The source requirement is materially useful and the schema now exposes the needed credential-field boundary via context.credentialField, so this is not a schema gap. However the proposed reference Cedar is framed as a broad positive permit for HCP credential viewing whenever the resource is not a Patient password/securityQuestion, which goes beyond the source excerpt. Repair the atom to state only the disjointness/forbid condition: no HCP permit for viewCredential when the resource is a Patient and context.credentialField is \"password\" or \"securityQuestion\". Do not imply a general HCP permission to view other credential fields or non-patient credentials from this negative requirement.",
+    "tags": [
+      "repair-reference-cedar",
+      "patient-credential-secrecy",
+      "credential-field-selector",
+      "overbroad-positive-permit",
+      "field-specific-boundary-present"
+    ]
+  },
+  {
+    "atom_name": "hcp_patient_sensitive_credential_view_forbidden_disjointness",
+    "decision": "repair",
+    "reason": "The source boundary is materially useful and now schema-expressible via context.credentialField, but the atom still encodes the disjointness as a broad positive permit for HCP viewCredential whenever the target is not a Patient password or securityQuestion. That repeats the previously rejected overbroad-complement pattern and implies permissions not granted by the negative source requirement. Repair the reference/formulation to state only that no HCP permission may cover viewCredential when resource is a Patient and context.credentialField is \"password\" or \"securityQuestion\"; do not grant or characterize access to other credential fields or non-patient credentials.",
+    "tags": [
+      "repair-reference-cedar",
+      "patient-credential-secrecy",
+      "credential-field-selector",
+      "overbroad-positive-permit",
+      "disjointness-not-complement-permit"
+    ]
+  },
+  {
+    "atom_name": "hcp_patient_sensitive_credential_view_forbidden_target_only_disjointness",
+    "decision": "repair",
+    "reason": "The source boundary is useful and schema-expressible via context.credentialField plus Patient-as-User resource targeting, and the atom's summary/disjoint_target_body correctly identify the forbidden slice. However the reference_cedar still encodes the previously rejected broad complement permit: it permits HCP viewCredential for every User target except Patient password/securityQuestion. That implies permissions beyond the negative source requirement. Repair the atom so the Cedar/reference formulation is target-only disjointness or a forbid-style forbidden slice, and do not characterize access to other credential fields or non-patient credentials.",
+    "tags": [
+      "repair-reference-cedar",
+      "patient-credential-secrecy",
+      "credential-field-selector",
+      "overbroad-positive-permit",
+      "disjointness-not-complement-permit",
+      "field-specific-boundary-present"
+    ]
+  },
+  {
+    "atom_name": "deactivated_patient_login_forbidden_disjointness",
+    "decision": "repair",
+    "reason": "The deactivated-patient login boundary is materially useful and schema-expressible via Patient.isActive on the login principal. However the reference Cedar encodes the negative requirement as a broad positive permit for active patients to log in, which goes beyond the source excerpt and may imply login permission without modeling MID/password authentication. Repair the atom to state only the forbidden slice/disjointness: no Patient principal with isActive == false may be permitted for action login. Do not use the complement as a general active-patient login permit.",
+    "tags": [
+      "repair-reference-cedar",
+      "deactivated-patient-lifecycle",
+      "disjointness-not-complement-permit",
+      "overbroad-positive-permit",
+      "activation-boundary-present"
+    ]
+  },
+  {
+    "atom_name": "inactive_patient_login_forbidden_slice_disjointness",
+    "decision": "repair",
+    "reason": "The deactivated-patient login boundary is materially useful and schema-expressible via Patient.isActive on the login principal, and the atom correctly scopes the forbidden slice in its summary and disjoint_target_body. However the reference_cedar still encodes the complement as a positive permit for active patients to log in (`!(!principal.isActive)`), which repeats the overbroad-positive-permit pattern previously rejected. Repair the reference/formulation to state only the forbidden slice/disjointness: no Patient principal with isActive == false may be permitted for action login. Do not imply an affirmative active-patient login permission or model MID/password authentication that the schema does not expose.",
+    "tags": [
+      "repair-reference-cedar",
+      "deactivated-patient-lifecycle",
+      "activation-boundary-present",
+      "disjointness-not-complement-permit",
+      "overbroad-positive-permit"
+    ]
+  },
+  {
+    "atom_name": "inactive_patient_login_forbidden_slice_only_disjointness",
+    "decision": "repair",
+    "reason": "The deactivated-patient login boundary is materially useful and schema-expressible via Patient.isActive on the login principal, and the atom's summary/disjoint_target_body correctly identify the forbidden slice. However the reference_cedar still encodes the previously rejected complement as a positive permit for active patients to log in (`!(!principal.isActive)`). That contradicts the stated rationale and repeats the overbroad-positive-permit pattern. Repair the atom so the reference/formulation states only the forbidden slice/disjointness: no Patient principal with isActive == false may be permitted for action login. Do not imply an affirmative active-patient login permission or MID/password authentication semantics that the schema does not expose.",
+    "tags": [
+      "repair-reference-cedar",
+      "deactivated-patient-lifecycle",
+      "activation-boundary-present",
+      "disjointness-not-complement-permit",
+      "overbroad-positive-permit",
+      "duplicate-prior-repair-issue"
+    ]
+  },
+  {
+    "atom_name": "patient_view_own_medical_record_floor",
+    "decision": "accept",
+    "reason": "The atom is materially useful and tightly scoped to a source-granted positive workflow: a Patient viewing their own MedicalRecord. It is not redundant with the approved access-log atoms, and it adds the necessary patient-specific ownership boundary through both resource.patient == principal and context.patient == principal, plus active-session ownership. The schema exposes all relevant hooks for this requirement, and the atom does not overgeneralize to other patients' records or personal-representative access.",
+    "tags": [
+      "own-record-boundary",
+      "patient-specific-resource-scope",
+      "medical-record-access",
+      "floor",
+      "session-boundary"
+    ]
+  },
+  {
+    "atom_name": "patient_view_own_medical_record_ceiling",
+    "decision": "accept",
+    "reason": "The atom is a materially useful same-action ceiling for the already approved patient medical-record floor. It captures the source's patient-specific ownership boundary ('their own records') using the schema-exposed hooks resource.patient, context.patient, active session, and session user alignment. It is not merely restating principal/resource types and is not redundant with the approved floor because it constrains over-permissive policies that might allow patients to view other patients' medical records.",
+    "tags": [
+      "patient-medical-record-privacy",
+      "own-record-boundary",
+      "session-user-boundary",
+      "context-resource-patient-alignment",
+      "ceiling-counterpart-to-approved-floor"
+    ]
+  },
+  {
+    "atom_name": "personal_representative_view_represented_medical_record_floor",
+    "decision": "accept",
+    "reason": "The atom captures a materially useful, patient-specific personal-representative boundary from the source requirement and is not redundant with the approved patient-own-medical-record atoms. It uses the schema-exposed representedPatients relationship, requires an active session owned by the representative, and ties context.patient to resource.patient, avoiding a role-only or context/resource-mismatch permit. As a floor atom, it is tightly scoped to the affirmative access grant for represented patients' medical records.",
+    "tags": [
+      "personal-representative-boundary",
+      "patient-specific-relationship",
+      "medical-record-access",
+      "floor",
+      "session-boundary",
+      "context-resource-alignment"
+    ]
+  },
+  {
+    "atom_name": "personal_representative_view_represented_medical_record_ceiling",
+    "decision": "accept",
+    "reason": "The atom is materially useful and tightly scoped: it adds the missing ceiling counterpart for the already-approved personal-representative medical-record floor, and it explicitly preserves the patient-specific representation boundary, active-session ownership boundary, and resource/context patient match required by the source excerpt. It is not merely restating schema principal/resource types and is not implied by the approved floor, because the floor only guarantees an allowed represented-patient case while this ceiling constrains overbroad role-only or context-only policies.",
+    "tags": [
+      "patient-specific-representation-boundary",
+      "medical-record-ownership-boundary",
+      "active-session-boundary",
+      "ceiling-counterpart"
+    ]
+  },
+  {
+    "atom_name": "lhcp_view_patient_allowed_diagnostic_information_floor",
+    "decision": "accept",
+    "reason": "The atom is materially useful and tightly scoped to the approved-diagnostic-information workflow. It uses the schema's patient-specific allowedViewers boundary rather than a role-only LHCP proxy, includes active-session ownership, and ties the request patient to the diagnostic information's patient. It is not redundant with the existing access-log or medical-record atoms and is not merely restating principal/resource types.",
+    "tags": [
+      "approved-diagnostic-information",
+      "patient-specific-allowed-viewer-boundary",
+      "floor",
+      "session-boundary-present"
+    ]
+  },
+  {
+    "atom_name": "lhcp_view_patient_allowed_diagnostic_information_ceiling",
+    "decision": "accept",
+    "reason": "The atom is a materially useful ceiling paired with the approved LHCP diagnostic-information floor. It captures the patient-specific allowed-viewer boundary from the source excerpt, uses schema-exposed hooks for session ownership, patient/resource matching, and allowedViewers membership, and is not merely restating principal/resource types or duplicating an already approved ceiling.",
+    "tags": [
+      "patient-specific-diagnostic-approval",
+      "allowed-viewer-boundary",
+      "ceiling",
+      "field-boundary-present"
+    ]
+  },
+  {
+    "atom_name": "patient_view_own_personal_health_information_floor",
+    "decision": "accept",
+    "reason": "The atom is materially useful and tightly scoped to a source-granted patient self-access workflow that is not already covered by approved atoms. It uses the schema-exposed ownership boundary on PersonalHealthInformation.patient, matches the request patient context to the resource and principal, and includes active session ownership. It does not overgeneralize to represented patients or other resource types.",
+    "tags": [
+      "patient-self-access",
+      "personal-health-information",
+      "ownership-boundary",
+      "active-session",
+      "not-duplicate"
+    ]
+  },
+  {
+    "atom_name": "patient_view_own_personal_health_information_ceiling",
+    "decision": "accept",
+    "reason": "The atom is a useful same-action ceiling for the already-approved patient PHI floor. It is tightly scoped to the source ownership boundary ('their own records'), uses the schema-exposed patient ownership fields on both context and resource, and prevents overbroad Patient-to-any-Patient PHI access without introducing an unsupported proxy or omitting a named boundary.",
+    "tags": [
+      "own-records-boundary",
+      "patient-privacy",
+      "overpermission-ceiling",
+      "matches-approved-floor"
+    ]
+  },
+  {
+    "atom_name": "personal_representative_view_represented_personal_health_information_floor",
+    "decision": "accept",
+    "reason": "The atom is materially useful and tightly scoped to an explicit source grant that is not already covered by the approved patient-self personal-health-information atoms. It preserves the patient-specific personal-representative boundary by requiring the context patient to be in principal.representedPatients, requires the active session to belong to the representative, and ties the resource patient to the same represented patient. It is not merely restating schema principal/resource types and does not rely on role-only representative access.",
+    "tags": [
+      "personal-representative-boundary",
+      "patient-specific-relationship",
+      "represented-patient-access",
+      "floor",
+      "not-duplicate"
+    ]
+  },
+  {
+    "atom_name": "personal_representative_view_represented_personal_health_information_ceiling",
+    "decision": "accept",
+    "reason": "The atom is materially useful and tightly scoped to the patient-specific personal-representative boundary in the source requirement. It is the ceiling counterpart to an already-approved floor for the same action/resource and is not redundant with the floor because it constrains over-permission to non-represented patients and mismatched context/resource patients. The schema exposes the needed boundary through PersonalRepresentative.representedPatients, context.patient, resource.patient, and session ownership, and the proposed Cedar uses those hooks without substituting a proxy or adding unrelated permissions.",
+    "tags": [
+      "patient-specific-representation",
+      "ownership-boundary",
+      "ceiling-counterpart",
+      "schema-boundary-present",
+      "not-duplicate"
+    ]
+  },
+  {
+    "atom_name": "patient_view_own_family_history_floor",
+    "decision": "accept",
+    "reason": "The atom is materially useful and tightly scoped: family history is a separately modeled resource/action in the schema and is separately named in the source requirement, and no approved atom already covers patient access to FamilyHistory. The floor includes the relevant ownership/session boundaries for the patient-owned case: active session, session user equals principal, context patient equals principal, and resource patient equals principal. It does not overgeneralize to represented patients or personal representatives, which can be handled by separate atoms.",
+    "tags": [
+      "family-history-access",
+      "patient-own-record-boundary",
+      "floor",
+      "not-duplicate",
+      "schema-expressible"
+    ]
+  },
+  {
+    "atom_name": "patient_view_own_family_history_ceiling",
+    "decision": "accept",
+    "reason": "The atom is a materially useful ceiling counterpart to the already approved patient_view_own_family_history_floor. It is not merely restating principal/resource types: it enforces the source's patient ownership boundary for \"their own records\" by requiring the active session user, context.patient, and resource.patient all to match the Patient principal. The schema exposes the needed ownership and session hooks, and the atom is tightly scoped to Patient viewing FamilyHistory under sentence 213 rather than broadening to other resources or representative access.",
+    "tags": [
+      "ownership-boundary",
+      "own-records-ceiling",
+      "session-boundary",
+      "patient-specific-access",
+      "not-duplicate-floor"
+    ]
+  },
+  {
+    "atom_name": "patient_view_own_immunization_floor",
+    "decision": "accept",
+    "reason": "The atom captures a distinct, source-supported positive patient workflow for viewing the patient's own immunization information. It is not merely schema-implied because it adds the own-record, context-patient, and active-session ownership/session boundaries, and it is not already covered by the approved medical-record, personal-health-information, or family-history atoms because viewImmunization and Immunization are separate schema hooks. Splitting the patient floor from the personal-representative case is appropriately scoped.",
+    "tags": [
+      "own-record-boundary",
+      "patient-immunization-access",
+      "floor",
+      "not-duplicate",
+      "session-boundary"
+    ]
+  },
+  {
+    "atom_name": "patient_view_own_immunization_ceiling",
+    "decision": "accept",
+    "reason": "The atom is materially useful and tightly scoped. It adds the missing ceiling counterpart to the already approved patient immunization floor, enforcing the source's explicit own-record ownership boundary for Patient principals. It is not merely schema-implied, because it constrains patient/resource/context identity and active session ownership beyond the action's principal/resource types, and it is not already covered by an approved immunization ceiling.",
+    "tags": [
+      "own-record-boundary",
+      "patient-immunization-privacy",
+      "ceiling-counterpart",
+      "session-ownership-boundary"
+    ]
+  },
+  {
+    "atom_name": "personal_representative_view_represented_family_history_floor",
+    "decision": "accept",
+    "reason": "The atom is materially useful and tightly scoped to an explicit source requirement that is not yet covered by the approved family-history atoms: personal representatives may view family history for patients they represent. It uses the schema-exposed patient-specific representation boundary, active session ownership, request patient, and FamilyHistory.patient match, and it does not broaden the source into unrelated access.",
+    "tags": [
+      "patient-specific-representation",
+      "family-history",
+      "floor",
+      "not-duplicate",
+      "boundary-present"
+    ]
+  },
+  {
+    "atom_name": "personal_representative_view_represented_family_history_ceiling",
+    "decision": "accept",
+    "reason": "The atom is a materially useful matching ceiling for an already-approved personal-representative family-history floor. It is not merely restating principal/resource types: it explicitly captures the patient-specific representation boundary, session ownership, context-patient/resource-patient match, and family-history ownership required by the source excerpt. The relevant boundary is schema-expressible through principal.representedPatients, context.patient, resource.patient, and context.session, and the atom is consistent with analogous approved ceilings for medical records and personal health information.",
+    "tags": [
+      "represented-patient-boundary",
+      "family-history-privacy",
+      "matching-ceiling",
+      "patient-specific-relationship",
+      "session-boundary"
+    ]
+  },
+  {
+    "atom_name": "personal_representative_view_represented_immunization_floor",
+    "decision": "accept",
+    "reason": "The atom is materially useful and tightly scoped: it covers the explicit source requirement that a personal representative may view immunization information for patients they represent, which is not already covered by the approved patient-own immunization atoms or the personal-representative family-history/medical-record/PHI atoms. It includes the patient-specific representation boundary, active session ownership, and consistency between context.patient and resource.patient, all of which are schema-expressible and relevant to the requirement.",
+    "tags": [
+      "personal-representative-boundary",
+      "represented-patient-boundary",
+      "immunization-access",
+      "floor",
+      "session-boundary"
+    ]
+  },
+  {
+    "atom_name": "personal_representative_view_represented_immunization_ceiling",
+    "decision": "accept",
+    "reason": "The atom is materially useful and tightly scoped: it adds the missing ceiling counterpart for an already-approved personal-representative immunization floor, preserving the patient-specific representation boundary, active-session ownership boundary, and resource/context patient match required by the source excerpt. It is not merely schema-implied because it constrains PersonalRepresentative access by representedPatients and resource.patient, and it is not already covered by the existing approved floor.",
+    "tags": [
+      "representation-boundary",
+      "patient-specific-ownership",
+      "immunization-privacy",
+      "ceiling-counterpart"
+    ]
+  },
+  {
+    "atom_name": "patient_view_own_office_visit_floor",
+    "decision": "accept",
+    "reason": "The atom is materially useful and tightly scoped to a source-backed positive workflow not yet covered by approved atoms: patient viewing their own office-visit information. It is not merely restating the schema type constraints because it adds the patient/resource/context identity boundaries and active-session ownership. It is not implied by the existing approved medical-record, PHI, family-history, or immunization atoms because viewOfficeVisit is a distinct action/resource. No named source boundary for this specific patient-own office-visit view is omitted; personal-representative viewing can be handled by a separate parallel atom.",
+    "tags": [
+      "office-visit-information",
+      "patient-own-record-boundary",
+      "active-session-boundary",
+      "floor",
+      "not-duplicate"
+    ]
+  },
+  {
+    "atom_name": "patient_view_own_office_visit_ceiling",
+    "decision": "accept",
+    "reason": "The atom is materially useful and tightly scoped: it adds the missing Patient ceiling counterpart to the already-approved patient_view_own_office_visit_floor, enforcing the source boundary that Patient access to office-visit information is limited to the patient's own records. It is not merely restating schema principal/resource types because it constrains session ownership, context.patient, and resource.patient alignment. No approved stricter atom already covers this Patient/viewOfficeVisit ceiling.",
+    "tags": [
+      "office-visit-ownership-boundary",
+      "patient-own-records",
+      "ceiling-counterpart",
+      "session-boundary-present"
+    ]
+  },
+  {
+    "atom_name": "personal_representative_view_represented_office_visit_floor",
+    "decision": "accept",
+    "reason": "The atom captures a materially useful, not-yet-approved portion of the source requirement: personal representatives may view office-visit information for patients they represent. It is tightly scoped to the viewOfficeVisit action, PersonalRepresentative principal, OfficeVisit resource, active session ownership, patient-specific representation, and consistency between context.patient and resource.patient. It is not merely schema-implied and is not already covered by the approved patient-own office-visit atoms or the approved personal-representative atoms for other record types.",
+    "tags": [
+      "represented-patient-boundary",
+      "personal-representative",
+      "office-visit-access",
+      "floor",
+      "patient-specific-relationship"
+    ]
+  },
+  {
+    "atom_name": "personal_representative_view_represented_office_visit_ceiling",
+    "decision": "accept",
+    "reason": "The atom is materially useful and tightly scoped: it adds the missing ceiling counterpart for the already-approved personal-representative office-visit floor, enforcing the patient-specific representation boundary, active-session ownership, and context/resource patient consistency required by the source excerpt. It is not merely a schema type restatement and is not already implied by an approved stricter ceiling for this action/resource pair.",
+    "tags": [
+      "patient-specific-representation-boundary",
+      "office-visit-privacy",
+      "ceiling-counterpart",
+      "session-ownership",
+      "context-resource-patient-match"
+    ]
+  },
+  {
+    "atom_name": "patient_take_own_untaken_office_visit_survey_floor",
+    "decision": "accept",
+    "reason": "The atom is materially useful and tightly scoped to a source requirement not already covered by the approved view-office-visit atoms. It preserves the patient-specific ownership boundary (principal, context.patient, and resource.patient all match), the authenticated active-session boundary, and the survey lifecycle condition explicitly named in the requirement via resource.surveyTaken. The schema exposes the needed lifecycle hook, and the atom does not substitute an overbroad proxy or imply permissions beyond the positive patient floor for taking an untaken own office-visit survey.",
+    "tags": [
+      "survey-lifecycle-boundary",
+      "own-record-boundary",
+      "active-session-boundary",
+      "patient-specific-office-visit",
+      "not-duplicate"
+    ]
+  },
+  {
+    "atom_name": "patient_take_own_untaken_office_visit_survey_ceiling",
+    "decision": "accept",
+    "reason": "The atom is a materially useful ceiling counterpart to the approved patient survey floor. It is tightly scoped to the patient principal, takeOfficeVisitSurvey action, OfficeVisit resource, active session ownership, context/resource patient consistency, and the surveyTaken lifecycle boundary explicitly named by the source requirement. It is not merely schema-implied and is not a duplicate because the approved atom is a floor while this one constrains broader patient survey-taking permissions.",
+    "tags": [
+      "surveyTaken-lifecycle-boundary",
+      "own-office-visit-boundary",
+      "patient-session-ownership",
+      "ceiling-counterpart"
+    ]
+  },
+  {
+    "atom_name": "personal_representative_take_represented_untaken_office_visit_survey_floor",
+    "decision": "accept",
+    "reason": "The atom is materially useful and tightly scoped: it covers the personal-representative survey-taking success path that is not already covered by the approved patient-only survey atoms. It includes the named patient-specific representation boundary, active session ownership, office-visit patient match, and the lifecycle condition that the survey has not already been taken, all of which are schema-expressible via representedPatients, context.patient/resource.patient, context.session, and OfficeVisit.surveyTaken.",
+    "tags": [
+      "personal-representative-boundary",
+      "represented-patient-scope",
+      "office-visit-survey",
+      "surveyTaken-lifecycle",
+      "floor"
+    ]
+  },
+  {
+    "atom_name": "personal_representative_take_represented_untaken_office_visit_survey_ceiling",
+    "decision": "accept",
+    "reason": "The atom is a materially useful ceiling paired with the already-approved personal-representative survey floor. It is not implied by the floor alone, is not a duplicate of an approved ceiling, and it preserves the key boundaries available in the schema: active session bound to the representative, patient-specific representation, context/resource patient match, and surveyTaken lifecycle status. The represented-patient boundary is supported by the surrounding requirement and by the already-approved corresponding floor.",
+    "tags": [
+      "personal-representative-boundary",
+      "represented-patient-boundary",
+      "surveyTaken-lifecycle",
+      "active-session-boundary",
+      "matched-floor-ceiling"
+    ]
+  },
+  {
+    "atom_name": "deactivated_patient_edit_forbidden_disjointness",
+    "decision": "repair",
+    "reason": "The deactivated-patient modification boundary is materially useful and schema-expressible via Patient.isActive on the editPatient resource. However, the reference Cedar encodes the negative requirement as a broad positive permit for HCPs to edit active patients (`!(!resource.isActive)`), and omits the usual active-session/session-owner constraints that would be needed for any affirmative permit. This repeats the rejected complement-permit pattern from the deactivated-patient login atoms. Repair the atom to state only the forbidden slice/disjointness: no HCP permission may cover editPatient when the Patient resource has isActive == false. Do not imply a general HCP permission to edit active patients from this negative lifecycle requirement.",
+    "tags": [
+      "repair-reference-cedar",
+      "deactivated-patient-lifecycle",
+      "mutable-patient-edit-safety",
+      "activation-boundary-present",
+      "disjointness-not-complement-permit",
+      "overbroad-positive-permit"
+    ]
+  },
+  {
+    "atom_name": "inactive_patient_edit_forbidden_slice",
+    "decision": "repair",
+    "reason": "The deactivated-patient modification boundary is materially useful and schema-expressible via Patient.isActive, and the atom's summary/disjoint_target_body correctly identify the forbidden slice: no HCP editPatient permission for inactive Patient resources. However, the reference_cedar still encodes the forbidden-slice property as a broad positive complement permit for active patients (`!(!resource.isActive)`), repeating the previously rejected pattern for deactivated-patient edit/login atoms. Repair the formulation so it states only the disjointness/forbidden slice, e.g. no permit may cover editPatient when principal is HCP, resource is Patient, and resource.isActive == false. Do not imply an affirmative HCP permission to edit active patients from this negative lifecycle requirement.",
+    "tags": [
+      "repair-reference-cedar",
+      "deactivated-patient-lifecycle",
+      "mutable-patient-edit-safety",
+      "activation-boundary-present",
+      "disjointness-not-complement-permit",
+      "overbroad-positive-permit",
+      "duplicate-prior-repair-issue"
+    ]
+  },
+  {
+    "atom_name": "inactive_patient_edit_forbidden_slice_only",
+    "decision": "repair",
+    "reason": "The deactivated-patient modification boundary is materially useful and schema-expressible via Patient.isActive, and the summary/disjoint_target_body correctly identify the forbidden slice: no HCP editPatient permission for inactive Patient resources. However, the reference_cedar still encodes the forbidden-slice property as a broad positive complement permit for active patients (`!(!resource.isActive)`), exactly repeating the previously rejected inactive-patient edit proposals. Repair the formulation so it states only the disjointness/forbidden slice: no permit may cover editPatient when principal is HCP, resource is Patient, and resource.isActive == false. Do not include a complement permit or imply an affirmative HCP permission to edit active patients from this negative lifecycle requirement.",
+    "tags": [
+      "repair-reference-cedar",
+      "deactivated-patient-lifecycle",
+      "mutable-patient-edit-safety",
+      "activation-boundary-present",
+      "disjointness-not-complement-permit",
+      "overbroad-positive-permit",
+      "duplicate-prior-repair-issue"
+    ]
+  },
+  {
+    "atom_name": "hcp_create_patient_floor",
+    "decision": "accept",
+    "reason": "The atom is materially useful as an affirmative floor for the explicit sentence-68 workflow that HCPs can create patients. It is not merely restating the schema: the schema only constrains action applicability, while this property requires a permit under a tightly scoped authenticated-session condition. No approved atom already covers createPatient, and the source excerpt does not name an additional patient-specific lifecycle or ownership boundary for creation that this floor omits.",
+    "tags": [
+      "hcp-create-patient",
+      "floor",
+      "active-session-boundary",
+      "not-duplicate"
+    ]
+  },
+  {
+    "atom_name": "hcp_create_patient_ceiling",
+    "decision": "accept",
+    "reason": "The atom is materially useful and not schema-implied or duplicated by the approved floor. The schema only constrains createPatient to HCP principals and Patient resources; it does not enforce active-session or session-owner conditions. A matching ceiling prevents overbroad HCP patient-creation permits and uses the existing Session hook rather than inventing a proxy. The active-session boundary is supported by the broader authentication requirement that authorization is disabled after session inactivity, and the atom remains tightly scoped to the HCP createPatient action.",
+    "tags": [
+      "mutable-account-creation-boundary",
+      "active-session-boundary",
+      "session-owner-boundary",
+      "not-schema-implied",
+      "matching-ceiling"
+    ]
+  },
+  {
+    "atom_name": "hcp_disable_patient_floor",
+    "decision": "accept",
+    "reason": "The atom captures a materially useful positive workflow from sentence 68 and is not a duplicate of an approved disablePatient atom. Its scope is consistent with the validated schema: disablePatient already targets the selected Patient as the resource, and there is no additional named patient-specific ownership or assignment boundary in the source excerpt that must be modeled for this action. The active-session/session-owner condition is an appropriate authentication boundary for the floor.",
+    "tags": [
+      "positive-workflow",
+      "hcp-disable-patient",
+      "active-session-boundary",
+      "not-duplicate"
+    ]
+  },
+  {
+    "atom_name": "hcp_disable_patient_ceiling",
+    "decision": "accept",
+    "reason": "The atom is a non-duplicate companion ceiling for the already-approved HCP disable-patient floor. It adds the explicit active-session and session-owner authentication boundary for a mutable patient lifecycle action, rather than merely restating the schema's HCP/Patient appliesTo types. The source supports HCP disable authority, and the schema exposes the relevant session hook; no additional named source boundary is omitted for this narrow disablePatient ceiling.",
+    "tags": [
+      "mutable-patient-lifecycle",
+      "session-boundary",
+      "hcp-disable-patient",
+      "companion-ceiling"
+    ]
+  },
+  {
+    "atom_name": "administrator_reactivate_inactive_patient_floor",
+    "decision": "accept",
+    "reason": "The atom is materially useful and tightly scoped: it covers the positive administrator reactivation workflow for deactivated patients, includes the lifecycle boundary named in the source via `!resource.isActive`, and includes the standard active-session/session-owner authentication boundary. It is not redundant with the schema alone or any approved atom; prior deactivated-patient atoms addressed forbidden login/edit slices, not the administrator reactivation floor.",
+    "tags": [
+      "deactivated-patient-lifecycle",
+      "administrator-reactivation",
+      "activation-boundary-present",
+      "active-session-boundary",
+      "not-duplicate"
+    ]
+  },
+  {
+    "atom_name": "administrator_reactivate_inactive_patient_ceiling",
+    "decision": "accept",
+    "reason": "The atom is a materially useful ceiling counterpart to the approved administrator reactivation floor. It is tightly scoped to the reactivatePatient lifecycle action, uses schema-exposed boundaries for inactive patient status and active administrator-owned session, and is not merely restating the schema because it constrains reactivation to the deactivated-patient case rather than only the Administrator/Patient action typing. It is not implied by the approved floor, which only establishes an affirmative permitted case.",
+    "tags": [
+      "deactivated-patient-lifecycle",
+      "activation-boundary-present",
+      "session-owner-boundary",
+      "ceiling-counterpart"
+    ]
+  },
+  {
+    "atom_name": "administrator_create_lhcp_floor",
+    "decision": "accept",
+    "reason": "The atom is a materially useful, tightly scoped floor for the explicit requirement that administrators can create LHCP users. It is not a duplicate of an approved atom, is not merely restating the schema because it adds the required active-session and session-owner conditions, and it does not omit any source-named lifecycle, ownership, network, authentication, or conflict boundary for this specific create-LHCP workflow. The schema directly exposes createLHCP with Administrator principal, LHCP resource, and session context, so no schema gap is present.",
+    "tags": [
+      "admin-user-creation",
+      "lhcp-creation",
+      "floor",
+      "session-boundary-present"
+    ]
+  },
+  {
+    "atom_name": "administrator_create_lhcp_ceiling",
+    "decision": "accept",
+    "reason": "The atom is a materially useful ceiling counterpart to the approved administrator_create_lhcp_floor. It is not merely restating the schema's principal/resource types because it adds the active-session and session-owner boundary used throughout the reviewed atoms, and no stricter approved createLHCP ceiling already covers this action. The source supports administrator LHCP creation, and the authenticated-session requirements support requiring an active session belonging to the administrator.",
+    "tags": [
+      "administrator-user-creation",
+      "active-session-boundary",
+      "session-owner-boundary",
+      "matching-ceiling"
+    ]
+  },
+  {
+    "atom_name": "administrator_create_emergency_responder_floor",
+    "decision": "accept",
+    "reason": "The atom captures a distinct administrator user-creation grant from sentence 103 for EmergencyResponder resources. It is not merely restating the schema because it asserts an affirmative floor with the active-session/session-owner authentication boundary, and it is not implied by the already-approved administrator_create_lhcp atoms because it covers a different action and resource type.",
+    "tags": [
+      "administrator-user-creation",
+      "emergency-responder",
+      "floor",
+      "session-boundary"
+    ]
+  },
+  {
+    "atom_name": "administrator_create_emergency_responder_ceiling",
+    "decision": "accept",
+    "reason": "The atom is a useful ceiling complement to the already-approved administrator_create_emergency_responder_floor. It is not merely restating the schema principal/resource typing: it adds the active-session and session-owner boundary that is consistently used for authenticated administrative creation workflows. It is not implied by the approved floor, because the floor only requires at least one permitted case and does not prevent permits outside the active administrator session slice.",
+    "tags": [
+      "administrative-user-creation",
+      "active-session-boundary",
+      "session-owner-boundary",
+      "ceiling-complement"
+    ]
+  },
+  {
+    "atom_name": "administrator_create_lab_technician_floor",
+    "decision": "accept",
+    "reason": "The atom is materially useful and tightly scoped to an explicit source grant: administrators can create lab technician users. It is not merely restating the schema, because it adds the required affirmative floor with the active-session/session-owner boundary used consistently for administrator creation workflows. It is not already covered by the approved LHCP or emergency-responder creation atoms because this is a distinct action and resource type.",
+    "tags": [
+      "administrator-user-creation",
+      "lab-technician",
+      "floor",
+      "session-boundary"
+    ]
+  },
+  {
+    "atom_name": "administrator_create_lab_technician_ceiling",
+    "decision": "accept",
+    "reason": "The atom is a non-duplicate matching ceiling for an already-approved administrator_create_lab_technician_floor. It is tightly scoped to the source user-creation requirement for lab technicians and adds the standard active, administrator-owned session boundary rather than merely restating the schema principal/resource types. No additional named source boundary for lab-technician creation is omitted or unrepresentable in the schema.",
+    "tags": [
+      "admin-user-creation",
+      "lab-technician",
+      "ceiling",
+      "active-session",
+      "session-owner",
+      "matches-approved-floor"
+    ]
+  },
+  {
+    "atom_name": "administrator_create_public_health_agent_floor",
+    "decision": "accept",
+    "reason": "The atom covers a materially useful positive requirement from sentence 103 that is not yet covered by the approved administrator-create-user atoms: administrator creation of PublicHealthAgent users. It is tightly scoped to the createPublicHealthAgent action, Administrator principal, PublicHealthAgent resource, and active session belonging to the administrator. It is not merely restating the schema because the schema only defines the action's type applicability and does not imply a permit. No additional lifecycle, ownership, network, authentication, or conflict boundary is named in the source excerpt for this creation workflow beyond administrator role and authenticated active session.",
+    "tags": [
+      "admin-user-creation",
+      "public-health-agent",
+      "floor",
+      "not-duplicate",
+      "schema-expressible"
+    ]
+  },
+  {
+    "atom_name": "administrator_create_public_health_agent_ceiling",
+    "decision": "accept",
+    "reason": "This is the missing ceiling counterpart to the already-approved administrator_create_public_health_agent_floor. It is not merely restating the schema\u2019s principal/resource appliesTo constraints because it adds the active-session and session-owner boundary used consistently for administrative creation actions. It is tightly scoped to the Sentence 103 public-health-agent creation requirement and does not omit a source-named boundary that is expressible in the schema.",
+    "tags": [
+      "administrative-user-creation",
+      "public-health-agent",
+      "active-session-boundary",
+      "session-owner-boundary",
+      "matching-ceiling"
+    ]
+  },
+  {
+    "atom_name": "lhcp_create_uap_floor",
+    "decision": "accept",
+    "reason": "The atom captures a distinct, explicit positive requirement not covered by the approved administrator-created-user atoms: an LHCP can create UAP users. It is tightly scoped to the createUAP action, LHCP principal, UAP resource, and the standard active-session/session-owner authentication boundary exposed by the schema. The source excerpt does not name an additional patient-specific, lifecycle, ownership, network, or conflict boundary for this workflow, so no repair is needed.",
+    "tags": [
+      "positive-floor",
+      "lhcp-create-uap",
+      "user-provisioning",
+      "active-session-boundary",
+      "not-duplicate"
+    ]
+  },
+  {
+    "atom_name": "lhcp_create_uap_ceiling",
+    "decision": "accept",
+    "reason": "The atom is a useful same-action ceiling paired with the already approved LHCP create-UAP floor. It is not merely restating the schema principal/resource types because it adds the authenticated active-session/session-owner boundary used consistently for mutable user-creation actions, and it is not implied by the approved floor. The source supports LHCP-created UAP users, and the broader authentication/session requirements support bounding that workflow to an active session belonging to the LHCP.",
+    "tags": [
+      "same-action-ceiling",
+      "mutable-user-creation",
+      "authenticated-session-boundary",
+      "not-duplicate"
+    ]
+  },
+  {
+    "atom_name": "administrator_assign_lhcp_credentials_floor",
+    "decision": "accept",
+    "reason": "The atom captures a distinct required administrative workflow not covered by existing approved create-LHCP atoms: administrators may assign medical identification numbers and passwords to LHCPs. It is tightly scoped to the schema's dedicated assignCredentials action, Administrator principal, LHCP resource, and active session ownership. The source does not name additional patient-specific, lifecycle, ownership, or field-level conditions for this grant that are omitted here.",
+    "tags": [
+      "administrative-credential-assignment",
+      "not-duplicate",
+      "tightly-scoped",
+      "session-boundary-present"
+    ]
+  },
+  {
+    "atom_name": "administrator_assign_lhcp_credentials_ceiling",
+    "decision": "accept",
+    "reason": "The atom is a useful ceiling counterpart to the already-approved floor for the administrator credential-assignment requirement. It is tightly scoped to the source grant: Administrator principal, LHCP resource, assignCredentials action, and an active administrator-owned session. The session-owner/active-session condition is not merely schema-implied, and no additional source boundary for this requirement is omitted by the proposed atom.",
+    "tags": [
+      "credential-assignment",
+      "administrator-boundary",
+      "lhcp-resource-boundary",
+      "active-session-boundary",
+      "ceiling"
+    ]
+  },
+  {
+    "atom_name": "administrator_assign_hospital_floor",
+    "decision": "repair",
+    "reason": "The administrator hospital-assignment workflow is materially useful and not already covered by the approved creation/credential atoms, but the source requirement includes a named boundary: the assigned hospital must be chosen from the hospital list. The proposed floor omits that condition and would require permission for any context.hospital of type Hospital, using the entity type as a proxy for hospital-list membership. The validated schema has no explicit HospitalList entity, list-membership attribute, or equivalent hook to represent this boundary, so the property should not be accepted until the schema/property can express the hospital-list membership constraint.",
+    "tags": [
+      "schema-gap",
+      "missing-boundary:hospital-list-membership",
+      "administrator-hospital-assignment",
+      "omitted-source-condition",
+      "too-broad-floor"
+    ]
+  },
+  {
+    "atom_name": "administrator_assign_listed_hospital_floor",
+    "decision": "accept",
+    "reason": "The atom is materially useful and tightly scoped to the administrator hospital-assignment requirement. It is not already covered by the approved administrator creation or credential atoms, and it includes the named source boundary that the assigned hospital must come from the hospital list. The validated schema exposes that boundary directly through context.hospitalList.hospitals and context.hospital, so this is not a schema gap or proxy. The floor is appropriately limited to an active administrator session and listed-hospital membership for the assignHospital action on an LHCP resource.",
+    "tags": [
+      "administrator-hospital-assignment",
+      "hospital-list-membership-boundary",
+      "active-session-boundary",
+      "not-duplicate",
+      "schema-boundary-present"
+    ]
+  },
+  {
+    "atom_name": "administrator_assign_listed_hospital_ceiling",
+    "decision": "accept",
+    "reason": "The atom is a materially useful ceiling counterpart to the already-approved administrator_assign_listed_hospital_floor. It captures the named source boundary that assigned hospitals must come from the hospital list, uses the schema-exposed context.hospitalList.hospitals hook rather than a proxy, and is tightly scoped to assignHospital by Administrator over LHCP with active administrator-owned session and list membership. It is not merely restating principal/resource typing and is not implied by the approved floor, since the ceiling is needed to rule out policies that also permit assignment of hospitals outside the provided list.",
+    "tags": [
+      "administrator-hospital-assignment",
+      "hospital-list-membership",
+      "ceiling",
+      "session-owner-boundary",
+      "not-duplicate"
+    ]
+  },
+  {
+    "atom_name": "patient_view_own_lhcps_floor",
+    "decision": "accept",
+    "reason": "The atom is materially useful, tightly scoped to the patient-specific LHCP-list workflow, and not redundant with approved atoms. For this floor property, requiring an active session owned by the Patient and the Patient resource to be the same patient captures the authorization boundary for viewing that patient's own visited/designated LHCP lists. The result-level contents of the list are not directly modeled as the authorization resource, but the atom does not overclaim that boundary or substitute a broader proxy; it only establishes the permitted request path.",
+    "tags": [
+      "patient-specific-boundary",
+      "lhcp-list-view",
+      "floor",
+      "active-session",
+      "own-resource"
+    ]
+  },
+  {
+    "atom_name": "patient_view_own_lhcps_ceiling",
+    "decision": "accept",
+    "reason": "The atom is a non-duplicate ceiling counterpart to the already approved floor for viewLhcps and captures the patient-specific ownership boundary in sentence 178: a Patient principal may view LHCP/provider-list information only for their own Patient resource through an active session belonging to them. It is not merely restating principal/resource types, and it is not implied by the approved floor. The visited/designated LHCP content boundary is reflected at the patient-resource/list level in the schema, while this property appropriately scopes the authorization boundary for the viewLhcps action.",
+    "tags": [
+      "patient-specific-ownership",
+      "view-lhcps",
+      "ceiling-counterpart",
+      "session-owner-boundary"
+    ]
+  },
+  {
+    "atom_name": "patient_add_lhcp_to_own_provider_list_floor",
+    "decision": "accept",
+    "reason": "The atom captures a distinct positive workflow not already covered by the approved view-LHCP-list atoms: a Patient may add an LHCP to that patient's own provider list. It is tightly scoped to the patient-specific ownership boundary by requiring the Patient resource to equal the requesting Patient and includes the active-session/session-owner authentication boundary. The source says a patient can add an LHCP to the patient provider list, and the schema exposes the LHCP being added through context.lhcp, so no missing schema boundary or overbroad proxy is present.",
+    "tags": [
+      "provider-list-management",
+      "patient-specific-ownership",
+      "active-session-boundary",
+      "not-duplicate",
+      "tightly-scoped-floor"
+    ]
+  },
+  {
+    "atom_name": "patient_add_lhcp_to_own_provider_list_ceiling",
+    "decision": "accept",
+    "reason": "The atom is a useful same-action ceiling paired with the approved addProvider floor and is not merely restating schema principal/resource types. It captures the patient-specific ownership boundary in the source phrase \"the patient provider list\" by requiring the Patient resource being modified to be the principal and requiring an active session owned by that patient. The LHCP target is represented by the action context type, so no additional source-named boundary is omitted.",
+    "tags": [
+      "patient-provider-list",
+      "ownership-boundary",
+      "same-action-ceiling",
+      "active-session-owner",
+      "not-duplicate"
+    ]
+  },
+  {
+    "atom_name": "patient_designate_lhcp_for_self_floor",
+    "decision": "accept",
+    "reason": "The atom captures a materially useful workflow not covered by the approved provider-list viewing/addition atoms: patient-specific designation of an LHCP as that patient's DLHCP. It is not merely restating principal/resource types because it adds the ownership boundary resource.patient == principal and active session ownership. The named source boundary that DLHCP status is for a particular patient is schema-expressible via ProviderDesignation.patient and is included; the LHCP target is represented by ProviderDesignation.lhcp, whose schema type is already LHCP. As a floor, it is appropriately scoped and does not overclaim a ceiling or global DLHCP role.",
+    "tags": [
+      "patient-specific-designation",
+      "dlhcp-boundary",
+      "provider-designation",
+      "floor",
+      "ownership-boundary-present"
+    ]
+  },
+  {
+    "atom_name": "patient_designate_lhcp_for_self_ceiling",
+    "decision": "accept",
+    "reason": "The atom is a materially useful ceiling counterpart to the approved designation floor. It captures the patient-specific ownership boundary in the source phrase \u201cfor that patient\u201d by requiring the ProviderDesignation resource to belong to the Patient principal, and it also preserves the active-session/session-owner boundary used in related approved atoms. It is not merely restating principal/resource types and is not implied by the approved floor, because the floor does not prevent broader policies from permitting cross-patient ProviderDesignation mutations.",
+    "tags": [
+      "patient-specific-designation-boundary",
+      "ownership-boundary",
+      "ceiling-counterpart",
+      "not-duplicate",
+      "schema-expressible"
+    ]
+  },
+  {
+    "atom_name": "patient_undesignate_lhcp_for_self_floor",
+    "decision": "accept",
+    "reason": "The atom captures a distinct source-granted workflow not covered by the approved designateLHCP atoms: undesignating an LHCP as a patient-specific DLHCP. It is tightly scoped to the undesignateLHCP action, Patient principal, ProviderDesignation resource, active session ownership, and the patient-specific boundary resource.patient == principal. The named source boundary \"for that patient\" is represented directly, and the \"any LHCP\" aspect is adequately represented by the ProviderDesignation.lhcp field typed as LHCP without needing an additional condition for this floor.",
+    "tags": [
+      "patient-specific-provider-designation",
+      "undesignate-lhcp",
+      "floor",
+      "session-owner-boundary",
+      "not-duplicate"
+    ]
+  },
+  {
+    "atom_name": "patient_undesignate_lhcp_for_self_ceiling",
+    "decision": "accept",
+    "reason": "This is the missing matching ceiling for the already-approved patient_undesignate_lhcp_for_self_floor. It is materially useful because it captures the patient-specific DLHCP relationship boundary from the source requirement, preventing a Patient principal from being authorized to undesignate an LHCP for another patient's ProviderDesignation. The relevant boundaries are schema-expressible via ProviderDesignation.patient and session ownership, and the atom is not merely restating principal/resource types or duplicating an approved atom.",
+    "tags": [
+      "patient-specific-designation-boundary",
+      "dlhcp-boundary",
+      "matching-ceiling",
+      "session-ownership",
+      "not-duplicate"
+    ]
+  },
+  {
+    "atom_name": "hcp_edit_selected_patient_personal_health_information_floor",
+    "decision": "repair",
+    "reason": "The HCP edit-personal-health-information workflow is materially useful and not already covered by approved atoms, and the schema exposes the selected-patient boundary via context.patient and resource.patient. However, as a floor it would require permission even when the selected patient is deactivated, conflicting with the named lifecycle boundary that a deactivated patient cannot be modified. The schema already exposes this boundary through Patient.isActive, so repair the atom to require the selected/resource patient to be active, e.g. resource.patient == context.patient && resource.patient.isActive, while retaining the active-session/session-owner checks.",
+    "tags": [
+      "repair-condition",
+      "hcp-personal-health-information-edit",
+      "selected-patient-boundary",
+      "deactivated-patient-lifecycle",
+      "activation-boundary-present",
+      "missing-active-patient-condition"
+    ]
+  },
+  {
+    "atom_name": "hcp_edit_active_selected_patient_personal_health_information_floor",
+    "decision": "accept",
+    "reason": "The atom is materially useful and tightly scoped to a source-required HCP workflow that is not already covered by approved atoms. It preserves the selected-patient boundary using resource.patient == context.patient, includes active-session/session-owner constraints, and correctly incorporates the deactivated-patient lifecycle boundary via the existing Patient.isActive hook rather than requiring permission to modify inactive patients. It is not merely restating schema principal/resource types and is not implied by an existing stricter approved atom.",
+    "tags": [
+      "hcp-personal-health-information-edit",
+      "selected-patient-boundary",
+      "deactivated-patient-lifecycle",
+      "activation-boundary-present",
+      "active-session-boundary",
+      "floor"
+    ]
+  }
+]

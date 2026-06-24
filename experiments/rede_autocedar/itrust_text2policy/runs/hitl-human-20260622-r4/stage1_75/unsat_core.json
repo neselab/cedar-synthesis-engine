@@ -1,0 +1,14 @@
+{
+  "unsat": false,
+  "core": [],
+  "detail": "",
+  "manual_finalize": true,
+  "corrected_atoms": [
+    "medical_record_view_only_own_or_represented_active_session",
+    "personal_representative_can_view_represented_medical_record",
+    "personal_representative_can_view_represented_family_history",
+    "personal_representative_can_view_represented_personal_health_information",
+    "personal_representative_can_view_represented_immunizations",
+    "personal_representative_can_view_represented_office_visit_information"
+  ]
+}

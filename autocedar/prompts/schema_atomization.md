@@ -147,6 +147,52 @@ The runtime will not reorder for you.
   safety property. If a global process entity is useful, also connect
   the relevant resource to that process entity, e.g. a course offering
   can point at a RegistrationPeriod with `isOpen`.
+- During schema-gap repair, first reuse the existing domain graph. If the
+  resource already has a relationship to a lifecycle/process entity and that
+  process already has the needed state field, do not add a duplicate parallel
+  relationship such as `currentRegistrationProcess`. Repair the property to use
+  the existing hook instead. Add schema only for genuinely missing concepts,
+  not for alternate names of a field/path that already exists.
+- When a requirement restricts access by request environment, client,
+  network, device, security posture, or authentication strength
+  (for example "from campus LAN", "from corporate network",
+  "extra security", "strong authentication", "MFA"), represent that
+  condition as action context on every action whose permission depends
+  on it. Apply this even when the action name is a synonym chosen from
+  the prose: registration may appear as `registerForCourseOffering`,
+  `addCourseOffering`, or `updateCourseSelection`, but all such student
+  registration/change actions need the same request-context fields.
+- When the spec states a global authentication/session lifecycle rule
+  (for example users must authenticate, sessions terminate after
+  inactivity/logout/application close, or authorization is disabled
+  after session expiry), model the session boundary once and propagate
+  it to every protected action whose authorization depends on the
+  active requester. Use a `Session`-like entity plus per-action context
+  such as `context.session: Session`, rather than discovering the same
+  missing session hook one action at a time during Stage 2.
+- When the spec states patient-specific, owner-specific, delegate, or
+  representative relationships (for example "for that patient",
+  "represented person", "designated LHCP", "personal representative"),
+  make the relationship explicit and reusable. If multiple actions need
+  the same relationship proof, add the same typed relationship context
+  field to those actions during Stage 1 or schema-gap repair. Do not
+  flatten patient-specific relationships into global roles.
+- When a requirement says an update/assignment is allowed only if there
+  is "no conflict" (for example a professor selecting course offerings
+  to teach), represent that conflict check explicitly, usually as
+  action context such as `hasScheduleConflict: Bool` or a resource field
+  if the conflict is persistent. Do not encode "no conflict" only as
+  "resource is unassigned"; schedule/resource conflicts and assignment
+  ownership are separate conditions.
+- When a requirement says a user may only modify or view "their own"
+  schedule, report, record, selection, document, or other owned object,
+  make the owner/target identity representable. Prefer an owned resource
+  attribute such as `resource.owner` or `resource.student`; if the action
+  targets a separate object like a `CourseOffering` while mutating a
+  student's schedule, include an action context field such as
+  `context.student: Student` so Stage 2 can express `principal ==
+  context.student`. Do not rely on the action name alone to imply
+  "their own" — the verifier needs a field.
 - Cedar `enum` entities have no attributes; if you set `enum_values`,
   do not propose attribute atoms for that entity.
 - A sentinel `Session` (or similar) entity is the canonical

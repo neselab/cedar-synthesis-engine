@@ -1,0 +1,1 @@
+permit (principal is Administrator, action == Action::"createPublicHealthAgent", resource is PublicHealthAgent) when { !(!context.session.isActive) };

@@ -79,6 +79,40 @@ def test_harness_synthesizer_rejects_non_convergence(
         synthesize(scenario)
 
 
+def test_eval_harness_uses_codex_client_by_default(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import autocedar.harness.eval_harness as eval_harness
+
+    sentinel = object()
+    monkeypatch.delenv("AUTOCEDAR_PROVIDER", raising=False)
+    monkeypatch.setattr(eval_harness, "CodexAuthClient", lambda: sentinel)
+
+    assert eval_harness._make_harness_llm_client() is sentinel
+
+
+def test_eval_harness_uses_anthropic_only_when_explicit(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import autocedar.harness.eval_harness as eval_harness
+
+    class FakeAnthropic:
+        pass
+
+    monkeypatch.setenv("AUTOCEDAR_PROVIDER", "anthropic")
+    monkeypatch.setattr(eval_harness, "Anthropic", FakeAnthropic)
+
+    assert isinstance(eval_harness._make_harness_llm_client(), FakeAnthropic)
+
+
+def test_stage3_prompt_prefers_explicit_type_guards() -> None:
+    import autocedar.harness.eval_harness as eval_harness
+
+    assert "Prefer auditable, explicit permit guards" in eval_harness.PHASE2_SYSTEM
+    assert "principal is Registrar" in eval_harness.PHASE2_SYSTEM
+    assert "Avoid broad-looking unconditional permits" in eval_harness.PHASE2_SYSTEM
+
+
 def test_harness_symcc_retries_without_cvc5_path_when_cedar_rejects_flag(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

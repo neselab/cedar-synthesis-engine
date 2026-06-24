@@ -1,0 +1,1 @@
+permit (principal, action == Action::"createPatient", resource) when { principal is HCP && resource is Patient };

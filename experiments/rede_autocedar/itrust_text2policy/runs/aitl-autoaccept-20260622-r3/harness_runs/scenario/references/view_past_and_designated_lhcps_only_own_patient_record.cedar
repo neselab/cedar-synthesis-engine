@@ -1,0 +1,1 @@
+permit (principal, action == Action::"viewPastAndDesignatedLHCPs", resource) when { principal is Patient && resource is Patient && principal == resource };

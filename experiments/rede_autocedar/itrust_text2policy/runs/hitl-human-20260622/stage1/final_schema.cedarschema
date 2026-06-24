@@ -1,0 +1,235 @@
+entity User;
+
+entity HCP in [User];
+
+entity LHCP in [HCP] {
+    specialty: String,
+    hospitals: Set<Hospital>,
+};
+
+entity Administrator in [User];
+
+entity Patient in [User] {
+    mid: String,
+};
+
+entity PersonalRepresentative in [User] {
+    representedPatients: Set<Patient>,
+};
+
+entity UAP in [User];
+
+entity EmergencyResponder in [User];
+
+entity PublicHealthAgent in [User];
+
+entity Hospital;
+
+entity MedicalRecord {
+    patient: Patient,
+    includesFamilyHistory: Bool,
+    hasPersonalHealthInformation: Bool,
+    hasImmunizations: Bool,
+    hasOfficeVisitInformation: Bool,
+};
+
+entity DemographicInformation {
+    patient: Patient,
+    name: String,
+    email: String,
+};
+
+entity Credentials {
+    user: User,
+    mid: String,
+    hasPassword: Bool,
+    hasSecurityQuestion: Bool,
+};
+
+entity Session {
+    user: User,
+    isActive: Bool,
+    lastActivityAt: datetime,
+    inactivityPeriodSeconds: Long,
+};
+
+entity ProviderList {
+    patient: Patient,
+    providers: Set<HCP>,
+};
+
+entity ProviderDesignation {
+    patient: Patient,
+    provider: LHCP,
+    isDesignated: Bool,
+};
+
+entity AccessLog {
+    patient: Patient,
+    accessorName: String,
+    accessorRoleRelativeToPatient: String,
+    accessTimestamp: datetime,
+    transactionType: String,
+};
+
+action createPatient appliesTo {
+    principal: [HCP],
+    resource: [Patient],
+    context: {
+        session: Session,
+    },
+};
+
+action editPatientData appliesTo {
+    principal: [HCP],
+    resource: [DemographicInformation],
+    context: {
+        session: Session,
+    },
+};
+
+action viewCredentials appliesTo {
+    principal: [User],
+    resource: [Credentials],
+    context: {
+        session: Session,
+    },
+};
+
+action editCredentials appliesTo {
+    principal: [User],
+    resource: [Credentials],
+    context: {
+        session: Session,
+    },
+};
+
+action createLHCP appliesTo {
+    principal: [Administrator],
+    resource: [LHCP],
+    context: {
+        session: Session,
+    },
+};
+
+action createEmergencyResponder appliesTo {
+    principal: [Administrator],
+    resource: [EmergencyResponder],
+    context: {
+        session: Session,
+    },
+};
+
+action createPublicHealthAgent appliesTo {
+    principal: [Administrator],
+    resource: [PublicHealthAgent],
+    context: {
+        session: Session,
+    },
+};
+
+action assignLHCPToHospital appliesTo {
+    principal: [Administrator],
+    resource: [LHCP],
+    context: {
+        session: Session,
+        hospital: Hospital,
+    },
+};
+
+action createUAP appliesTo {
+    principal: [LHCP],
+    resource: [UAP],
+    context: {
+        session: Session,
+    },
+};
+
+action login appliesTo {
+    principal: [User],
+    resource: [Session],
+    context: {
+        credentials: Credentials,
+    },
+};
+
+action logout appliesTo {
+    principal: [User],
+    resource: [Session],
+};
+
+action closeApplication appliesTo {
+    principal: [User],
+    resource: [Session],
+};
+
+action setInactivityPeriod appliesTo {
+    principal: [Administrator],
+    resource: [Session],
+    context: {
+        session: Session,
+        newLengthSeconds: Long,
+    },
+};
+
+action viewProviderList appliesTo {
+    principal: [Patient],
+    resource: [ProviderList],
+    context: {
+        session: Session,
+    },
+};
+
+action addProviderToList appliesTo {
+    principal: [Patient],
+    resource: [ProviderList],
+    context: {
+        session: Session,
+        provider: HCP,
+        searchName: String,
+        searchSpecialty: String,
+        searchZipCode?: String,
+    },
+};
+
+action designateProvider appliesTo {
+    principal: [Patient],
+    resource: [ProviderDesignation],
+    context: {
+        session: Session,
+    },
+};
+
+action undesignateProvider appliesTo {
+    principal: [Patient],
+    resource: [ProviderDesignation],
+    context: {
+        session: Session,
+    },
+};
+
+action viewAccessLog appliesTo {
+    principal: [Patient],
+    resource: [AccessLog],
+    context: {
+        session: Session,
+        beginDate: datetime,
+        endDate: datetime,
+    },
+};
+
+action viewMedicalRecord appliesTo {
+    principal: [Patient, PersonalRepresentative],
+    resource: [MedicalRecord],
+    context: {
+        session: Session,
+    },
+};
+
+action seeRecordDetails appliesTo {
+    principal: [Patient, PersonalRepresentative],
+    resource: [MedicalRecord],
+    context: {
+        session: Session,
+    },
+};

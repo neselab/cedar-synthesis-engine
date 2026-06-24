@@ -1,0 +1,141 @@
+[
+  {
+    "atom_name": "User",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "Student",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "Faculty",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "TeachingAssistant",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "FacultyFamily",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "Grade",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "InternalGrade",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "ExternalGrade",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "Course",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "assignGrade",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "assignInternalGrade",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "assignExternalGrade",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "viewInternalGrade",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "viewExternalGrade",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "receiveExternalGrade",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "ExternalGrade__responsibleFaculty",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {
+      "reject_reason": "Not an authorization action; model final responsibility as an ExternalGrade responsibility attribute if needed, not as a separate action.",
+      "replaced_by_llm": true
+    },
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "enrollInCourse",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  }
+]

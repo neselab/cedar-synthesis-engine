@@ -1,0 +1,43 @@
+entity Role enum ["Student", "TeachingAssistant", "Faculty", "FacultyFamily"];
+
+entity User {
+    roles: Set<Role>,
+};
+
+entity InternalGrade;
+
+entity ExternalGrade {
+    responsibleFaculty: User,
+};
+
+entity Course;
+
+action assignInternalGrade appliesTo {
+    principal: [User],
+    resource: [InternalGrade],
+};
+
+action assignExternalGrade appliesTo {
+    principal: [User],
+    resource: [ExternalGrade],
+};
+
+action viewInternalGrade appliesTo {
+    principal: [User],
+    resource: [InternalGrade],
+};
+
+action viewExternalGrade appliesTo {
+    principal: [User],
+    resource: [ExternalGrade],
+};
+
+action receiveExternalGrade appliesTo {
+    principal: [User],
+    resource: [ExternalGrade],
+};
+
+action enrollInCourse appliesTo {
+    principal: [User],
+    resource: [Course],
+};

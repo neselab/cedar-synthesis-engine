@@ -1,0 +1,62 @@
+[
+  {
+    "atom_name": "patient_view_own_access_log_floor",
+    "span_text": "A patient can view their own access log, or the access log for a person for whom they are a personal representative.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "access_log_subject_scope_ceiling",
+    "span_text": "A patient can view their own access log, or the access log for a person for whom they are a personal representative.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "personal_representative_view_represented_access_log_floor",
+    "span_text": "A patient can view their own access log, or the access log for a person for whom they are a personal representative.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "hcp_patient_credential_view_disjointness",
+    "span_text": "The HCP must not enter, edit, or view the patient's security question or password.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "deactivated_patient_edit_disjointness",
+    "span_text": "A deactivated patient cannot be modified or log into the system and can only be reactivated by an administrator.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "patient_view_own_medical_record_floor",
+    "span_text": "A patient or personal representative can view medical records ... for their own records and for patients they represent.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "patient_representative_medical_record_subject_scope_ceiling",
+    "span_text": "A patient or personal representative can view medical records ... for their own records and for patients they represent.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "medical_record_subject_scope_session_ceiling",
+    "span_text": "A patient or personal representative can view medical records ... for their own records and for patients they represent.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "personal_representative_view_represented_medical_record_floor",
+    "span_text": "A patient or personal representative can view medical records ... for their own records and for patients they represent.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "personal_representative_view_represented_medical_record_own_session_floor",
+    "span_text": "A patient or personal representative can view medical records ... for their own records and for patients they represent.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  }
+]

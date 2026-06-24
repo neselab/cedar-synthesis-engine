@@ -1,0 +1,194 @@
+[
+  {
+    "atom_name": "patient_view_own_access_log_floor",
+    "decision": "repair",
+    "reason": "The own-patient ownership floor is materially useful and correctly uses AccessLog.patient, but it omits the named authentication/session lifecycle boundary from the requirements: users must be authenticated and authorization is disabled after inactivity/session termination. The validated schema has Session, but viewAccessLog has no session/context hook tying the request to an active session for the principal, so this condition is not expressible for this action without a schema repair.",
+    "tags": [
+      "missing-authentication-boundary",
+      "missing-active-session-boundary",
+      "schema-gap"
+    ]
+  },
+  {
+    "atom_name": "hcp_create_patient_floor",
+    "decision": "accept",
+    "reason": "The atom is a tightly scoped positive floor for the explicit requirement that an HCP can create a patient. It does not bundle disable/edit behavior or impose unsupported active/selected-patient conditions. Although the schema action is typed for Hcp and Patient, the schema does not itself grant permission, so a floor for this non-empty success path is materially useful. Credential secrecy and deactivated-patient constraints are separate requirements that should be covered by separate atoms rather than added to this create-patient floor.",
+    "tags": [
+      "positive-floor",
+      "tightly-scoped",
+      "source-supported"
+    ]
+  },
+  {
+    "atom_name": "deactivated_patient_not_edited_disjointness",
+    "decision": "accept",
+    "reason": "The atom captures a real, explicit lifecycle boundary from the source: deactivated patients must not be modified. It is not merely schema-implied, is not duplicative of the approved create-patient floor, and the schema directly exposes the needed hook via Patient.isActive and editPatient. The scope is appropriately limited to the HCP editPatient modification path; separate atoms can cover login denial or administrator-only reactivation.",
+    "tags": [
+      "deactivated-patient-boundary",
+      "lifecycle-state",
+      "modification-ceiling"
+    ]
+  },
+  {
+    "atom_name": "deactivated_patient_not_login_disjointness",
+    "decision": "accept",
+    "reason": "The atom captures a distinct deactivated-patient lifecycle boundary from the same source requirement that is not covered by the approved editPatient atom: inactive Patient principals must not be permitted to perform the login action. It is not merely schema-implied, is not a duplicate, and the schema directly exposes the needed Patient.isActive hook for this boundary.",
+    "tags": [
+      "deactivated-patient-boundary",
+      "login-lifecycle-boundary"
+    ]
+  },
+  {
+    "atom_name": "hcp_disable_active_patient_floor",
+    "decision": "accept",
+    "reason": "The atom is materially useful and not a duplicate of the approved createPatient or deactivated-patient atoms. It captures the distinct source-granted disablePatient action for HCPs and uses the existing Patient.isActive lifecycle hook to keep the floor scoped to a meaningful disable operation rather than an already-deactivated account. No additional source-named ownership or lifecycle condition for this specific requirement is omitted.",
+    "tags": [
+      "materially-useful",
+      "lifecycle-scoped",
+      "not-duplicate"
+    ]
+  },
+  {
+    "atom_name": "admin_reactivate_deactivated_patient_floor",
+    "decision": "accept",
+    "reason": "The atom captures a materially useful success path that is not covered by the approved deactivated-patient edit/login disjointness atoms: administrators may reactivate deactivated patients. It is not merely restating the schema, because it adds the lifecycle condition that the patient is currently deactivated via resource.isActive. The relevant source boundary is expressible in the schema, and the proposed Cedar uses it tightly for the Administrator/reactivatePatient/Patient case.",
+    "tags": [
+      "useful-floor",
+      "lifecycle-boundary",
+      "not-duplicate"
+    ]
+  },
+  {
+    "atom_name": "patient_view_own_access_log_active_session_floor",
+    "decision": "accept",
+    "reason": "The atom is materially useful and tightly scoped: it captures the patient-owned AccessLog boundary and the authentication/session lifecycle boundary by requiring an active session bound to the requesting patient. It is not redundant with approved atoms and repairs the prior omission using the schema's existing viewAccessLog context.session hook rather than a proxy.",
+    "tags": [
+      "own-access-log-boundary",
+      "active-session-boundary",
+      "session-principal-binding"
+    ]
+  },
+  {
+    "atom_name": "patient_view_access_log_own_active_session_ceiling",
+    "decision": "repair",
+    "reason": "The access-log ceiling is materially useful for the own-access-log and active-session boundaries, but it is too restrictive for the full source requirement: patients may view their own access log or the access log for a represented person. As written, the ceiling would forbid represented-person access for Patient principals rather than modeling the patient-specific personal-representative relationship. The validated schema has PersonalRepresentativeRelationship, but viewAccessLog only exposes context.session and has no context/resource hook to bind an active representative relationship for the requested AccessLog.patient, so the represented-person boundary is not expressible for this action without schema repair.",
+    "tags": [
+      "missing-represented-person-boundary",
+      "missing-personal-representative-relationship-boundary",
+      "schema-gap"
+    ]
+  },
+  {
+    "atom_name": "personal_representative_view_represented_access_log_active_session_floor",
+    "decision": "accept",
+    "reason": "The atom is materially useful and tightly scoped to the represented-person access-log requirement. It is not a duplicate of the approved own-access-log floor, and it includes the required patient-specific personal-representative relationship boundary, active relationship lifecycle boundary, and active authenticated session boundary using fields already exposed by the schema.",
+    "tags": [
+      "represented-person-boundary",
+      "personal-representative-relationship-boundary",
+      "active-session-boundary",
+      "access-log-floor"
+    ]
+  },
+  {
+    "atom_name": "access_log_active_session_own_or_represented_ceiling",
+    "decision": "accept",
+    "reason": "The atom adds a materially useful same-action ceiling for viewAccessLog that is not implied by the approved floors. It tightly captures the named ownership/personal-representative and active-session lifecycle boundaries from the source, and the validated schema now exposes the needed hooks via AccessLog.patient, context.session, and context.representativeRelationship.",
+    "tags": [
+      "useful-ceiling",
+      "own-or-represented-boundary",
+      "active-session-boundary",
+      "personal-representative-relationship-boundary"
+    ]
+  },
+  {
+    "atom_name": "patient_view_own_medical_record_floor",
+    "decision": "repair",
+    "reason": "The own-record ownership floor is materially useful and not covered by existing approved atoms, but it omits the named authentication/session lifecycle boundary from the requirements: authorization is disabled after inactivity/session termination. The validated schema has Session, but viewMedicalRecord has no context/session hook tying the request to an active session for the principal, so the active-session condition is not expressible for this action without schema repair. Do not accept an ownership-only proxy as equivalent.",
+    "tags": [
+      "missing-authentication-boundary",
+      "missing-active-session-boundary",
+      "schema-gap"
+    ]
+  },
+  {
+    "atom_name": "patient_view_own_medical_record_active_session_floor",
+    "decision": "accept",
+    "reason": "The atom is materially useful and tightly scoped: it captures the patient-own-medical-record floor from the source requirement and includes the named active-session/authentication lifecycle boundary using the schema-exposed context.session hook. It is not redundant with approved access-log atoms and is not merely restating principal/resource types because it adds ownership and active-session constraints.",
+    "tags": []
+  },
+  {
+    "atom_name": "patient_view_medical_record_own_active_session_ceiling",
+    "decision": "repair",
+    "reason": "The ownership and active-session ceiling is materially useful, but as written it is too narrow for the source requirement because medical-record viewing is allowed for a user's own records and for patients they represent. A Patient-scoped own-record-only ceiling risks forbidding represented-patient access if the requester is acting through a patient-specific personal-representative relationship, and it does not model the required represented-person boundary. Unlike viewAccessLog, the validated viewMedicalRecord action exposes only context.session and has no PersonalRepresentativeRelationship hook, so the represented-patient/personal-representative relationship boundary is not schema-expressible for this action. Do not accept an own-record-only proxy as equivalent to the full requirement.",
+    "tags": [
+      "missing-represented-person-boundary",
+      "missing-personal-representative-relationship-boundary",
+      "schema-gap"
+    ]
+  },
+  {
+    "atom_name": "medical_record_active_session_own_or_represented_ceiling",
+    "decision": "accept",
+    "reason": "The atom is materially useful and tightly scoped: it adds the missing medical-record ceiling for own-or-represented patient access, binds the request to the principal's active session, and uses the schema-exposed PersonalRepresentativeRelationship hook to model the patient-specific representative boundary rather than a role-only proxy. It is not redundant with the approved patient-own-record floor and is not already implied by an approved stricter medical-record ceiling.",
+    "tags": [
+      "ownership-boundary",
+      "active-session-boundary",
+      "personal-representative-relationship-boundary",
+      "represented-patient-boundary"
+    ]
+  },
+  {
+    "atom_name": "personal_representative_view_represented_medical_record_active_session_floor",
+    "decision": "accept",
+    "reason": "The atom is materially useful and tightly scoped: it adds a positive floor for the represented-patient medical-record workflow, which is not implied by the approved ceiling or the existing patient-own-record floor. It includes the required patient-specific personal-representative relationship boundary and the active-session/authentication lifecycle boundary using hooks exposed by the validated schema for viewMedicalRecord.",
+    "tags": [
+      "represented-person-boundary",
+      "personal-representative-relationship-boundary",
+      "active-session-boundary",
+      "non-duplicate-floor"
+    ]
+  },
+  {
+    "atom_name": "restricted_diagnostic_none_audience_lhcp_disjointness",
+    "decision": "accept",
+    "reason": "The atom captures a concrete, safety-relevant boundary from the diagnostic-information requirement: when restricted diagnostic information is marked with the patient's allowed audience of no one, an LHCP must not be permitted to view it. This is not merely restating principal/resource typing, is not duplicated by approved atoms, and the validated schema exposes the needed hook through DiagnosticInformation.isRestricted and DiagnosticInformation.allowedAudience. The atom is narrowly scoped to LHCP viewing and does not substitute a proxy for an unmodeled designated-provider boundary.",
+    "tags": [
+      "restricted-diagnostic-information",
+      "patient-selected-audience-boundary",
+      "lhcp-view-disjointness"
+    ]
+  },
+  {
+    "atom_name": "lhcp_view_unrestricted_diagnostic_information_floor",
+    "decision": "repair",
+    "reason": "The unrestricted-LHCP floor is materially related to the diagnostic-information requirement, but it is too broad as written. The source does not merely say any LHCP may view any non-restricted diagnostic information; it frames approved diagnostic information as information the patient allows a designated or other licensed health-care professional to view. This atom omits the patient-specific approval/designated-provider or allowed-audience boundary and would accept an unrestricted-status proxy as equivalent. The schema has ProviderDesignation as an entity, but viewDiagnosticInformation has no context hook to bind the requesting LHCP to the patient's designation/approval, and DiagnosticInformation.allowedAudience is only an unstructured string that cannot by itself represent the patient-specific LHCP relationship.",
+    "tags": [
+      "missing-patient-approval-boundary",
+      "missing-designated-provider-boundary",
+      "missing-patient-specific-lhcp-boundary",
+      "schema-gap"
+    ]
+  },
+  {
+    "atom_name": "patient_designate_own_lhcp_floor",
+    "decision": "repair",
+    "reason": "The patient-specific ownership boundary is materially useful and correctly binds the Patient principal to ProviderDesignation.patient, rather than treating DLHCP as a global role. However, the atom omits the named authentication/session lifecycle boundary from the requirements: users authenticate with MID/password and authorization is disabled after inactivity, logout, or application close. The designateLhcp action has no context.session hook, so an active session for the requesting patient is not schema-expressible for this action. Do not accept the ownership-only floor as an equivalent proxy.",
+    "tags": [
+      "missing-authentication-boundary",
+      "missing-active-session-boundary",
+      "patient-specific-provider-designation-boundary-present",
+      "schema-gap"
+    ]
+  },
+  {
+    "atom_name": "designated_lhcp_view_restricted_diagnostic_information_floor",
+    "decision": "repair",
+    "reason": "The designated-LHCP restricted-diagnostic floor is materially useful and correctly avoids flattening DLHCP into a global role by binding context.providerDesignation to the resource patient and requesting LHCP. It is not redundant with the approved no-one disjointness atom. However, as a positive view permission for patient diagnostic information, it omits the named authentication/session lifecycle boundary from the requirements: users authenticate with MID/password and authorization is disabled after inactivity, logout, or application close. The validated viewDiagnosticInformation action exposes context.providerDesignation but has no context.session hook to require an active session for the requesting LHCP, so the active-authenticated-session condition is not schema-expressible for this action. Do not accept the provider-designation-only floor as an equivalent proxy.",
+    "tags": [
+      "missing-authentication-boundary",
+      "missing-active-session-boundary",
+      "patient-specific-provider-designation-boundary-present",
+      "schema-gap"
+    ]
+  }
+]

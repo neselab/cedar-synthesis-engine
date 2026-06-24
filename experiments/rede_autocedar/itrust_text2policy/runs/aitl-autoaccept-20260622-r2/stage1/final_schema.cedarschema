@@ -1,0 +1,219 @@
+entity User;
+
+entity HCP in [User] {
+    name: String,
+    specialty: String,
+    zipCode?: String,
+};
+
+entity LHCP in [HCP] {
+    specialty: String,
+    hospitals: Set<Hospital>,
+};
+
+entity Administrator in [User];
+
+entity Patient in [User] {
+    mid: String,
+    name: String,
+    email: String,
+    designatedProviders: Set<LHCP>,
+    visitedProviders: Set<LHCP>,
+};
+
+entity PersonalRepresentative in [User] {
+    representedPatients: Set<Patient>,
+};
+
+entity UAP in [User];
+
+entity EmergencyResponder in [User];
+
+entity PublicHealthAgent in [User];
+
+entity Hospital;
+
+entity Credential {
+    user: User,
+    mid: String,
+    hasPassword: Bool,
+    hasSecurityQuestion: Bool,
+};
+
+entity Session {
+    user: User,
+    isAuthenticated: Bool,
+    inactivityLimitExceeded: Bool,
+};
+
+entity SystemConfiguration {
+    inactivityPeriodLength: duration,
+};
+
+entity ProviderList {
+    patient: Patient,
+    providers: Set<HCP>,
+};
+
+entity AccessLog {
+    patient: Patient,
+    accessorName: String,
+    accessorRoleRelativeToPatient: String,
+    accessTimestamp: datetime,
+    transactionType: String,
+};
+
+entity MedicalRecord {
+    patient: Patient,
+    includesFamilyHistory: Bool,
+    hasPersonalHealthInformation: Bool,
+    hasImmunizations: Bool,
+    hasOfficeVisitInformation: Bool,
+};
+
+entity DemographicInformation {
+    patient: Patient,
+};
+
+entity CredentialComponent enum ["Password", "SecurityQuestion", "MID"];
+
+action createPatient appliesTo {
+    principal: [HCP],
+    resource: [Patient],
+};
+
+action editPatient appliesTo {
+    principal: [HCP],
+    resource: [Patient],
+    context: {
+        patientField: String,
+        isDataFormatValid: Bool,
+    },
+};
+
+action viewCredential appliesTo {
+    principal: [HCP],
+    resource: [Credential],
+    context: {
+        component: CredentialComponent,
+    },
+};
+
+action editCredential appliesTo {
+    principal: [User, HCP],
+    resource: [Credential],
+};
+
+action createLHCP appliesTo {
+    principal: [Administrator],
+    resource: [LHCP],
+};
+
+action createEmergencyResponder appliesTo {
+    principal: [Administrator],
+    resource: [EmergencyResponder],
+};
+
+action createPublicHealthAgent appliesTo {
+    principal: [Administrator],
+    resource: [PublicHealthAgent],
+};
+
+action assignLHCPToHospital appliesTo {
+    principal: [Administrator],
+    resource: [LHCP],
+    context: {
+        hospital: Hospital,
+    },
+};
+
+action createUAP appliesTo {
+    principal: [LHCP],
+    resource: [UAP],
+};
+
+action login appliesTo {
+    principal: [User],
+    resource: [Session],
+    context: {
+        credential: Credential,
+        submittedMID: String,
+        passwordVerified: Bool,
+    },
+};
+
+action requestPasswordChange appliesTo {
+    principal: [User],
+    resource: [Credential],
+};
+
+action logout appliesTo {
+    principal: [User],
+    resource: [Session],
+};
+
+action closeApplication appliesTo {
+    principal: [User],
+    resource: [Session],
+};
+
+action setInactivityPeriodLength appliesTo {
+    principal: [Administrator],
+    resource: [SystemConfiguration],
+};
+
+action viewProviderHistory appliesTo {
+    principal: [Patient],
+    resource: [Patient],
+};
+
+action addProviderToList appliesTo {
+    principal: [Patient],
+    resource: [ProviderList],
+    context: {
+        provider: HCP,
+        searchName: String,
+        searchSpecialty: String,
+        searchZipCode?: String,
+    },
+};
+
+action designateDLHCP appliesTo {
+    principal: [Patient],
+    resource: [LHCP],
+    context: {
+        patient: Patient,
+    },
+};
+
+action undesignateDLHCP appliesTo {
+    principal: [Patient],
+    resource: [LHCP],
+    context: {
+        patient: Patient,
+    },
+};
+
+action viewAccessLog appliesTo {
+    principal: [Patient],
+    resource: [AccessLog],
+    context: {
+        beginDate: datetime,
+        endDate: datetime,
+    },
+};
+
+action viewMedicalRecord appliesTo {
+    principal: [Patient, PersonalRepresentative],
+    resource: [MedicalRecord],
+};
+
+action viewDemographicInformation appliesTo {
+    principal: [HCP, Patient, PersonalRepresentative],
+    resource: [DemographicInformation],
+};
+
+action editDemographicInformation appliesTo {
+    principal: [HCP],
+    resource: [DemographicInformation],
+};

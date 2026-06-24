@@ -1,0 +1,1419 @@
+[
+  {
+    "ts": "2026-06-22T07:05:53.425543Z",
+    "event": "input.spec_written",
+    "filename": "spec.md",
+    "size": 6720
+  },
+  {
+    "ts": "2026-06-22T07:07:53.458737Z",
+    "event": "stage1.proposed",
+    "count": 66
+  },
+  {
+    "ts": "2026-06-22T07:07:53.459280Z",
+    "event": "stage1.attributions_logged",
+    "count": 66
+  },
+  {
+    "ts": "2026-06-22T07:07:53.460048Z",
+    "event": "stage1.decisions_logged",
+    "count": 66
+  },
+  {
+    "ts": "2026-06-22T07:07:53.469689Z",
+    "event": "stage1.schema_validation",
+    "attempts": 1
+  },
+  {
+    "ts": "2026-06-22T07:07:53.469782Z",
+    "event": "stage1.schema_written",
+    "size": 3885
+  },
+  {
+    "ts": "2026-06-22T07:08:01.769922Z",
+    "event": "stage2.proposed",
+    "count": 1
+  },
+  {
+    "ts": "2026-06-22T07:08:01.770176Z",
+    "event": "stage2.attributions_logged",
+    "count": 1
+  },
+  {
+    "ts": "2026-06-22T07:08:12.172976Z",
+    "event": "stage2.critic_reviews",
+    "count": 1
+  },
+  {
+    "ts": "2026-06-22T07:08:12.206582Z",
+    "event": "stage2.decisions_logged",
+    "count": 1
+  },
+  {
+    "ts": "2026-06-22T07:08:22.307381Z",
+    "event": "stage2.proposed",
+    "count": 2
+  },
+  {
+    "ts": "2026-06-22T07:08:22.308071Z",
+    "event": "stage2.attributions_logged",
+    "count": 2
+  },
+  {
+    "ts": "2026-06-22T07:08:31.957630Z",
+    "event": "stage2.critic_reviews",
+    "count": 2
+  },
+  {
+    "ts": "2026-06-22T07:08:31.990994Z",
+    "event": "stage2.decisions_logged",
+    "count": 2
+  },
+  {
+    "ts": "2026-06-22T07:08:39.698093Z",
+    "event": "stage2.proposed",
+    "count": 3
+  },
+  {
+    "ts": "2026-06-22T07:08:39.698914Z",
+    "event": "stage2.attributions_logged",
+    "count": 3
+  },
+  {
+    "ts": "2026-06-22T07:08:46.459112Z",
+    "event": "stage2.critic_reviews",
+    "count": 3
+  },
+  {
+    "ts": "2026-06-22T07:08:46.495368Z",
+    "event": "stage2.decisions_logged",
+    "count": 3
+  },
+  {
+    "ts": "2026-06-22T07:08:51.329466Z",
+    "event": "stage2.proposed",
+    "count": 4
+  },
+  {
+    "ts": "2026-06-22T07:08:51.330261Z",
+    "event": "stage2.attributions_logged",
+    "count": 4
+  },
+  {
+    "ts": "2026-06-22T07:09:00.767800Z",
+    "event": "stage2.critic_reviews",
+    "count": 4
+  },
+  {
+    "ts": "2026-06-22T07:09:00.768537Z",
+    "event": "stage2.decisions_logged",
+    "count": 4
+  },
+  {
+    "ts": "2026-06-22T07:09:00.769580Z",
+    "event": "stage1_5.schema_gaps",
+    "count": 1
+  },
+  {
+    "ts": "2026-06-22T07:09:06.173750Z",
+    "event": "stage1_5.schema_gap_repairs",
+    "count": 1
+  },
+  {
+    "ts": "2026-06-22T07:09:06.174375Z",
+    "event": "stage1_5.schema_gap_repairs",
+    "count": 1
+  },
+  {
+    "ts": "2026-06-22T07:09:06.191202Z",
+    "event": "stage1.schema_validation",
+    "attempts": 1
+  },
+  {
+    "ts": "2026-06-22T07:09:06.191487Z",
+    "event": "stage1_5.schema_gap_repairs",
+    "count": 1
+  },
+  {
+    "ts": "2026-06-22T07:09:06.191585Z",
+    "event": "stage1.schema_written",
+    "size": 3936
+  },
+  {
+    "ts": "2026-06-22T07:09:13.278868Z",
+    "event": "stage2.proposed",
+    "count": 5
+  },
+  {
+    "ts": "2026-06-22T07:09:13.279504Z",
+    "event": "stage2.attributions_logged",
+    "count": 5
+  },
+  {
+    "ts": "2026-06-22T07:09:23.640384Z",
+    "event": "stage2.critic_reviews",
+    "count": 5
+  },
+  {
+    "ts": "2026-06-22T07:09:23.673924Z",
+    "event": "stage2.decisions_logged",
+    "count": 5
+  },
+  {
+    "ts": "2026-06-22T07:09:32.057112Z",
+    "event": "stage2.proposed",
+    "count": 6
+  },
+  {
+    "ts": "2026-06-22T07:09:32.057978Z",
+    "event": "stage2.attributions_logged",
+    "count": 6
+  },
+  {
+    "ts": "2026-06-22T07:09:39.149862Z",
+    "event": "stage2.critic_reviews",
+    "count": 6
+  },
+  {
+    "ts": "2026-06-22T07:09:39.185514Z",
+    "event": "stage2.decisions_logged",
+    "count": 6
+  },
+  {
+    "ts": "2026-06-22T07:09:46.405423Z",
+    "event": "stage2.proposed",
+    "count": 7
+  },
+  {
+    "ts": "2026-06-22T07:09:46.405754Z",
+    "event": "stage2.attributions_logged",
+    "count": 7
+  },
+  {
+    "ts": "2026-06-22T07:09:50.808481Z",
+    "event": "stage2.critic_reviews",
+    "count": 7
+  },
+  {
+    "ts": "2026-06-22T07:09:50.829027Z",
+    "event": "stage2.decisions_logged",
+    "count": 7
+  },
+  {
+    "ts": "2026-06-22T07:09:59.417422Z",
+    "event": "stage2.proposed",
+    "count": 8
+  },
+  {
+    "ts": "2026-06-22T07:09:59.418169Z",
+    "event": "stage2.attributions_logged",
+    "count": 8
+  },
+  {
+    "ts": "2026-06-22T07:10:03.912590Z",
+    "event": "stage2.critic_reviews",
+    "count": 8
+  },
+  {
+    "ts": "2026-06-22T07:10:03.945047Z",
+    "event": "stage2.decisions_logged",
+    "count": 8
+  },
+  {
+    "ts": "2026-06-22T07:10:08.241431Z",
+    "event": "stage2.proposed",
+    "count": 9
+  },
+  {
+    "ts": "2026-06-22T07:10:08.242220Z",
+    "event": "stage2.attributions_logged",
+    "count": 9
+  },
+  {
+    "ts": "2026-06-22T07:10:15.037464Z",
+    "event": "stage2.critic_reviews",
+    "count": 9
+  },
+  {
+    "ts": "2026-06-22T07:10:15.067755Z",
+    "event": "stage2.decisions_logged",
+    "count": 9
+  },
+  {
+    "ts": "2026-06-22T07:10:24.178770Z",
+    "event": "stage2.proposed",
+    "count": 10
+  },
+  {
+    "ts": "2026-06-22T07:10:24.179657Z",
+    "event": "stage2.attributions_logged",
+    "count": 10
+  },
+  {
+    "ts": "2026-06-22T07:10:33.876718Z",
+    "event": "stage2.critic_reviews",
+    "count": 10
+  },
+  {
+    "ts": "2026-06-22T07:10:33.912161Z",
+    "event": "stage2.decisions_logged",
+    "count": 10
+  },
+  {
+    "ts": "2026-06-22T07:10:40.719036Z",
+    "event": "stage2.proposed",
+    "count": 11
+  },
+  {
+    "ts": "2026-06-22T07:10:40.719886Z",
+    "event": "stage2.attributions_logged",
+    "count": 11
+  },
+  {
+    "ts": "2026-06-22T07:10:53.892780Z",
+    "event": "stage2.critic_reviews",
+    "count": 11
+  },
+  {
+    "ts": "2026-06-22T07:10:53.893843Z",
+    "event": "stage2.decisions_logged",
+    "count": 11
+  },
+  {
+    "ts": "2026-06-22T07:11:06.817887Z",
+    "event": "stage2.proposed",
+    "count": 12
+  },
+  {
+    "ts": "2026-06-22T07:11:06.818871Z",
+    "event": "stage2.attributions_logged",
+    "count": 12
+  },
+  {
+    "ts": "2026-06-22T07:11:16.617289Z",
+    "event": "stage2.critic_reviews",
+    "count": 12
+  },
+  {
+    "ts": "2026-06-22T07:11:16.618285Z",
+    "event": "stage2.decisions_logged",
+    "count": 12
+  },
+  {
+    "ts": "2026-06-22T07:11:25.089266Z",
+    "event": "stage2.proposed",
+    "count": 13
+  },
+  {
+    "ts": "2026-06-22T07:11:25.090151Z",
+    "event": "stage2.attributions_logged",
+    "count": 13
+  },
+  {
+    "ts": "2026-06-22T07:11:34.370506Z",
+    "event": "stage2.critic_reviews",
+    "count": 13
+  },
+  {
+    "ts": "2026-06-22T07:11:34.370920Z",
+    "event": "stage2.decisions_logged",
+    "count": 13
+  },
+  {
+    "ts": "2026-06-22T07:11:48.292344Z",
+    "event": "stage2.proposed",
+    "count": 14
+  },
+  {
+    "ts": "2026-06-22T07:11:48.293265Z",
+    "event": "stage2.attributions_logged",
+    "count": 14
+  },
+  {
+    "ts": "2026-06-22T07:12:06.951918Z",
+    "event": "stage2.critic_reviews",
+    "count": 14
+  },
+  {
+    "ts": "2026-06-22T07:12:06.989845Z",
+    "event": "stage2.decisions_logged",
+    "count": 14
+  },
+  {
+    "ts": "2026-06-22T07:12:21.781305Z",
+    "event": "stage2.proposed",
+    "count": 15
+  },
+  {
+    "ts": "2026-06-22T07:12:21.782322Z",
+    "event": "stage2.attributions_logged",
+    "count": 15
+  },
+  {
+    "ts": "2026-06-22T07:12:28.643135Z",
+    "event": "stage2.critic_reviews",
+    "count": 15
+  },
+  {
+    "ts": "2026-06-22T07:12:28.690803Z",
+    "event": "stage2.decisions_logged",
+    "count": 15
+  },
+  {
+    "ts": "2026-06-22T07:12:45.079056Z",
+    "event": "stage2.proposed",
+    "count": 16
+  },
+  {
+    "ts": "2026-06-22T07:12:45.079456Z",
+    "event": "stage2.attributions_logged",
+    "count": 16
+  },
+  {
+    "ts": "2026-06-22T07:12:54.188080Z",
+    "event": "stage2.critic_reviews",
+    "count": 16
+  },
+  {
+    "ts": "2026-06-22T07:12:54.189278Z",
+    "event": "stage2.decisions_logged",
+    "count": 16
+  },
+  {
+    "ts": "2026-06-22T07:13:13.176158Z",
+    "event": "stage2.proposed",
+    "count": 17
+  },
+  {
+    "ts": "2026-06-22T07:13:13.176724Z",
+    "event": "stage2.attributions_logged",
+    "count": 17
+  },
+  {
+    "ts": "2026-06-22T07:13:25.239588Z",
+    "event": "stage2.critic_reviews",
+    "count": 17
+  },
+  {
+    "ts": "2026-06-22T07:13:25.240945Z",
+    "event": "stage2.decisions_logged",
+    "count": 17
+  },
+  {
+    "ts": "2026-06-22T07:13:35.950975Z",
+    "event": "stage2.proposed",
+    "count": 18
+  },
+  {
+    "ts": "2026-06-22T07:13:35.951858Z",
+    "event": "stage2.attributions_logged",
+    "count": 18
+  },
+  {
+    "ts": "2026-06-22T07:13:46.656297Z",
+    "event": "stage2.critic_reviews",
+    "count": 18
+  },
+  {
+    "ts": "2026-06-22T07:13:46.657680Z",
+    "event": "stage2.decisions_logged",
+    "count": 18
+  },
+  {
+    "ts": "2026-06-22T07:13:55.421194Z",
+    "event": "stage2.proposed",
+    "count": 19
+  },
+  {
+    "ts": "2026-06-22T07:13:55.421745Z",
+    "event": "stage2.attributions_logged",
+    "count": 19
+  },
+  {
+    "ts": "2026-06-22T07:14:03.926393Z",
+    "event": "stage2.critic_reviews",
+    "count": 19
+  },
+  {
+    "ts": "2026-06-22T07:14:03.963400Z",
+    "event": "stage2.decisions_logged",
+    "count": 19
+  },
+  {
+    "ts": "2026-06-22T07:14:09.715381Z",
+    "event": "stage2.proposed",
+    "count": 20
+  },
+  {
+    "ts": "2026-06-22T07:14:09.715968Z",
+    "event": "stage2.attributions_logged",
+    "count": 20
+  },
+  {
+    "ts": "2026-06-22T07:14:15.807332Z",
+    "event": "stage2.critic_reviews",
+    "count": 20
+  },
+  {
+    "ts": "2026-06-22T07:14:15.853445Z",
+    "event": "stage2.decisions_logged",
+    "count": 20
+  },
+  {
+    "ts": "2026-06-22T07:14:23.445318Z",
+    "event": "stage2.proposed",
+    "count": 21
+  },
+  {
+    "ts": "2026-06-22T07:14:23.446074Z",
+    "event": "stage2.attributions_logged",
+    "count": 21
+  },
+  {
+    "ts": "2026-06-22T07:14:26.891275Z",
+    "event": "stage2.critic_reviews",
+    "count": 21
+  },
+  {
+    "ts": "2026-06-22T07:14:26.922757Z",
+    "event": "stage2.decisions_logged",
+    "count": 21
+  },
+  {
+    "ts": "2026-06-22T07:14:35.674064Z",
+    "event": "stage2.proposed",
+    "count": 22
+  },
+  {
+    "ts": "2026-06-22T07:14:35.675135Z",
+    "event": "stage2.attributions_logged",
+    "count": 22
+  },
+  {
+    "ts": "2026-06-22T07:14:41.722200Z",
+    "event": "stage2.critic_reviews",
+    "count": 22
+  },
+  {
+    "ts": "2026-06-22T07:14:41.769042Z",
+    "event": "stage2.decisions_logged",
+    "count": 22
+  },
+  {
+    "ts": "2026-06-22T07:14:50.546703Z",
+    "event": "stage2.proposed",
+    "count": 23
+  },
+  {
+    "ts": "2026-06-22T07:14:50.547319Z",
+    "event": "stage2.attributions_logged",
+    "count": 23
+  },
+  {
+    "ts": "2026-06-22T07:14:53.699000Z",
+    "event": "stage2.critic_reviews",
+    "count": 23
+  },
+  {
+    "ts": "2026-06-22T07:14:53.735763Z",
+    "event": "stage2.decisions_logged",
+    "count": 23
+  },
+  {
+    "ts": "2026-06-22T07:14:59.607193Z",
+    "event": "stage2.proposed",
+    "count": 24
+  },
+  {
+    "ts": "2026-06-22T07:14:59.607824Z",
+    "event": "stage2.attributions_logged",
+    "count": 24
+  },
+  {
+    "ts": "2026-06-22T07:15:05.399571Z",
+    "event": "stage2.critic_reviews",
+    "count": 24
+  },
+  {
+    "ts": "2026-06-22T07:15:05.446914Z",
+    "event": "stage2.decisions_logged",
+    "count": 24
+  },
+  {
+    "ts": "2026-06-22T07:15:13.167087Z",
+    "event": "stage2.proposed",
+    "count": 25
+  },
+  {
+    "ts": "2026-06-22T07:15:13.167789Z",
+    "event": "stage2.attributions_logged",
+    "count": 25
+  },
+  {
+    "ts": "2026-06-22T07:15:23.968559Z",
+    "event": "stage2.critic_reviews",
+    "count": 25
+  },
+  {
+    "ts": "2026-06-22T07:15:24.001558Z",
+    "event": "stage2.decisions_logged",
+    "count": 25
+  },
+  {
+    "ts": "2026-06-22T07:15:33.554440Z",
+    "event": "stage2.proposed",
+    "count": 26
+  },
+  {
+    "ts": "2026-06-22T07:15:33.555073Z",
+    "event": "stage2.attributions_logged",
+    "count": 26
+  },
+  {
+    "ts": "2026-06-22T07:15:41.009377Z",
+    "event": "stage2.critic_reviews",
+    "count": 26
+  },
+  {
+    "ts": "2026-06-22T07:15:41.044136Z",
+    "event": "stage2.decisions_logged",
+    "count": 26
+  },
+  {
+    "ts": "2026-06-22T07:15:50.330978Z",
+    "event": "stage2.proposed",
+    "count": 27
+  },
+  {
+    "ts": "2026-06-22T07:15:50.331770Z",
+    "event": "stage2.attributions_logged",
+    "count": 27
+  },
+  {
+    "ts": "2026-06-22T07:15:56.390144Z",
+    "event": "stage2.critic_reviews",
+    "count": 27
+  },
+  {
+    "ts": "2026-06-22T07:15:56.435631Z",
+    "event": "stage2.decisions_logged",
+    "count": 27
+  },
+  {
+    "ts": "2026-06-22T07:16:08.215245Z",
+    "event": "stage2.proposed",
+    "count": 28
+  },
+  {
+    "ts": "2026-06-22T07:16:08.215951Z",
+    "event": "stage2.attributions_logged",
+    "count": 28
+  },
+  {
+    "ts": "2026-06-22T07:16:21.063080Z",
+    "event": "stage2.critic_reviews",
+    "count": 28
+  },
+  {
+    "ts": "2026-06-22T07:16:21.097636Z",
+    "event": "stage2.decisions_logged",
+    "count": 28
+  },
+  {
+    "ts": "2026-06-22T07:16:29.906120Z",
+    "event": "stage2.proposed",
+    "count": 29
+  },
+  {
+    "ts": "2026-06-22T07:16:29.906583Z",
+    "event": "stage2.attributions_logged",
+    "count": 29
+  },
+  {
+    "ts": "2026-06-22T07:16:45.305620Z",
+    "event": "stage2.critic_reviews",
+    "count": 29
+  },
+  {
+    "ts": "2026-06-22T07:16:45.351791Z",
+    "event": "stage2.decisions_logged",
+    "count": 29
+  },
+  {
+    "ts": "2026-06-22T07:16:52.405641Z",
+    "event": "stage2.proposed",
+    "count": 30
+  },
+  {
+    "ts": "2026-06-22T07:16:52.406744Z",
+    "event": "stage2.attributions_logged",
+    "count": 30
+  },
+  {
+    "ts": "2026-06-22T07:16:58.054991Z",
+    "event": "stage2.critic_reviews",
+    "count": 30
+  },
+  {
+    "ts": "2026-06-22T07:16:58.089315Z",
+    "event": "stage2.decisions_logged",
+    "count": 30
+  },
+  {
+    "ts": "2026-06-22T07:17:06.140915Z",
+    "event": "stage2.proposed",
+    "count": 31
+  },
+  {
+    "ts": "2026-06-22T07:17:06.141611Z",
+    "event": "stage2.attributions_logged",
+    "count": 31
+  },
+  {
+    "ts": "2026-06-22T07:17:12.760651Z",
+    "event": "stage2.critic_reviews",
+    "count": 31
+  },
+  {
+    "ts": "2026-06-22T07:17:12.806411Z",
+    "event": "stage2.decisions_logged",
+    "count": 31
+  },
+  {
+    "ts": "2026-06-22T07:17:23.094644Z",
+    "event": "stage2.proposed",
+    "count": 32
+  },
+  {
+    "ts": "2026-06-22T07:17:23.095343Z",
+    "event": "stage2.attributions_logged",
+    "count": 32
+  },
+  {
+    "ts": "2026-06-22T07:17:26.398744Z",
+    "event": "stage2.critic_reviews",
+    "count": 32
+  },
+  {
+    "ts": "2026-06-22T07:17:26.433631Z",
+    "event": "stage2.decisions_logged",
+    "count": 32
+  },
+  {
+    "ts": "2026-06-22T07:17:36.325713Z",
+    "event": "stage2.proposed",
+    "count": 33
+  },
+  {
+    "ts": "2026-06-22T07:17:36.326380Z",
+    "event": "stage2.attributions_logged",
+    "count": 33
+  },
+  {
+    "ts": "2026-06-22T07:17:41.497730Z",
+    "event": "stage2.critic_reviews",
+    "count": 33
+  },
+  {
+    "ts": "2026-06-22T07:17:41.527207Z",
+    "event": "stage2.decisions_logged",
+    "count": 33
+  },
+  {
+    "ts": "2026-06-22T07:17:52.383369Z",
+    "event": "stage2.proposed",
+    "count": 34
+  },
+  {
+    "ts": "2026-06-22T07:17:52.384013Z",
+    "event": "stage2.attributions_logged",
+    "count": 34
+  },
+  {
+    "ts": "2026-06-22T07:18:09.053038Z",
+    "event": "stage2.critic_reviews",
+    "count": 34
+  },
+  {
+    "ts": "2026-06-22T07:18:09.054658Z",
+    "event": "stage2.decisions_logged",
+    "count": 34
+  },
+  {
+    "ts": "2026-06-22T07:18:20.104957Z",
+    "event": "stage2.proposed",
+    "count": 35
+  },
+  {
+    "ts": "2026-06-22T07:18:20.105768Z",
+    "event": "stage2.attributions_logged",
+    "count": 35
+  },
+  {
+    "ts": "2026-06-22T07:18:30.336795Z",
+    "event": "stage2.critic_reviews",
+    "count": 35
+  },
+  {
+    "ts": "2026-06-22T07:18:30.374559Z",
+    "event": "stage2.decisions_logged",
+    "count": 35
+  },
+  {
+    "ts": "2026-06-22T07:18:36.797656Z",
+    "event": "stage2.proposed",
+    "count": 36
+  },
+  {
+    "ts": "2026-06-22T07:18:36.798545Z",
+    "event": "stage2.attributions_logged",
+    "count": 36
+  },
+  {
+    "ts": "2026-06-22T07:18:43.056189Z",
+    "event": "stage2.critic_reviews",
+    "count": 36
+  },
+  {
+    "ts": "2026-06-22T07:18:43.104202Z",
+    "event": "stage2.decisions_logged",
+    "count": 36
+  },
+  {
+    "ts": "2026-06-22T07:18:57.520052Z",
+    "event": "stage2.proposed",
+    "count": 37
+  },
+  {
+    "ts": "2026-06-22T07:18:57.520637Z",
+    "event": "stage2.attributions_logged",
+    "count": 37
+  },
+  {
+    "ts": "2026-06-22T07:19:04.240924Z",
+    "event": "stage2.critic_reviews",
+    "count": 37
+  },
+  {
+    "ts": "2026-06-22T07:19:04.277683Z",
+    "event": "stage2.decisions_logged",
+    "count": 37
+  },
+  {
+    "ts": "2026-06-22T07:19:13.766970Z",
+    "event": "stage2.proposed",
+    "count": 38
+  },
+  {
+    "ts": "2026-06-22T07:19:13.767787Z",
+    "event": "stage2.attributions_logged",
+    "count": 38
+  },
+  {
+    "ts": "2026-06-22T07:19:27.609486Z",
+    "event": "stage2.critic_reviews",
+    "count": 38
+  },
+  {
+    "ts": "2026-06-22T07:19:27.639145Z",
+    "event": "stage2.decisions_logged",
+    "count": 38
+  },
+  {
+    "ts": "2026-06-22T07:19:41.374474Z",
+    "event": "stage2.proposed",
+    "count": 39
+  },
+  {
+    "ts": "2026-06-22T07:19:41.375249Z",
+    "event": "stage2.attributions_logged",
+    "count": 39
+  },
+  {
+    "ts": "2026-06-22T07:19:49.576403Z",
+    "event": "stage2.critic_reviews",
+    "count": 39
+  },
+  {
+    "ts": "2026-06-22T07:19:49.632945Z",
+    "event": "stage2.decisions_logged",
+    "count": 39
+  },
+  {
+    "ts": "2026-06-22T07:20:01.392717Z",
+    "event": "stage2.proposed",
+    "count": 40
+  },
+  {
+    "ts": "2026-06-22T07:20:01.393530Z",
+    "event": "stage2.attributions_logged",
+    "count": 40
+  },
+  {
+    "ts": "2026-06-22T07:20:07.068788Z",
+    "event": "stage2.critic_reviews",
+    "count": 40
+  },
+  {
+    "ts": "2026-06-22T07:20:07.103596Z",
+    "event": "stage2.decisions_logged",
+    "count": 40
+  },
+  {
+    "ts": "2026-06-22T07:20:23.009491Z",
+    "event": "stage2.proposed",
+    "count": 41
+  },
+  {
+    "ts": "2026-06-22T07:20:23.010159Z",
+    "event": "stage2.attributions_logged",
+    "count": 41
+  },
+  {
+    "ts": "2026-06-22T07:20:30.927639Z",
+    "event": "stage2.critic_reviews",
+    "count": 41
+  },
+  {
+    "ts": "2026-06-22T07:20:30.975125Z",
+    "event": "stage2.decisions_logged",
+    "count": 41
+  },
+  {
+    "ts": "2026-06-22T07:20:42.517781Z",
+    "event": "stage2.proposed",
+    "count": 42
+  },
+  {
+    "ts": "2026-06-22T07:20:42.518645Z",
+    "event": "stage2.attributions_logged",
+    "count": 42
+  },
+  {
+    "ts": "2026-06-22T07:20:56.220612Z",
+    "event": "stage2.critic_reviews",
+    "count": 42
+  },
+  {
+    "ts": "2026-06-22T07:20:56.222315Z",
+    "event": "stage2.decisions_logged",
+    "count": 42
+  },
+  {
+    "ts": "2026-06-22T07:21:07.163219Z",
+    "event": "stage2.proposed",
+    "count": 43
+  },
+  {
+    "ts": "2026-06-22T07:21:07.163922Z",
+    "event": "stage2.attributions_logged",
+    "count": 43
+  },
+  {
+    "ts": "2026-06-22T07:21:14.504202Z",
+    "event": "stage2.critic_reviews",
+    "count": 43
+  },
+  {
+    "ts": "2026-06-22T07:21:14.529309Z",
+    "event": "stage2.decisions_logged",
+    "count": 43
+  },
+  {
+    "ts": "2026-06-22T07:21:27.986936Z",
+    "event": "stage2.proposed",
+    "count": 44
+  },
+  {
+    "ts": "2026-06-22T07:21:27.987666Z",
+    "event": "stage2.attributions_logged",
+    "count": 44
+  },
+  {
+    "ts": "2026-06-22T07:21:33.782257Z",
+    "event": "stage2.critic_reviews",
+    "count": 44
+  },
+  {
+    "ts": "2026-06-22T07:21:33.815318Z",
+    "event": "stage2.decisions_logged",
+    "count": 44
+  },
+  {
+    "ts": "2026-06-22T07:21:43.648741Z",
+    "event": "stage2.proposed",
+    "count": 45
+  },
+  {
+    "ts": "2026-06-22T07:21:43.649598Z",
+    "event": "stage2.attributions_logged",
+    "count": 45
+  },
+  {
+    "ts": "2026-06-22T07:21:50.748667Z",
+    "event": "stage2.critic_reviews",
+    "count": 45
+  },
+  {
+    "ts": "2026-06-22T07:21:50.798629Z",
+    "event": "stage2.decisions_logged",
+    "count": 45
+  },
+  {
+    "ts": "2026-06-22T07:21:59.090778Z",
+    "event": "stage2.proposed",
+    "count": 46
+  },
+  {
+    "ts": "2026-06-22T07:21:59.091607Z",
+    "event": "stage2.attributions_logged",
+    "count": 46
+  },
+  {
+    "ts": "2026-06-22T07:22:04.134613Z",
+    "event": "stage2.critic_reviews",
+    "count": 46
+  },
+  {
+    "ts": "2026-06-22T07:22:04.182000Z",
+    "event": "stage2.decisions_logged",
+    "count": 46
+  },
+  {
+    "ts": "2026-06-22T07:22:13.732413Z",
+    "event": "stage2.proposed",
+    "count": 47
+  },
+  {
+    "ts": "2026-06-22T07:22:13.733281Z",
+    "event": "stage2.attributions_logged",
+    "count": 47
+  },
+  {
+    "ts": "2026-06-22T07:22:19.559657Z",
+    "event": "stage2.critic_reviews",
+    "count": 47
+  },
+  {
+    "ts": "2026-06-22T07:22:19.607835Z",
+    "event": "stage2.decisions_logged",
+    "count": 47
+  },
+  {
+    "ts": "2026-06-22T07:22:28.377554Z",
+    "event": "stage2.proposed",
+    "count": 48
+  },
+  {
+    "ts": "2026-06-22T07:22:28.378366Z",
+    "event": "stage2.attributions_logged",
+    "count": 48
+  },
+  {
+    "ts": "2026-06-22T07:22:34.746257Z",
+    "event": "stage2.critic_reviews",
+    "count": 48
+  },
+  {
+    "ts": "2026-06-22T07:22:34.793400Z",
+    "event": "stage2.decisions_logged",
+    "count": 48
+  },
+  {
+    "ts": "2026-06-22T07:22:51.052260Z",
+    "event": "stage2.proposed",
+    "count": 49
+  },
+  {
+    "ts": "2026-06-22T07:22:51.053013Z",
+    "event": "stage2.attributions_logged",
+    "count": 49
+  },
+  {
+    "ts": "2026-06-22T07:22:59.499686Z",
+    "event": "stage2.critic_reviews",
+    "count": 49
+  },
+  {
+    "ts": "2026-06-22T07:22:59.536130Z",
+    "event": "stage2.decisions_logged",
+    "count": 49
+  },
+  {
+    "ts": "2026-06-22T07:23:21.689679Z",
+    "event": "stage2.proposed",
+    "count": 50
+  },
+  {
+    "ts": "2026-06-22T07:23:21.690347Z",
+    "event": "stage2.attributions_logged",
+    "count": 50
+  },
+  {
+    "ts": "2026-06-22T07:23:37.598442Z",
+    "event": "stage2.critic_reviews",
+    "count": 50
+  },
+  {
+    "ts": "2026-06-22T07:23:37.599212Z",
+    "event": "stage2.decisions_logged",
+    "count": 50
+  },
+  {
+    "ts": "2026-06-22T07:23:37.599600Z",
+    "event": "stage1_5.schema_gaps",
+    "count": 2
+  },
+  {
+    "ts": "2026-06-22T07:23:43.312351Z",
+    "event": "stage1_5.schema_gap_repairs",
+    "count": 2
+  },
+  {
+    "ts": "2026-06-22T07:23:43.313503Z",
+    "event": "stage1_5.schema_gap_repairs",
+    "count": 2
+  },
+  {
+    "ts": "2026-06-22T07:23:43.330169Z",
+    "event": "stage1.schema_validation",
+    "attempts": 1
+  },
+  {
+    "ts": "2026-06-22T07:23:43.330557Z",
+    "event": "stage1_5.schema_gap_repairs",
+    "count": 2
+  },
+  {
+    "ts": "2026-06-22T07:23:43.330662Z",
+    "event": "stage1.schema_written",
+    "size": 3976
+  },
+  {
+    "ts": "2026-06-22T07:24:00.158591Z",
+    "event": "stage2.proposed",
+    "count": 51
+  },
+  {
+    "ts": "2026-06-22T07:24:00.159467Z",
+    "event": "stage2.attributions_logged",
+    "count": 51
+  },
+  {
+    "ts": "2026-06-22T07:24:09.989304Z",
+    "event": "stage2.critic_reviews",
+    "count": 51
+  },
+  {
+    "ts": "2026-06-22T07:24:09.991086Z",
+    "event": "stage2.decisions_logged",
+    "count": 51
+  },
+  {
+    "ts": "2026-06-22T07:24:29.042906Z",
+    "event": "stage2.proposed",
+    "count": 52
+  },
+  {
+    "ts": "2026-06-22T07:24:29.043712Z",
+    "event": "stage2.attributions_logged",
+    "count": 52
+  },
+  {
+    "ts": "2026-06-22T07:24:36.815778Z",
+    "event": "stage2.critic_reviews",
+    "count": 52
+  },
+  {
+    "ts": "2026-06-22T07:24:36.817499Z",
+    "event": "stage2.decisions_logged",
+    "count": 52
+  },
+  {
+    "ts": "2026-06-22T07:24:46.219028Z",
+    "event": "stage2.proposed",
+    "count": 53
+  },
+  {
+    "ts": "2026-06-22T07:24:46.219992Z",
+    "event": "stage2.attributions_logged",
+    "count": 53
+  },
+  {
+    "ts": "2026-06-22T07:25:06.380420Z",
+    "event": "stage2.critic_reviews",
+    "count": 53
+  },
+  {
+    "ts": "2026-06-22T07:25:06.381394Z",
+    "event": "stage2.decisions_logged",
+    "count": 53
+  },
+  {
+    "ts": "2026-06-22T07:25:22.497463Z",
+    "event": "stage2.proposed",
+    "count": 54
+  },
+  {
+    "ts": "2026-06-22T07:25:22.498337Z",
+    "event": "stage2.attributions_logged",
+    "count": 54
+  },
+  {
+    "ts": "2026-06-22T07:25:32.356643Z",
+    "event": "stage2.critic_reviews",
+    "count": 54
+  },
+  {
+    "ts": "2026-06-22T07:25:32.357859Z",
+    "event": "stage2.decisions_logged",
+    "count": 54
+  },
+  {
+    "ts": "2026-06-22T07:25:44.746097Z",
+    "event": "stage2.proposed",
+    "count": 55
+  },
+  {
+    "ts": "2026-06-22T07:25:44.746984Z",
+    "event": "stage2.attributions_logged",
+    "count": 55
+  },
+  {
+    "ts": "2026-06-22T07:25:53.674229Z",
+    "event": "stage2.critic_reviews",
+    "count": 55
+  },
+  {
+    "ts": "2026-06-22T07:25:53.721665Z",
+    "event": "stage2.decisions_logged",
+    "count": 55
+  },
+  {
+    "ts": "2026-06-22T07:26:15.011670Z",
+    "event": "stage2.proposed",
+    "count": 56
+  },
+  {
+    "ts": "2026-06-22T07:26:15.012465Z",
+    "event": "stage2.attributions_logged",
+    "count": 56
+  },
+  {
+    "ts": "2026-06-22T07:26:26.429494Z",
+    "event": "stage2.critic_reviews",
+    "count": 56
+  },
+  {
+    "ts": "2026-06-22T07:26:26.430839Z",
+    "event": "stage2.decisions_logged",
+    "count": 56
+  },
+  {
+    "ts": "2026-06-22T07:26:35.142601Z",
+    "event": "stage2.proposed",
+    "count": 57
+  },
+  {
+    "ts": "2026-06-22T07:26:35.143463Z",
+    "event": "stage2.attributions_logged",
+    "count": 57
+  },
+  {
+    "ts": "2026-06-22T07:26:47.824610Z",
+    "event": "stage2.critic_reviews",
+    "count": 57
+  },
+  {
+    "ts": "2026-06-22T07:26:47.825908Z",
+    "event": "stage2.decisions_logged",
+    "count": 57
+  },
+  {
+    "ts": "2026-06-22T07:27:22.194554Z",
+    "event": "stage2.proposed",
+    "count": 58
+  },
+  {
+    "ts": "2026-06-22T07:27:22.195381Z",
+    "event": "stage2.attributions_logged",
+    "count": 58
+  },
+  {
+    "ts": "2026-06-22T07:27:32.021227Z",
+    "event": "stage2.critic_reviews",
+    "count": 58
+  },
+  {
+    "ts": "2026-06-22T07:27:32.022526Z",
+    "event": "stage2.decisions_logged",
+    "count": 58
+  },
+  {
+    "ts": "2026-06-22T07:28:03.022380Z",
+    "event": "stage2.proposed",
+    "count": 59
+  },
+  {
+    "ts": "2026-06-22T07:28:03.023092Z",
+    "event": "stage2.attributions_logged",
+    "count": 59
+  },
+  {
+    "ts": "2026-06-22T07:28:15.292165Z",
+    "event": "stage2.critic_reviews",
+    "count": 59
+  },
+  {
+    "ts": "2026-06-22T07:28:15.293683Z",
+    "event": "stage2.decisions_logged",
+    "count": 59
+  },
+  {
+    "ts": "2026-06-22T07:28:32.877227Z",
+    "event": "stage2.proposed",
+    "count": 60
+  },
+  {
+    "ts": "2026-06-22T07:28:32.878364Z",
+    "event": "stage2.attributions_logged",
+    "count": 60
+  },
+  {
+    "ts": "2026-06-22T07:28:42.230908Z",
+    "event": "stage2.critic_reviews",
+    "count": 60
+  },
+  {
+    "ts": "2026-06-22T07:28:42.232884Z",
+    "event": "stage2.decisions_logged",
+    "count": 60
+  },
+  {
+    "ts": "2026-06-22T07:28:57.211156Z",
+    "event": "stage2.proposed",
+    "count": 61
+  },
+  {
+    "ts": "2026-06-22T07:28:57.212068Z",
+    "event": "stage2.attributions_logged",
+    "count": 61
+  },
+  {
+    "ts": "2026-06-22T07:29:04.672574Z",
+    "event": "stage2.critic_reviews",
+    "count": 61
+  },
+  {
+    "ts": "2026-06-22T07:29:04.706753Z",
+    "event": "stage2.decisions_logged",
+    "count": 61
+  },
+  {
+    "ts": "2026-06-22T07:29:13.199649Z",
+    "event": "stage2.proposed",
+    "count": 62
+  },
+  {
+    "ts": "2026-06-22T07:29:13.200397Z",
+    "event": "stage2.attributions_logged",
+    "count": 62
+  },
+  {
+    "ts": "2026-06-22T07:29:19.316067Z",
+    "event": "stage2.critic_reviews",
+    "count": 62
+  },
+  {
+    "ts": "2026-06-22T07:29:19.361364Z",
+    "event": "stage2.decisions_logged",
+    "count": 62
+  },
+  {
+    "ts": "2026-06-22T07:29:40.579496Z",
+    "event": "stage2.proposed",
+    "count": 63
+  },
+  {
+    "ts": "2026-06-22T07:29:40.580330Z",
+    "event": "stage2.attributions_logged",
+    "count": 63
+  },
+  {
+    "ts": "2026-06-22T07:29:45.322214Z",
+    "event": "stage2.critic_reviews",
+    "count": 63
+  },
+  {
+    "ts": "2026-06-22T07:29:45.324319Z",
+    "event": "stage2.decisions_logged",
+    "count": 63
+  },
+  {
+    "ts": "2026-06-22T07:30:04.481280Z",
+    "event": "stage1_5.amendments",
+    "count": 0
+  },
+  {
+    "ts": "2026-06-22T07:30:04.482720Z",
+    "event": "stage2.critic_reviews",
+    "count": 63
+  },
+  {
+    "ts": "2026-06-22T07:30:04.484134Z",
+    "event": "stage2.decisions_logged",
+    "count": 63
+  },
+  {
+    "ts": "2026-06-22T07:30:04.486694Z",
+    "event": "stage2.intent_graph",
+    "properties": 43,
+    "critic_reviews": 63,
+    "critic_rejects": 2,
+    "critic_repairs": 18
+  },
+  {
+    "ts": "2026-06-22T07:30:04.487068Z",
+    "event": "stage2.verification_logged",
+    "atom_count": 43
+  },
+  {
+    "ts": "2026-06-22T07:30:04.487441Z",
+    "event": "stage2.adversarial_examples",
+    "atom_count": 43
+  },
+  {
+    "ts": "2026-06-22T07:30:04.671724Z",
+    "event": "stage1_75.consistency_check",
+    "unsat": false,
+    "core": []
+  },
+  {
+    "ts": "2026-06-22T07:30:04.674196Z",
+    "event": "stage2.plan_written",
+    "reference_count": 43
+  },
+  {
+    "ts": "2026-06-22T07:33:39.980553Z",
+    "event": "stage3.iteration",
+    "iter": 1,
+    "verifier_passed": true,
+    "critic_mean": 4
+  },
+  {
+    "ts": "2026-06-22T07:33:39.980657Z",
+    "event": "stage3.final_candidate",
+    "size": 4105
+  },
+  {
+    "ts": "2026-06-22T07:33:39.982531Z",
+    "event": "stage2_5.traceback",
+    "atom_count": 43
+  },
+  {
+    "ts": "2026-06-22T07:33:39.982592Z",
+    "event": "stage2_5.final_decision",
+    "approved": true
+  }
+]

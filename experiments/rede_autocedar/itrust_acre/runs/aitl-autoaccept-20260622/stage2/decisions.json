@@ -1,0 +1,206 @@
+[
+  {
+    "atom_name": "patient_view_own_access_log_floor",
+    "action": "reject",
+    "reason": "Stage 2 decomposition critic repair: The own-patient ownership floor is materially useful and correctly uses AccessLog.patient, but it omits the named authentication/session lifecycle boundary from the requirements: users must be authenticated and authorization is disabled after inactivity/session termination. The validated schema has Session, but viewAccessLog has no session/context hook tying the request to an active session for the principal, so this condition is not expressible for this action without a schema repair.",
+    "edit_delta": {
+      "critic_decision": "repair",
+      "critic_tags": [
+        "missing-authentication-boundary",
+        "missing-active-session-boundary",
+        "schema-gap"
+      ]
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "hcp_create_patient_floor",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "deactivated_patient_not_edited_disjointness",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "deactivated_patient_not_login_disjointness",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "hcp_disable_active_patient_floor",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "admin_reactivate_deactivated_patient_floor",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "patient_view_own_access_log_active_session_floor",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "patient_view_access_log_own_active_session_ceiling",
+    "action": "reject",
+    "reason": "Stage 2 decomposition critic repair: The access-log ceiling is materially useful for the own-access-log and active-session boundaries, but it is too restrictive for the full source requirement: patients may view their own access log or the access log for a represented person. As written, the ceiling would forbid represented-person access for Patient principals rather than modeling the patient-specific personal-representative relationship. The validated schema has PersonalRepresentativeRelationship, but viewAccessLog only exposes context.session and has no context/resource hook to bind an active representative relationship for the requested AccessLog.patient, so the represented-person boundary is not expressible for this action without schema repair.",
+    "edit_delta": {
+      "critic_decision": "repair",
+      "critic_tags": [
+        "missing-represented-person-boundary",
+        "missing-personal-representative-relationship-boundary",
+        "schema-gap"
+      ]
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "personal_representative_view_represented_access_log_active_session_floor",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "access_log_active_session_own_or_represented_ceiling",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "patient_view_own_medical_record_floor",
+    "action": "reject",
+    "reason": "Stage 2 decomposition critic repair: The own-record ownership floor is materially useful and not covered by existing approved atoms, but it omits the named authentication/session lifecycle boundary from the requirements: authorization is disabled after inactivity/session termination. The validated schema has Session, but viewMedicalRecord has no context/session hook tying the request to an active session for the principal, so the active-session condition is not expressible for this action without schema repair. Do not accept an ownership-only proxy as equivalent.",
+    "edit_delta": {
+      "critic_decision": "repair",
+      "critic_tags": [
+        "missing-authentication-boundary",
+        "missing-active-session-boundary",
+        "schema-gap"
+      ]
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "patient_view_own_medical_record_active_session_floor",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "patient_view_medical_record_own_active_session_ceiling",
+    "action": "reject",
+    "reason": "Stage 2 decomposition critic repair: The ownership and active-session ceiling is materially useful, but as written it is too narrow for the source requirement because medical-record viewing is allowed for a user's own records and for patients they represent. A Patient-scoped own-record-only ceiling risks forbidding represented-patient access if the requester is acting through a patient-specific personal-representative relationship, and it does not model the required represented-person boundary. Unlike viewAccessLog, the validated viewMedicalRecord action exposes only context.session and has no PersonalRepresentativeRelationship hook, so the represented-patient/personal-representative relationship boundary is not schema-expressible for this action. Do not accept an own-record-only proxy as equivalent to the full requirement.",
+    "edit_delta": {
+      "critic_decision": "repair",
+      "critic_tags": [
+        "missing-represented-person-boundary",
+        "missing-personal-representative-relationship-boundary",
+        "schema-gap"
+      ]
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "medical_record_active_session_own_or_represented_ceiling",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "personal_representative_view_represented_medical_record_active_session_floor",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "restricted_diagnostic_none_audience_lhcp_disjointness",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "lhcp_view_unrestricted_diagnostic_information_floor",
+    "action": "reject",
+    "reason": "Stage 2 decomposition critic repair: The unrestricted-LHCP floor is materially related to the diagnostic-information requirement, but it is too broad as written. The source does not merely say any LHCP may view any non-restricted diagnostic information; it frames approved diagnostic information as information the patient allows a designated or other licensed health-care professional to view. This atom omits the patient-specific approval/designated-provider or allowed-audience boundary and would accept an unrestricted-status proxy as equivalent. The schema has ProviderDesignation as an entity, but viewDiagnosticInformation has no context hook to bind the requesting LHCP to the patient's designation/approval, and DiagnosticInformation.allowedAudience is only an unstructured string that cannot by itself represent the patient-specific LHCP relationship.",
+    "edit_delta": {
+      "critic_decision": "repair",
+      "critic_tags": [
+        "missing-patient-approval-boundary",
+        "missing-designated-provider-boundary",
+        "missing-patient-specific-lhcp-boundary",
+        "schema-gap"
+      ]
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "patient_designate_own_lhcp_floor",
+    "action": "reject",
+    "reason": "Stage 2 decomposition critic repair: The patient-specific ownership boundary is materially useful and correctly binds the Patient principal to ProviderDesignation.patient, rather than treating DLHCP as a global role. However, the atom omits the named authentication/session lifecycle boundary from the requirements: users authenticate with MID/password and authorization is disabled after inactivity, logout, or application close. The designateLhcp action has no context.session hook, so an active session for the requesting patient is not schema-expressible for this action. Do not accept the ownership-only floor as an equivalent proxy.",
+    "edit_delta": {
+      "critic_decision": "repair",
+      "critic_tags": [
+        "missing-authentication-boundary",
+        "missing-active-session-boundary",
+        "patient-specific-provider-designation-boundary-present",
+        "schema-gap"
+      ]
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "designated_lhcp_view_restricted_diagnostic_information_floor",
+    "action": "reject",
+    "reason": "Stage 2 decomposition critic repair: The designated-LHCP restricted-diagnostic floor is materially useful and correctly avoids flattening DLHCP into a global role by binding context.providerDesignation to the resource patient and requesting LHCP. It is not redundant with the approved no-one disjointness atom. However, as a positive view permission for patient diagnostic information, it omits the named authentication/session lifecycle boundary from the requirements: users authenticate with MID/password and authorization is disabled after inactivity, logout, or application close. The validated viewDiagnosticInformation action exposes context.providerDesignation but has no context.session hook to require an active session for the requesting LHCP, so the active-authenticated-session condition is not schema-expressible for this action. Do not accept the provider-designation-only floor as an equivalent proxy.",
+    "edit_delta": {
+      "critic_decision": "repair",
+      "critic_tags": [
+        "missing-authentication-boundary",
+        "missing-active-session-boundary",
+        "patient-specific-provider-designation-boundary-present",
+        "schema-gap"
+      ]
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": false
+  }
+]

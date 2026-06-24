@@ -1,0 +1,1 @@
+permit (principal, action == Action::"requestPasswordChange", resource) when { context.session.isActive && resource.user == principal };

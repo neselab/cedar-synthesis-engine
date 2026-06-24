@@ -1,0 +1,1 @@
+permit (principal, action == Action::"viewAccessLog", resource) when { context.session.isActive && context.session has patientUser && context.session.patientUser == principal && context.patient == principal && resource.patient == principal };

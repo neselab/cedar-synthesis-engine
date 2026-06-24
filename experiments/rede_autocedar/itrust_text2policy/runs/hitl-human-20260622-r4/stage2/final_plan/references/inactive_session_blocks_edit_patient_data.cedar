@@ -1,0 +1,1 @@
+permit (principal is Hcp, action == Action::"editPatientData", resource is Patient) when { !(!context.session.isActive) };

@@ -1,0 +1,1 @@
+permit (principal, action == Action::"addProviderToList", resource) when { principal is Patient && resource is Patient && principal == resource && context.provider is HCP };

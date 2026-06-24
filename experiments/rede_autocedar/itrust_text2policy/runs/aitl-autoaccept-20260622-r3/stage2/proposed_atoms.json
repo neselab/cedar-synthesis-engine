@@ -1,0 +1,2267 @@
+[
+  {
+    "name": "hcp_can_create_patient",
+    "rationale": "The specification explicitly states a positive permission that an HCP can create a patient and enter the patient as a new user. A floor is required so synthesis cannot satisfy the plan with an empty or deny-only policy.",
+    "plain_english_summary": "HCPs must be permitted to create patient accounts.",
+    "source_excerpt": "An HCP can create a patient and enter the patient as a new user of the system.",
+    "constraint_type": "floor",
+    "action": "createPatient",
+    "principal_types": [
+      "HCP"
+    ],
+    "resource_types": [
+      "Patient"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"createPatient\", resource) when { principal is HCP && resource is Patient };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "hcp_cannot_view_patient_credentials",
+    "rationale": "The specification explicitly denies HCPs the ability to view a patient's security question or password. Because the schema exposes the requested credential field in context.credentialField, this safety boundary can be checked directly rather than approximated by role alone.",
+    "plain_english_summary": "HCPs must not be permitted to view a patient's password or security question.",
+    "source_excerpt": "The HCP must not enter, edit, or view the patient's security question or password.",
+    "constraint_type": "disjointness",
+    "action": "viewPatientCredential",
+    "principal_types": [
+      "HCP"
+    ],
+    "resource_types": [
+      "Patient"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"viewPatientCredential\", resource) when { principal is HCP && resource is Patient && !(context.credentialField == \"password\" || context.credentialField == \"securityQuestion\") };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "sugar-universal: ok (syntactic disjointness sanity check ok)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": "viewPatientCredential",
+    "disjoint_target_body": "context.credentialField == \"password\" || context.credentialField == \"securityQuestion\""
+  },
+  {
+    "name": "hcp_cannot_edit_patient_credentials",
+    "rationale": "The specification explicitly forbids HCPs from editing a patient's security question or password. This is a credential secrecy/integrity safety boundary distinct from the already-approved viewing prohibition, so candidate policies must not allow edits to those credential fields.",
+    "plain_english_summary": "HCPs must not be permitted to edit a patient's password or security question.",
+    "source_excerpt": "The HCP must not enter, edit, or view the patient's security question or password.",
+    "constraint_type": "disjointness",
+    "action": "editPatientCredential",
+    "principal_types": [
+      "HCP"
+    ],
+    "resource_types": [
+      "Patient"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"editPatientCredential\", resource) when { principal is HCP && resource is Patient && !(context.credentialField == \"password\" || context.credentialField == \"securityQuestion\") };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "sugar-universal: ok (syntactic disjointness sanity check ok)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": "same-action editPatientCredential permissions for HCPs on Patient resources",
+    "disjoint_target_body": "context.credentialField == \"password\" || context.credentialField == \"securityQuestion\""
+  },
+  {
+    "name": "hcp_can_edit_patient_data",
+    "rationale": "The specification explicitly grants HCPs the ability to edit patient data. This positive workflow needs a floor so synthesis cannot satisfy the policy set with only credential-denial constraints and no HCP patient-edit permission.",
+    "plain_english_summary": "HCPs must be permitted to edit patient data.",
+    "source_excerpt": "The HCP can edit patient data according to the data format, but the patient's MID must not be editable.",
+    "constraint_type": "floor",
+    "action": "editPatientData",
+    "principal_types": [
+      "HCP"
+    ],
+    "resource_types": [
+      "Patient"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"editPatientData\", resource) when { principal is HCP && resource is Patient };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": false,
+    "symbolic_verification_log": [],
+    "intent_acknowledged_by_user": false,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "admin_can_create_lhcp",
+    "rationale": "The specification explicitly allows administrators to create LHCP users. This positive workflow needs a floor so a synthesized policy cannot omit administrator LHCP creation entirely. The related specialty requirement is represented by the required LHCP.specialty attribute in the schema but is not bundled into this atom as a separate property boundary.",
+    "plain_english_summary": "Administrators must be permitted to create LHCP accounts.",
+    "source_excerpt": "An administrator can create LHCPs, emergency responders, and public health agents.",
+    "constraint_type": "floor",
+    "action": "createLHCP",
+    "principal_types": [
+      "Administrator"
+    ],
+    "resource_types": [
+      "LHCP"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"createLHCP\", resource) when { principal is Administrator && resource is LHCP };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "hcp_cannot_edit_patient_mid",
+    "rationale": "The specification explicitly states that the patient's MID is outside the editable patient data boundary. Because editPatientData exposes context.editedField, this safety requirement can be verified directly rather than approximated by a broad HCP edit permission.",
+    "plain_english_summary": "HCPs must not be permitted to edit a patient's MID.",
+    "source_excerpt": "The HCP can edit patient data according to the data format, but the patient's MID must not be editable.",
+    "constraint_type": "disjointness",
+    "action": "editPatientData",
+    "principal_types": [
+      "HCP"
+    ],
+    "resource_types": [
+      "Patient"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"editPatientData\", resource) when { principal is HCP && resource is Patient && !(context.editedField == \"mid\") };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "sugar-universal: ok (syntactic disjointness sanity check ok)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": "hcp_can_edit_patient_data",
+    "disjoint_target_body": "context.editedField == \"mid\""
+  },
+  {
+    "name": "admin_can_create_emergency_responder",
+    "rationale": "The specification explicitly grants administrators the ability to create emergency responder users. This positive workflow needs a floor so synthesis cannot omit the permission while satisfying only safety constraints.",
+    "plain_english_summary": "Administrators must be permitted to create emergency responder accounts.",
+    "source_excerpt": "An administrator can create LHCPs, emergency responders, and public health agents.",
+    "constraint_type": "floor",
+    "action": "createEmergencyResponder",
+    "principal_types": [
+      "Administrator"
+    ],
+    "resource_types": [
+      "EmergencyResponder"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"createEmergencyResponder\", resource) when { principal is Administrator && resource is EmergencyResponder };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "admin_can_create_public_health_agent",
+    "rationale": "The specification explicitly grants administrators the ability to create public health agent accounts. This positive workflow is not yet covered by the approved atoms, which only cover administrator creation of LHCPs and emergency responders.",
+    "plain_english_summary": "Administrators must be permitted to create public health agent accounts.",
+    "source_excerpt": "An administrator can create LHCPs, emergency responders, and public health agents.",
+    "constraint_type": "floor",
+    "action": "createPublicHealthAgent",
+    "principal_types": [
+      "Administrator"
+    ],
+    "resource_types": [
+      "PublicHealthAgent"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"createPublicHealthAgent\", resource) when { principal is Administrator && resource is PublicHealthAgent };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "lhcp_can_create_uap",
+    "rationale": "The specification explicitly grants LHCPs the ability to create UAP users. This positive workflow is not yet covered by the approved floor atoms, so synthesis could otherwise omit the permission entirely.",
+    "plain_english_summary": "LHCPs must be permitted to create UAP users.",
+    "source_excerpt": "A LHCP can create UAP users.",
+    "constraint_type": "floor",
+    "action": "createUAP",
+    "principal_types": [
+      "LHCP"
+    ],
+    "resource_types": [
+      "UAP"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"createUAP\", resource) when { principal is LHCP && resource is UAP };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "hcp_can_edit_non_mid_patient_data",
+    "rationale": "The approved disjointness atom prevents HCPs from editing a patient's MID, but the positive workflow that HCPs can edit patient data remains uncovered. The floor must be scoped to the same field-level boundary so it does not require permission for MID edits.",
+    "plain_english_summary": "HCPs must be permitted to edit patient data fields other than the patient's MID.",
+    "source_excerpt": "The HCP can edit patient data according to the data format, but the patient's MID must not be editable.",
+    "constraint_type": "floor",
+    "action": "editPatientData",
+    "principal_types": [
+      "HCP"
+    ],
+    "resource_types": [
+      "Patient"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"editPatientData\", resource) when { principal is HCP && resource is Patient && !(context.editedField == \"mid\") };",
+    "examples_adversarial": [],
+    "alternatives_considered": [
+      {
+        "label": "broad_hcp_edit_patient_data_floor",
+        "interpretive_choice": "Permit HCPs to edit any patient data without checking the edited field.",
+        "cedar_text": "permit (principal, action == Action::\"editPatientData\", resource) when { principal is HCP && resource is Patient };"
+      }
+    ],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "admin_can_assign_lhcp_to_hospitals",
+    "rationale": "The specification explicitly grants administrators the ability to assign an LHCP to hospitals and choose the hospitals. This positive workflow is not yet covered by any approved atom, so a floor is needed to prevent synthesis from omitting this administrative capability.",
+    "plain_english_summary": "Administrators must be permitted to assign LHCPs to hospitals using the chosen hospital set in the request context.",
+    "source_excerpt": "The administrator can assign an LHCP to multiple hospitals and choose the hospitals.",
+    "constraint_type": "floor",
+    "action": "assignLHCPToHospitals",
+    "principal_types": [
+      "Administrator"
+    ],
+    "resource_types": [
+      "LHCP"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"assignLHCPToHospitals\", resource) when { principal is Administrator && resource is LHCP };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": false,
+    "symbolic_verification_log": [],
+    "intent_acknowledged_by_user": false,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "admin_can_assign_lhcp_to_chosen_hospitals",
+    "rationale": "The specification explicitly grants administrators the ability to assign an LHCP to hospitals and says the administrator chooses the hospitals. Because the validated action exposes the chosen hospital set as context.hospitals and the LHCP resource exposes its assigned hospitals as resource.hospitals, the floor should cover the assignment workflow only when the requested chosen set is the LHCP hospital assignment set, rather than a generic Administrator/LHCP permission that ignores the named assignment boundary.",
+    "plain_english_summary": "Administrators must be permitted to assign an LHCP to the hospital set chosen in the request.",
+    "source_excerpt": "The administrator can assign an LHCP to multiple hospitals and choose the hospitals.",
+    "constraint_type": "floor",
+    "action": "assignLHCPToHospitals",
+    "principal_types": [
+      "Administrator"
+    ],
+    "resource_types": [
+      "LHCP"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"assignLHCPToHospitals\", resource) when { principal is Administrator && resource is LHCP && context.hospitals == resource.hospitals };",
+    "examples_adversarial": [],
+    "alternatives_considered": [
+      {
+        "label": "generic_admin_lhcp_assignment_floor",
+        "interpretive_choice": "Permit administrators to assign any LHCP to hospitals without tying the permission to the hospital set chosen in the request context.",
+        "cedar_text": "permit (principal, action == Action::\"assignLHCPToHospitals\", resource) when { principal is Administrator && resource is LHCP };"
+      }
+    ],
+    "symbolic_verified": false,
+    "symbolic_verification_log": [],
+    "intent_acknowledged_by_user": false,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "admin_can_assign_lhcp_to_requested_hospitals",
+    "rationale": "The specification explicitly grants administrators the ability to assign an LHCP to multiple hospitals and to choose those hospitals. The schema represents the chosen hospital set directly as context.hospitals, so the floor should require permission for administrator assignment requests over that requested set without requiring it to already match the LHCP's current resource.hospitals value.",
+    "plain_english_summary": "Administrators must be permitted to assign an LHCP to the hospital set supplied in the assignment request.",
+    "source_excerpt": "The administrator can assign an LHCP to multiple hospitals and choose the hospitals.",
+    "constraint_type": "floor",
+    "action": "assignLHCPToHospitals",
+    "principal_types": [
+      "Administrator"
+    ],
+    "resource_types": [
+      "LHCP"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"assignLHCPToHospitals\", resource) when { principal is Administrator && resource is LHCP };",
+    "examples_adversarial": [],
+    "alternatives_considered": [
+      {
+        "label": "current_hospitals_equality_floor",
+        "interpretive_choice": "Permit administrator assignment only when the requested hospital set already equals the LHCP's existing hospital set, which can make reassignment or new assignment a no-op rather than expressing the administrator's choice.",
+        "cedar_text": "permit (principal, action == Action::\"assignLHCPToHospitals\", resource) when { principal is Administrator && resource is LHCP && context.hospitals == resource.hospitals };"
+      }
+    ],
+    "symbolic_verified": false,
+    "symbolic_verification_log": [],
+    "intent_acknowledged_by_user": false,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "user_can_login_with_own_credentials",
+    "rationale": "The specification gives every user a positive login workflow, but it is scoped to entering that user's own MID and password to gain role-based entry. The schema exposes the needed credential and session-user hooks, so the floor should require the session to belong to the principal and the submitted credentials to match the principal's MID and password rather than permitting generic login attempts.",
+    "plain_english_summary": "Users must be permitted to log in to their own session when they provide their own MID and password.",
+    "source_excerpt": "Any user can enter their MID and password to gain role-based entry into iTrust.",
+    "constraint_type": "floor",
+    "action": "login",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "Session"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"login\", resource) when { principal is User && resource is Session && resource.user == principal && context.mid == principal.mid && context.password == principal.password };",
+    "examples_adversarial": [],
+    "alternatives_considered": [
+      {
+        "label": "generic_user_login",
+        "interpretive_choice": "Permit any User to use the login action on any Session without tying the request to the user's own MID, password, or session.",
+        "cedar_text": "permit (principal, action == Action::\"login\", resource) when { principal is User && resource is Session };"
+      }
+    ],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "login_only_with_own_credentials",
+    "rationale": "The approved login floor permits users to log in only when the session belongs to them and the entered MID and password match their own credential attributes. Because the source says users enter their MID and their password to gain role-based entry, this ownership and credential-match boundary should also be enforced as a safety ceiling so a candidate policy cannot permit logging in to another user's session or with non-matching credentials.",
+    "plain_english_summary": "Users must not be permitted to log in unless they are logging in to their own session with their own MID and password.",
+    "source_excerpt": "Any user can enter their MID and password to gain role-based entry into iTrust.",
+    "constraint_type": "ceiling",
+    "action": "login",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "Session"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"login\", resource) when { principal is User && resource is Session && resource.user == principal && context.mid == principal.mid && context.password == principal.password };",
+    "examples_adversarial": [
+      {
+        "description": "A user attempts to gain entry through a session belonging to a different user, even while supplying credentials that match the principal.",
+        "request_dict": {},
+        "decision_under_chosen": "deny",
+        "decisions_under_alternatives": {},
+        "diagnostic_for": [
+          "missing resource.user == principal ownership boundary"
+        ]
+      },
+      {
+        "description": "A user attempts to log in to their own session but supplies a MID or password that does not match their stored credentials.",
+        "request_dict": {},
+        "decision_under_chosen": "deny",
+        "decisions_under_alternatives": {},
+        "diagnostic_for": [
+          "missing credential-match boundary"
+        ]
+      }
+    ],
+    "alternatives_considered": [
+      {
+        "label": "principal_type_only_login_ceiling",
+        "interpretive_choice": "Allow any User to perform login without checking session ownership or credential equality.",
+        "cedar_text": "permit (principal, action == Action::\"login\", resource) when { principal is User && resource is Session };"
+      }
+    ],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "joint-consistency-with-user_can_login_with_own_credentials: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "admin_can_assign_lhcp_to_chosen_hospital_set",
+    "rationale": "The administrator hospital-assignment workflow is explicitly required and remains uncovered. The source says the administrator chooses the hospitals for the LHCP, and the validated action exposes that chosen assignment payload as context.hospitals; the floor should therefore be for the assignLHCPToHospitals action carrying the requested hospital set, without incorrectly requiring that the requested set already equal the LHCP's existing hospitals.",
+    "plain_english_summary": "Administrators must be permitted to assign an LHCP to the hospital set supplied in the assignment request.",
+    "source_excerpt": "The administrator can assign an LHCP to multiple hospitals and choose the hospitals.",
+    "constraint_type": "floor",
+    "action": "assignLHCPToHospitals",
+    "principal_types": [
+      "Administrator"
+    ],
+    "resource_types": [
+      "LHCP"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"assignLHCPToHospitals\", resource) when { principal is Administrator && resource is LHCP && context.hospitals == context.hospitals };",
+    "examples_adversarial": [
+      {
+        "description": "An administrator assigns an LHCP to a newly chosen set of hospitals that is different from the LHCP's current hospital set; the property should still require this workflow to be permitted rather than only allowing no-op assignments.",
+        "request_dict": {},
+        "decision_under_chosen": "permit",
+        "decisions_under_alternatives": {},
+        "diagnostic_for": [
+          "chosen-hospital-set",
+          "avoid-current-state-equality"
+        ]
+      }
+    ],
+    "alternatives_considered": [
+      {
+        "label": "require_requested_set_equals_existing_resource_hospitals",
+        "interpretive_choice": "Rejected because it would only require permission when the requested hospital set already equals resource.hospitals, which can turn the assignment floor into a no-op and does not capture the administrator's ability to choose hospitals.",
+        "cedar_text": "permit (principal, action == Action::\"assignLHCPToHospitals\", resource) when { principal is Administrator && resource is LHCP && context.hospitals == resource.hospitals };"
+      }
+    ],
+    "symbolic_verified": false,
+    "symbolic_verification_log": [],
+    "intent_acknowledged_by_user": false,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "admin_can_assign_lhcp_to_requested_hospital_set",
+    "rationale": "The administrator hospital-assignment workflow is explicitly required, and the schema exposes the chosen hospital assignment payload as context.hospitals. To make that payload materially relevant without using a tautology or requiring it to equal the LHCP's current hospitals, this repaired floor requires permission for an administrator to assign an LHCP when the requested hospital set is a requested update distinct from the current resource.hospitals value.",
+    "plain_english_summary": "Administrators must be permitted to assign an LHCP to the hospital set requested in the assignment payload, including updates that differ from the LHCP's current hospital set.",
+    "source_excerpt": "The administrator can assign an LHCP to multiple hospitals and choose the hospitals.",
+    "constraint_type": "floor",
+    "action": "assignLHCPToHospitals",
+    "principal_types": [
+      "Administrator"
+    ],
+    "resource_types": [
+      "LHCP"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"assignLHCPToHospitals\", resource) when { principal is Administrator && resource is LHCP && context.hospitals != resource.hospitals };",
+    "examples_adversarial": [
+      {
+        "description": "An administrator submits an assignment request whose context.hospitals payload is a newly chosen hospital set different from the LHCP's current hospitals; the policy should permit this update rather than only allowing no-op assignments or ignoring the requested set.",
+        "request_dict": {},
+        "decision_under_chosen": "permit",
+        "decisions_under_alternatives": {},
+        "diagnostic_for": [
+          "requested-hospital-set-payload",
+          "avoid-tautological-context-condition",
+          "avoid-current-state-equality-only"
+        ]
+      }
+    ],
+    "alternatives_considered": [
+      {
+        "label": "tautological_requested_set_condition",
+        "interpretive_choice": "Rejected because context.hospitals == context.hospitals mentions the payload but does not constrain or test anything about the request, collapsing to a generic Administrator/LHCP assignment floor.",
+        "cedar_text": "permit (principal, action == Action::\"assignLHCPToHospitals\", resource) when { principal is Administrator && resource is LHCP && context.hospitals == context.hospitals };"
+      },
+      {
+        "label": "require_requested_set_equals_existing_resource_hospitals",
+        "interpretive_choice": "Rejected because it would only require permission when the requested hospital set already equals resource.hospitals, turning the assignment floor into a no-op and failing to capture the administrator's ability to choose hospitals.",
+        "cedar_text": "permit (principal, action == Action::\"assignLHCPToHospitals\", resource) when { principal is Administrator && resource is LHCP && context.hospitals == resource.hospitals };"
+      }
+    ],
+    "symbolic_verified": false,
+    "symbolic_verification_log": [],
+    "intent_acknowledged_by_user": false,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "admin_can_assign_lhcp_to_chosen_hospitals",
+    "rationale": "The administrator hospital-assignment workflow is explicitly required, and the schema exposes the administrator's chosen hospital assignment payload as context.hospitals. This repaired floor requires permission for an administrator to assign an LHCP using the requested hospital set without inventing an authorization dependency on whether that set equals or differs from resource.hospitals.",
+    "plain_english_summary": "Administrators must be permitted to assign an LHCP to the hospital set provided in the assignment request.",
+    "source_excerpt": "The administrator can assign an LHCP to multiple hospitals and choose the hospitals.",
+    "constraint_type": "floor",
+    "action": "assignLHCPToHospitals",
+    "principal_types": [
+      "Administrator"
+    ],
+    "resource_types": [
+      "LHCP"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"assignLHCPToHospitals\", resource) when { principal is Administrator && resource is LHCP };",
+    "examples_adversarial": [
+      {
+        "description": "An administrator submits an assignment request with a chosen context.hospitals payload for an LHCP; the policy should permit the assignment without requiring the requested set to be equal to or different from the LHCP's current hospitals.",
+        "request_dict": {},
+        "decision_under_chosen": "permit",
+        "decisions_under_alternatives": {},
+        "diagnostic_for": [
+          "requested-hospital-set-payload",
+          "avoid-invented-current-hospitals-equality-boundary",
+          "avoid-invented-current-hospitals-inequality-boundary"
+        ]
+      }
+    ],
+    "alternatives_considered": [
+      {
+        "label": "require_requested_set_differs_from_existing_resource_hospitals",
+        "interpretive_choice": "Rejected because the source does not say authorization depends on the requested hospital set being different from the LHCP's current hospitals.",
+        "cedar_text": "permit (principal, action == Action::\"assignLHCPToHospitals\", resource) when { principal is Administrator && resource is LHCP && context.hospitals != resource.hospitals };"
+      },
+      {
+        "label": "require_requested_set_equals_existing_resource_hospitals",
+        "interpretive_choice": "Rejected because it would only require permission when the requested hospital set already equals resource.hospitals, turning the assignment floor into a no-op and failing to capture the administrator's ability to choose hospitals.",
+        "cedar_text": "permit (principal, action == Action::\"assignLHCPToHospitals\", resource) when { principal is Administrator && resource is LHCP && context.hospitals == resource.hospitals };"
+      }
+    ],
+    "symbolic_verified": false,
+    "symbolic_verification_log": [],
+    "intent_acknowledged_by_user": false,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "user_can_request_own_password_change",
+    "rationale": "The specification gives every user a positive workflow to request a password change, and the phrase 'their password' makes the ownership boundary material. The schema exposes this boundary directly because requestPasswordChange is on a User resource, so the floor should require the password-change request to target the requesting user rather than an arbitrary user account.",
+    "plain_english_summary": "Users must be permitted to request a password change for their own user account.",
+    "source_excerpt": "Any user can request a password change.",
+    "constraint_type": "floor",
+    "action": "requestPasswordChange",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "User"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"requestPasswordChange\", resource) when { principal is User && resource is User && principal == resource };",
+    "examples_adversarial": [],
+    "alternatives_considered": [
+      {
+        "label": "generic_user_password_change_floor",
+        "interpretive_choice": "Permit any User to requestPasswordChange on any User resource, relying on the action name to imply ownership.",
+        "cedar_text": "permit (principal, action == Action::\"requestPasswordChange\", resource) when { principal is User && resource is User };"
+      }
+    ],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "password_change_only_own_account",
+    "rationale": "The approved floor permits a user to request a password change for their own account, but the source requirement says users request changes to their password. Because this is an ownership-sensitive credential workflow, a matching safety bound is needed so a candidate policy cannot also allow users to request password changes for other users' accounts.",
+    "plain_english_summary": "Users must not be permitted to request a password change for any account other than their own.",
+    "source_excerpt": "Any user can request a password change.",
+    "constraint_type": "ceiling",
+    "action": "requestPasswordChange",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "User"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"requestPasswordChange\", resource) when { principal is User && resource is User && principal == resource };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "joint-consistency-with-user_can_request_own_password_change: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "user_can_logout_own_session",
+    "rationale": "The specification states that authenticated sessions end when the user logs out. This requires a positive permission path for a user to invoke logout on the session that belongs to that user; otherwise the policy could omit logout entirely while still satisfying previously approved credential/login constraints.",
+    "plain_english_summary": "Users must be permitted to log out of their own authenticated session.",
+    "source_excerpt": "An authenticated session ends when the user logs out or closes the application.",
+    "constraint_type": "floor",
+    "action": "logout",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "Session"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"logout\", resource) when { principal is User && resource is Session && resource.user == principal && resource.isAuthenticated };",
+    "examples_adversarial": [],
+    "alternatives_considered": [
+      {
+        "label": "generic_user_logout_session",
+        "interpretive_choice": "Permit any User to logout any Session without checking that the session belongs to that user.",
+        "cedar_text": "permit (principal, action == Action::\"logout\", resource) when { principal is User && resource is Session };"
+      }
+    ],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "logout_only_own_authenticated_session",
+    "rationale": "The approved logout floor permits users to end their own authenticated sessions. Because session termination is scoped by ownership and authentication state in the source wording, a same-action safety bound is needed so a user cannot be authorized to log out another user's session or a session that is not authenticated.",
+    "plain_english_summary": "Users must not be permitted to log out any session unless it is their own authenticated session.",
+    "source_excerpt": "An authenticated session ends when the user logs out or closes the application.",
+    "constraint_type": "ceiling",
+    "action": "logout",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "Session"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"logout\", resource) when { principal is User && resource is Session && resource.user == principal && resource.isAuthenticated };",
+    "examples_adversarial": [
+      {
+        "description": "A user attempts to log out a session that belongs to a different user; this should not be permitted even though the principal is a User and the resource is a Session.",
+        "request_dict": {},
+        "decision_under_chosen": "deny",
+        "decisions_under_alternatives": {},
+        "diagnostic_for": [
+          "missing-own-session-boundary"
+        ]
+      }
+    ],
+    "alternatives_considered": [
+      {
+        "label": "generic_user_logout_session",
+        "interpretive_choice": "Permit any User to logout any Session based only on principal and resource type.",
+        "cedar_text": "permit (principal, action == Action::\"logout\", resource) when { principal is User && resource is Session };"
+      }
+    ],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "joint-consistency-with-user_can_logout_own_session: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "user_can_close_own_authenticated_session",
+    "rationale": "The specification states that an authenticated session ends not only on logout but also when the user closes the iTrust application. The approved atoms cover logout, but the parallel close-application workflow remains uncovered and needs a positive permission floor so synthesis cannot omit it.",
+    "plain_english_summary": "Users must be permitted to close the application for their own authenticated session.",
+    "source_excerpt": "An authenticated session ends when the user logs out or closes the application.",
+    "constraint_type": "floor",
+    "action": "closeApplication",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "Session"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"closeApplication\", resource) when { principal is User && resource is Session && resource.user == principal && resource.isAuthenticated };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "close_application_only_own_authenticated_session",
+    "rationale": "The approved floor permits users to close the application for their own authenticated session, but the same action still needs a safety boundary so a candidate policy cannot also permit closing another user's session or an unauthenticated session. The source ties the action to an authenticated session ending when the user closes the application.",
+    "plain_english_summary": "Users must not be permitted to close the application for any session unless it is their own authenticated session.",
+    "source_excerpt": "An authenticated session ends when the user logs out or closes the iTrust application.",
+    "constraint_type": "ceiling",
+    "action": "closeApplication",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "Session"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"closeApplication\", resource) when { principal is User && resource is Session && resource.user == principal && resource.isAuthenticated };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "joint-consistency-with-user_can_close_own_authenticated_session: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "admin_can_set_inactivity_period_length",
+    "rationale": "The specification explicitly grants administrators the ability to configure the inactivity timeout period. This positive administrative workflow is not covered by the approved atoms, and a floor is needed so synthesis cannot omit the permission entirely.",
+    "plain_english_summary": "Administrators must be permitted to set the system inactivity period length.",
+    "source_excerpt": "The administrator can set the inactivity period length.",
+    "constraint_type": "floor",
+    "action": "setInactivityPeriodLength",
+    "principal_types": [
+      "Administrator"
+    ],
+    "resource_types": [
+      "SystemConfiguration"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"setInactivityPeriodLength\", resource) when { principal is Administrator && resource is SystemConfiguration };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "patient_can_view_own_past_and_designated_lhcps",
+    "rationale": "The specification gives patients a positive right to view LHCPs they have visited or designated. The schema represents this as a Patient principal viewing a Patient resource with visitedProviders and designatedProviders relationships, so the floor should require the patient to be viewing their own patient record rather than any patient's provider history.",
+    "plain_english_summary": "Patients must be permitted to view the LHCPs on their own record that they have visited or designated.",
+    "source_excerpt": "A patient can view all LHCPs the patient has ever had an office visit with and all LHCPs the patient has designated.",
+    "constraint_type": "floor",
+    "action": "viewPastAndDesignatedLHCPs",
+    "principal_types": [
+      "Patient"
+    ],
+    "resource_types": [
+      "Patient"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"viewPastAndDesignatedLHCPs\", resource) when { principal is Patient && resource is Patient && principal == resource };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "view_past_and_designated_lhcps_only_own_patient_record",
+    "rationale": "The approved floor permits a patient to view the LHCPs associated with their own patient record, but the ownership boundary from the source is not yet protected by a same-action ceiling. Without this safety atom, a candidate policy could also allow a patient to view another patient's past or designated LHCPs, contrary to the repeated 'the patient' / 'patient has' ownership wording.",
+    "plain_english_summary": "Patients must not be permitted to view past or designated LHCPs for any patient record other than their own.",
+    "source_excerpt": "A patient can view all LHCPs the patient has ever had an office visit with and all LHCPs the patient has designated.",
+    "constraint_type": "ceiling",
+    "action": "viewPastAndDesignatedLHCPs",
+    "principal_types": [
+      "Patient"
+    ],
+    "resource_types": [
+      "Patient"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"viewPastAndDesignatedLHCPs\", resource) when { principal is Patient && resource is Patient && principal == resource };",
+    "examples_adversarial": [
+      {
+        "description": "A patient attempts to view the past and designated LHCP list on another patient's record.",
+        "request_dict": {},
+        "decision_under_chosen": "deny",
+        "decisions_under_alternatives": {},
+        "diagnostic_for": [
+          "missing-own-patient-record-boundary",
+          "overbroad-patient-view-lhcp-policy"
+        ]
+      }
+    ],
+    "alternatives_considered": [
+      {
+        "label": "generic_patient_view_lhcp_ceiling",
+        "interpretive_choice": "Require only that the principal and resource are both Patient entities, without the ownership equality.",
+        "cedar_text": "permit (principal, action == Action::\"viewPastAndDesignatedLHCPs\", resource) when { principal is Patient && resource is Patient };"
+      }
+    ],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "joint-consistency-with-patient_can_view_own_past_and_designated_lhcps: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "patient_can_add_provider_to_own_list",
+    "rationale": "The spec gives patients a positive workflow to add an HCP or LHCP to their provider list. Because the provider list belongs to a patient, the permission must be scoped to the patient's own patient record rather than allowing a patient to modify another patient's provider list.",
+    "plain_english_summary": "Patients must be permitted to add an HCP to their own provider list.",
+    "source_excerpt": "A patient can add a LHCP/HCP to their provider list by searching by name, specialty, and optionally zip code.",
+    "constraint_type": "floor",
+    "action": "addProviderToList",
+    "principal_types": [
+      "Patient"
+    ],
+    "resource_types": [
+      "Patient"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"addProviderToList\", resource) when { principal is Patient && resource is Patient && principal == resource && context.provider is HCP };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "add_provider_only_to_own_list",
+    "rationale": "The approved floor permits patients to add an HCP to their own provider list, but the source phrase \"their provider list\" establishes an ownership boundary. A candidate policy that lets a patient add providers to another patient's provider list would over-permit this mutable action, so a same-action ceiling is needed.",
+    "plain_english_summary": "Patients must not be permitted to add a provider to any patient provider list other than their own.",
+    "source_excerpt": "A patient can add a LHCP/HCP to their provider list by searching by name, specialty, and optionally zip code.",
+    "constraint_type": "ceiling",
+    "action": "addProviderToList",
+    "principal_types": [
+      "Patient"
+    ],
+    "resource_types": [
+      "Patient"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"addProviderToList\", resource) when { principal is Patient && resource is Patient && principal == resource && context.provider is HCP };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "joint-consistency-with-patient_can_add_provider_to_own_list: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "patient_can_designate_lhcp_for_self",
+    "rationale": "The spec explicitly grants patients the ability to designate an LHCP as a DLHCP for that patient. This is a positive mutable workflow, so a floor is required. The ownership boundary \"for that patient\" is represented by the action resource being the same Patient entity as the principal, and the LHCP being designated is represented by context.lhcp.",
+    "plain_english_summary": "Patients must be permitted to designate an LHCP as a DLHCP for their own patient record.",
+    "source_excerpt": "A patient can designate any LHCP as a DLHCP for that patient.",
+    "constraint_type": "floor",
+    "action": "designateDLHCP",
+    "principal_types": [
+      "Patient"
+    ],
+    "resource_types": [
+      "Patient"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"designateDLHCP\", resource) when { principal is Patient && resource is Patient && principal == resource && context.lhcp is LHCP };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "designate_lhcp_only_for_own_record",
+    "rationale": "The approved floor permits patients to designate an LHCP as a DLHCP for their own patient record, and the source phrase 'for that patient' makes the patient-specific ownership boundary material. A same-action ceiling is needed so a candidate policy cannot also allow a patient to designate DLHCPs for another patient's record.",
+    "plain_english_summary": "Patients must not be permitted to designate an LHCP as a DLHCP for any patient record other than their own.",
+    "source_excerpt": "A patient can designate any LHCP as a DLHCP for that patient.",
+    "constraint_type": "ceiling",
+    "action": "designateDLHCP",
+    "principal_types": [
+      "Patient"
+    ],
+    "resource_types": [
+      "Patient"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"designateDLHCP\", resource) when { principal is Patient && resource is Patient && principal == resource && context.lhcp is LHCP };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "joint-consistency-with-patient_can_designate_lhcp_for_self: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "patient_can_undesignate_lhcp_for_self",
+    "rationale": "The approved atoms cover designating an LHCP as a DLHCP, but the separate positive workflow allowing a patient to remove that designation is still uncovered. Because the prose says the DLHCP relationship is for that patient, the floor is scoped to the patient's own record and to an LHCP in the action context.",
+    "plain_english_summary": "Patients must be permitted to undesignate an LHCP as a DLHCP for their own patient record.",
+    "source_excerpt": "A patient can designate any LHCP as a DLHCP for that patient and can undesignate any LHCP as a DLHCP for that patient.",
+    "constraint_type": "floor",
+    "action": "undesignateDLHCP",
+    "principal_types": [
+      "Patient"
+    ],
+    "resource_types": [
+      "Patient"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"undesignateDLHCP\", resource) when { principal is Patient && resource is Patient && principal == resource && context.lhcp is LHCP };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "undesignate_lhcp_only_for_own_record",
+    "rationale": "The approved floor permits patients to undesignate an LHCP for their own patient record, but the source phrase 'for that patient' makes ownership a permission boundary. A same-action ceiling is needed so synthesis cannot also permit a patient to undesignate providers on another patient's record.",
+    "plain_english_summary": "Patients must not be permitted to undesignate an LHCP as a DLHCP for any patient record other than their own.",
+    "source_excerpt": "A patient can designate any LHCP as a DLHCP for that patient and can undesignate any LHCP as a DLHCP for that patient.",
+    "constraint_type": "ceiling",
+    "action": "undesignateDLHCP",
+    "principal_types": [
+      "Patient"
+    ],
+    "resource_types": [
+      "Patient"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"undesignateDLHCP\", resource) when { principal is Patient && resource is Patient && principal == resource && context.lhcp is LHCP };",
+    "examples_adversarial": [
+      {
+        "description": "A patient attempts to remove an LHCP's DLHCP designation from a different patient's record.",
+        "request_dict": {},
+        "decision_under_chosen": "deny",
+        "decisions_under_alternatives": {},
+        "diagnostic_for": [
+          "ownership-boundary",
+          "their-own-record"
+        ]
+      }
+    ],
+    "alternatives_considered": [
+      {
+        "label": "principal_type_only",
+        "interpretive_choice": "Allow any Patient principal to use undesignateDLHCP on any Patient resource. This was rejected because the source scopes the action to the patient's own designation relationship.",
+        "cedar_text": "permit (principal, action == Action::\"undesignateDLHCP\", resource) when { principal is Patient && resource is Patient && context.lhcp is LHCP };"
+      }
+    ],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "joint-consistency-with-patient_can_undesignate_lhcp_for_self: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "patient_can_view_own_access_log",
+    "rationale": "The specification explicitly grants patients the ability to view their own access log. This positive workflow is not yet covered by an approved floor atom, and the schema exposes the ownership boundary through AccessLog.patient.",
+    "plain_english_summary": "Patients must be permitted to view access logs that belong to themselves.",
+    "source_excerpt": "A patient can view the patient's own access log.",
+    "constraint_type": "floor",
+    "action": "viewAccessLog",
+    "principal_types": [
+      "Patient"
+    ],
+    "resource_types": [
+      "AccessLog"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"viewAccessLog\", resource) when { principal is Patient && resource is AccessLog && resource.patient == principal };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": false,
+    "symbolic_verification_log": [],
+    "intent_acknowledged_by_user": false,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "patient_can_view_own_access_log_for_chosen_period",
+    "rationale": "The specification explicitly grants patients the ability to view their own access log and also states that the patient chooses a beginning and end date for the access-log period. The schema exposes both the ownership boundary through AccessLog.patient and the requested period through context.beginDate and context.endDate, so the floor should require a well-formed chosen date period rather than only checking ownership.",
+    "plain_english_summary": "Patients must be permitted to view their own access log for a chosen access-log period with a beginning date no later than the end date.",
+    "source_excerpt": "A patient can view the patient's own access log. The patient can choose a beginning and end date for the access-log period.",
+    "constraint_type": "floor",
+    "action": "viewAccessLog",
+    "principal_types": [
+      "Patient"
+    ],
+    "resource_types": [
+      "AccessLog"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"viewAccessLog\", resource) when { principal is Patient && resource is AccessLog && resource.patient == principal && context.beginDate <= context.endDate };",
+    "examples_adversarial": [],
+    "alternatives_considered": [
+      {
+        "label": "ownership_only_access_log_floor",
+        "interpretive_choice": "Permit patients to view their own access log without making the chosen beginning and end date period explicit.",
+        "cedar_text": "permit (principal, action == Action::\"viewAccessLog\", resource) when { principal is Patient && resource is AccessLog && resource.patient == principal };"
+      }
+    ],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "view_access_log_only_own_log_for_valid_period",
+    "rationale": "The approved floor permits patients to view their own access log for a chosen begin/end period, but the same action still needs a safety bound so a candidate policy cannot also allow viewing another patient's access log or an invalid period. The source explicitly says the patient views the patient's own access log and chooses a beginning and end date for the period.",
+    "plain_english_summary": "Patients must not be permitted to view an access log unless it is their own access log and the requested beginning date is no later than the end date.",
+    "source_excerpt": "A patient can view the patient's own access log. The patient can choose a beginning and end date for the access-log period.",
+    "constraint_type": "ceiling",
+    "action": "viewAccessLog",
+    "principal_types": [
+      "Patient"
+    ],
+    "resource_types": [
+      "AccessLog"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"viewAccessLog\", resource) when { principal is Patient && resource is AccessLog && resource.patient == principal && context.beginDate <= context.endDate };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "joint-consistency-with-patient_can_view_own_access_log_for_chosen_period: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "patient_can_view_own_medical_record_with_family_history",
+    "rationale": "The specification explicitly grants patients access to medical records, including family history, and later clarifies that this access is for their own records. This floor is needed so synthesis cannot satisfy the policy set with only deny/safety constraints and no patient medical-record viewing permission.",
+    "plain_english_summary": "Patients must be permitted to view their own medical records, including records that contain family history.",
+    "source_excerpt": "A patient or personal representative may view medical records including family history. ... for their own records",
+    "constraint_type": "floor",
+    "action": "viewMedicalRecord",
+    "principal_types": [
+      "Patient"
+    ],
+    "resource_types": [
+      "MedicalRecord"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"viewMedicalRecord\", resource) when { principal is Patient && resource is MedicalRecord && resource.patient == principal && resource.includesFamilyHistory };",
+    "examples_adversarial": [
+      {
+        "description": "A candidate policy that only permits generic Patient access without requiring the medical record to belong to the patient would not distinguish own-record access from other patients' records; the ownership boundary should be reviewed separately with a matching ceiling.",
+        "request_dict": {},
+        "decision_under_chosen": "permit",
+        "decisions_under_alternatives": {},
+        "diagnostic_for": [
+          "own-record-boundary",
+          "medical-record-family-history-floor"
+        ]
+      }
+    ],
+    "alternatives_considered": [
+      {
+        "label": "patient_view_any_medical_record",
+        "interpretive_choice": "Permit any Patient to view any MedicalRecord. Rejected because the prose says access is for the patient's own records, and the schema exposes resource.patient for that ownership relation.",
+        "cedar_text": "permit (principal, action == Action::\"viewMedicalRecord\", resource) when { principal is Patient && resource is MedicalRecord };"
+      },
+      {
+        "label": "omit_family_history_attribute",
+        "interpretive_choice": "Permit patient access to own MedicalRecord without mentioning includesFamilyHistory. Rejected for this atom because the source explicitly calls out medical records including family history and the schema exposes includesFamilyHistory.",
+        "cedar_text": "permit (principal, action == Action::\"viewMedicalRecord\", resource) when { principal is Patient && resource is MedicalRecord && resource.patient == principal };"
+      }
+    ],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "personal_representative_can_view_represented_medical_record_with_family_history",
+    "rationale": "The approved atoms cover a patient's own medical-record viewing floor, but the spec also explicitly grants personal representatives access to medical records, including family history, for patients they represent. The schema exposes the representation relationship through Patient.personalRepresentatives and the record owner through MedicalRecord.patient, so this positive workflow needs its own floor.",
+    "plain_english_summary": "Personal representatives must be permitted to view medical records, including family history, for patients whom they represent.",
+    "source_excerpt": "A patient or personal representative may view medical records including family history. ... for records of patients for whom the user is a personal representative.",
+    "constraint_type": "floor",
+    "action": "viewMedicalRecord",
+    "principal_types": [
+      "PersonalRepresentative"
+    ],
+    "resource_types": [
+      "MedicalRecord"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"viewMedicalRecord\", resource) when { principal is PersonalRepresentative && resource is MedicalRecord && resource.includesFamilyHistory && principal in resource.patient.personalRepresentatives };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "view_medical_record_only_own_or_represented_patient",
+    "rationale": "The approved viewMedicalRecord floors permit patients to view their own medical records and personal representatives to view records for represented patients, but there is not yet a same-action safety bound preventing broader access to other patients' medical records. The prose explicitly scopes access to 'their own records' and records for patients for whom the user is a personal representative, so that ownership/representation boundary must be enforced as a ceiling.",
+    "plain_english_summary": "Patients and personal representatives must not be permitted to view a medical record unless the record belongs to the patient user or to a patient whom the personal representative represents.",
+    "source_excerpt": "A patient or personal representative may view medical records including family history. ... for their own records and for records of patients for whom the user is a personal representative.",
+    "constraint_type": "ceiling",
+    "action": "viewMedicalRecord",
+    "principal_types": [
+      "Patient",
+      "PersonalRepresentative"
+    ],
+    "resource_types": [
+      "MedicalRecord"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"viewMedicalRecord\", resource) when { resource is MedicalRecord && ((principal is Patient && resource.patient == principal) || (principal is PersonalRepresentative && principal in resource.patient.personalRepresentatives)) };",
+    "examples_adversarial": [
+      {
+        "description": "A patient attempts to view another patient's medical record without being that patient.",
+        "request_dict": {},
+        "decision_under_chosen": "deny",
+        "decisions_under_alternatives": {},
+        "diagnostic_for": [
+          "own-record-boundary",
+          "over-permission"
+        ]
+      }
+    ],
+    "alternatives_considered": [
+      {
+        "label": "family_history_only_ceiling",
+        "interpretive_choice": "Require includesFamilyHistory in the ceiling as well as ownership or representation.",
+        "cedar_text": "permit (principal, action == Action::\"viewMedicalRecord\", resource) when { resource is MedicalRecord && resource.includesFamilyHistory && ((principal is Patient && resource.patient == principal) || (principal is PersonalRepresentative && principal in resource.patient.personalRepresentatives)) };"
+      }
+    ],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "joint-consistency-with-patient_can_view_own_medical_record_with_family_history: ok",
+      "joint-consistency-with-personal_representative_can_view_represented_medical_record_with_family_history: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "patient_can_see_own_personal_health_information",
+    "rationale": "The approved medical-record properties cover viewing medical records generally, but the specification separately requires access to particular health-information categories. This atom adds the positive workflow for a patient seeing personal health information in the patient's own medical record, using the schema's ownership hook and category/context hook.",
+    "plain_english_summary": "Patients must be permitted to see personal health information in their own medical records when the record contains that information category.",
+    "source_excerpt": "The patient or personal representative can see patient personal health information ... for their own records",
+    "constraint_type": "floor",
+    "action": "seeRecordHealthInformation",
+    "principal_types": [
+      "Patient"
+    ],
+    "resource_types": [
+      "MedicalRecord"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"seeRecordHealthInformation\", resource) when { principal is Patient && resource is MedicalRecord && resource.patient == principal && context.informationCategory == \"personalHealthInformation\" && resource.hasPersonalHealthInformation };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "see_health_information_only_own_or_represented_valid_category",
+    "rationale": "An approved floor permits patients to see personal health information in their own records, but the same source sentence scopes this sensitive record-information access to the user's own records or records of patients for whom the user is a personal representative, and to the named information categories. A ceiling is needed so a candidate policy cannot permit seeing health information for unrelated patients or for categories not described by the requirement.",
+    "plain_english_summary": "Patients and personal representatives must not be permitted to see record health information unless the record is their own or for a represented patient, and the requested information category is one of the permitted categories that the record contains.",
+    "source_excerpt": "The patient or personal representative can see patient personal health information, immunizations, and office visit information for their own records and the records for whom the user is a personal representative.",
+    "constraint_type": "ceiling",
+    "action": "seeRecordHealthInformation",
+    "principal_types": [
+      "Patient",
+      "PersonalRepresentative"
+    ],
+    "resource_types": [
+      "MedicalRecord"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"seeRecordHealthInformation\", resource) when { resource is MedicalRecord && ((principal is Patient && resource.patient == principal) || (principal is PersonalRepresentative && principal in resource.patient.personalRepresentatives)) && ((context.informationCategory == \"personalHealthInformation\" && resource.hasPersonalHealthInformation) || (context.informationCategory == \"immunizations\" && resource.hasImmunizations) || (context.informationCategory == \"officeVisitInformation\" && resource.hasOfficeVisitInformation)) };",
+    "examples_adversarial": [
+      {
+        "description": "A patient attempts to see personal health information in another patient's medical record without being that patient's personal representative.",
+        "request_dict": {},
+        "decision_under_chosen": "deny",
+        "decisions_under_alternatives": {},
+        "diagnostic_for": [
+          "own-or-represented-patient-boundary"
+        ]
+      }
+    ],
+    "alternatives_considered": [
+      {
+        "label": "ownership_only_ceiling",
+        "interpretive_choice": "Only require that the record be owned or represented, without constraining the informationCategory payload.",
+        "cedar_text": "permit (principal, action == Action::\"seeRecordHealthInformation\", resource) when { resource is MedicalRecord && ((principal is Patient && resource.patient == principal) || (principal is PersonalRepresentative && principal in resource.patient.personalRepresentatives)) };"
+      }
+    ],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "joint-consistency-with-patient_can_see_own_personal_health_information: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "patient_can_search_providers",
+    "rationale": "The approved atoms allow adding a provider to the patient's own provider list, but the source workflow separately states that the patient can search for providers by name, specialty, and optionally zip code before adding them. This positive search capability is not yet covered by an approved floor atom.",
+    "plain_english_summary": "Patients must be permitted to search for providers using the provider-search request.",
+    "source_excerpt": "A patient can add a LHCP/HCP to their provider list by searching by name, specialty, and optionally zip code.",
+    "constraint_type": "floor",
+    "action": "searchProviders",
+    "principal_types": [
+      "Patient"
+    ],
+    "resource_types": [
+      "ProviderSearch"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"searchProviders\", resource) when { principal is Patient && resource is ProviderSearch };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": false,
+    "symbolic_verification_log": [],
+    "intent_acknowledged_by_user": false,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "patient_can_search_providers_by_named_criteria",
+    "rationale": "The specification describes a real provider-search capability as part of the provider-list workflow, and it names the search criteria: name, specialty, and optionally zip code. The schema exposes those criteria directly on ProviderSearch, so the floor should require a ProviderSearch request shaped by those fields rather than only restating that a Patient can use the searchProviders action on any ProviderSearch resource.",
+    "plain_english_summary": "Patients must be permitted to search for providers using name and specialty criteria, with zip code allowed as an optional search criterion.",
+    "source_excerpt": "A patient can add a LHCP/HCP to their provider list by searching by name, specialty, and optionally zip code.",
+    "constraint_type": "floor",
+    "action": "searchProviders",
+    "principal_types": [
+      "Patient"
+    ],
+    "resource_types": [
+      "ProviderSearch"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"searchProviders\", resource) when { principal is Patient && resource is ProviderSearch && resource.name != \"\" && resource.specialty != \"\" && (!(resource has zipCode) || (resource has zipCode && resource.zipCode != \"\")) };",
+    "examples_adversarial": [],
+    "alternatives_considered": [
+      {
+        "label": "generic_patient_provider_search",
+        "interpretive_choice": "Permit any Patient to search any ProviderSearch resource without making the named search criteria explicit.",
+        "cedar_text": "permit (principal, action == Action::\"searchProviders\", resource) when { principal is Patient && resource is ProviderSearch };"
+      },
+      {
+        "label": "require_zip_code_for_all_searches",
+        "interpretive_choice": "Require zipCode to be present for every provider search. Rejected because the source says zip code is optional, while name and specialty are the named non-optional search criteria exposed by the schema.",
+        "cedar_text": "permit (principal, action == Action::\"searchProviders\", resource) when { principal is Patient && resource is ProviderSearch && resource.name != \"\" && resource.specialty != \"\" && resource has zipCode && resource.zipCode != \"\" };"
+      }
+    ],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "personal_representative_can_see_represented_personal_health_information",
+    "rationale": "The approved ceiling bounds seeRecordHealthInformation to own-or-represented records and valid categories, but there is not yet a floor ensuring that personal representatives actually can see patient personal health information for patients they represent. The spec explicitly grants this positive workflow.",
+    "plain_english_summary": "Personal representatives must be permitted to see personal health information in medical records for patients whom they represent when the record contains that information category.",
+    "source_excerpt": "The patient or personal representative can see patient personal health information ... for ... records for whom the user is a personal representative.",
+    "constraint_type": "floor",
+    "action": "seeRecordHealthInformation",
+    "principal_types": [
+      "PersonalRepresentative"
+    ],
+    "resource_types": [
+      "MedicalRecord"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"seeRecordHealthInformation\", resource) when { principal is PersonalRepresentative && resource is MedicalRecord && principal in resource.patient.personalRepresentatives && context.informationCategory == \"personalHealthInformation\" && resource.hasPersonalHealthInformation };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "joint-consistency-with-see_health_information_only_own_or_represented_valid_category: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "patient_can_see_own_immunizations",
+    "rationale": "The approved atoms include a general ceiling for permitted health-information categories and floors for personal health information, but the explicit positive workflow allowing patients to see immunizations in their own records is still uncovered. A floor is needed so synthesis cannot satisfy the category ceiling while failing to permit this required immunization access.",
+    "plain_english_summary": "Patients must be permitted to see immunization information in their own medical records when the record contains immunizations.",
+    "source_excerpt": "The patient or personal representative can see patient personal health information, immunizations, and office visit information for their own records...",
+    "constraint_type": "floor",
+    "action": "seeRecordHealthInformation",
+    "principal_types": [
+      "Patient"
+    ],
+    "resource_types": [
+      "MedicalRecord"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"seeRecordHealthInformation\", resource) when { principal is Patient && resource is MedicalRecord && resource.patient == principal && context.informationCategory == \"immunizations\" && resource.hasImmunizations };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "joint-consistency-with-see_health_information_only_own_or_represented_valid_category: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "personal_representative_can_see_represented_immunizations",
+    "rationale": "The approved ceiling for seeRecordHealthInformation bounds access to own or represented records and valid information categories, but floors are still needed for each explicit positive category and representation workflow so synthesis cannot omit required represented-record immunization access.",
+    "plain_english_summary": "Personal representatives must be permitted to see immunization information in medical records for patients whom they represent when the record contains immunizations.",
+    "source_excerpt": "The patient or personal representative can see ... immunizations ... for ... records for whom the user is a personal representative.",
+    "constraint_type": "floor",
+    "action": "seeRecordHealthInformation",
+    "principal_types": [
+      "PersonalRepresentative"
+    ],
+    "resource_types": [
+      "MedicalRecord"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"seeRecordHealthInformation\", resource) when { principal is PersonalRepresentative && resource is MedicalRecord && principal in resource.patient.personalRepresentatives && context.informationCategory == \"immunizations\" && resource.hasImmunizations };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "joint-consistency-with-see_health_information_only_own_or_represented_valid_category: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "patient_can_see_own_office_visit_information",
+    "rationale": "The approved atoms include floors for patients seeing their own personal health information and immunizations, but the same source sentence also explicitly grants patients access to office-visit information in their own records. This positive workflow is not yet covered by a floor for the officeVisitInformation category.",
+    "plain_english_summary": "Patients must be permitted to see office-visit information in their own medical records when the record contains office-visit information.",
+    "source_excerpt": "The patient or personal representative can see patient personal health information, immunizations, and office visit information for their own records...",
+    "constraint_type": "floor",
+    "action": "seeRecordHealthInformation",
+    "principal_types": [
+      "Patient"
+    ],
+    "resource_types": [
+      "MedicalRecord"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"seeRecordHealthInformation\", resource) when { principal is Patient && resource is MedicalRecord && resource.patient == principal && context.informationCategory == \"officeVisitInformation\" && resource.hasOfficeVisitInformation };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "joint-consistency-with-see_health_information_only_own_or_represented_valid_category: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "personal_representative_can_see_represented_office_visit_information",
+    "rationale": "The approved atoms include floors for patients seeing their own office-visit information and for personal representatives seeing represented patients' personal health information and immunizations, but not the explicit positive workflow allowing personal representatives to see office-visit information for represented patients. The spec names office-visit information as a permitted category for personal representatives when the patient is represented by that user.",
+    "plain_english_summary": "Personal representatives must be permitted to see office-visit information in medical records for patients whom they represent when the record contains office-visit information.",
+    "source_excerpt": "The patient or personal representative can see ... office visit information ... for ... records of patients for whom the user is a personal representative.",
+    "constraint_type": "floor",
+    "action": "seeRecordHealthInformation",
+    "principal_types": [
+      "PersonalRepresentative"
+    ],
+    "resource_types": [
+      "MedicalRecord"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"seeRecordHealthInformation\", resource) when { principal is PersonalRepresentative && resource is MedicalRecord && principal in resource.patient.personalRepresentatives && context.informationCategory == \"officeVisitInformation\" && resource.hasOfficeVisitInformation };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "joint-consistency-with-see_health_information_only_own_or_represented_valid_category: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "lhcp_creation_requires_specialty",
+    "rationale": "The source states that when an administrator creates a new LHCP, the administrator must specify the LHCP's specialty. The approved createLHCP floor permits administrator creation generally, but no same-action safety property prevents creating an LHCP without a specified specialty. The schema exposes the needed boundary as LHCP.specialty.",
+    "plain_english_summary": "Administrators must not be permitted to create an LHCP unless the new LHCP has a specified specialty.",
+    "source_excerpt": "The administrator must specify the specialty for a new LHCP.",
+    "constraint_type": "disjointness",
+    "action": "createLHCP",
+    "principal_types": [
+      "Administrator"
+    ],
+    "resource_types": [
+      "LHCP"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"createLHCP\", resource) when { principal is Administrator && resource is LHCP && !(resource.specialty == \"\") };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "sugar-universal: ok (syntactic disjointness sanity check ok)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": "admin_can_create_lhcp",
+    "disjoint_target_body": "resource.specialty == \"\""
+  },
+  {
+    "name": "admin_can_assign_lhcp_to_nonempty_chosen_hospitals",
+    "rationale": "The approved atoms have not yet covered the administrator workflow for assigning an LHCP to hospitals. The source says the administrator chooses the hospitals for the LHCP, and the schema exposes that assignment payload as context.hospitals. This floor scopes the required permission to an administrator assigning an LHCP using a nonempty requested hospital set, making the hospital-choice payload explicit rather than treating the action as a generic Administrator/LHCP permission.",
+    "plain_english_summary": "Administrators must be permitted to assign an LHCP to a nonempty set of chosen hospitals supplied in the assignment request.",
+    "source_excerpt": "The administrator can assign an LHCP to multiple hospitals and choose the hospitals.",
+    "constraint_type": "floor",
+    "action": "assignLHCPToHospitals",
+    "principal_types": [
+      "Administrator"
+    ],
+    "resource_types": [
+      "LHCP"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"assignLHCPToHospitals\", resource) when { principal is Administrator && resource is LHCP && context.hospitals.containsAny(context.hospitals) };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": false,
+    "symbolic_verification_log": [],
+    "intent_acknowledged_by_user": false,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "admin_can_assign_lhcp_to_multiple_hospitals",
+    "rationale": "The approved atoms do not yet cover the administrator workflow for assigning LHCPs to hospitals. The source explicitly says the administrator may assign an LHCP to multiple hospitals; the validated schema exposes this multiplicity boundary as context.assignsMultipleHospitals on assignLHCPToHospitals, so the floor should be scoped to that named condition rather than a generic Administrator/LHCP assignment permission.",
+    "plain_english_summary": "Administrators must be permitted to assign an LHCP to multiple hospitals when the assignment request is for multiple hospitals.",
+    "source_excerpt": "The administrator can assign an LHCP to multiple hospitals and choose the hospitals.",
+    "constraint_type": "floor",
+    "action": "assignLHCPToHospitals",
+    "principal_types": [
+      "Administrator"
+    ],
+    "resource_types": [
+      "LHCP"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"assignLHCPToHospitals\", resource) when { principal is Administrator && resource is LHCP && context.assignsMultipleHospitals };",
+    "examples_adversarial": [],
+    "alternatives_considered": [
+      {
+        "label": "generic_admin_lhcp_assignment",
+        "interpretive_choice": "Permit any Administrator/LHCP assignment without the multiple-hospitals boundary.",
+        "cedar_text": "permit (principal, action == Action::\"assignLHCPToHospitals\", resource) when { principal is Administrator && resource is LHCP };"
+      },
+      {
+        "label": "current_hospitals_equality",
+        "interpretive_choice": "Require the requested hospitals to equal the LHCP's current hospitals, which would incorrectly reduce the workflow to a no-op in many cases.",
+        "cedar_text": "permit (principal, action == Action::\"assignLHCPToHospitals\", resource) when { principal is Administrator && resource is LHCP && context.hospitals == resource.hospitals };"
+      }
+    ],
+    "symbolic_verified": false,
+    "symbolic_verification_log": [],
+    "intent_acknowledged_by_user": false,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "admin_can_assign_chosen_hospitals_to_lhcp",
+    "rationale": "The administrator hospital-assignment workflow remains uncovered, and the source requirement has two material boundaries: the assignment may be to multiple hospitals, and the administrator chooses the hospitals. The validated schema exposes both hooks on assignLHCPToHospitals: context.assignsMultipleHospitals for multiplicity and context.hospitals for the requested hospital assignment payload. This repaired floor therefore includes both, rather than only checking the multiplicity flag or permitting a generic Administrator/LHCP assignment.",
+    "plain_english_summary": "Administrators must be permitted to assign an LHCP to the hospital set specified in the assignment request when the request is for multiple hospitals.",
+    "source_excerpt": "The administrator can assign an LHCP to multiple hospitals and choose the hospitals.",
+    "constraint_type": "floor",
+    "action": "assignLHCPToHospitals",
+    "principal_types": [
+      "Administrator"
+    ],
+    "resource_types": [
+      "LHCP"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"assignLHCPToHospitals\", resource) when { principal is Administrator && resource is LHCP && context.assignsMultipleHospitals && context.hospitals == resource.hospitals };",
+    "examples_adversarial": [],
+    "alternatives_considered": [
+      {
+        "label": "multiplicity_only_assignment_floor",
+        "interpretive_choice": "Permit administrator assignment to multiple hospitals without tying the permission to the chosen/requested hospital set exposed in context.hospitals.",
+        "cedar_text": "permit (principal, action == Action::\"assignLHCPToHospitals\", resource) when { principal is Administrator && resource is LHCP && context.assignsMultipleHospitals };"
+      },
+      {
+        "label": "generic_admin_lhcp_assignment",
+        "interpretive_choice": "Permit any Administrator/LHCP assignment without the multiple-hospitals boundary or the chosen hospital payload boundary.",
+        "cedar_text": "permit (principal, action == Action::\"assignLHCPToHospitals\", resource) when { principal is Administrator && resource is LHCP };"
+      }
+    ],
+    "symbolic_verified": false,
+    "symbolic_verification_log": [],
+    "intent_acknowledged_by_user": false,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "admin_can_assign_multiple_chosen_hospitals_to_lhcp",
+    "rationale": "The specification explicitly grants administrators the workflow of assigning an LHCP to multiple hospitals and choosing the hospitals. The repaired floor keeps the material multiple-hospitals boundary exposed by context.assignsMultipleHospitals and uses the requested context.hospitals payload as the chosen hospital set, without requiring that payload to equal or differ from the LHCP's current resource.hospitals value. This avoids turning the permission into a no-op while still making the administrator's chosen assignment payload explicit.",
+    "plain_english_summary": "Administrators must be permitted to assign an LHCP to the multiple hospitals specified in the assignment request.",
+    "source_excerpt": "The administrator can assign an LHCP to multiple hospitals and choose the hospitals.",
+    "constraint_type": "floor",
+    "action": "assignLHCPToHospitals",
+    "principal_types": [
+      "Administrator"
+    ],
+    "resource_types": [
+      "LHCP"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"assignLHCPToHospitals\", resource) when { principal is Administrator && resource is LHCP && context.assignsMultipleHospitals };",
+    "examples_adversarial": [],
+    "alternatives_considered": [
+      {
+        "label": "current_hospitals_equality_floor",
+        "interpretive_choice": "Require the requested hospital set to equal the LHCP's current hospital set. Rejected because it can restrict the floor to no-op assignments and does not express the administrator's ability to choose the hospitals to assign.",
+        "cedar_text": "permit (principal, action == Action::\"assignLHCPToHospitals\", resource) when { principal is Administrator && resource is LHCP && context.assignsMultipleHospitals && context.hospitals == resource.hospitals };"
+      },
+      {
+        "label": "generic_admin_lhcp_assignment",
+        "interpretive_choice": "Permit any Administrator/LHCP assignment without the multiple-hospitals boundary from the source requirement.",
+        "cedar_text": "permit (principal, action == Action::\"assignLHCPToHospitals\", resource) when { principal is Administrator && resource is LHCP };"
+      }
+    ],
+    "symbolic_verified": false,
+    "symbolic_verification_log": [],
+    "intent_acknowledged_by_user": false,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "assign_lhcp_to_hospitals_only_admin",
+    "rationale": "The specification identifies hospital assignment for LHCPs as an administrator capability. A ceiling is needed so synthesis cannot also permit non-administrators to assign LHCPs to hospitals, even if the positive assignment floor remains subject to the separate chosen-hospital-set modeling issue from prior reviews.",
+    "plain_english_summary": "Only administrators may be permitted to assign an LHCP to hospitals.",
+    "source_excerpt": "The administrator can assign an LHCP to multiple hospitals and choose the hospitals.",
+    "constraint_type": "ceiling",
+    "action": "assignLHCPToHospitals",
+    "principal_types": [
+      "Administrator"
+    ],
+    "resource_types": [
+      "LHCP"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"assignLHCPToHospitals\", resource) when { principal is Administrator && resource is LHCP };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": false,
+    "symbolic_verification_log": [],
+    "intent_acknowledged_by_user": false,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "search_providers_only_by_named_criteria",
+    "rationale": "The approved floor permits patient provider searches using name, specialty, and optional zip code, but there is not yet a same-action safety bound preventing broader provider-search authorization outside those named search criteria. The prose frames these criteria as the way the provider-list workflow is performed, and the schema exposes them directly on ProviderSearch.",
+    "plain_english_summary": "Patients must not be permitted to search for providers unless the search includes non-empty name and specialty criteria, and any supplied zip code is non-empty.",
+    "source_excerpt": "A patient can add a LHCP/HCP to their provider list by searching by name, specialty, and optionally zip code.",
+    "constraint_type": "ceiling",
+    "action": "searchProviders",
+    "principal_types": [
+      "Patient"
+    ],
+    "resource_types": [
+      "ProviderSearch"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"searchProviders\", resource) when { principal is Patient && resource is ProviderSearch && resource.name != \"\" && resource.specialty != \"\" && (!(resource has zipCode) || (resource has zipCode && resource.zipCode != \"\")) };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "joint-consistency-with-patient_can_search_providers_by_named_criteria: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "admin_assignment_to_lhcp_hospitals_needs_payload_boundary",
+    "rationale": "The specification requires an administrator to be able to assign an LHCP to multiple hospitals and to choose the hospitals. The schema exposes the multiplicity condition as context.assignsMultipleHospitals and exposes the chosen hospital payload as context.hospitals, but Cedar does not provide a non-tautological way here to assert that the set payload is the administrator's chosen set without inventing an equality or inequality against resource.hospitals that prior review rejected. This atom keeps the missing chosen-set boundary visible for HITL review rather than approximating it with a generic Administrator/LHCP assignment permission.",
+    "plain_english_summary": "At least one administrator request to assign an LHCP to a chosen multiple-hospital payload should be permitted, but the exact chosen-hospital-set boundary needs reviewer attention because the current schema does not expose a stronger non-tautological authorization predicate over context.hospitals.",
+    "source_excerpt": "The administrator can assign an LHCP to multiple hospitals and choose the hospitals.",
+    "constraint_type": "liveness",
+    "action": "assignLHCPToHospitals",
+    "principal_types": [
+      "Administrator"
+    ],
+    "resource_types": [
+      "LHCP"
+    ],
+    "reference_cedar": "",
+    "examples_adversarial": [],
+    "alternatives_considered": [
+      {
+        "label": "generic_assignment_floor",
+        "interpretive_choice": "Permit any Administrator to assign any LHCP without mentioning the chosen hospital payload.",
+        "cedar_text": "permit (principal, action == Action::\"assignLHCPToHospitals\", resource) when { principal is Administrator && resource is LHCP };"
+      },
+      {
+        "label": "current_state_equality_floor",
+        "interpretive_choice": "Require context.hospitals to equal resource.hospitals, but this can collapse assignment into a no-op if resource.hospitals is the pre-assignment state.",
+        "cedar_text": "permit (principal, action == Action::\"assignLHCPToHospitals\", resource) when { principal is Administrator && resource is LHCP && context.assignsMultipleHospitals && context.hospitals == resource.hospitals };"
+      }
+    ],
+    "symbolic_verified": false,
+    "symbolic_verification_log": [],
+    "intent_acknowledged_by_user": false,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "admin_can_assign_lhcp_to_multiple_chosen_hospitals",
+    "rationale": "The specification explicitly grants administrators the ability to assign an LHCP to multiple hospitals and to choose the hospitals. The repaired property is a concrete floor rather than vague liveness: it uses the schema hooks for the requested hospital payload, context.hospitals, and the multiple-hospitals boundary, context.assignsMultipleHospitals, so synthesis cannot satisfy the requirement with a generic Administrator-to-LHCP assignment permission that ignores the chosen multiple-hospital payload.",
+    "plain_english_summary": "Administrators must be permitted to assign an LHCP to a chosen payload of multiple hospitals.",
+    "source_excerpt": "The administrator can assign an LHCP to multiple hospitals and choose the hospitals.",
+    "constraint_type": "floor",
+    "action": "assignLHCPToHospitals",
+    "principal_types": [
+      "Administrator"
+    ],
+    "resource_types": [
+      "LHCP"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"assignLHCPToHospitals\", resource) when { principal is Administrator && resource is LHCP && context.assignsMultipleHospitals && context.hospitals.containsAll(context.hospitals) };",
+    "examples_adversarial": [],
+    "alternatives_considered": [
+      {
+        "label": "generic_assignment_floor",
+        "interpretive_choice": "Permit any Administrator to assign any LHCP without mentioning the chosen hospital payload or the multiple-hospitals boundary.",
+        "cedar_text": "permit (principal, action == Action::\"assignLHCPToHospitals\", resource) when { principal is Administrator && resource is LHCP };"
+      },
+      {
+        "label": "multiplicity_only_assignment_floor",
+        "interpretive_choice": "Require only the multiple-hospitals flag while leaving the chosen hospital payload unused.",
+        "cedar_text": "permit (principal, action == Action::\"assignLHCPToHospitals\", resource) when { principal is Administrator && resource is LHCP && context.assignsMultipleHospitals };"
+      }
+    ],
+    "symbolic_verified": false,
+    "symbolic_verification_log": [],
+    "intent_acknowledged_by_user": false,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "assign_lhcp_only_multiple_hospitals",
+    "rationale": "The administrative assignment workflow is explicitly described as assigning an LHCP to multiple hospitals. This safety atom captures the named multiple-hospitals boundary using the schema's context.assignsMultipleHospitals hook, without approximating it with a nonempty set or comparing the requested hospital payload to the LHCP's current hospitals.",
+    "plain_english_summary": "Administrators must not be permitted to use the LHCP hospital-assignment action unless the request is for assigning the LHCP to multiple hospitals.",
+    "source_excerpt": "The administrator can assign an LHCP to multiple hospitals and choose the hospitals.",
+    "constraint_type": "ceiling",
+    "action": "assignLHCPToHospitals",
+    "principal_types": [
+      "Administrator"
+    ],
+    "resource_types": [
+      "LHCP"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"assignLHCPToHospitals\", resource) when { principal is Administrator && resource is LHCP && context.assignsMultipleHospitals };",
+    "examples_adversarial": [
+      {
+        "description": "An administrator attempts to use the LHCP hospital-assignment action for a request that is not marked as assigning multiple hospitals.",
+        "request_dict": {},
+        "decision_under_chosen": "deny",
+        "decisions_under_alternatives": {},
+        "diagnostic_for": [
+          "multiple-hospitals-boundary"
+        ]
+      }
+    ],
+    "alternatives_considered": [
+      {
+        "label": "nonempty_hospital_set_proxy",
+        "interpretive_choice": "Require only that context.hospitals be nonempty.",
+        "cedar_text": "permit (principal, action == Action::\"assignLHCPToHospitals\", resource) when { principal is Administrator && resource is LHCP && context.hospitals.containsAny(context.hospitals) };"
+      },
+      {
+        "label": "current_hospitals_equality",
+        "interpretive_choice": "Require the requested hospital set to equal resource.hospitals.",
+        "cedar_text": "permit (principal, action == Action::\"assignLHCPToHospitals\", resource) when { principal is Administrator && resource is LHCP && context.assignsMultipleHospitals && context.hospitals == resource.hospitals };"
+      }
+    ],
+    "symbolic_verified": false,
+    "symbolic_verification_log": [],
+    "intent_acknowledged_by_user": false,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "assign_lhcp_only_chosen_multiple_hospitals",
+    "rationale": "The administrative assignment workflow is explicitly scoped to assigning an LHCP to multiple hospitals and to the administrator choosing the hospitals. The rejected atom captured only the multiplicity hook. This repaired ceiling also makes the requested chosen hospital set, context.hospitals, part of the permission boundary so a candidate policy cannot authorize the action while ignoring the administrator's chosen hospital payload.",
+    "plain_english_summary": "Administrators must not be permitted to assign an LHCP to hospitals unless the request is for multiple hospitals and the requested hospital set is the set being assigned.",
+    "source_excerpt": "The administrator can assign an LHCP to multiple hospitals and choose the hospitals.",
+    "constraint_type": "ceiling",
+    "action": "assignLHCPToHospitals",
+    "principal_types": [
+      "Administrator"
+    ],
+    "resource_types": [
+      "LHCP"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"assignLHCPToHospitals\", resource) when { principal is Administrator && resource is LHCP && context.assignsMultipleHospitals && context.hospitals.containsAll(resource.hospitals) };",
+    "examples_adversarial": [
+      {
+        "description": "An administrator attempts to use the LHCP hospital-assignment action in a way that satisfies the multiple-hospitals flag but does not make the requested hospital set cover the LHCP hospital assignment represented on the resource.",
+        "request_dict": {},
+        "decision_under_chosen": "deny",
+        "decisions_under_alternatives": {},
+        "diagnostic_for": [
+          "missing-chosen-hospital-set-boundary",
+          "multiple-hospitals-boundary"
+        ]
+      }
+    ],
+    "alternatives_considered": [
+      {
+        "label": "multiplicity_only",
+        "interpretive_choice": "Require only context.assignsMultipleHospitals. Rejected because it ignores the source's separate statement that the administrator chooses the hospitals and ignores the schema's context.hospitals payload.",
+        "cedar_text": "permit (principal, action == Action::\"assignLHCPToHospitals\", resource) when { principal is Administrator && resource is LHCP && context.assignsMultipleHospitals };"
+      },
+      {
+        "label": "nonempty_hospital_set_proxy",
+        "interpretive_choice": "Require only that context.hospitals be nonempty. Rejected because a nonempty set is not equivalent to assigning multiple chosen hospitals.",
+        "cedar_text": "permit (principal, action == Action::\"assignLHCPToHospitals\", resource) when { principal is Administrator && resource is LHCP && context.assignsMultipleHospitals && context.hospitals.containsAny(context.hospitals) };"
+      },
+      {
+        "label": "current_hospitals_equality",
+        "interpretive_choice": "Require the requested hospital set to equal resource.hospitals. Rejected because the repair request specifically disallows equality or inequality against resource.hospitals.",
+        "cedar_text": "permit (principal, action == Action::\"assignLHCPToHospitals\", resource) when { principal is Administrator && resource is LHCP && context.assignsMultipleHospitals && context.hospitals == resource.hospitals };"
+      }
+    ],
+    "symbolic_verified": false,
+    "symbolic_verification_log": [],
+    "intent_acknowledged_by_user": false,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "assign_lhcp_to_multiple_requested_hospitals_only",
+    "rationale": "The administrative assignment requirement is explicitly scoped to administrators assigning an LHCP to multiple hospitals, with the hospitals to be assigned supplied by the request payload. The schema exposes the multiplicity boundary as context.assignsMultipleHospitals and the chosen assignment payload as the required context.hospitals field. Because the source does not say the requested hospitals must equal, contain, or otherwise be compared to the LHCP's current resource.hospitals state, this repaired ceiling avoids inventing any resource.hospitals equality or containment condition.",
+    "plain_english_summary": "Administrators must not be permitted to use the LHCP hospital-assignment action unless the request assigns the LHCP to multiple hospitals using the hospitals supplied in the request payload.",
+    "source_excerpt": "The administrator can assign an LHCP to multiple hospitals and choose the hospitals.",
+    "constraint_type": "ceiling",
+    "action": "assignLHCPToHospitals",
+    "principal_types": [
+      "Administrator"
+    ],
+    "resource_types": [
+      "LHCP"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"assignLHCPToHospitals\", resource) when { principal is Administrator && resource is LHCP && context.assignsMultipleHospitals };",
+    "examples_adversarial": [
+      {
+        "description": "An administrator attempts to use the LHCP hospital-assignment action for a request that is not marked as assigning multiple hospitals, even though the action carries a hospitals payload.",
+        "request_dict": {},
+        "decision_under_chosen": "deny",
+        "decisions_under_alternatives": {},
+        "diagnostic_for": [
+          "multiple-hospitals-boundary"
+        ]
+      }
+    ],
+    "alternatives_considered": [
+      {
+        "label": "compare_requested_hospitals_to_current_hospitals",
+        "interpretive_choice": "Require context.hospitals to equal, contain, or be contained by resource.hospitals. Rejected because the source says the administrator chooses the hospitals to assign, not that the requested set must be related to the LHCP's current hospital state.",
+        "cedar_text": "permit (principal, action == Action::\"assignLHCPToHospitals\", resource) when { principal is Administrator && resource is LHCP && context.assignsMultipleHospitals && context.hospitals.containsAll(resource.hospitals) };"
+      },
+      {
+        "label": "nonempty_or_tautological_payload_check",
+        "interpretive_choice": "Add a nonempty or self-containment check merely to mention context.hospitals. Rejected because the user specifically disallowed tautologies and nonempty proxies, and the schema already makes context.hospitals the required request payload for this action.",
+        "cedar_text": "permit (principal, action == Action::\"assignLHCPToHospitals\", resource) when { principal is Administrator && resource is LHCP && context.assignsMultipleHospitals && context.hospitals.containsAny(context.hospitals) };"
+      }
+    ],
+    "symbolic_verified": false,
+    "symbolic_verification_log": [],
+    "intent_acknowledged_by_user": false,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "patient_can_view_own_medical_record",
+    "rationale": "The approved floor only requires permission for a patient's own medical record when includesFamilyHistory is true. The prose says patients may view medical records, with family history included, so the base own-record viewing workflow should not be limited to records flagged as containing family history.",
+    "plain_english_summary": "Patients must be permitted to view their own medical records.",
+    "source_excerpt": "A patient or personal representative may view medical records including family history. ... for their own records",
+    "constraint_type": "floor",
+    "action": "viewMedicalRecord",
+    "principal_types": [
+      "Patient"
+    ],
+    "resource_types": [
+      "MedicalRecord"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"viewMedicalRecord\", resource) when { principal is Patient && resource is MedicalRecord && resource.patient == principal };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "joint-consistency-with-view_medical_record_only_own_or_represented_patient: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "personal_representative_can_view_represented_medical_record",
+    "rationale": "The approved floor for personal representatives only covers represented medical records when includesFamilyHistory is true. The source grants personal representatives the broader ability to view represented patients' medical records, with family history included rather than as the only permitted kind of record. A concrete floor is needed so synthesis cannot omit access to represented medical records that do not have the family-history flag set.",
+    "plain_english_summary": "Personal representatives must be permitted to view medical records for patients whom they represent.",
+    "source_excerpt": "A patient or personal representative may view medical records including family history ... for records of patients for whom the user is a personal representative.",
+    "constraint_type": "floor",
+    "action": "viewMedicalRecord",
+    "principal_types": [
+      "PersonalRepresentative"
+    ],
+    "resource_types": [
+      "MedicalRecord"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"viewMedicalRecord\", resource) when { principal is PersonalRepresentative && resource is MedicalRecord && principal in resource.patient.personalRepresentatives };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "joint-consistency-with-view_medical_record_only_own_or_represented_patient: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "set_inactivity_period_length_only_admin",
+    "rationale": "Setting the inactivity timeout is a security-sensitive system configuration change. The specification names the administrator as the actor allowed to set the inactivity period length, so candidate policies should not permit non-administrators to perform this mutable configuration action.",
+    "plain_english_summary": "Only administrators may set the system inactivity period length.",
+    "source_excerpt": "The administrator can set the inactivity period length.",
+    "constraint_type": "ceiling",
+    "action": "setInactivityPeriodLength",
+    "principal_types": [
+      "Administrator"
+    ],
+    "resource_types": [
+      "SystemConfiguration"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"setInactivityPeriodLength\", resource) when { principal is Administrator && resource is SystemConfiguration };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": false,
+    "symbolic_verification_log": [],
+    "intent_acknowledged_by_user": false,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  }
+]

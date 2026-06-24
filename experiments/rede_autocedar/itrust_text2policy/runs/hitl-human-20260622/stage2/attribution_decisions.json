@@ -1,0 +1,14 @@
+[
+  {
+    "atom_name": "hcp_can_create_patient",
+    "span_text": "An HCP can create a patient and enter the patient as a new user of the system.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "create_patient_requires_active_own_session",
+    "span_text": "Electronic sessions must terminate after the configured inactivity period; after the inactivity limit is exceeded, all authorization is disabled.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  }
+]

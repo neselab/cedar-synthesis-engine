@@ -1,0 +1,693 @@
+[
+  {
+    "atom_name": "patient_view_own_access_log_floor",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "patient_view_access_log_own_ceiling",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "personal_representative_view_represented_access_log_floor",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "personal_representative_view_represented_access_log_ceiling",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "hcp_no_patient_credential_view_disjointness",
+    "action": "reject",
+    "reason": "Stage 2 decomposition critic repair: The source boundary is field-specific: HCPs must not view a patient's password or security question. The proposed atom substitutes a broader proxy that forbids HCP viewCredential access to Patient resources generally because the schema lacks a way to distinguish which credential field is being viewed. That proxy is too broad for the source excerpt and should not be accepted as equivalent. Repair the schema/property to expose the missing field-level credential boundary, such as a credential-field selector or separate actions/resources for password and securityQuestion viewing, then state the disjointness only for those patient credential fields.",
+    "edit_delta": {
+      "critic_decision": "repair",
+      "critic_tags": [
+        "schema-gap",
+        "missing-boundary:credential-field-selector",
+        "patient-credential-secrecy",
+        "too-broad-proxy"
+      ]
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "hcp_no_patient_password_or_security_question_view_disjointness",
+    "action": "reject",
+    "reason": "Stage 2 decomposition critic repair: The source requirement is materially useful and the schema now exposes the needed credential-field boundary via context.credentialField, so this is not a schema gap. However the proposed reference Cedar is framed as a broad positive permit for HCP credential viewing whenever the resource is not a Patient password/securityQuestion, which goes beyond the source excerpt. Repair the atom to state only the disjointness/forbid condition: no HCP permit for viewCredential when the resource is a Patient and context.credentialField is \"password\" or \"securityQuestion\". Do not imply a general HCP permission to view other credential fields or non-patient credentials from this negative requirement.",
+    "edit_delta": {
+      "critic_decision": "repair",
+      "critic_tags": [
+        "repair-reference-cedar",
+        "patient-credential-secrecy",
+        "credential-field-selector",
+        "overbroad-positive-permit",
+        "field-specific-boundary-present"
+      ]
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "hcp_patient_sensitive_credential_view_forbidden_disjointness",
+    "action": "reject",
+    "reason": "Stage 2 decomposition critic repair: The source boundary is materially useful and now schema-expressible via context.credentialField, but the atom still encodes the disjointness as a broad positive permit for HCP viewCredential whenever the target is not a Patient password or securityQuestion. That repeats the previously rejected overbroad-complement pattern and implies permissions not granted by the negative source requirement. Repair the reference/formulation to state only that no HCP permission may cover viewCredential when resource is a Patient and context.credentialField is \"password\" or \"securityQuestion\"; do not grant or characterize access to other credential fields or non-patient credentials.",
+    "edit_delta": {
+      "critic_decision": "repair",
+      "critic_tags": [
+        "repair-reference-cedar",
+        "patient-credential-secrecy",
+        "credential-field-selector",
+        "overbroad-positive-permit",
+        "disjointness-not-complement-permit"
+      ]
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "hcp_patient_sensitive_credential_view_forbidden_target_only_disjointness",
+    "action": "reject",
+    "reason": "Stage 2 decomposition critic repair: The source boundary is useful and schema-expressible via context.credentialField plus Patient-as-User resource targeting, and the atom's summary/disjoint_target_body correctly identify the forbidden slice. However the reference_cedar still encodes the previously rejected broad complement permit: it permits HCP viewCredential for every User target except Patient password/securityQuestion. That implies permissions beyond the negative source requirement. Repair the atom so the Cedar/reference formulation is target-only disjointness or a forbid-style forbidden slice, and do not characterize access to other credential fields or non-patient credentials.",
+    "edit_delta": {
+      "critic_decision": "repair",
+      "critic_tags": [
+        "repair-reference-cedar",
+        "patient-credential-secrecy",
+        "credential-field-selector",
+        "overbroad-positive-permit",
+        "disjointness-not-complement-permit",
+        "field-specific-boundary-present"
+      ]
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "deactivated_patient_login_forbidden_disjointness",
+    "action": "reject",
+    "reason": "Stage 2 decomposition critic repair: The deactivated-patient login boundary is materially useful and schema-expressible via Patient.isActive on the login principal. However the reference Cedar encodes the negative requirement as a broad positive permit for active patients to log in, which goes beyond the source excerpt and may imply login permission without modeling MID/password authentication. Repair the atom to state only the forbidden slice/disjointness: no Patient principal with isActive == false may be permitted for action login. Do not use the complement as a general active-patient login permit.",
+    "edit_delta": {
+      "critic_decision": "repair",
+      "critic_tags": [
+        "repair-reference-cedar",
+        "deactivated-patient-lifecycle",
+        "disjointness-not-complement-permit",
+        "overbroad-positive-permit",
+        "activation-boundary-present"
+      ]
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "inactive_patient_login_forbidden_slice_disjointness",
+    "action": "reject",
+    "reason": "Stage 2 decomposition critic repair: The deactivated-patient login boundary is materially useful and schema-expressible via Patient.isActive on the login principal, and the atom correctly scopes the forbidden slice in its summary and disjoint_target_body. However the reference_cedar still encodes the complement as a positive permit for active patients to log in (`!(!principal.isActive)`), which repeats the overbroad-positive-permit pattern previously rejected. Repair the reference/formulation to state only the forbidden slice/disjointness: no Patient principal with isActive == false may be permitted for action login. Do not imply an affirmative active-patient login permission or model MID/password authentication that the schema does not expose.",
+    "edit_delta": {
+      "critic_decision": "repair",
+      "critic_tags": [
+        "repair-reference-cedar",
+        "deactivated-patient-lifecycle",
+        "activation-boundary-present",
+        "disjointness-not-complement-permit",
+        "overbroad-positive-permit"
+      ]
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "inactive_patient_login_forbidden_slice_only_disjointness",
+    "action": "reject",
+    "reason": "Stage 2 decomposition critic repair: The deactivated-patient login boundary is materially useful and schema-expressible via Patient.isActive on the login principal, and the atom's summary/disjoint_target_body correctly identify the forbidden slice. However the reference_cedar still encodes the previously rejected complement as a positive permit for active patients to log in (`!(!principal.isActive)`). That contradicts the stated rationale and repeats the overbroad-positive-permit pattern. Repair the atom so the reference/formulation states only the forbidden slice/disjointness: no Patient principal with isActive == false may be permitted for action login. Do not imply an affirmative active-patient login permission or MID/password authentication semantics that the schema does not expose.",
+    "edit_delta": {
+      "critic_decision": "repair",
+      "critic_tags": [
+        "repair-reference-cedar",
+        "deactivated-patient-lifecycle",
+        "activation-boundary-present",
+        "disjointness-not-complement-permit",
+        "overbroad-positive-permit",
+        "duplicate-prior-repair-issue"
+      ]
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "patient_view_own_medical_record_floor",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "patient_view_own_medical_record_ceiling",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "personal_representative_view_represented_medical_record_floor",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "personal_representative_view_represented_medical_record_ceiling",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "lhcp_view_patient_allowed_diagnostic_information_floor",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "lhcp_view_patient_allowed_diagnostic_information_ceiling",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "patient_view_own_personal_health_information_floor",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "patient_view_own_personal_health_information_ceiling",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "personal_representative_view_represented_personal_health_information_floor",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "personal_representative_view_represented_personal_health_information_ceiling",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "patient_view_own_family_history_floor",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "patient_view_own_family_history_ceiling",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "patient_view_own_immunization_floor",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "patient_view_own_immunization_ceiling",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "personal_representative_view_represented_family_history_floor",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "personal_representative_view_represented_family_history_ceiling",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "personal_representative_view_represented_immunization_floor",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "personal_representative_view_represented_immunization_ceiling",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "patient_view_own_office_visit_floor",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "patient_view_own_office_visit_ceiling",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "personal_representative_view_represented_office_visit_floor",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "personal_representative_view_represented_office_visit_ceiling",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "patient_take_own_untaken_office_visit_survey_floor",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "patient_take_own_untaken_office_visit_survey_ceiling",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "personal_representative_take_represented_untaken_office_visit_survey_floor",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "personal_representative_take_represented_untaken_office_visit_survey_ceiling",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "deactivated_patient_edit_forbidden_disjointness",
+    "action": "reject",
+    "reason": "Stage 2 decomposition critic repair: The deactivated-patient modification boundary is materially useful and schema-expressible via Patient.isActive on the editPatient resource. However, the reference Cedar encodes the negative requirement as a broad positive permit for HCPs to edit active patients (`!(!resource.isActive)`), and omits the usual active-session/session-owner constraints that would be needed for any affirmative permit. This repeats the rejected complement-permit pattern from the deactivated-patient login atoms. Repair the atom to state only the forbidden slice/disjointness: no HCP permission may cover editPatient when the Patient resource has isActive == false. Do not imply a general HCP permission to edit active patients from this negative lifecycle requirement.",
+    "edit_delta": {
+      "critic_decision": "repair",
+      "critic_tags": [
+        "repair-reference-cedar",
+        "deactivated-patient-lifecycle",
+        "mutable-patient-edit-safety",
+        "activation-boundary-present",
+        "disjointness-not-complement-permit",
+        "overbroad-positive-permit"
+      ]
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "inactive_patient_edit_forbidden_slice",
+    "action": "reject",
+    "reason": "Stage 2 decomposition critic repair: The deactivated-patient modification boundary is materially useful and schema-expressible via Patient.isActive, and the atom's summary/disjoint_target_body correctly identify the forbidden slice: no HCP editPatient permission for inactive Patient resources. However, the reference_cedar still encodes the forbidden-slice property as a broad positive complement permit for active patients (`!(!resource.isActive)`), repeating the previously rejected pattern for deactivated-patient edit/login atoms. Repair the formulation so it states only the disjointness/forbidden slice, e.g. no permit may cover editPatient when principal is HCP, resource is Patient, and resource.isActive == false. Do not imply an affirmative HCP permission to edit active patients from this negative lifecycle requirement.",
+    "edit_delta": {
+      "critic_decision": "repair",
+      "critic_tags": [
+        "repair-reference-cedar",
+        "deactivated-patient-lifecycle",
+        "mutable-patient-edit-safety",
+        "activation-boundary-present",
+        "disjointness-not-complement-permit",
+        "overbroad-positive-permit",
+        "duplicate-prior-repair-issue"
+      ]
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "inactive_patient_edit_forbidden_slice_only",
+    "action": "reject",
+    "reason": "Stage 2 decomposition critic repair: The deactivated-patient modification boundary is materially useful and schema-expressible via Patient.isActive, and the summary/disjoint_target_body correctly identify the forbidden slice: no HCP editPatient permission for inactive Patient resources. However, the reference_cedar still encodes the forbidden-slice property as a broad positive complement permit for active patients (`!(!resource.isActive)`), exactly repeating the previously rejected inactive-patient edit proposals. Repair the formulation so it states only the disjointness/forbidden slice: no permit may cover editPatient when principal is HCP, resource is Patient, and resource.isActive == false. Do not include a complement permit or imply an affirmative HCP permission to edit active patients from this negative lifecycle requirement.",
+    "edit_delta": {
+      "critic_decision": "repair",
+      "critic_tags": [
+        "repair-reference-cedar",
+        "deactivated-patient-lifecycle",
+        "mutable-patient-edit-safety",
+        "activation-boundary-present",
+        "disjointness-not-complement-permit",
+        "overbroad-positive-permit",
+        "duplicate-prior-repair-issue"
+      ]
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "hcp_create_patient_floor",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "hcp_create_patient_ceiling",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "hcp_disable_patient_floor",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "hcp_disable_patient_ceiling",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "administrator_reactivate_inactive_patient_floor",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "administrator_reactivate_inactive_patient_ceiling",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "administrator_create_lhcp_floor",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "administrator_create_lhcp_ceiling",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "administrator_create_emergency_responder_floor",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "administrator_create_emergency_responder_ceiling",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "administrator_create_lab_technician_floor",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "administrator_create_lab_technician_ceiling",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "administrator_create_public_health_agent_floor",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "administrator_create_public_health_agent_ceiling",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "lhcp_create_uap_floor",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "lhcp_create_uap_ceiling",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "administrator_assign_lhcp_credentials_floor",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "administrator_assign_lhcp_credentials_ceiling",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "administrator_assign_hospital_floor",
+    "action": "reject",
+    "reason": "Stage 2 decomposition critic repair: The administrator hospital-assignment workflow is materially useful and not already covered by the approved creation/credential atoms, but the source requirement includes a named boundary: the assigned hospital must be chosen from the hospital list. The proposed floor omits that condition and would require permission for any context.hospital of type Hospital, using the entity type as a proxy for hospital-list membership. The validated schema has no explicit HospitalList entity, list-membership attribute, or equivalent hook to represent this boundary, so the property should not be accepted until the schema/property can express the hospital-list membership constraint.",
+    "edit_delta": {
+      "critic_decision": "repair",
+      "critic_tags": [
+        "schema-gap",
+        "missing-boundary:hospital-list-membership",
+        "administrator-hospital-assignment",
+        "omitted-source-condition",
+        "too-broad-floor"
+      ]
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "administrator_assign_listed_hospital_floor",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "administrator_assign_listed_hospital_ceiling",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "patient_view_own_lhcps_floor",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "patient_view_own_lhcps_ceiling",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "patient_add_lhcp_to_own_provider_list_floor",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "patient_add_lhcp_to_own_provider_list_ceiling",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "patient_designate_lhcp_for_self_floor",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "patient_designate_lhcp_for_self_ceiling",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "patient_undesignate_lhcp_for_self_floor",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "patient_undesignate_lhcp_for_self_ceiling",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "hcp_edit_selected_patient_personal_health_information_floor",
+    "action": "reject",
+    "reason": "Stage 2 decomposition critic repair: The HCP edit-personal-health-information workflow is materially useful and not already covered by approved atoms, and the schema exposes the selected-patient boundary via context.patient and resource.patient. However, as a floor it would require permission even when the selected patient is deactivated, conflicting with the named lifecycle boundary that a deactivated patient cannot be modified. The schema already exposes this boundary through Patient.isActive, so repair the atom to require the selected/resource patient to be active, e.g. resource.patient == context.patient && resource.patient.isActive, while retaining the active-session/session-owner checks.",
+    "edit_delta": {
+      "critic_decision": "repair",
+      "critic_tags": [
+        "repair-condition",
+        "hcp-personal-health-information-edit",
+        "selected-patient-boundary",
+        "deactivated-patient-lifecycle",
+        "activation-boundary-present",
+        "missing-active-patient-condition"
+      ]
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "hcp_edit_active_selected_patient_personal_health_information_floor",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "stage2_property_elicitation_limit",
+    "action": "reject",
+    "reason": "Stopped after 64 property proposals without an explicit completion signal.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": false
+  }
+]

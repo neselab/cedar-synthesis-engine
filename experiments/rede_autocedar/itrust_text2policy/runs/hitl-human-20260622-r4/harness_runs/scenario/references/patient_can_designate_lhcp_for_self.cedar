@@ -1,0 +1,1 @@
+permit (principal, action == Action::"designateDlhcp", resource) when { context.session.isActive && resource.patient == principal };

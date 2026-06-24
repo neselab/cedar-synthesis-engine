@@ -1,0 +1,626 @@
+[
+  {
+    "gap": {
+      "atom_name": "patient_view_own_access_log_floor",
+      "stage": "stage2_property_review",
+      "reason": "Stage 2 decomposition critic repair: The own-patient ownership floor is materially useful and correctly uses AccessLog.patient, but it omits the named authentication/session lifecycle boundary from the requirements: users must be authenticated and authorization is disabled after inactivity/session termination. The validated schema has Session, but viewAccessLog has no session/context hook tying the request to an active session for the principal, so this condition is not expressible for this action without a schema repair.",
+      "critic_tags": [
+        "missing-active-session-boundary",
+        "missing-authentication-boundary",
+        "schema-gap"
+      ],
+      "required_action": "repair_schema_before_synthesis"
+    },
+    "proposed_atoms": [
+      {
+        "name": "viewAccessLog",
+        "rationale": "Adds a request session hook so access-log viewing can be conditioned on an active authenticated session for the principal.",
+        "plain_english_summary": "When someone views an access log, the request carries the session being used so the policy can require that it is still active.",
+        "source_excerpt": "Authenticated sessions terminate after inactivity, logout, or closing the application. After the inactivity limit is exceeded, authorization is disabled.",
+        "principal_types": [
+          "Patient",
+          "PersonalRepresentative"
+        ],
+        "resource_types": [
+          "AccessLog"
+        ],
+        "context_attributes": {
+          "session": {
+            "name": "viewAccessLog__context__session",
+            "rationale": "The session context lets policies verify that the requesting principal has an active session before authorizing access-log viewing.",
+            "plain_english_summary": "The login session associated with this access-log viewing request.",
+            "source_excerpt": "Authenticated sessions terminate after inactivity, logout, or closing the application. After the inactivity limit is exceeded, authorization is disabled.",
+            "on_entity": "",
+            "field_name": "session",
+            "cedar_type": "Session",
+            "optional": false,
+            "alternatives_considered": []
+          }
+        },
+        "parent_groups": []
+      }
+    ],
+    "decisions": [
+      {
+        "atom_name": "viewAccessLog",
+        "action": "approve",
+        "reason": "",
+        "edit_delta": {},
+        "intent_acknowledged_by_user": true,
+        "symbolic_verified": false
+      }
+    ],
+    "approved_atoms": [
+      {
+        "name": "viewAccessLog",
+        "rationale": "Adds a request session hook so access-log viewing can be conditioned on an active authenticated session for the principal.",
+        "plain_english_summary": "When someone views an access log, the request carries the session being used so the policy can require that it is still active.",
+        "source_excerpt": "Authenticated sessions terminate after inactivity, logout, or closing the application. After the inactivity limit is exceeded, authorization is disabled.",
+        "principal_types": [
+          "Patient",
+          "PersonalRepresentative"
+        ],
+        "resource_types": [
+          "AccessLog"
+        ],
+        "context_attributes": {
+          "session": {
+            "name": "viewAccessLog__context__session",
+            "rationale": "The session context lets policies verify that the requesting principal has an active session before authorizing access-log viewing.",
+            "plain_english_summary": "The login session associated with this access-log viewing request.",
+            "source_excerpt": "Authenticated sessions terminate after inactivity, logout, or closing the application. After the inactivity limit is exceeded, authorization is disabled.",
+            "on_entity": "",
+            "field_name": "session",
+            "cedar_type": "Session",
+            "optional": false,
+            "alternatives_considered": []
+          }
+        },
+        "parent_groups": []
+      }
+    ],
+    "schema_validation": [
+      {
+        "attempt_number": 1,
+        "schema_text": "entity User {\n    mid: String,\n    password: String,\n    securityQuestion?: String,\n};\n\nentity Patient in [User] {\n    isActive: Bool,\n};\n\nentity Hcp in [User];\n\nentity Lhcp in [Hcp] {\n    hospitals: Set<Hospital>,\n};\n\nentity Administrator in [User];\n\nentity EmergencyResponder in [User];\n\nentity Uap in [User];\n\nentity PersonalRepresentative in [User];\n\nentity PublicHealthAgent in [User];\n\nentity LabTechnician in [User];\n\nentity SoftwareTester in [User];\n\nentity Hospital;\n\nentity Session {\n    user: User,\n    isActive: Bool,\n};\n\nentity SystemSettings {\n    inactivityPeriodLength: duration,\n};\n\nentity MedicalRecord {\n    patient: Patient,\n};\n\nentity DemographicInformation {\n    patient: Patient,\n};\n\nentity DiagnosticInformation {\n    patient: Patient,\n    isRestricted: Bool,\n    restrictionAllowed: Bool,\n    allowedAudience: String,\n};\n\nentity OfficeVisit {\n    patient: Patient,\n    lhcp: Lhcp,\n    hospital: Hospital,\n    surveyTaken: Bool,\n};\n\nentity PersonalHealthInformation {\n    patient: Patient,\n};\n\nentity FamilyHistory {\n    patient: Patient,\n};\n\nentity Immunization {\n    patient: Patient,\n};\n\nentity AccessLog {\n    patient: Patient,\n    accessorName: String,\n    accessorRoleRelativeToPatient: String,\n    dateTime: datetime,\n    transactionType: String,\n};\n\nentity ProviderDesignation {\n    patient: Patient,\n    lhcp: Lhcp,\n    isDesignated: Bool,\n};\n\nentity PersonalRepresentativeRelationship {\n    patient: Patient,\n    representative: User,\n    isActive: Bool,\n};\n\naction login appliesTo {\n    principal: [User],\n    resource: [Session],\n};\n\naction logout appliesTo {\n    principal: [User],\n    resource: [Session],\n};\n\naction requestPasswordChange appliesTo {\n    principal: [User],\n    resource: [User],\n};\n\naction setInactivityPeriodLength appliesTo {\n    principal: [Administrator],\n    resource: [SystemSettings],\n};\n\naction createPatient appliesTo {\n    principal: [Hcp],\n    resource: [Patient],\n};\n\naction disablePatient appliesTo {\n    principal: [Hcp],\n    resource: [Patient],\n};\n\naction reactivatePatient appliesTo {\n    principal: [Administrator],\n    resource: [Patient],\n};\n\naction editPatient appliesTo {\n    principal: [Hcp],\n    resource: [Patient],\n};\n\naction createLhcp appliesTo {\n    principal: [Administrator],\n    resource: [Lhcp],\n};\n\naction createEmergencyResponder appliesTo {\n    principal: [Administrator],\n    resource: [EmergencyResponder],\n};\n\naction createLabTechnician appliesTo {\n    principal: [Administrator],\n    resource: [LabTechnician],\n};\n\naction createPublicHealthAgent appliesTo {\n    principal: [Administrator],\n    resource: [PublicHealthAgent],\n};\n\naction createUap appliesTo {\n    principal: [Lhcp],\n    resource: [Uap],\n};\n\naction assignLhcpCredentials appliesTo {\n    principal: [Administrator],\n    resource: [Lhcp],\n};\n\naction assignLhcpHospital appliesTo {\n    principal: [Administrator],\n    resource: [Lhcp],\n    context: {\n        hospital: Hospital,\n    },\n};\n\naction viewLhcps appliesTo {\n    principal: [Patient],\n    resource: [Lhcp],\n    context: {\n        patient: Patient,\n    },\n};\n\naction addProvider appliesTo {\n    principal: [Patient],\n    resource: [ProviderDesignation],\n};\n\naction designateLhcp appliesTo {\n    principal: [Patient],\n    resource: [ProviderDesignation],\n};\n\naction undesignateLhcp appliesTo {\n    principal: [Patient],\n    resource: [ProviderDesignation],\n};\n\naction viewAccessLog appliesTo {\n    principal: [Patient, PersonalRepresentative],\n    resource: [AccessLog],\n    context: {\n        session: Session,\n    },\n};\n\naction viewMedicalRecord appliesTo {\n    principal: [Patient, PersonalRepresentative],\n    resource: [MedicalRecord],\n};\n\naction viewFamilyHistory appliesTo {\n    principal: [Patient, PersonalRepresentative],\n    resource: [FamilyHistory],\n};\n\naction viewPersonalHealthInformation appliesTo {\n    principal: [Patient, PersonalRepresentative],\n    resource: [PersonalHealthInformation],\n};\n\naction viewImmunization appliesTo {\n    principal: [Patient, PersonalRepresentative],\n    resource: [Immunization],\n};\n\naction viewOfficeVisit appliesTo {\n    principal: [Patient, PersonalRepresentative],\n    resource: [OfficeVisit],\n};\n\naction takeOfficeVisitSurvey appliesTo {\n    principal: [Patient, PersonalRepresentative],\n    resource: [OfficeVisit],\n};\n\naction viewDiagnosticInformation appliesTo {\n    principal: [Lhcp, Patient, PersonalRepresentative],\n    resource: [DiagnosticInformation],\n};\n\naction restrictDiagnosticInformation appliesTo {\n    principal: [Patient],\n    resource: [DiagnosticInformation],\n};\n\naction determineDiagnosisRestrictionAllowed appliesTo {\n    principal: [Lhcp],\n    resource: [DiagnosticInformation],\n};\n\naction editPersonalHealthInformation appliesTo {\n    principal: [Hcp],\n    resource: [PersonalHealthInformation],\n};\n\naction editImmunization appliesTo {\n    principal: [Hcp],\n    resource: [Immunization],\n};\n\naction editFamilyHistory appliesTo {\n    principal: [Hcp],\n    resource: [FamilyHistory],\n};\n\naction documentOfficeVisit appliesTo {\n    principal: [Hcp],\n    resource: [OfficeVisit],\n};\n\naction editOfficeVisit appliesTo {\n    principal: [Hcp],\n    resource: [OfficeVisit],\n};\n\naction enterDemographicInformation appliesTo {\n    principal: [Uap],\n    resource: [DemographicInformation],\n};\n\naction editDemographicInformation appliesTo {\n    principal: [Uap],\n    resource: [DemographicInformation],\n};\n\naction addPersonalRepresentative appliesTo {\n    principal: [Hcp],\n    resource: [PersonalRepresentativeRelationship],\n};\n\naction removePersonalRepresentative appliesTo {\n    principal: [Hcp],\n    resource: [PersonalRepresentativeRelationship],\n};\n",
+        "validator_passed": true,
+        "validator_error": "",
+        "llm_was_called": false,
+        "schema_override": false,
+        "schema_gap_repair": true
+      }
+    ]
+  },
+  {
+    "gap": {
+      "atom_name": "patient_view_access_log_own_active_session_ceiling",
+      "stage": "stage2_property_review",
+      "reason": "Stage 2 decomposition critic repair: The access-log ceiling is materially useful for the own-access-log and active-session boundaries, but it is too restrictive for the full source requirement: patients may view their own access log or the access log for a represented person. As written, the ceiling would forbid represented-person access for Patient principals rather than modeling the patient-specific personal-representative relationship. The validated schema has PersonalRepresentativeRelationship, but viewAccessLog only exposes context.session and has no context/resource hook to bind an active representative relationship for the requested AccessLog.patient, so the represented-person boundary is not expressible for this action without schema repair.",
+      "critic_tags": [
+        "missing-personal-representative-relationship-boundary",
+        "missing-represented-person-boundary",
+        "schema-gap"
+      ],
+      "required_action": "repair_schema_before_synthesis"
+    },
+    "proposed_atoms": [
+      {
+        "name": "viewAccessLog",
+        "rationale": "Adds a request-time hook to bind the requested access log to an active patient-specific personal-representative relationship.",
+        "plain_english_summary": "When viewing an access log for someone they represent, the request can include the active representation relationship being relied on.",
+        "source_excerpt": "A patient can view their own access log, or the access log for a person for whom they are a personal representative.",
+        "principal_types": [
+          "Patient",
+          "PersonalRepresentative"
+        ],
+        "resource_types": [
+          "AccessLog"
+        ],
+        "context_attributes": {
+          "representativeRelationship": {
+            "name": "viewAccessLog__context__representativeRelationship",
+            "rationale": "The relationship is optional because own-access-log viewing does not require a representative relationship, but represented-person access does.",
+            "plain_english_summary": "The active relationship showing that the requester represents the patient whose access log is being viewed.",
+            "source_excerpt": "A patient can view their own access log, or the access log for a person for whom they are a personal representative.",
+            "on_entity": "",
+            "field_name": "representativeRelationship",
+            "cedar_type": "PersonalRepresentativeRelationship",
+            "optional": true,
+            "alternatives_considered": []
+          }
+        },
+        "parent_groups": []
+      }
+    ],
+    "decisions": [
+      {
+        "atom_name": "viewAccessLog",
+        "action": "approve",
+        "reason": "",
+        "edit_delta": {},
+        "intent_acknowledged_by_user": true,
+        "symbolic_verified": false
+      }
+    ],
+    "approved_atoms": [
+      {
+        "name": "viewAccessLog",
+        "rationale": "Adds a request-time hook to bind the requested access log to an active patient-specific personal-representative relationship.",
+        "plain_english_summary": "When viewing an access log for someone they represent, the request can include the active representation relationship being relied on.",
+        "source_excerpt": "A patient can view their own access log, or the access log for a person for whom they are a personal representative.",
+        "principal_types": [
+          "Patient",
+          "PersonalRepresentative"
+        ],
+        "resource_types": [
+          "AccessLog"
+        ],
+        "context_attributes": {
+          "representativeRelationship": {
+            "name": "viewAccessLog__context__representativeRelationship",
+            "rationale": "The relationship is optional because own-access-log viewing does not require a representative relationship, but represented-person access does.",
+            "plain_english_summary": "The active relationship showing that the requester represents the patient whose access log is being viewed.",
+            "source_excerpt": "A patient can view their own access log, or the access log for a person for whom they are a personal representative.",
+            "on_entity": "",
+            "field_name": "representativeRelationship",
+            "cedar_type": "PersonalRepresentativeRelationship",
+            "optional": true,
+            "alternatives_considered": []
+          }
+        },
+        "parent_groups": []
+      }
+    ],
+    "schema_validation": [
+      {
+        "attempt_number": 1,
+        "schema_text": "entity User {\n    mid: String,\n    password: String,\n    securityQuestion?: String,\n};\n\nentity Patient in [User] {\n    isActive: Bool,\n};\n\nentity Hcp in [User];\n\nentity Lhcp in [Hcp] {\n    hospitals: Set<Hospital>,\n};\n\nentity Administrator in [User];\n\nentity EmergencyResponder in [User];\n\nentity Uap in [User];\n\nentity PersonalRepresentative in [User];\n\nentity PublicHealthAgent in [User];\n\nentity LabTechnician in [User];\n\nentity SoftwareTester in [User];\n\nentity Hospital;\n\nentity Session {\n    user: User,\n    isActive: Bool,\n};\n\nentity SystemSettings {\n    inactivityPeriodLength: duration,\n};\n\nentity MedicalRecord {\n    patient: Patient,\n};\n\nentity DemographicInformation {\n    patient: Patient,\n};\n\nentity DiagnosticInformation {\n    patient: Patient,\n    isRestricted: Bool,\n    restrictionAllowed: Bool,\n    allowedAudience: String,\n};\n\nentity OfficeVisit {\n    patient: Patient,\n    lhcp: Lhcp,\n    hospital: Hospital,\n    surveyTaken: Bool,\n};\n\nentity PersonalHealthInformation {\n    patient: Patient,\n};\n\nentity FamilyHistory {\n    patient: Patient,\n};\n\nentity Immunization {\n    patient: Patient,\n};\n\nentity AccessLog {\n    patient: Patient,\n    accessorName: String,\n    accessorRoleRelativeToPatient: String,\n    dateTime: datetime,\n    transactionType: String,\n};\n\nentity ProviderDesignation {\n    patient: Patient,\n    lhcp: Lhcp,\n    isDesignated: Bool,\n};\n\nentity PersonalRepresentativeRelationship {\n    patient: Patient,\n    representative: User,\n    isActive: Bool,\n};\n\naction login appliesTo {\n    principal: [User],\n    resource: [Session],\n};\n\naction logout appliesTo {\n    principal: [User],\n    resource: [Session],\n};\n\naction requestPasswordChange appliesTo {\n    principal: [User],\n    resource: [User],\n};\n\naction setInactivityPeriodLength appliesTo {\n    principal: [Administrator],\n    resource: [SystemSettings],\n};\n\naction createPatient appliesTo {\n    principal: [Hcp],\n    resource: [Patient],\n};\n\naction disablePatient appliesTo {\n    principal: [Hcp],\n    resource: [Patient],\n};\n\naction reactivatePatient appliesTo {\n    principal: [Administrator],\n    resource: [Patient],\n};\n\naction editPatient appliesTo {\n    principal: [Hcp],\n    resource: [Patient],\n};\n\naction createLhcp appliesTo {\n    principal: [Administrator],\n    resource: [Lhcp],\n};\n\naction createEmergencyResponder appliesTo {\n    principal: [Administrator],\n    resource: [EmergencyResponder],\n};\n\naction createLabTechnician appliesTo {\n    principal: [Administrator],\n    resource: [LabTechnician],\n};\n\naction createPublicHealthAgent appliesTo {\n    principal: [Administrator],\n    resource: [PublicHealthAgent],\n};\n\naction createUap appliesTo {\n    principal: [Lhcp],\n    resource: [Uap],\n};\n\naction assignLhcpCredentials appliesTo {\n    principal: [Administrator],\n    resource: [Lhcp],\n};\n\naction assignLhcpHospital appliesTo {\n    principal: [Administrator],\n    resource: [Lhcp],\n    context: {\n        hospital: Hospital,\n    },\n};\n\naction viewLhcps appliesTo {\n    principal: [Patient],\n    resource: [Lhcp],\n    context: {\n        patient: Patient,\n    },\n};\n\naction addProvider appliesTo {\n    principal: [Patient],\n    resource: [ProviderDesignation],\n};\n\naction designateLhcp appliesTo {\n    principal: [Patient],\n    resource: [ProviderDesignation],\n};\n\naction undesignateLhcp appliesTo {\n    principal: [Patient],\n    resource: [ProviderDesignation],\n};\n\naction viewAccessLog appliesTo {\n    principal: [Patient, PersonalRepresentative],\n    resource: [AccessLog],\n    context: {\n        session: Session,\n        representativeRelationship?: PersonalRepresentativeRelationship,\n    },\n};\n\naction viewMedicalRecord appliesTo {\n    principal: [Patient, PersonalRepresentative],\n    resource: [MedicalRecord],\n};\n\naction viewFamilyHistory appliesTo {\n    principal: [Patient, PersonalRepresentative],\n    resource: [FamilyHistory],\n};\n\naction viewPersonalHealthInformation appliesTo {\n    principal: [Patient, PersonalRepresentative],\n    resource: [PersonalHealthInformation],\n};\n\naction viewImmunization appliesTo {\n    principal: [Patient, PersonalRepresentative],\n    resource: [Immunization],\n};\n\naction viewOfficeVisit appliesTo {\n    principal: [Patient, PersonalRepresentative],\n    resource: [OfficeVisit],\n};\n\naction takeOfficeVisitSurvey appliesTo {\n    principal: [Patient, PersonalRepresentative],\n    resource: [OfficeVisit],\n};\n\naction viewDiagnosticInformation appliesTo {\n    principal: [Lhcp, Patient, PersonalRepresentative],\n    resource: [DiagnosticInformation],\n};\n\naction restrictDiagnosticInformation appliesTo {\n    principal: [Patient],\n    resource: [DiagnosticInformation],\n};\n\naction determineDiagnosisRestrictionAllowed appliesTo {\n    principal: [Lhcp],\n    resource: [DiagnosticInformation],\n};\n\naction editPersonalHealthInformation appliesTo {\n    principal: [Hcp],\n    resource: [PersonalHealthInformation],\n};\n\naction editImmunization appliesTo {\n    principal: [Hcp],\n    resource: [Immunization],\n};\n\naction editFamilyHistory appliesTo {\n    principal: [Hcp],\n    resource: [FamilyHistory],\n};\n\naction documentOfficeVisit appliesTo {\n    principal: [Hcp],\n    resource: [OfficeVisit],\n};\n\naction editOfficeVisit appliesTo {\n    principal: [Hcp],\n    resource: [OfficeVisit],\n};\n\naction enterDemographicInformation appliesTo {\n    principal: [Uap],\n    resource: [DemographicInformation],\n};\n\naction editDemographicInformation appliesTo {\n    principal: [Uap],\n    resource: [DemographicInformation],\n};\n\naction addPersonalRepresentative appliesTo {\n    principal: [Hcp],\n    resource: [PersonalRepresentativeRelationship],\n};\n\naction removePersonalRepresentative appliesTo {\n    principal: [Hcp],\n    resource: [PersonalRepresentativeRelationship],\n};\n",
+        "validator_passed": true,
+        "validator_error": "",
+        "llm_was_called": false,
+        "schema_override": false,
+        "schema_gap_repair": true
+      }
+    ]
+  },
+  {
+    "gap": {
+      "atom_name": "patient_view_own_medical_record_floor",
+      "stage": "stage2_property_review",
+      "reason": "Stage 2 decomposition critic repair: The own-record ownership floor is materially useful and not covered by existing approved atoms, but it omits the named authentication/session lifecycle boundary from the requirements: authorization is disabled after inactivity/session termination. The validated schema has Session, but viewMedicalRecord has no context/session hook tying the request to an active session for the principal, so the active-session condition is not expressible for this action without schema repair. Do not accept an ownership-only proxy as equivalent.",
+      "critic_tags": [
+        "missing-active-session-boundary",
+        "missing-authentication-boundary",
+        "schema-gap"
+      ],
+      "required_action": "repair_schema_before_synthesis"
+    },
+    "proposed_atoms": [
+      {
+        "name": "viewMedicalRecord",
+        "rationale": "Adds the active authenticated session hook needed to express that medical-record viewing is authorized only while the principal's session remains active.",
+        "plain_english_summary": "When a patient or personal representative views a medical record, the request includes the session so policies can check that it has not timed out or ended.",
+        "source_excerpt": "Authenticated sessions terminate after inactivity, logout, or closing the application. After the inactivity limit is exceeded, authorization is disabled.",
+        "principal_types": [
+          "Patient",
+          "PersonalRepresentative"
+        ],
+        "resource_types": [
+          "MedicalRecord"
+        ],
+        "context_attributes": {
+          "session": {
+            "name": "viewMedicalRecord__context__session",
+            "rationale": "The session context lets policies require an active session for this medical-record viewing request.",
+            "plain_english_summary": "The current login session used for the request.",
+            "source_excerpt": "Authenticated sessions terminate after inactivity, logout, or closing the application. After the inactivity limit is exceeded, authorization is disabled.",
+            "on_entity": "",
+            "field_name": "session",
+            "cedar_type": "Session",
+            "optional": false,
+            "alternatives_considered": []
+          }
+        },
+        "parent_groups": []
+      }
+    ],
+    "decisions": [
+      {
+        "atom_name": "viewMedicalRecord",
+        "action": "approve",
+        "reason": "",
+        "edit_delta": {},
+        "intent_acknowledged_by_user": true,
+        "symbolic_verified": false
+      }
+    ],
+    "approved_atoms": [
+      {
+        "name": "viewMedicalRecord",
+        "rationale": "Adds the active authenticated session hook needed to express that medical-record viewing is authorized only while the principal's session remains active.",
+        "plain_english_summary": "When a patient or personal representative views a medical record, the request includes the session so policies can check that it has not timed out or ended.",
+        "source_excerpt": "Authenticated sessions terminate after inactivity, logout, or closing the application. After the inactivity limit is exceeded, authorization is disabled.",
+        "principal_types": [
+          "Patient",
+          "PersonalRepresentative"
+        ],
+        "resource_types": [
+          "MedicalRecord"
+        ],
+        "context_attributes": {
+          "session": {
+            "name": "viewMedicalRecord__context__session",
+            "rationale": "The session context lets policies require an active session for this medical-record viewing request.",
+            "plain_english_summary": "The current login session used for the request.",
+            "source_excerpt": "Authenticated sessions terminate after inactivity, logout, or closing the application. After the inactivity limit is exceeded, authorization is disabled.",
+            "on_entity": "",
+            "field_name": "session",
+            "cedar_type": "Session",
+            "optional": false,
+            "alternatives_considered": []
+          }
+        },
+        "parent_groups": []
+      }
+    ],
+    "schema_validation": [
+      {
+        "attempt_number": 1,
+        "schema_text": "entity User {\n    mid: String,\n    password: String,\n    securityQuestion?: String,\n};\n\nentity Patient in [User] {\n    isActive: Bool,\n};\n\nentity Hcp in [User];\n\nentity Lhcp in [Hcp] {\n    hospitals: Set<Hospital>,\n};\n\nentity Administrator in [User];\n\nentity EmergencyResponder in [User];\n\nentity Uap in [User];\n\nentity PersonalRepresentative in [User];\n\nentity PublicHealthAgent in [User];\n\nentity LabTechnician in [User];\n\nentity SoftwareTester in [User];\n\nentity Hospital;\n\nentity Session {\n    user: User,\n    isActive: Bool,\n};\n\nentity SystemSettings {\n    inactivityPeriodLength: duration,\n};\n\nentity MedicalRecord {\n    patient: Patient,\n};\n\nentity DemographicInformation {\n    patient: Patient,\n};\n\nentity DiagnosticInformation {\n    patient: Patient,\n    isRestricted: Bool,\n    restrictionAllowed: Bool,\n    allowedAudience: String,\n};\n\nentity OfficeVisit {\n    patient: Patient,\n    lhcp: Lhcp,\n    hospital: Hospital,\n    surveyTaken: Bool,\n};\n\nentity PersonalHealthInformation {\n    patient: Patient,\n};\n\nentity FamilyHistory {\n    patient: Patient,\n};\n\nentity Immunization {\n    patient: Patient,\n};\n\nentity AccessLog {\n    patient: Patient,\n    accessorName: String,\n    accessorRoleRelativeToPatient: String,\n    dateTime: datetime,\n    transactionType: String,\n};\n\nentity ProviderDesignation {\n    patient: Patient,\n    lhcp: Lhcp,\n    isDesignated: Bool,\n};\n\nentity PersonalRepresentativeRelationship {\n    patient: Patient,\n    representative: User,\n    isActive: Bool,\n};\n\naction login appliesTo {\n    principal: [User],\n    resource: [Session],\n};\n\naction logout appliesTo {\n    principal: [User],\n    resource: [Session],\n};\n\naction requestPasswordChange appliesTo {\n    principal: [User],\n    resource: [User],\n};\n\naction setInactivityPeriodLength appliesTo {\n    principal: [Administrator],\n    resource: [SystemSettings],\n};\n\naction createPatient appliesTo {\n    principal: [Hcp],\n    resource: [Patient],\n};\n\naction disablePatient appliesTo {\n    principal: [Hcp],\n    resource: [Patient],\n};\n\naction reactivatePatient appliesTo {\n    principal: [Administrator],\n    resource: [Patient],\n};\n\naction editPatient appliesTo {\n    principal: [Hcp],\n    resource: [Patient],\n};\n\naction createLhcp appliesTo {\n    principal: [Administrator],\n    resource: [Lhcp],\n};\n\naction createEmergencyResponder appliesTo {\n    principal: [Administrator],\n    resource: [EmergencyResponder],\n};\n\naction createLabTechnician appliesTo {\n    principal: [Administrator],\n    resource: [LabTechnician],\n};\n\naction createPublicHealthAgent appliesTo {\n    principal: [Administrator],\n    resource: [PublicHealthAgent],\n};\n\naction createUap appliesTo {\n    principal: [Lhcp],\n    resource: [Uap],\n};\n\naction assignLhcpCredentials appliesTo {\n    principal: [Administrator],\n    resource: [Lhcp],\n};\n\naction assignLhcpHospital appliesTo {\n    principal: [Administrator],\n    resource: [Lhcp],\n    context: {\n        hospital: Hospital,\n    },\n};\n\naction viewLhcps appliesTo {\n    principal: [Patient],\n    resource: [Lhcp],\n    context: {\n        patient: Patient,\n    },\n};\n\naction addProvider appliesTo {\n    principal: [Patient],\n    resource: [ProviderDesignation],\n};\n\naction designateLhcp appliesTo {\n    principal: [Patient],\n    resource: [ProviderDesignation],\n};\n\naction undesignateLhcp appliesTo {\n    principal: [Patient],\n    resource: [ProviderDesignation],\n};\n\naction viewAccessLog appliesTo {\n    principal: [Patient, PersonalRepresentative],\n    resource: [AccessLog],\n    context: {\n        session: Session,\n        representativeRelationship?: PersonalRepresentativeRelationship,\n    },\n};\n\naction viewMedicalRecord appliesTo {\n    principal: [Patient, PersonalRepresentative],\n    resource: [MedicalRecord],\n    context: {\n        session: Session,\n    },\n};\n\naction viewFamilyHistory appliesTo {\n    principal: [Patient, PersonalRepresentative],\n    resource: [FamilyHistory],\n};\n\naction viewPersonalHealthInformation appliesTo {\n    principal: [Patient, PersonalRepresentative],\n    resource: [PersonalHealthInformation],\n};\n\naction viewImmunization appliesTo {\n    principal: [Patient, PersonalRepresentative],\n    resource: [Immunization],\n};\n\naction viewOfficeVisit appliesTo {\n    principal: [Patient, PersonalRepresentative],\n    resource: [OfficeVisit],\n};\n\naction takeOfficeVisitSurvey appliesTo {\n    principal: [Patient, PersonalRepresentative],\n    resource: [OfficeVisit],\n};\n\naction viewDiagnosticInformation appliesTo {\n    principal: [Lhcp, Patient, PersonalRepresentative],\n    resource: [DiagnosticInformation],\n};\n\naction restrictDiagnosticInformation appliesTo {\n    principal: [Patient],\n    resource: [DiagnosticInformation],\n};\n\naction determineDiagnosisRestrictionAllowed appliesTo {\n    principal: [Lhcp],\n    resource: [DiagnosticInformation],\n};\n\naction editPersonalHealthInformation appliesTo {\n    principal: [Hcp],\n    resource: [PersonalHealthInformation],\n};\n\naction editImmunization appliesTo {\n    principal: [Hcp],\n    resource: [Immunization],\n};\n\naction editFamilyHistory appliesTo {\n    principal: [Hcp],\n    resource: [FamilyHistory],\n};\n\naction documentOfficeVisit appliesTo {\n    principal: [Hcp],\n    resource: [OfficeVisit],\n};\n\naction editOfficeVisit appliesTo {\n    principal: [Hcp],\n    resource: [OfficeVisit],\n};\n\naction enterDemographicInformation appliesTo {\n    principal: [Uap],\n    resource: [DemographicInformation],\n};\n\naction editDemographicInformation appliesTo {\n    principal: [Uap],\n    resource: [DemographicInformation],\n};\n\naction addPersonalRepresentative appliesTo {\n    principal: [Hcp],\n    resource: [PersonalRepresentativeRelationship],\n};\n\naction removePersonalRepresentative appliesTo {\n    principal: [Hcp],\n    resource: [PersonalRepresentativeRelationship],\n};\n",
+        "validator_passed": true,
+        "validator_error": "",
+        "llm_was_called": false,
+        "schema_override": false,
+        "schema_gap_repair": true
+      }
+    ]
+  },
+  {
+    "gap": {
+      "atom_name": "patient_view_medical_record_own_active_session_ceiling",
+      "stage": "stage2_property_review",
+      "reason": "Stage 2 decomposition critic repair: The ownership and active-session ceiling is materially useful, but as written it is too narrow for the source requirement because medical-record viewing is allowed for a user's own records and for patients they represent. A Patient-scoped own-record-only ceiling risks forbidding represented-patient access if the requester is acting through a patient-specific personal-representative relationship, and it does not model the required represented-person boundary. Unlike viewAccessLog, the validated viewMedicalRecord action exposes only context.session and has no PersonalRepresentativeRelationship hook, so the represented-patient/personal-representative relationship boundary is not schema-expressible for this action. Do not accept an own-record-only proxy as equivalent to the full requirement.",
+      "critic_tags": [
+        "missing-personal-representative-relationship-boundary",
+        "missing-represented-person-boundary",
+        "schema-gap"
+      ],
+      "required_action": "repair_schema_before_synthesis"
+    },
+    "proposed_atoms": [
+      {
+        "name": "viewMedicalRecord",
+        "rationale": "The viewMedicalRecord action needs a personal-representative relationship context hook so policies can authorize represented-patient access in addition to own-record access.",
+        "plain_english_summary": "This lets the system check whether someone viewing a medical record is the patient or is acting as that patient's representative.",
+        "source_excerpt": "A patient or personal representative can view medical records, family history, personal health information, immunizations, and office-visit information for their own records and for patients they represent.",
+        "principal_types": [
+          "Patient",
+          "PersonalRepresentative"
+        ],
+        "resource_types": [
+          "MedicalRecord"
+        ],
+        "context_attributes": {
+          "representativeRelationship": {
+            "name": "viewMedicalRecord__context__representativeRelationship",
+            "rationale": "The relationship is only present when the requester is relying on represented-patient authority rather than viewing their own record.",
+            "plain_english_summary": "When someone views a represented patient's medical record, this identifies the representative relationship being used.",
+            "source_excerpt": "A patient or personal representative can view medical records, family history, personal health information, immunizations, and office-visit information for their own records and for patients they represent.",
+            "on_entity": "",
+            "field_name": "representativeRelationship",
+            "cedar_type": "PersonalRepresentativeRelationship",
+            "optional": true,
+            "alternatives_considered": []
+          }
+        },
+        "parent_groups": []
+      }
+    ],
+    "decisions": [
+      {
+        "atom_name": "viewMedicalRecord",
+        "action": "approve",
+        "reason": "",
+        "edit_delta": {},
+        "intent_acknowledged_by_user": true,
+        "symbolic_verified": false
+      }
+    ],
+    "approved_atoms": [
+      {
+        "name": "viewMedicalRecord",
+        "rationale": "The viewMedicalRecord action needs a personal-representative relationship context hook so policies can authorize represented-patient access in addition to own-record access.",
+        "plain_english_summary": "This lets the system check whether someone viewing a medical record is the patient or is acting as that patient's representative.",
+        "source_excerpt": "A patient or personal representative can view medical records, family history, personal health information, immunizations, and office-visit information for their own records and for patients they represent.",
+        "principal_types": [
+          "Patient",
+          "PersonalRepresentative"
+        ],
+        "resource_types": [
+          "MedicalRecord"
+        ],
+        "context_attributes": {
+          "representativeRelationship": {
+            "name": "viewMedicalRecord__context__representativeRelationship",
+            "rationale": "The relationship is only present when the requester is relying on represented-patient authority rather than viewing their own record.",
+            "plain_english_summary": "When someone views a represented patient's medical record, this identifies the representative relationship being used.",
+            "source_excerpt": "A patient or personal representative can view medical records, family history, personal health information, immunizations, and office-visit information for their own records and for patients they represent.",
+            "on_entity": "",
+            "field_name": "representativeRelationship",
+            "cedar_type": "PersonalRepresentativeRelationship",
+            "optional": true,
+            "alternatives_considered": []
+          }
+        },
+        "parent_groups": []
+      }
+    ],
+    "schema_validation": [
+      {
+        "attempt_number": 1,
+        "schema_text": "entity User {\n    mid: String,\n    password: String,\n    securityQuestion?: String,\n};\n\nentity Patient in [User] {\n    isActive: Bool,\n};\n\nentity Hcp in [User];\n\nentity Lhcp in [Hcp] {\n    hospitals: Set<Hospital>,\n};\n\nentity Administrator in [User];\n\nentity EmergencyResponder in [User];\n\nentity Uap in [User];\n\nentity PersonalRepresentative in [User];\n\nentity PublicHealthAgent in [User];\n\nentity LabTechnician in [User];\n\nentity SoftwareTester in [User];\n\nentity Hospital;\n\nentity Session {\n    user: User,\n    isActive: Bool,\n};\n\nentity SystemSettings {\n    inactivityPeriodLength: duration,\n};\n\nentity MedicalRecord {\n    patient: Patient,\n};\n\nentity DemographicInformation {\n    patient: Patient,\n};\n\nentity DiagnosticInformation {\n    patient: Patient,\n    isRestricted: Bool,\n    restrictionAllowed: Bool,\n    allowedAudience: String,\n};\n\nentity OfficeVisit {\n    patient: Patient,\n    lhcp: Lhcp,\n    hospital: Hospital,\n    surveyTaken: Bool,\n};\n\nentity PersonalHealthInformation {\n    patient: Patient,\n};\n\nentity FamilyHistory {\n    patient: Patient,\n};\n\nentity Immunization {\n    patient: Patient,\n};\n\nentity AccessLog {\n    patient: Patient,\n    accessorName: String,\n    accessorRoleRelativeToPatient: String,\n    dateTime: datetime,\n    transactionType: String,\n};\n\nentity ProviderDesignation {\n    patient: Patient,\n    lhcp: Lhcp,\n    isDesignated: Bool,\n};\n\nentity PersonalRepresentativeRelationship {\n    patient: Patient,\n    representative: User,\n    isActive: Bool,\n};\n\naction login appliesTo {\n    principal: [User],\n    resource: [Session],\n};\n\naction logout appliesTo {\n    principal: [User],\n    resource: [Session],\n};\n\naction requestPasswordChange appliesTo {\n    principal: [User],\n    resource: [User],\n};\n\naction setInactivityPeriodLength appliesTo {\n    principal: [Administrator],\n    resource: [SystemSettings],\n};\n\naction createPatient appliesTo {\n    principal: [Hcp],\n    resource: [Patient],\n};\n\naction disablePatient appliesTo {\n    principal: [Hcp],\n    resource: [Patient],\n};\n\naction reactivatePatient appliesTo {\n    principal: [Administrator],\n    resource: [Patient],\n};\n\naction editPatient appliesTo {\n    principal: [Hcp],\n    resource: [Patient],\n};\n\naction createLhcp appliesTo {\n    principal: [Administrator],\n    resource: [Lhcp],\n};\n\naction createEmergencyResponder appliesTo {\n    principal: [Administrator],\n    resource: [EmergencyResponder],\n};\n\naction createLabTechnician appliesTo {\n    principal: [Administrator],\n    resource: [LabTechnician],\n};\n\naction createPublicHealthAgent appliesTo {\n    principal: [Administrator],\n    resource: [PublicHealthAgent],\n};\n\naction createUap appliesTo {\n    principal: [Lhcp],\n    resource: [Uap],\n};\n\naction assignLhcpCredentials appliesTo {\n    principal: [Administrator],\n    resource: [Lhcp],\n};\n\naction assignLhcpHospital appliesTo {\n    principal: [Administrator],\n    resource: [Lhcp],\n    context: {\n        hospital: Hospital,\n    },\n};\n\naction viewLhcps appliesTo {\n    principal: [Patient],\n    resource: [Lhcp],\n    context: {\n        patient: Patient,\n    },\n};\n\naction addProvider appliesTo {\n    principal: [Patient],\n    resource: [ProviderDesignation],\n};\n\naction designateLhcp appliesTo {\n    principal: [Patient],\n    resource: [ProviderDesignation],\n};\n\naction undesignateLhcp appliesTo {\n    principal: [Patient],\n    resource: [ProviderDesignation],\n};\n\naction viewAccessLog appliesTo {\n    principal: [Patient, PersonalRepresentative],\n    resource: [AccessLog],\n    context: {\n        session: Session,\n        representativeRelationship?: PersonalRepresentativeRelationship,\n    },\n};\n\naction viewMedicalRecord appliesTo {\n    principal: [Patient, PersonalRepresentative],\n    resource: [MedicalRecord],\n    context: {\n        session: Session,\n        representativeRelationship?: PersonalRepresentativeRelationship,\n    },\n};\n\naction viewFamilyHistory appliesTo {\n    principal: [Patient, PersonalRepresentative],\n    resource: [FamilyHistory],\n};\n\naction viewPersonalHealthInformation appliesTo {\n    principal: [Patient, PersonalRepresentative],\n    resource: [PersonalHealthInformation],\n};\n\naction viewImmunization appliesTo {\n    principal: [Patient, PersonalRepresentative],\n    resource: [Immunization],\n};\n\naction viewOfficeVisit appliesTo {\n    principal: [Patient, PersonalRepresentative],\n    resource: [OfficeVisit],\n};\n\naction takeOfficeVisitSurvey appliesTo {\n    principal: [Patient, PersonalRepresentative],\n    resource: [OfficeVisit],\n};\n\naction viewDiagnosticInformation appliesTo {\n    principal: [Lhcp, Patient, PersonalRepresentative],\n    resource: [DiagnosticInformation],\n};\n\naction restrictDiagnosticInformation appliesTo {\n    principal: [Patient],\n    resource: [DiagnosticInformation],\n};\n\naction determineDiagnosisRestrictionAllowed appliesTo {\n    principal: [Lhcp],\n    resource: [DiagnosticInformation],\n};\n\naction editPersonalHealthInformation appliesTo {\n    principal: [Hcp],\n    resource: [PersonalHealthInformation],\n};\n\naction editImmunization appliesTo {\n    principal: [Hcp],\n    resource: [Immunization],\n};\n\naction editFamilyHistory appliesTo {\n    principal: [Hcp],\n    resource: [FamilyHistory],\n};\n\naction documentOfficeVisit appliesTo {\n    principal: [Hcp],\n    resource: [OfficeVisit],\n};\n\naction editOfficeVisit appliesTo {\n    principal: [Hcp],\n    resource: [OfficeVisit],\n};\n\naction enterDemographicInformation appliesTo {\n    principal: [Uap],\n    resource: [DemographicInformation],\n};\n\naction editDemographicInformation appliesTo {\n    principal: [Uap],\n    resource: [DemographicInformation],\n};\n\naction addPersonalRepresentative appliesTo {\n    principal: [Hcp],\n    resource: [PersonalRepresentativeRelationship],\n};\n\naction removePersonalRepresentative appliesTo {\n    principal: [Hcp],\n    resource: [PersonalRepresentativeRelationship],\n};\n",
+        "validator_passed": true,
+        "validator_error": "",
+        "llm_was_called": false,
+        "schema_override": false,
+        "schema_gap_repair": true
+      }
+    ]
+  },
+  {
+    "gap": {
+      "atom_name": "lhcp_view_unrestricted_diagnostic_information_floor",
+      "stage": "stage2_property_review",
+      "reason": "Stage 2 decomposition critic repair: The unrestricted-LHCP floor is materially related to the diagnostic-information requirement, but it is too broad as written. The source does not merely say any LHCP may view any non-restricted diagnostic information; it frames approved diagnostic information as information the patient allows a designated or other licensed health-care professional to view. This atom omits the patient-specific approval/designated-provider or allowed-audience boundary and would accept an unrestricted-status proxy as equivalent. The schema has ProviderDesignation as an entity, but viewDiagnosticInformation has no context hook to bind the requesting LHCP to the patient's designation/approval, and DiagnosticInformation.allowedAudience is only an unstructured string that cannot by itself represent the patient-specific LHCP relationship.",
+      "critic_tags": [
+        "missing-designated-provider-boundary",
+        "missing-patient-approval-boundary",
+        "missing-patient-specific-lhcp-boundary",
+        "schema-gap"
+      ],
+      "required_action": "repair_schema_before_synthesis"
+    },
+    "proposed_atoms": [
+      {
+        "name": "DiagnosticInformationAudience",
+        "rationale": "A structured audience category is needed so policies can distinguish designated LHCPs, other LHCPs, and no one without relying on free-form strings.",
+        "plain_english_summary": "The possible groups a patient may allow to view restricted diagnostic information.",
+        "source_excerpt": "A patient can enable designated licensed health-care professionals, other licensed health-care professionals, or no one to view restricted diagnostic information.",
+        "members_of": [],
+        "attributes": {},
+        "enum_values": [
+          "DesignatedLicensedHealthCareProfessionals",
+          "OtherLicensedHealthCareProfessionals",
+          "NoOne"
+        ]
+      },
+      {
+        "name": "DiagnosticInformation__allowedAudienceType",
+        "rationale": "DiagnosticInformation needs a typed patient-selected audience boundary for diagnostic viewing decisions.",
+        "plain_english_summary": "Records which audience the patient chose for viewing this diagnostic information.",
+        "source_excerpt": "A patient can enable designated licensed health-care professionals, other licensed health-care professionals, or no one to view restricted diagnostic information.",
+        "on_entity": "DiagnosticInformation",
+        "field_name": "allowedAudienceType",
+        "cedar_type": "DiagnosticInformationAudience",
+        "optional": false,
+        "alternatives_considered": [
+          "Reuse existing allowedAudience: String, rejected because the repair reason says it is unstructured and cannot reliably represent the boundary.",
+          "Model as Set<Lhcp>, rejected because the requirement names audience categories, including designated LHCPs and other LHCPs, rather than an enumerated list of individual professionals."
+        ]
+      },
+      {
+        "name": "viewDiagnosticInformation",
+        "rationale": "The view action needs request context binding the requesting LHCP to the patient-specific provider designation being relied on.",
+        "plain_english_summary": "Viewing diagnostic information can include the patient-specific designation relationship that justifies the access.",
+        "source_excerpt": "Approved diagnostic information is diagnostic information that a patient allows a designated or other licensed health-care professional to view.",
+        "principal_types": [
+          "Lhcp",
+          "Patient",
+          "PersonalRepresentative"
+        ],
+        "resource_types": [
+          "DiagnosticInformation"
+        ],
+        "context_attributes": {
+          "providerDesignation": {
+            "name": "viewDiagnosticInformation__context__providerDesignation",
+            "rationale": "Provides the patient-specific LHCP designation relationship for policies that allow designated-provider diagnostic access.",
+            "plain_english_summary": "The patient-specific record showing whether this LHCP is designated for this patient.",
+            "source_excerpt": "Approved diagnostic information is diagnostic information that a patient allows a designated or other licensed health-care professional to view.",
+            "on_entity": "",
+            "field_name": "providerDesignation",
+            "cedar_type": "ProviderDesignation",
+            "optional": true,
+            "alternatives_considered": []
+          }
+        },
+        "parent_groups": []
+      }
+    ],
+    "decisions": [
+      {
+        "atom_name": "DiagnosticInformationAudience",
+        "action": "approve",
+        "reason": "",
+        "edit_delta": {},
+        "intent_acknowledged_by_user": true,
+        "symbolic_verified": false
+      },
+      {
+        "atom_name": "DiagnosticInformation__allowedAudienceType",
+        "action": "approve",
+        "reason": "",
+        "edit_delta": {},
+        "intent_acknowledged_by_user": true,
+        "symbolic_verified": false
+      },
+      {
+        "atom_name": "viewDiagnosticInformation",
+        "action": "approve",
+        "reason": "",
+        "edit_delta": {},
+        "intent_acknowledged_by_user": true,
+        "symbolic_verified": false
+      }
+    ],
+    "approved_atoms": [
+      {
+        "name": "DiagnosticInformationAudience",
+        "rationale": "A structured audience category is needed so policies can distinguish designated LHCPs, other LHCPs, and no one without relying on free-form strings.",
+        "plain_english_summary": "The possible groups a patient may allow to view restricted diagnostic information.",
+        "source_excerpt": "A patient can enable designated licensed health-care professionals, other licensed health-care professionals, or no one to view restricted diagnostic information.",
+        "members_of": [],
+        "attributes": {},
+        "enum_values": [
+          "DesignatedLicensedHealthCareProfessionals",
+          "OtherLicensedHealthCareProfessionals",
+          "NoOne"
+        ]
+      },
+      {
+        "name": "DiagnosticInformation__allowedAudienceType",
+        "rationale": "DiagnosticInformation needs a typed patient-selected audience boundary for diagnostic viewing decisions.",
+        "plain_english_summary": "Records which audience the patient chose for viewing this diagnostic information.",
+        "source_excerpt": "A patient can enable designated licensed health-care professionals, other licensed health-care professionals, or no one to view restricted diagnostic information.",
+        "on_entity": "DiagnosticInformation",
+        "field_name": "allowedAudienceType",
+        "cedar_type": "DiagnosticInformationAudience",
+        "optional": false,
+        "alternatives_considered": [
+          "Reuse existing allowedAudience: String, rejected because the repair reason says it is unstructured and cannot reliably represent the boundary.",
+          "Model as Set<Lhcp>, rejected because the requirement names audience categories, including designated LHCPs and other LHCPs, rather than an enumerated list of individual professionals."
+        ]
+      },
+      {
+        "name": "viewDiagnosticInformation",
+        "rationale": "The view action needs request context binding the requesting LHCP to the patient-specific provider designation being relied on.",
+        "plain_english_summary": "Viewing diagnostic information can include the patient-specific designation relationship that justifies the access.",
+        "source_excerpt": "Approved diagnostic information is diagnostic information that a patient allows a designated or other licensed health-care professional to view.",
+        "principal_types": [
+          "Lhcp",
+          "Patient",
+          "PersonalRepresentative"
+        ],
+        "resource_types": [
+          "DiagnosticInformation"
+        ],
+        "context_attributes": {
+          "providerDesignation": {
+            "name": "viewDiagnosticInformation__context__providerDesignation",
+            "rationale": "Provides the patient-specific LHCP designation relationship for policies that allow designated-provider diagnostic access.",
+            "plain_english_summary": "The patient-specific record showing whether this LHCP is designated for this patient.",
+            "source_excerpt": "Approved diagnostic information is diagnostic information that a patient allows a designated or other licensed health-care professional to view.",
+            "on_entity": "",
+            "field_name": "providerDesignation",
+            "cedar_type": "ProviderDesignation",
+            "optional": true,
+            "alternatives_considered": []
+          }
+        },
+        "parent_groups": []
+      }
+    ],
+    "schema_validation": [
+      {
+        "attempt_number": 1,
+        "schema_text": "entity User {\n    mid: String,\n    password: String,\n    securityQuestion?: String,\n};\n\nentity Patient in [User] {\n    isActive: Bool,\n};\n\nentity Hcp in [User];\n\nentity Lhcp in [Hcp] {\n    hospitals: Set<Hospital>,\n};\n\nentity Administrator in [User];\n\nentity EmergencyResponder in [User];\n\nentity Uap in [User];\n\nentity PersonalRepresentative in [User];\n\nentity PublicHealthAgent in [User];\n\nentity LabTechnician in [User];\n\nentity SoftwareTester in [User];\n\nentity Hospital;\n\nentity Session {\n    user: User,\n    isActive: Bool,\n};\n\nentity SystemSettings {\n    inactivityPeriodLength: duration,\n};\n\nentity MedicalRecord {\n    patient: Patient,\n};\n\nentity DemographicInformation {\n    patient: Patient,\n};\n\nentity DiagnosticInformation {\n    patient: Patient,\n    isRestricted: Bool,\n    restrictionAllowed: Bool,\n    allowedAudience: String,\n    allowedAudienceType: DiagnosticInformationAudience,\n};\n\nentity OfficeVisit {\n    patient: Patient,\n    lhcp: Lhcp,\n    hospital: Hospital,\n    surveyTaken: Bool,\n};\n\nentity PersonalHealthInformation {\n    patient: Patient,\n};\n\nentity FamilyHistory {\n    patient: Patient,\n};\n\nentity Immunization {\n    patient: Patient,\n};\n\nentity AccessLog {\n    patient: Patient,\n    accessorName: String,\n    accessorRoleRelativeToPatient: String,\n    dateTime: datetime,\n    transactionType: String,\n};\n\nentity ProviderDesignation {\n    patient: Patient,\n    lhcp: Lhcp,\n    isDesignated: Bool,\n};\n\nentity PersonalRepresentativeRelationship {\n    patient: Patient,\n    representative: User,\n    isActive: Bool,\n};\n\nentity DiagnosticInformationAudience enum [\"DesignatedLicensedHealthCareProfessionals\", \"OtherLicensedHealthCareProfessionals\", \"NoOne\"];\n\naction login appliesTo {\n    principal: [User],\n    resource: [Session],\n};\n\naction logout appliesTo {\n    principal: [User],\n    resource: [Session],\n};\n\naction requestPasswordChange appliesTo {\n    principal: [User],\n    resource: [User],\n};\n\naction setInactivityPeriodLength appliesTo {\n    principal: [Administrator],\n    resource: [SystemSettings],\n};\n\naction createPatient appliesTo {\n    principal: [Hcp],\n    resource: [Patient],\n};\n\naction disablePatient appliesTo {\n    principal: [Hcp],\n    resource: [Patient],\n};\n\naction reactivatePatient appliesTo {\n    principal: [Administrator],\n    resource: [Patient],\n};\n\naction editPatient appliesTo {\n    principal: [Hcp],\n    resource: [Patient],\n};\n\naction createLhcp appliesTo {\n    principal: [Administrator],\n    resource: [Lhcp],\n};\n\naction createEmergencyResponder appliesTo {\n    principal: [Administrator],\n    resource: [EmergencyResponder],\n};\n\naction createLabTechnician appliesTo {\n    principal: [Administrator],\n    resource: [LabTechnician],\n};\n\naction createPublicHealthAgent appliesTo {\n    principal: [Administrator],\n    resource: [PublicHealthAgent],\n};\n\naction createUap appliesTo {\n    principal: [Lhcp],\n    resource: [Uap],\n};\n\naction assignLhcpCredentials appliesTo {\n    principal: [Administrator],\n    resource: [Lhcp],\n};\n\naction assignLhcpHospital appliesTo {\n    principal: [Administrator],\n    resource: [Lhcp],\n    context: {\n        hospital: Hospital,\n    },\n};\n\naction viewLhcps appliesTo {\n    principal: [Patient],\n    resource: [Lhcp],\n    context: {\n        patient: Patient,\n    },\n};\n\naction addProvider appliesTo {\n    principal: [Patient],\n    resource: [ProviderDesignation],\n};\n\naction designateLhcp appliesTo {\n    principal: [Patient],\n    resource: [ProviderDesignation],\n};\n\naction undesignateLhcp appliesTo {\n    principal: [Patient],\n    resource: [ProviderDesignation],\n};\n\naction viewAccessLog appliesTo {\n    principal: [Patient, PersonalRepresentative],\n    resource: [AccessLog],\n    context: {\n        session: Session,\n        representativeRelationship?: PersonalRepresentativeRelationship,\n    },\n};\n\naction viewMedicalRecord appliesTo {\n    principal: [Patient, PersonalRepresentative],\n    resource: [MedicalRecord],\n    context: {\n        session: Session,\n        representativeRelationship?: PersonalRepresentativeRelationship,\n    },\n};\n\naction viewFamilyHistory appliesTo {\n    principal: [Patient, PersonalRepresentative],\n    resource: [FamilyHistory],\n};\n\naction viewPersonalHealthInformation appliesTo {\n    principal: [Patient, PersonalRepresentative],\n    resource: [PersonalHealthInformation],\n};\n\naction viewImmunization appliesTo {\n    principal: [Patient, PersonalRepresentative],\n    resource: [Immunization],\n};\n\naction viewOfficeVisit appliesTo {\n    principal: [Patient, PersonalRepresentative],\n    resource: [OfficeVisit],\n};\n\naction takeOfficeVisitSurvey appliesTo {\n    principal: [Patient, PersonalRepresentative],\n    resource: [OfficeVisit],\n};\n\naction viewDiagnosticInformation appliesTo {\n    principal: [Lhcp, Patient, PersonalRepresentative],\n    resource: [DiagnosticInformation],\n    context: {\n        providerDesignation?: ProviderDesignation,\n    },\n};\n\naction restrictDiagnosticInformation appliesTo {\n    principal: [Patient],\n    resource: [DiagnosticInformation],\n};\n\naction determineDiagnosisRestrictionAllowed appliesTo {\n    principal: [Lhcp],\n    resource: [DiagnosticInformation],\n};\n\naction editPersonalHealthInformation appliesTo {\n    principal: [Hcp],\n    resource: [PersonalHealthInformation],\n};\n\naction editImmunization appliesTo {\n    principal: [Hcp],\n    resource: [Immunization],\n};\n\naction editFamilyHistory appliesTo {\n    principal: [Hcp],\n    resource: [FamilyHistory],\n};\n\naction documentOfficeVisit appliesTo {\n    principal: [Hcp],\n    resource: [OfficeVisit],\n};\n\naction editOfficeVisit appliesTo {\n    principal: [Hcp],\n    resource: [OfficeVisit],\n};\n\naction enterDemographicInformation appliesTo {\n    principal: [Uap],\n    resource: [DemographicInformation],\n};\n\naction editDemographicInformation appliesTo {\n    principal: [Uap],\n    resource: [DemographicInformation],\n};\n\naction addPersonalRepresentative appliesTo {\n    principal: [Hcp],\n    resource: [PersonalRepresentativeRelationship],\n};\n\naction removePersonalRepresentative appliesTo {\n    principal: [Hcp],\n    resource: [PersonalRepresentativeRelationship],\n};\n",
+        "validator_passed": true,
+        "validator_error": "",
+        "llm_was_called": false,
+        "schema_override": false,
+        "schema_gap_repair": true
+      }
+    ]
+  },
+  {
+    "gap": {
+      "atom_name": "patient_designate_own_lhcp_floor",
+      "stage": "stage2_property_review",
+      "reason": "Stage 2 decomposition critic repair: The patient-specific ownership boundary is materially useful and correctly binds the Patient principal to ProviderDesignation.patient, rather than treating DLHCP as a global role. However, the atom omits the named authentication/session lifecycle boundary from the requirements: users authenticate with MID/password and authorization is disabled after inactivity, logout, or application close. The designateLhcp action has no context.session hook, so an active session for the requesting patient is not schema-expressible for this action. Do not accept the ownership-only floor as an equivalent proxy.",
+      "critic_tags": [
+        "missing-active-session-boundary",
+        "missing-authentication-boundary",
+        "patient-specific-provider-designation-boundary-present",
+        "schema-gap"
+      ],
+      "required_action": "repair_schema_before_synthesis"
+    },
+    "proposed_atoms": [
+      {
+        "name": "designateLhcp",
+        "rationale": "Adds the request session context needed to enforce the authenticated-session lifecycle boundary for patient designation actions.",
+        "plain_english_summary": "When a patient designates an LHCP, the request carries the patient's current session so policies can require it to be active.",
+        "source_excerpt": "Authenticated sessions terminate after inactivity, logout, or closing the application. After the inactivity limit is exceeded, authorization is disabled.",
+        "principal_types": [
+          "Patient"
+        ],
+        "resource_types": [
+          "ProviderDesignation"
+        ],
+        "context_attributes": {
+          "session": {
+            "name": "designateLhcp__context__session",
+            "rationale": "The session object exposes the authenticated user and active/inactive state needed for authorization checks.",
+            "plain_english_summary": "The current login session for the patient making the designation request.",
+            "source_excerpt": "Authenticated sessions terminate after inactivity, logout, or closing the application. After the inactivity limit is exceeded, authorization is disabled.",
+            "on_entity": "",
+            "field_name": "session",
+            "cedar_type": "Session",
+            "optional": false,
+            "alternatives_considered": []
+          }
+        },
+        "parent_groups": []
+      }
+    ],
+    "decisions": [
+      {
+        "atom_name": "designateLhcp",
+        "action": "approve",
+        "reason": "",
+        "edit_delta": {},
+        "intent_acknowledged_by_user": true,
+        "symbolic_verified": false
+      }
+    ],
+    "approved_atoms": [
+      {
+        "name": "designateLhcp",
+        "rationale": "Adds the request session context needed to enforce the authenticated-session lifecycle boundary for patient designation actions.",
+        "plain_english_summary": "When a patient designates an LHCP, the request carries the patient's current session so policies can require it to be active.",
+        "source_excerpt": "Authenticated sessions terminate after inactivity, logout, or closing the application. After the inactivity limit is exceeded, authorization is disabled.",
+        "principal_types": [
+          "Patient"
+        ],
+        "resource_types": [
+          "ProviderDesignation"
+        ],
+        "context_attributes": {
+          "session": {
+            "name": "designateLhcp__context__session",
+            "rationale": "The session object exposes the authenticated user and active/inactive state needed for authorization checks.",
+            "plain_english_summary": "The current login session for the patient making the designation request.",
+            "source_excerpt": "Authenticated sessions terminate after inactivity, logout, or closing the application. After the inactivity limit is exceeded, authorization is disabled.",
+            "on_entity": "",
+            "field_name": "session",
+            "cedar_type": "Session",
+            "optional": false,
+            "alternatives_considered": []
+          }
+        },
+        "parent_groups": []
+      }
+    ],
+    "schema_validation": [
+      {
+        "attempt_number": 1,
+        "schema_text": "entity User {\n    mid: String,\n    password: String,\n    securityQuestion?: String,\n};\n\nentity Patient in [User] {\n    isActive: Bool,\n};\n\nentity Hcp in [User];\n\nentity Lhcp in [Hcp] {\n    hospitals: Set<Hospital>,\n};\n\nentity Administrator in [User];\n\nentity EmergencyResponder in [User];\n\nentity Uap in [User];\n\nentity PersonalRepresentative in [User];\n\nentity PublicHealthAgent in [User];\n\nentity LabTechnician in [User];\n\nentity SoftwareTester in [User];\n\nentity Hospital;\n\nentity Session {\n    user: User,\n    isActive: Bool,\n};\n\nentity SystemSettings {\n    inactivityPeriodLength: duration,\n};\n\nentity MedicalRecord {\n    patient: Patient,\n};\n\nentity DemographicInformation {\n    patient: Patient,\n};\n\nentity DiagnosticInformation {\n    patient: Patient,\n    isRestricted: Bool,\n    restrictionAllowed: Bool,\n    allowedAudience: String,\n    allowedAudienceType: DiagnosticInformationAudience,\n};\n\nentity OfficeVisit {\n    patient: Patient,\n    lhcp: Lhcp,\n    hospital: Hospital,\n    surveyTaken: Bool,\n};\n\nentity PersonalHealthInformation {\n    patient: Patient,\n};\n\nentity FamilyHistory {\n    patient: Patient,\n};\n\nentity Immunization {\n    patient: Patient,\n};\n\nentity AccessLog {\n    patient: Patient,\n    accessorName: String,\n    accessorRoleRelativeToPatient: String,\n    dateTime: datetime,\n    transactionType: String,\n};\n\nentity ProviderDesignation {\n    patient: Patient,\n    lhcp: Lhcp,\n    isDesignated: Bool,\n};\n\nentity PersonalRepresentativeRelationship {\n    patient: Patient,\n    representative: User,\n    isActive: Bool,\n};\n\nentity DiagnosticInformationAudience enum [\"DesignatedLicensedHealthCareProfessionals\", \"OtherLicensedHealthCareProfessionals\", \"NoOne\"];\n\naction login appliesTo {\n    principal: [User],\n    resource: [Session],\n};\n\naction logout appliesTo {\n    principal: [User],\n    resource: [Session],\n};\n\naction requestPasswordChange appliesTo {\n    principal: [User],\n    resource: [User],\n};\n\naction setInactivityPeriodLength appliesTo {\n    principal: [Administrator],\n    resource: [SystemSettings],\n};\n\naction createPatient appliesTo {\n    principal: [Hcp],\n    resource: [Patient],\n};\n\naction disablePatient appliesTo {\n    principal: [Hcp],\n    resource: [Patient],\n};\n\naction reactivatePatient appliesTo {\n    principal: [Administrator],\n    resource: [Patient],\n};\n\naction editPatient appliesTo {\n    principal: [Hcp],\n    resource: [Patient],\n};\n\naction createLhcp appliesTo {\n    principal: [Administrator],\n    resource: [Lhcp],\n};\n\naction createEmergencyResponder appliesTo {\n    principal: [Administrator],\n    resource: [EmergencyResponder],\n};\n\naction createLabTechnician appliesTo {\n    principal: [Administrator],\n    resource: [LabTechnician],\n};\n\naction createPublicHealthAgent appliesTo {\n    principal: [Administrator],\n    resource: [PublicHealthAgent],\n};\n\naction createUap appliesTo {\n    principal: [Lhcp],\n    resource: [Uap],\n};\n\naction assignLhcpCredentials appliesTo {\n    principal: [Administrator],\n    resource: [Lhcp],\n};\n\naction assignLhcpHospital appliesTo {\n    principal: [Administrator],\n    resource: [Lhcp],\n    context: {\n        hospital: Hospital,\n    },\n};\n\naction viewLhcps appliesTo {\n    principal: [Patient],\n    resource: [Lhcp],\n    context: {\n        patient: Patient,\n    },\n};\n\naction addProvider appliesTo {\n    principal: [Patient],\n    resource: [ProviderDesignation],\n};\n\naction designateLhcp appliesTo {\n    principal: [Patient],\n    resource: [ProviderDesignation],\n    context: {\n        session: Session,\n    },\n};\n\naction undesignateLhcp appliesTo {\n    principal: [Patient],\n    resource: [ProviderDesignation],\n};\n\naction viewAccessLog appliesTo {\n    principal: [Patient, PersonalRepresentative],\n    resource: [AccessLog],\n    context: {\n        session: Session,\n        representativeRelationship?: PersonalRepresentativeRelationship,\n    },\n};\n\naction viewMedicalRecord appliesTo {\n    principal: [Patient, PersonalRepresentative],\n    resource: [MedicalRecord],\n    context: {\n        session: Session,\n        representativeRelationship?: PersonalRepresentativeRelationship,\n    },\n};\n\naction viewFamilyHistory appliesTo {\n    principal: [Patient, PersonalRepresentative],\n    resource: [FamilyHistory],\n};\n\naction viewPersonalHealthInformation appliesTo {\n    principal: [Patient, PersonalRepresentative],\n    resource: [PersonalHealthInformation],\n};\n\naction viewImmunization appliesTo {\n    principal: [Patient, PersonalRepresentative],\n    resource: [Immunization],\n};\n\naction viewOfficeVisit appliesTo {\n    principal: [Patient, PersonalRepresentative],\n    resource: [OfficeVisit],\n};\n\naction takeOfficeVisitSurvey appliesTo {\n    principal: [Patient, PersonalRepresentative],\n    resource: [OfficeVisit],\n};\n\naction viewDiagnosticInformation appliesTo {\n    principal: [Lhcp, Patient, PersonalRepresentative],\n    resource: [DiagnosticInformation],\n    context: {\n        providerDesignation?: ProviderDesignation,\n    },\n};\n\naction restrictDiagnosticInformation appliesTo {\n    principal: [Patient],\n    resource: [DiagnosticInformation],\n};\n\naction determineDiagnosisRestrictionAllowed appliesTo {\n    principal: [Lhcp],\n    resource: [DiagnosticInformation],\n};\n\naction editPersonalHealthInformation appliesTo {\n    principal: [Hcp],\n    resource: [PersonalHealthInformation],\n};\n\naction editImmunization appliesTo {\n    principal: [Hcp],\n    resource: [Immunization],\n};\n\naction editFamilyHistory appliesTo {\n    principal: [Hcp],\n    resource: [FamilyHistory],\n};\n\naction documentOfficeVisit appliesTo {\n    principal: [Hcp],\n    resource: [OfficeVisit],\n};\n\naction editOfficeVisit appliesTo {\n    principal: [Hcp],\n    resource: [OfficeVisit],\n};\n\naction enterDemographicInformation appliesTo {\n    principal: [Uap],\n    resource: [DemographicInformation],\n};\n\naction editDemographicInformation appliesTo {\n    principal: [Uap],\n    resource: [DemographicInformation],\n};\n\naction addPersonalRepresentative appliesTo {\n    principal: [Hcp],\n    resource: [PersonalRepresentativeRelationship],\n};\n\naction removePersonalRepresentative appliesTo {\n    principal: [Hcp],\n    resource: [PersonalRepresentativeRelationship],\n};\n",
+        "validator_passed": true,
+        "validator_error": "",
+        "llm_was_called": false,
+        "schema_override": false,
+        "schema_gap_repair": true
+      }
+    ]
+  }
+]

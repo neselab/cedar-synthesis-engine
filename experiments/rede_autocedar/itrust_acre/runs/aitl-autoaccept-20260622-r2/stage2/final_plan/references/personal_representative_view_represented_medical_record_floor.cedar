@@ -1,0 +1,1 @@
+permit (principal, action == Action::"viewMedicalRecord", resource) when { context.session.isActive && context.session.user == principal && context.patient in principal.representedPatients && resource.patient == context.patient };

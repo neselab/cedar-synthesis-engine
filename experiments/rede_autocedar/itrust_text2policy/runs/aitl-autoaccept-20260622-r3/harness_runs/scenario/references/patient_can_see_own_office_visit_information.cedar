@@ -1,0 +1,1 @@
+permit (principal, action == Action::"seeRecordHealthInformation", resource) when { principal is Patient && resource is MedicalRecord && resource.patient == principal && context.informationCategory == "officeVisitInformation" && resource.hasOfficeVisitInformation };

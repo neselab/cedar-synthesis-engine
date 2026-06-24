@@ -1,0 +1,1407 @@
+[
+  {
+    "name": "hcp_can_create_patient",
+    "rationale": "The specification explicitly grants HCPs the ability to create patients, so synthesis must include a positive permission for this workflow rather than satisfying the policy with no permits.",
+    "plain_english_summary": "An HCP should be permitted to create a patient.",
+    "source_excerpt": "An HCP can create a patient and enter the patient as a new user of the system.",
+    "constraint_type": "floor",
+    "action": "createPatient",
+    "principal_types": [
+      "HCP"
+    ],
+    "resource_types": [
+      "Patient"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"createPatient\", resource) when { principal is HCP && resource is Patient };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "hcp_cannot_view_patient_credentials",
+    "rationale": "The specification explicitly forbids HCPs from viewing a patient's security question or password. Because the schema models credentials using hasPassword and hasSecurityQuestion flags on Credential, this safety property prevents any HCP viewCredential permission when the credential belongs to a Patient and contains either protected credential component.",
+    "plain_english_summary": "An HCP must not be permitted to view a patient's password or security-question credential information.",
+    "source_excerpt": "The HCP must not enter, edit, or view the patient's security question or password.",
+    "constraint_type": "disjointness",
+    "action": "viewCredential",
+    "principal_types": [
+      "HCP"
+    ],
+    "resource_types": [
+      "Credential"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"viewCredential\", resource) when { principal is HCP && resource is Credential && !(resource.user is Patient && (resource.hasPassword || resource.hasSecurityQuestion)) };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": false,
+    "symbolic_verification_log": [],
+    "intent_acknowledged_by_user": false,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": "HCP viewing a patient's password or security question credential information",
+    "disjoint_target_body": "resource.user is Patient && (resource.hasPassword || resource.hasSecurityQuestion)"
+  },
+  {
+    "name": "hcp_cannot_view_patient_password_or_security_question",
+    "rationale": "The prose explicitly prohibits HCPs from viewing a patient's security question or password. The validated schema now exposes the viewed credential component through context.component, so the property can target the sensitive components without over-broadly blocking non-sensitive credential metadata such as MID.",
+    "plain_english_summary": "An HCP must not be permitted to view a patient's password or security question credential component.",
+    "source_excerpt": "The HCP does not have the ability to view the patient's security question or password.",
+    "constraint_type": "disjointness",
+    "action": "viewCredential",
+    "principal_types": [
+      "HCP"
+    ],
+    "resource_types": [
+      "Credential"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"viewCredential\", resource) when { principal is HCP && resource is Credential && !(resource.user is Patient && (context.component == CredentialComponent::\"Password\" || context.component == CredentialComponent::\"SecurityQuestion\")) };",
+    "examples_adversarial": [
+      {
+        "description": "An HCP attempts to view a Patient credential's password component; a policy that only checks the HCP role would over-permit this forbidden sensitive access.",
+        "request_dict": {},
+        "decision_under_chosen": "deny",
+        "decisions_under_alternatives": {},
+        "diagnostic_for": [
+          "role-only-overpermission",
+          "sensitive-credential-component"
+        ]
+      }
+    ],
+    "alternatives_considered": [
+      {
+        "label": "deny_all_patient_credential_view",
+        "interpretive_choice": "Treat any view of a patient Credential as forbidden whenever the credential has password or security-question metadata. This was rejected because the spec forbids viewing the password and security question themselves, not necessarily all credential metadata such as MID.",
+        "cedar_text": "permit (principal, action == Action::\"viewCredential\", resource) when { principal is HCP && resource is Credential && !(resource.user is Patient) };"
+      }
+    ],
+    "symbolic_verified": false,
+    "symbolic_verification_log": [],
+    "intent_acknowledged_by_user": false,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": "hcp_view_patient_sensitive_credential_components",
+    "disjoint_target_body": "resource.user is Patient && (context.component == CredentialComponent::\"Password\" || context.component == CredentialComponent::\"SecurityQuestion\")"
+  },
+  {
+    "name": "hcp_forbidden_view_patient_sensitive_credential_components",
+    "rationale": "The source requirement is a negative prohibition: HCPs must not be able to view a patient's password or security question. Because the schema exposes the credential owner through resource.user and the requested credential component through context.component, the forbidden target can be stated exactly without granting HCPs any permission to view other credential components or non-patient credentials.",
+    "plain_english_summary": "An HCP must not be permitted to view a patient's password or security question credential component.",
+    "source_excerpt": "The HCP does not have the ability to view the patient's security question or password.",
+    "constraint_type": "disjointness",
+    "action": "viewCredential",
+    "principal_types": [
+      "HCP"
+    ],
+    "resource_types": [
+      "Credential"
+    ],
+    "reference_cedar": "permit (principal is HCP, action == Action::\"viewCredential\", resource is Credential)\nwhen { !(principal is HCP && resource is Credential && resource.user is Patient && (context.component == CredentialComponent::\"Password\" || context.component == CredentialComponent::\"SecurityQuestion\")) };",
+    "examples_adversarial": [
+      {
+        "description": "An HCP attempts to view a Patient credential's password component; a policy that permits this request violates the explicit credential secrecy requirement.",
+        "request_dict": {},
+        "decision_under_chosen": "deny",
+        "decisions_under_alternatives": {},
+        "diagnostic_for": [
+          "sensitive-credential-component",
+          "patient-owned-credential",
+          "negative-requirement"
+        ]
+      }
+    ],
+    "alternatives_considered": [
+      {
+        "label": "complement_permit_for_non_sensitive_views",
+        "interpretive_choice": "Permit HCP credential views except when the credential belongs to a Patient and the requested component is Password or SecurityQuestion. This was rejected because the source sentence is only a prohibition and should not affirmatively grant access to non-sensitive credential components or non-patient credentials.",
+        "cedar_text": "permit (principal, action == Action::\"viewCredential\", resource) when { principal is HCP && resource is Credential && !(resource.user is Patient && (context.component == CredentialComponent::\"Password\" || context.component == CredentialComponent::\"SecurityQuestion\")) };"
+      }
+    ],
+    "symbolic_verified": false,
+    "symbolic_verification_log": [],
+    "intent_acknowledged_by_user": false,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": "hcp_view_patient_sensitive_credential_components",
+    "disjoint_target_body": "principal is HCP && resource is Credential && resource.user is Patient && (context.component == CredentialComponent::\"Password\" || context.component == CredentialComponent::\"SecurityQuestion\")"
+  },
+  {
+    "name": "hcp_forbidden_view_patient_password_or_security_question",
+    "rationale": "The source requirement is an explicit prohibition: HCPs must not be able to view a patient's password or security question. The schema exposes the credential owner as resource.user and the requested credential component as context.component, so the forbidden target can be stated directly without adding any complement permit that would authorize other credential views.",
+    "plain_english_summary": "An HCP must not be permitted to view a patient's password or security question credential component.",
+    "source_excerpt": "The HCP does not have the ability to view the patient's security question or password.",
+    "constraint_type": "disjointness",
+    "action": "viewCredential",
+    "principal_types": [
+      "HCP"
+    ],
+    "resource_types": [
+      "Credential"
+    ],
+    "reference_cedar": "permit (principal is HCP, action == Action::\"viewCredential\", resource is Credential)\nwhen { !(principal is HCP && resource.user is Patient && (context.component == CredentialComponent::\"Password\" || context.component == CredentialComponent::\"SecurityQuestion\")) };",
+    "examples_adversarial": [
+      {
+        "description": "An HCP attempts to view a Patient credential's password component; any policy that permits this request violates the explicit credential secrecy requirement.",
+        "request_dict": {},
+        "decision_under_chosen": "deny",
+        "decisions_under_alternatives": {},
+        "diagnostic_for": [
+          "sensitive-credential-component",
+          "patient-owned-credential",
+          "negative-requirement"
+        ]
+      }
+    ],
+    "alternatives_considered": [
+      {
+        "label": "complement_permit_for_non_sensitive_views",
+        "interpretive_choice": "State the safe complement as a permit for HCP credential views except patient password or security-question views. This was rejected because the user clarified that the prohibition atom should identify only the forbidden target body and must not affirmatively allow other credential views.",
+        "cedar_text": "permit (principal is HCP, action == Action::\"viewCredential\", resource is Credential) when { !(resource.user is Patient && (context.component == CredentialComponent::\"Password\" || context.component == CredentialComponent::\"SecurityQuestion\")) };"
+      }
+    ],
+    "symbolic_verified": false,
+    "symbolic_verification_log": [],
+    "intent_acknowledged_by_user": false,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": "hcp_view_patient_sensitive_credential_components",
+    "disjoint_target_body": "principal is HCP && resource.user is Patient && (context.component == CredentialComponent::\"Password\" || context.component == CredentialComponent::\"SecurityQuestion\")"
+  },
+  {
+    "name": "administrator_can_create_lhcp",
+    "rationale": "The specification explicitly grants administrators the ability to create LHCP users. This positive workflow is not covered by the already-approved HCP patient-creation floor, so a separate floor is required to prevent a deny-only or incomplete policy from omitting administrator LHCP creation.",
+    "plain_english_summary": "An administrator should be permitted to create an LHCP.",
+    "source_excerpt": "An administrator can create LHCPs, emergency responders, and public health agents.",
+    "constraint_type": "floor",
+    "action": "createLHCP",
+    "principal_types": [
+      "Administrator"
+    ],
+    "resource_types": [
+      "LHCP"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"createLHCP\", resource) when { principal is Administrator && resource is LHCP };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "administrator_can_create_emergency_responder",
+    "rationale": "The specification explicitly allows administrators to create emergency responder users. This positive workflow is not covered by the existing approved atoms, which only cover creating LHCPs among the administrator creation actions.",
+    "plain_english_summary": "An administrator should be permitted to create an emergency responder.",
+    "source_excerpt": "An administrator can create LHCPs, emergency responders, and public health agents.",
+    "constraint_type": "floor",
+    "action": "createEmergencyResponder",
+    "principal_types": [
+      "Administrator"
+    ],
+    "resource_types": [
+      "EmergencyResponder"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"createEmergencyResponder\", resource) when { principal is Administrator && resource is EmergencyResponder };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "administrator_can_create_public_health_agent",
+    "rationale": "The specification explicitly allows administrators to create public health agents, and this positive workflow is not yet covered by an approved floor atom. A floor is needed so synthesis cannot omit this administrative creation permission.",
+    "plain_english_summary": "An administrator should be permitted to create a public health agent.",
+    "source_excerpt": "An administrator can create LHCPs, emergency responders, and public health agents.",
+    "constraint_type": "floor",
+    "action": "createPublicHealthAgent",
+    "principal_types": [
+      "Administrator"
+    ],
+    "resource_types": [
+      "PublicHealthAgent"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"createPublicHealthAgent\", resource) when { principal is Administrator && resource is PublicHealthAgent };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "lhcp_can_create_uap",
+    "rationale": "The specification explicitly grants LHCPs the ability to create UAP users, and no approved atom currently covers this positive workflow. A floor is needed so synthesis cannot omit this required permission.",
+    "plain_english_summary": "An LHCP should be permitted to create a UAP user.",
+    "source_excerpt": "A LHCP can create UAP users.",
+    "constraint_type": "floor",
+    "action": "createUAP",
+    "principal_types": [
+      "LHCP"
+    ],
+    "resource_types": [
+      "UAP"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"createUAP\", resource) when { principal is LHCP && resource is UAP };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "hcp_can_edit_patient",
+    "rationale": "The specification explicitly grants HCPs the ability to edit patient data. Existing approved atoms cover HCP patient creation and several administrator/LHCP creation workflows, but not this positive edit workflow, so a deny-only or creation-only policy could incorrectly satisfy the current approved set.",
+    "plain_english_summary": "An HCP should be permitted to edit a patient.",
+    "source_excerpt": "The HCP can edit patient data according to the data format.",
+    "constraint_type": "floor",
+    "action": "editPatient",
+    "principal_types": [
+      "HCP"
+    ],
+    "resource_types": [
+      "Patient"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"editPatient\", resource) when { principal is HCP && resource is Patient };",
+    "examples_adversarial": [
+      {
+        "description": "A candidate policy that allows HCPs to create patients but never allows them to edit patient data would miss this required workflow.",
+        "request_dict": {},
+        "decision_under_chosen": "permit",
+        "decisions_under_alternatives": {},
+        "diagnostic_for": [
+          "missing-positive-edit-workflow"
+        ]
+      }
+    ],
+    "alternatives_considered": [
+      {
+        "label": "include_data_format_condition",
+        "interpretive_choice": "The prose says edits must be according to the data format, but the schema exposes no context or resource attribute representing data-format validity, so adding a proxy condition would invent semantics not present in the schema.",
+        "cedar_text": ""
+      }
+    ],
+    "symbolic_verified": false,
+    "symbolic_verification_log": [],
+    "intent_acknowledged_by_user": false,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "hcp_can_edit_valid_non_mid_patient_data",
+    "rationale": "The approved atoms do not yet cover the positive workflow allowing HCPs to edit patient data. The prior broad edit-patient proposal was rejected because it lacked explicit data-format and MID boundaries; the validated schema now exposes `context.isDataFormatValid` and `context.patientField`, so the floor can be scoped to valid edits that do not target the patient's MID.",
+    "plain_english_summary": "An HCP should be permitted to edit patient data only when the submitted data format is valid and the field being edited is not the patient's MID.",
+    "source_excerpt": "The HCP can edit patient data according to the data format, but the patient's MID must not be editable.",
+    "constraint_type": "floor",
+    "action": "editPatient",
+    "principal_types": [
+      "HCP"
+    ],
+    "resource_types": [
+      "Patient"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"editPatient\", resource) when { principal is HCP && resource is Patient && context.isDataFormatValid && context.patientField != \"MID\" };",
+    "examples_adversarial": [
+      {
+        "description": "An HCP attempts to edit the patient's MID even with otherwise valid formatting; the chosen property does not require this request to be permitted.",
+        "request_dict": {},
+        "decision_under_chosen": "deny",
+        "decisions_under_alternatives": {},
+        "diagnostic_for": [
+          "mid_not_editable_boundary",
+          "avoid_broad_hcp_edit_patient_floor"
+        ]
+      }
+    ],
+    "alternatives_considered": [
+      {
+        "label": "broad_hcp_edit_patient",
+        "interpretive_choice": "Permit any HCP to edit any Patient without checking data-format validity or excluding MID edits. This repeats the rejected overbroad encoding.",
+        "cedar_text": "permit (principal, action == Action::\"editPatient\", resource) when { principal is HCP && resource is Patient };"
+      }
+    ],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "patient_mid_not_editable",
+    "rationale": "The approved HCP edit floor permits only valid non-MID edits, but the explicit safety sentence that the patient's MID must not be editable also needs a same-action safety atom so a candidate policy cannot additionally permit MID edits. The schema exposes the edited patient field through context.patientField, so the MID boundary can be stated directly.",
+    "plain_english_summary": "HCP patient-edit permissions must exclude edits to the patient's MID field.",
+    "source_excerpt": "The HCP can edit patient data according to the data format, but the patient's MID must not be editable.",
+    "constraint_type": "disjointness",
+    "action": "editPatient",
+    "principal_types": [
+      "HCP"
+    ],
+    "resource_types": [
+      "Patient"
+    ],
+    "reference_cedar": "permit (principal is HCP, action == Action::\"editPatient\", resource is Patient)\nwhen { !(principal is HCP && resource is Patient && context.patientField == \"MID\") };",
+    "examples_adversarial": [
+      {
+        "description": "An HCP attempts to edit a Patient's MID field; this must remain outside any allowed editPatient case even if the submitted format is otherwise valid.",
+        "request_dict": {},
+        "decision_under_chosen": "deny",
+        "decisions_under_alternatives": {},
+        "diagnostic_for": [
+          "patient_mid_not_editable"
+        ]
+      }
+    ],
+    "alternatives_considered": [
+      {
+        "label": "data_format_only_ceiling",
+        "interpretive_choice": "Only require valid data format for HCP patient edits and omit the MID exclusion.",
+        "cedar_text": "permit (principal, action == Action::\"editPatient\", resource) when { principal is HCP && resource is Patient && context.isDataFormatValid };"
+      }
+    ],
+    "symbolic_verified": false,
+    "symbolic_verification_log": [],
+    "intent_acknowledged_by_user": false,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": "hcp_can_edit_valid_non_mid_patient_data",
+    "disjoint_target_body": "principal is HCP && resource is Patient && context.patientField == \"MID\""
+  },
+  {
+    "name": "hcp_mid_edit_forbidden",
+    "rationale": "The specification explicitly states that the patient's MID must not be editable. The approved editPatient floor only requires permission for valid non-MID edits; it does not by itself prevent a candidate policy from adding a separate permit for MID edits. This atom states the forbidden request body directly, without granting the complement of all non-MID edits.",
+    "plain_english_summary": "An HCP must not be permitted to edit a Patient's MID field.",
+    "source_excerpt": "The HCP can edit patient data according to the data format, but the patient's MID must not be editable.",
+    "constraint_type": "disjointness",
+    "action": "editPatient",
+    "principal_types": [
+      "HCP"
+    ],
+    "resource_types": [
+      "Patient"
+    ],
+    "reference_cedar": "permit (principal is HCP, action == Action::\"editPatient\", resource is Patient)\nwhen { !(principal is HCP && resource is Patient && context.patientField == \"MID\") };",
+    "examples_adversarial": [
+      {
+        "description": "An HCP attempts to edit a Patient's MID field; this must be prohibited even if some other policy would otherwise permit HCP patient edits.",
+        "request_dict": {},
+        "decision_under_chosen": "deny",
+        "decisions_under_alternatives": {},
+        "diagnostic_for": [
+          "hcp_mid_edit_forbidden"
+        ]
+      }
+    ],
+    "alternatives_considered": [
+      {
+        "label": "complement_permit_for_non_mid_edits",
+        "interpretive_choice": "Encode the disjointness as a permit for every HCP editPatient request except MID edits. This was rejected because it would affirmatively allow non-MID edits without requiring context.isDataFormatValid.",
+        "cedar_text": "permit (principal is HCP, action == Action::\"editPatient\", resource is Patient) when { context.patientField != \"MID\" };"
+      }
+    ],
+    "symbolic_verified": false,
+    "symbolic_verification_log": [],
+    "intent_acknowledged_by_user": false,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": "hcp_can_edit_valid_non_mid_patient_data",
+    "disjoint_target_body": "principal is HCP && resource is Patient && context.patientField == \"MID\""
+  },
+  {
+    "name": "hcp_mid_edit_prohibition_target",
+    "rationale": "The specification explicitly says the patient's MID must not be editable. The approved valid non-MID edit floor does not prevent a candidate policy from adding a separate permit for MID edits, so this disjointness atom records the forbidden request shape directly rather than permitting the complement of non-MID edits.",
+    "plain_english_summary": "An HCP must not be permitted to edit a Patient's MID field.",
+    "source_excerpt": "The HCP can edit patient data according to the data format, but the patient's MID must not be editable.",
+    "constraint_type": "disjointness",
+    "action": "editPatient",
+    "principal_types": [
+      "HCP"
+    ],
+    "resource_types": [
+      "Patient"
+    ],
+    "reference_cedar": "permit (principal is HCP, action == Action::\"editPatient\", resource is Patient)\nwhen { !(principal is HCP && resource is Patient && context.patientField == \"MID\") };",
+    "examples_adversarial": [
+      {
+        "description": "An HCP attempts to edit a Patient's MID field; this must be prohibited even if another policy would otherwise permit HCP patient edits.",
+        "request_dict": {},
+        "decision_under_chosen": "deny",
+        "decisions_under_alternatives": {},
+        "diagnostic_for": [
+          "hcp_mid_edit_prohibition_target"
+        ]
+      }
+    ],
+    "alternatives_considered": [
+      {
+        "label": "complement_permit_for_non_mid_edits",
+        "interpretive_choice": "Encode the disjointness as a permit for all HCP editPatient requests except MID edits. This was rejected because it would affirmatively permit invalid-format non-MID edits and therefore exceed the negative MID non-editability requirement.",
+        "cedar_text": "permit (principal is HCP, action == Action::\"editPatient\", resource is Patient) when { context.patientField != \"MID\" };"
+      }
+    ],
+    "symbolic_verified": false,
+    "symbolic_verification_log": [],
+    "intent_acknowledged_by_user": false,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": "hcp_can_edit_valid_non_mid_patient_data",
+    "disjoint_target_body": "principal is HCP && resource is Patient && context.patientField == \"MID\""
+  },
+  {
+    "name": "hcp_edit_patient_limited_to_valid_non_mid_data",
+    "rationale": "The approved floor permits HCP edits only for valid-format, non-MID patient data, but without a matching safety bound a candidate policy could also permit invalid-format edits or MID edits. The source frames both data-format compliance and MID non-editability as boundaries on HCP patient editing, so a ceiling is needed for the same action.",
+    "plain_english_summary": "HCPs must not be permitted to edit patient data unless the submitted data format is valid and the field being edited is not the patient's MID.",
+    "source_excerpt": "The HCP can edit patient data according to the data format, but the patient's MID must not be editable.",
+    "constraint_type": "ceiling",
+    "action": "editPatient",
+    "principal_types": [
+      "HCP"
+    ],
+    "resource_types": [
+      "Patient"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"editPatient\", resource) when { principal is HCP && resource is Patient && context.isDataFormatValid && context.patientField != \"MID\" };",
+    "examples_adversarial": [
+      {
+        "description": "An HCP attempts to edit the patient's MID even though MID is explicitly not editable.",
+        "request_dict": {},
+        "decision_under_chosen": "deny",
+        "decisions_under_alternatives": {},
+        "diagnostic_for": [
+          "missing_mid_edit_safety_bound"
+        ]
+      },
+      {
+        "description": "An HCP attempts to edit patient data when the submitted data format is invalid.",
+        "request_dict": {},
+        "decision_under_chosen": "deny",
+        "decisions_under_alternatives": {},
+        "diagnostic_for": [
+          "missing_data_format_safety_bound"
+        ]
+      }
+    ],
+    "alternatives_considered": [
+      {
+        "label": "mid_only_disjointness",
+        "interpretive_choice": "Represent only the MID prohibition as a disjointness atom. This is useful but would leave the approved floor's data-format boundary uncovered by a same-action ceiling.",
+        "cedar_text": "permit (principal, action == Action::\"editPatient\", resource) when { principal is HCP && resource is Patient && context.patientField != \"MID\" };"
+      },
+      {
+        "label": "validity_only_ceiling",
+        "interpretive_choice": "Bound HCP patient edits only by data-format validity. This would miss the adjacent explicit requirement that the patient's MID must not be editable.",
+        "cedar_text": "permit (principal, action == Action::\"editPatient\", resource) when { principal is HCP && resource is Patient && context.isDataFormatValid };"
+      }
+    ],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "joint-consistency-with-hcp_can_edit_valid_non_mid_patient_data: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "user_can_login_with_own_credentials",
+    "rationale": "The specification gives an explicit positive workflow for role-based entry: any user can enter their own MID and password to gain access. This floor prevents a deny-only policy from satisfying the plan. The schema exposes ownership of both the Session and Credential, and exposes whether the credential has a password, but it does not expose the actual submitted MID/password values or a password-match predicate; this atom therefore uses the available own-credential boundary and records that limitation.",
+    "plain_english_summary": "A user should be permitted to log in to their own session using their own credential when that credential has a password.",
+    "source_excerpt": "Any user can enter their MID and password to gain role-based entry into iTrust.",
+    "constraint_type": "floor",
+    "action": "login",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "Session"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"login\", resource) when { principal is User && resource is Session && resource.user == principal && context.credential.user == principal && context.credential.hasPassword };",
+    "examples_adversarial": [
+      {
+        "description": "A policy that permits login with another user's credential would satisfy a broad User login rule but violates the 'their MID and password' ownership boundary.",
+        "request_dict": {},
+        "decision_under_chosen": "deny",
+        "decisions_under_alternatives": {},
+        "diagnostic_for": [
+          "own-credential-boundary",
+          "own-session-boundary"
+        ]
+      }
+    ],
+    "alternatives_considered": [
+      {
+        "label": "broad_user_login",
+        "interpretive_choice": "Permit any User to perform login on any Session with any Credential. Rejected because the prose says the user enters their MID and password, which requires an ownership boundary exposed by Session.user and Credential.user.",
+        "cedar_text": "permit (principal, action == Action::\"login\", resource) when { principal is User && resource is Session };"
+      }
+    ],
+    "symbolic_verified": false,
+    "symbolic_verification_log": [],
+    "intent_acknowledged_by_user": false,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "user_can_login_with_verified_own_credentials",
+    "rationale": "The login workflow is an explicit positive permission and previous rejected attempts identified that it must use explicit submitted-MID and password-verification boundaries rather than treating password existence as proof of authentication. The validated schema now exposes `context.submittedMID`, `context.passwordVerified`, `context.credential`, `Credential.user`, `Credential.mid`, and `Session.user`, so the floor can require the user to authenticate into their own session with their own credential, matching the submitted MID and a verified password.",
+    "plain_english_summary": "A user should be permitted to log in only when using their own credential for their own session, the submitted MID matches that credential, and the password has been verified.",
+    "source_excerpt": "Any user can enter their MID and password to gain role-based entry into iTrust.",
+    "constraint_type": "floor",
+    "action": "login",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "Session"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"login\", resource) when { principal is User && resource is Session && resource.user == principal && context.credential.user == principal && context.submittedMID == context.credential.mid && context.passwordVerified };",
+    "examples_adversarial": [
+      {
+        "description": "A user attempts to log in to a session belonging to another user even though the submitted MID and password verification are otherwise valid for the credential.",
+        "request_dict": {},
+        "decision_under_chosen": "deny",
+        "decisions_under_alternatives": {},
+        "diagnostic_for": [
+          "own-session-boundary"
+        ]
+      },
+      {
+        "description": "A user submits an MID that does not match the credential MID, even if password verification is claimed true.",
+        "request_dict": {},
+        "decision_under_chosen": "deny",
+        "decisions_under_alternatives": {},
+        "diagnostic_for": [
+          "submitted-mid-boundary"
+        ]
+      }
+    ],
+    "alternatives_considered": [
+      {
+        "label": "has_password_only",
+        "interpretive_choice": "Permit login when the credential merely has a password set.",
+        "cedar_text": "permit (principal, action == Action::\"login\", resource) when { principal is User && resource is Session && context.credential.user == principal && context.credential.hasPassword };"
+      }
+    ],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "login_limited_to_verified_own_credentials",
+    "rationale": "The approved login floor permits the intended success path, but without a same-action ceiling a candidate policy could also permit role-based entry with another user's credential, a mismatched MID, an unverified password, or a session not owned by the principal. The source ties login to entering the user's own MID and password to gain entry, so those authentication and ownership boundaries must be safety-relevant.",
+    "plain_english_summary": "Users must not be permitted to log in unless they are logging into their own session with their own credential, the submitted MID matches that credential, and the password has been verified.",
+    "source_excerpt": "Any user can enter their MID and password to gain role-based entry into iTrust.",
+    "constraint_type": "ceiling",
+    "action": "login",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "Session"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"login\", resource) when { principal is User && resource is Session && resource.user == principal && context.credential.user == principal && context.submittedMID == context.credential.mid && context.passwordVerified };",
+    "examples_adversarial": [
+      {
+        "description": "A user attempts to log in to a session for themselves but supplies a credential belonging to a different user, with the correct submitted MID for that other credential and passwordVerified true.",
+        "request_dict": {},
+        "decision_under_chosen": "deny",
+        "decisions_under_alternatives": {},
+        "diagnostic_for": [
+          "own-credential-boundary",
+          "login-overpermission"
+        ]
+      },
+      {
+        "description": "A user attempts login with their own credential and own session, but the submitted MID does not match the credential MID or the password has not been verified.",
+        "request_dict": {},
+        "decision_under_chosen": "deny",
+        "decisions_under_alternatives": {},
+        "diagnostic_for": [
+          "submitted-mid-boundary",
+          "password-verification-boundary"
+        ]
+      }
+    ],
+    "alternatives_considered": [
+      {
+        "label": "principal_type_only_login_ceiling",
+        "interpretive_choice": "Limit login only to User principals and Session resources, without credential/session ownership or verification conditions.",
+        "cedar_text": "permit (principal, action == Action::\"login\", resource) when { principal is User && resource is Session };"
+      }
+    ],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "joint-consistency-with-user_can_login_with_verified_own_credentials: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "user_can_request_own_password_change",
+    "rationale": "The specification explicitly allows any user to request a password change. Because the password belongs to a credential, the permission should be scoped to the user's own credential rather than allowing requests against another user's credential.",
+    "plain_english_summary": "Any user should be permitted to request a password change for their own credential.",
+    "source_excerpt": "Any user can request a password change.",
+    "constraint_type": "floor",
+    "action": "requestPasswordChange",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "Credential"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"requestPasswordChange\", resource) when { principal is User && resource is Credential && resource.user == principal };",
+    "examples_adversarial": [],
+    "alternatives_considered": [
+      {
+        "label": "broad_user_password_change_request",
+        "interpretive_choice": "Permit any User to request a password change for any Credential without checking ownership.",
+        "cedar_text": "permit (principal, action == Action::\"requestPasswordChange\", resource) when { principal is User && resource is Credential };"
+      }
+    ],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "password_change_limited_to_own_credential",
+    "rationale": "The approved floor permits users to request password changes for their own credentials, but without a same-action ceiling a candidate policy could also permit users to request password changes for other users' credentials. The source says a user can request a password change in the context of their own account credentials, so the ownership boundary should be safety-checked explicitly.",
+    "plain_english_summary": "Users must not be permitted to request a password change unless the credential belongs to that same user.",
+    "source_excerpt": "Any user can request a password change.",
+    "constraint_type": "ceiling",
+    "action": "requestPasswordChange",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "Credential"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"requestPasswordChange\", resource) when { principal is User && resource is Credential && resource.user == principal };",
+    "examples_adversarial": [
+      {
+        "description": "A user attempts to request a password change for another user's credential; this should not be permitted under the ownership boundary.",
+        "request_dict": {},
+        "decision_under_chosen": "deny",
+        "decisions_under_alternatives": {},
+        "diagnostic_for": [
+          "missing-own-credential-ceiling",
+          "overpermission-password-change"
+        ]
+      }
+    ],
+    "alternatives_considered": [
+      {
+        "label": "role_only_password_change_ceiling",
+        "interpretive_choice": "Limit requestPasswordChange only to User principals without checking that the credential belongs to the requesting user.",
+        "cedar_text": "permit (principal, action == Action::\"requestPasswordChange\", resource) when { principal is User && resource is Credential };"
+      },
+      {
+        "label": "no_ceiling_after_floor",
+        "interpretive_choice": "Rely only on the approved own-credential floor and do not add a safety property for other users' credentials.",
+        "cedar_text": ""
+      }
+    ],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "joint-consistency-with-user_can_request_own_password_change: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "administrator_can_assign_lhcp_to_hospital",
+    "rationale": "The approved atoms cover administrator creation of personnel but not the explicit workflow allowing administrators to assign LHCPs to hospitals. This positive permission needs a floor so synthesis cannot omit the hospital-assignment capability.",
+    "plain_english_summary": "An administrator should be permitted to assign an LHCP to a chosen hospital.",
+    "source_excerpt": "The administrator can assign an LHCP to multiple hospitals and choose the hospitals.",
+    "constraint_type": "floor",
+    "action": "assignLHCPToHospital",
+    "principal_types": [
+      "Administrator"
+    ],
+    "resource_types": [
+      "LHCP"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"assignLHCPToHospital\", resource) when { principal is Administrator && resource is LHCP && context.hospital is Hospital };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "user_can_logout_own_session",
+    "rationale": "The specification gives an explicit positive workflow for ending an authenticated session when the user logs out. This floor prevents synthesis from satisfying the session-management portion with no logout permission, while preserving the ownership boundary that the session being ended belongs to the logging-out user.",
+    "plain_english_summary": "A user should be permitted to log out of their own authenticated session.",
+    "source_excerpt": "An authenticated session ends when the user logs out or closes the application.",
+    "constraint_type": "floor",
+    "action": "logout",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "Session"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"logout\", resource) when { principal is User && resource is Session && resource.user == principal && resource.isAuthenticated };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": false,
+    "symbolic_verification_log": [],
+    "intent_acknowledged_by_user": false,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "user_can_logout_active_own_session",
+    "rationale": "The logout workflow is an explicit positive requirement, and the schema exposes both the ownership boundary for the session and the inactivity lifecycle boundary. Because the specification also says that after the inactivity limit is exceeded all authorization is disabled, the floor must require the session to belong to the user, be authenticated, and not have exceeded the inactivity limit.",
+    "plain_english_summary": "A user should be permitted to log out of their own authenticated session only while the session has not exceeded the inactivity limit.",
+    "source_excerpt": "An authenticated session ends when the user logs out or closes the application. Electronic sessions must terminate after the configured inactivity period; after the inactivity limit is exceeded, all authorization is disabled.",
+    "constraint_type": "floor",
+    "action": "logout",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "Session"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"logout\", resource) when { principal is User && resource is Session && resource.user == principal && resource.isAuthenticated && !resource.inactivityLimitExceeded };",
+    "examples_adversarial": [
+      {
+        "description": "A user attempts to log out of their own authenticated session after the inactivity limit has already been exceeded; because all authorization is disabled after that boundary, this floor does not require the request to be permitted.",
+        "request_dict": {},
+        "decision_under_chosen": "deny",
+        "decisions_under_alternatives": {},
+        "diagnostic_for": [
+          "inactivity-limit-authorization-disabled-boundary"
+        ]
+      },
+      {
+        "description": "A user attempts to log out of an authenticated session belonging to another user; the ownership boundary means this floor does not require the request to be permitted.",
+        "request_dict": {},
+        "decision_under_chosen": "deny",
+        "decisions_under_alternatives": {},
+        "diagnostic_for": [
+          "own-session-boundary"
+        ]
+      }
+    ],
+    "alternatives_considered": [
+      {
+        "label": "omit_inactivity_boundary",
+        "interpretive_choice": "Permit logout for any authenticated own session without checking whether the inactivity limit has been exceeded. This was rejected because the source explicitly disables all authorization after the inactivity limit is exceeded.",
+        "cedar_text": "permit (principal, action == Action::\"logout\", resource) when { principal is User && resource is Session && resource.user == principal && resource.isAuthenticated };"
+      },
+      {
+        "label": "no_authentication_lifecycle_check",
+        "interpretive_choice": "Permit a user to log out of any own session regardless of whether it is authenticated or inactive. This is too broad for the stated authenticated-session workflow and ignores the inactivity authorization boundary.",
+        "cedar_text": "permit (principal, action == Action::\"logout\", resource) when { principal is User && resource is Session && resource.user == principal };"
+      }
+    ],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "logout_limited_to_active_own_session",
+    "rationale": "The approved logout floor permits logout only for an authenticated own session that has not exceeded the inactivity limit. Because the spec states that authorization is disabled after the inactivity limit is exceeded, a candidate policy must also be bounded so it cannot permit broader logout requests outside that ownership, authentication, and inactivity boundary.",
+    "plain_english_summary": "Users must not be permitted to log out unless they are logging out of their own authenticated session and the inactivity limit has not been exceeded.",
+    "source_excerpt": "An authenticated session ends when the user logs out or closes the application. Electronic sessions must terminate after the configured inactivity period; after the inactivity limit is exceeded, all authorization is disabled.",
+    "constraint_type": "ceiling",
+    "action": "logout",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "Session"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"logout\", resource) when { principal is User && resource is Session && resource.user == principal && resource.isAuthenticated && !resource.inactivityLimitExceeded };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "joint-consistency-with-user_can_logout_active_own_session: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "user_can_close_application_active_own_session",
+    "rationale": "The approved atoms cover logout, but the parallel workflow where an authenticated session ends because the user closes the application is still uncovered. Because the spec also states that authorization is disabled after the inactivity limit is exceeded, the positive floor must be scoped to the user's own authenticated session before that limit has been exceeded.",
+    "plain_english_summary": "A user should be permitted to close the application for their own authenticated session only while the inactivity limit has not been exceeded.",
+    "source_excerpt": "An authenticated session ends when the user logs out or closes the application. Electronic sessions must terminate after the configured inactivity period; after the inactivity limit is exceeded, all authorization is disabled.",
+    "constraint_type": "floor",
+    "action": "closeApplication",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "Session"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"closeApplication\", resource) when { principal is User && resource is Session && resource.user == principal && resource.isAuthenticated && !resource.inactivityLimitExceeded };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "close_application_limited_to_active_own_session",
+    "rationale": "The approved floor permits closing the application only for the user's own authenticated session before the inactivity limit is exceeded. The specification also states that after the inactivity limit is exceeded, all authorization is disabled, so a same-action ceiling is needed to prevent broader closeApplication authorization outside the own-session, authenticated, and inactivity boundaries.",
+    "plain_english_summary": "Users must not be permitted to close the application unless they are closing their own authenticated session and the inactivity limit has not been exceeded.",
+    "source_excerpt": "An authenticated session ends when the user logs out or closes the application. Electronic sessions must terminate after the configured inactivity period; after the inactivity limit is exceeded, all authorization is disabled.",
+    "constraint_type": "ceiling",
+    "action": "closeApplication",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "Session"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"closeApplication\", resource) when { principal is User && resource is Session && resource.user == principal && resource.isAuthenticated && !resource.inactivityLimitExceeded };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "joint-consistency-with-user_can_close_application_active_own_session: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "administrator_can_set_inactivity_period_length",
+    "rationale": "The specification explicitly grants administrators the ability to configure the inactivity timeout period, and no approved atom currently covers this administrative configuration workflow. A floor is needed so synthesis cannot omit this required permission.",
+    "plain_english_summary": "An administrator should be permitted to set the system inactivity period length.",
+    "source_excerpt": "The administrator can set the inactivity period length.",
+    "constraint_type": "floor",
+    "action": "setInactivityPeriodLength",
+    "principal_types": [
+      "Administrator"
+    ],
+    "resource_types": [
+      "SystemConfiguration"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"setInactivityPeriodLength\", resource) when { principal is Administrator && resource is SystemConfiguration };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "patient_can_view_own_provider_history",
+    "rationale": "The approved atoms have not yet covered the patient workflow for viewing the patient's provider history. The source describes this as the patient's own list of LHCPs from office visits and designations, so the floor should include the explicit own-patient boundary exposed by the schema rather than permitting a patient to view another patient's provider history.",
+    "plain_english_summary": "A patient should be permitted to view their own provider history, including LHCPs they have visited or designated.",
+    "source_excerpt": "A patient can view all LHCPs the patient has ever had an office visit with and all LHCPs the patient has designated.",
+    "constraint_type": "floor",
+    "action": "viewProviderHistory",
+    "principal_types": [
+      "Patient"
+    ],
+    "resource_types": [
+      "Patient"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"viewProviderHistory\", resource) when { principal is Patient && resource is Patient && principal == resource };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "provider_history_limited_to_own_patient",
+    "rationale": "The approved floor permits a patient to view their own provider history, but without a same-action safety bound a candidate policy could also permit patients to view other patients' provider histories. The source uses patient-specific wording, so the ownership boundary must be explicit as a ceiling.",
+    "plain_english_summary": "Patients must not be permitted to view provider history unless they are viewing their own patient record.",
+    "source_excerpt": "A patient can view all LHCPs the patient has ever had an office visit with and all LHCPs the patient has designated.",
+    "constraint_type": "ceiling",
+    "action": "viewProviderHistory",
+    "principal_types": [
+      "Patient"
+    ],
+    "resource_types": [
+      "Patient"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"viewProviderHistory\", resource) when { principal is Patient && resource is Patient && principal == resource };",
+    "examples_adversarial": [
+      {
+        "description": "A patient attempts to view another patient's provider history; a role-only policy would allow this, but the ownership-scoped ceiling excludes it.",
+        "request_dict": {},
+        "decision_under_chosen": "deny",
+        "decisions_under_alternatives": {},
+        "diagnostic_for": [
+          "missing-own-patient-boundary",
+          "overbroad-patient-provider-history-access"
+        ]
+      }
+    ],
+    "alternatives_considered": [
+      {
+        "label": "role_only_patient_provider_history",
+        "interpretive_choice": "Allow any Patient principal to view any Patient resource's provider history based only on role.",
+        "cedar_text": "permit (principal, action == Action::\"viewProviderHistory\", resource) when { principal is Patient && resource is Patient };"
+      }
+    ],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "joint-consistency-with-patient_can_view_own_provider_history: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "patient_can_add_provider_to_own_list",
+    "rationale": "The approved atoms have not yet covered the positive provider-list workflow. The spec explicitly allows a patient to add an HCP/LHCP to their provider list, and the schema exposes the ownership boundary through ProviderList.patient and the selected provider through context.provider. The search-name/specialty/optional-zip inputs are represented in context, but the schema does not expose provider name or zip-code attributes to verify that the selected provider actually matched the search terms, so this atom uses only the explicit ownership and selected-provider hooks available.",
+    "plain_english_summary": "A patient should be permitted to add a selected provider to their own provider list.",
+    "source_excerpt": "A patient can add a LHCP/HCP to their provider list by searching by name, specialty, and optionally zip code.",
+    "constraint_type": "floor",
+    "action": "addProviderToList",
+    "principal_types": [
+      "Patient"
+    ],
+    "resource_types": [
+      "ProviderList"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"addProviderToList\", resource) when { principal is Patient && resource is ProviderList && resource.patient == principal && context.provider is HCP };",
+    "examples_adversarial": [
+      {
+        "description": "A patient attempts to add a provider to another patient's provider list; the ownership condition should prevent treating this as part of the required allowed workflow.",
+        "request_dict": {},
+        "decision_under_chosen": "deny",
+        "decisions_under_alternatives": {},
+        "diagnostic_for": [
+          "own-provider-list-boundary"
+        ]
+      }
+    ],
+    "alternatives_considered": [
+      {
+        "label": "Require search-term match against provider attributes",
+        "interpretive_choice": "Rejected because the schema exposes searchName, searchSpecialty, and optional searchZipCode in context, but HCP has no name, specialty, or zip-code attributes except LHCP.specialty for only one subtype; using those partial hooks would approximate the stated search semantics unsafely.",
+        "cedar_text": ""
+      }
+    ],
+    "symbolic_verified": false,
+    "symbolic_verification_log": [],
+    "intent_acknowledged_by_user": false,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "patient_can_add_matching_provider_to_own_list",
+    "rationale": "The provider-list add workflow is an uncovered positive permission. The source scopes the operation to the patient's own provider list and to a provider found by searching by name, specialty, and optionally zip code; the schema now exposes provider name, specialty, optional zipCode, and the optional searchZipCode context needed to avoid a broad add-any-provider floor.",
+    "plain_english_summary": "A patient should be permitted to add a provider to their own provider list when the selected provider matches the submitted search name and specialty, and matches the submitted zip code if one was provided.",
+    "source_excerpt": "A patient can add a LHCP/HCP to their provider list by searching by name, specialty, and optionally zip code.",
+    "constraint_type": "floor",
+    "action": "addProviderToList",
+    "principal_types": [
+      "Patient"
+    ],
+    "resource_types": [
+      "ProviderList"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"addProviderToList\", resource) when { principal is Patient && resource is ProviderList && resource.patient == principal && context.provider is HCP && context.provider.name == context.searchName && context.provider.specialty == context.searchSpecialty && (!(context has searchZipCode) || (context has searchZipCode && context.provider has zipCode && context.provider.zipCode == context.searchZipCode)) };",
+    "examples_adversarial": [],
+    "alternatives_considered": [
+      {
+        "label": "own_list_without_search_match",
+        "interpretive_choice": "Permit adding any provider to the patient's own provider list without checking the search criteria.",
+        "cedar_text": "permit (principal, action == Action::\"addProviderToList\", resource) when { principal is Patient && resource is ProviderList && resource.patient == principal && context.provider is HCP };"
+      },
+      {
+        "label": "required_zip_code_match",
+        "interpretive_choice": "Require a zip-code match for every provider add request, even though the source says zip code is optional.",
+        "cedar_text": "permit (principal, action == Action::\"addProviderToList\", resource) when { principal is Patient && resource is ProviderList && resource.patient == principal && context.provider is HCP && context.provider.name == context.searchName && context.provider.specialty == context.searchSpecialty && context has searchZipCode && context.provider has zipCode && context.provider.zipCode == context.searchZipCode };"
+      }
+    ],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "add_provider_limited_to_matching_own_list",
+    "rationale": "The approved floor permits the intended provider-list workflow only for the patient's own provider list and only when the selected provider matches the search criteria. Because those ownership and search-match conditions are necessary boundaries in the prose, a candidate policy must also be prevented from permitting broader addProviderToList requests that add providers to another patient's list or ignore the search inputs.",
+    "plain_english_summary": "Patients must not be permitted to add a provider to a provider list unless it is their own provider list and the selected provider matches the submitted name, specialty, and any submitted zip code.",
+    "source_excerpt": "A patient can add a LHCP/HCP to their provider list by searching by name, specialty, and optionally zip code.",
+    "constraint_type": "ceiling",
+    "action": "addProviderToList",
+    "principal_types": [
+      "Patient"
+    ],
+    "resource_types": [
+      "ProviderList"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"addProviderToList\", resource) when { principal is Patient && resource is ProviderList && resource.patient == principal && context.provider is HCP && context.provider.name == context.searchName && context.provider.specialty == context.searchSpecialty && (!(context has searchZipCode) || (context has searchZipCode && context.provider has zipCode && context.provider.zipCode == context.searchZipCode)) };",
+    "examples_adversarial": [
+      {
+        "description": "A patient attempts to add an HCP to another patient's provider list, even though the provider matches the search terms.",
+        "request_dict": {},
+        "decision_under_chosen": "deny",
+        "decisions_under_alternatives": {},
+        "diagnostic_for": [
+          "missing-own-provider-list-boundary"
+        ]
+      },
+      {
+        "description": "A patient attempts to add an HCP to their own provider list without the selected provider matching the submitted specialty search term.",
+        "request_dict": {},
+        "decision_under_chosen": "deny",
+        "decisions_under_alternatives": {},
+        "diagnostic_for": [
+          "missing-provider-search-match-boundary"
+        ]
+      }
+    ],
+    "alternatives_considered": [
+      {
+        "label": "ownership_only_ceiling",
+        "interpretive_choice": "Limit addProviderToList only to the patient's own provider list, without checking search-name, specialty, or optional zip-code match.",
+        "cedar_text": "permit (principal, action == Action::\"addProviderToList\", resource) when { principal is Patient && resource is ProviderList && resource.patient == principal };"
+      }
+    ],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "joint-consistency-with-patient_can_add_matching_provider_to_own_list: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "patient_can_designate_lhcp_for_self",
+    "rationale": "The specification explicitly grants patients the ability to designate an LHCP as a DLHCP for that patient. The schema models DLHCP as a patient-specific designation request using designateDLHCP with context.patient, so the floor must include the concrete self-patient boundary rather than relying only on the Patient principal type.",
+    "plain_english_summary": "A patient should be permitted to designate an LHCP as a DLHCP for themselves.",
+    "source_excerpt": "A patient can designate any LHCP as a DLHCP for that patient.",
+    "constraint_type": "floor",
+    "action": "designateDLHCP",
+    "principal_types": [
+      "Patient"
+    ],
+    "resource_types": [
+      "LHCP"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"designateDLHCP\", resource) when { principal is Patient && resource is LHCP && context.patient == principal };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "designate_dlhcp_limited_to_self",
+    "rationale": "The approved floor permits a patient to designate an LHCP as a DLHCP only for themselves, but there is not yet a same-action safety property preventing a broader policy from allowing a patient to designate DLHCPs for another patient. The source explicitly says the designation is for that patient, and the schema exposes this ownership boundary via context.patient.",
+    "plain_english_summary": "Patients must not be permitted to designate an LHCP as a DLHCP unless the designation is for themselves.",
+    "source_excerpt": "A patient can designate any LHCP as a DLHCP for that patient.",
+    "constraint_type": "ceiling",
+    "action": "designateDLHCP",
+    "principal_types": [
+      "Patient"
+    ],
+    "resource_types": [
+      "LHCP"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"designateDLHCP\", resource) when { principal is Patient && resource is LHCP && context.patient == principal };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "joint-consistency-with-patient_can_designate_lhcp_for_self: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "patient_can_undesignate_lhcp_for_self",
+    "rationale": "The approved atoms cover designating an LHCP as a DLHCP, but the symmetric positive workflow for undesignating an LHCP as a DLHCP remains uncovered. The source scopes the action to the patient for whom the LHCP is designated, so the floor includes the explicit self-patient context boundary.",
+    "plain_english_summary": "A patient should be permitted to undesignate an LHCP as a DLHCP for themselves.",
+    "source_excerpt": "A patient can designate any LHCP as a DLHCP for that patient and can undesignate any LHCP as a DLHCP for that patient.",
+    "constraint_type": "floor",
+    "action": "undesignateDLHCP",
+    "principal_types": [
+      "Patient"
+    ],
+    "resource_types": [
+      "LHCP"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"undesignateDLHCP\", resource) when { principal is Patient && resource is LHCP && context.patient == principal };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": false,
+    "symbolic_verification_log": [],
+    "intent_acknowledged_by_user": false,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  }
+]

@@ -1,0 +1,1 @@
+permit (principal, action == Action::"viewMedicalRecord", resource) when { principal is Patient && resource is MedicalRecord && resource.patient == principal };

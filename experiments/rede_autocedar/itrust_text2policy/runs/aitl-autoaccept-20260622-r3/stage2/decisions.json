@@ -1,0 +1,710 @@
+[
+  {
+    "atom_name": "hcp_can_create_patient",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "hcp_cannot_view_patient_credentials",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "hcp_cannot_edit_patient_credentials",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "hcp_can_edit_patient_data",
+    "action": "reject",
+    "reason": "Stage 2 decomposition critic repair: The positive HCP edit floor is materially relevant, but the source requirement includes a named field-level boundary: the patient's MID must not be editable. The proposed atom permits editPatientData for any HCP/Patient without any way to exclude MID edits. The validated schema/action lacks an edited-field or data-field context hook for editPatientData, so this cannot be repaired as a scoped property without a schema change.",
+    "edit_delta": {
+      "critic_decision": "repair",
+      "critic_tags": [
+        "missing-boundary",
+        "schema-gap",
+        "mid-not-editable",
+        "field-level-edit-scope"
+      ]
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "admin_can_create_lhcp",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "hcp_cannot_edit_patient_mid",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "admin_can_create_emergency_responder",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "admin_can_create_public_health_agent",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "lhcp_can_create_uap",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "hcp_can_edit_non_mid_patient_data",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "admin_can_assign_lhcp_to_hospitals",
+    "action": "reject",
+    "reason": "Stage 2 decomposition critic repair: The atom targets a real, uncovered administrative capability, but the proposed floor omits the source's named assignment boundary that the administrator chooses the hospital set for the LHCP. The validated action already exposes this as context.hospitals, so the property should be repaired to scope the floor to the requested/chosen hospital set rather than a generic Administrator/LHCP principal-resource permission.",
+    "edit_delta": {
+      "critic_decision": "repair",
+      "critic_tags": [
+        "missing-boundary",
+        "context-hospitals",
+        "chosen-hospital-set",
+        "repair-using-existing-schema-hook"
+      ]
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "admin_can_assign_lhcp_to_chosen_hospitals",
+    "action": "reject",
+    "reason": "Stage 2 decomposition critic repair: The atom targets a real uncovered requirement and uses the existing context.hospitals hook, but the proposed condition context.hospitals == resource.hospitals is not the named source boundary. It over-constrains the floor to cases where the requested hospital set already equals the LHCP's current hospital set, which can collapse the assignment capability into a no-op and does not express the administrator's ability to choose the hospitals to assign. Repair the atom to cover administrator assignment for the requested/chosen context.hospitals set without requiring equality to the pre-existing resource.hospitals.",
+    "edit_delta": {
+      "critic_decision": "repair",
+      "critic_tags": [
+        "repair-using-existing-schema-hook",
+        "context-hospitals",
+        "chosen-hospital-set",
+        "overconstrained-floor",
+        "incorrect-resource-state-equality"
+      ]
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "admin_can_assign_lhcp_to_requested_hospitals",
+    "action": "reject",
+    "reason": "Stage 2 decomposition critic repair: The atom targets a real uncovered requirement, and the schema exposes the named boundary as context.hospitals. However, the proposed reference Cedar still only states the Administrator/LHCP principal-resource floor and does not explicitly bind the permission to the requested/chosen hospital set. Because prior rejected variants specifically required using the existing context.hospitals hook rather than a generic assignment floor, this should be repaired to make the chosen/requested hospitals boundary explicit without requiring equality to resource.hospitals.",
+    "edit_delta": {
+      "critic_decision": "repair",
+      "critic_tags": [
+        "missing-boundary",
+        "context-hospitals",
+        "chosen-hospital-set",
+        "repair-using-existing-schema-hook",
+        "generic-principal-resource-floor"
+      ]
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "user_can_login_with_own_credentials",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "login_only_with_own_credentials",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "admin_can_assign_lhcp_to_chosen_hospital_set",
+    "action": "reject",
+    "reason": "Stage 2 decomposition critic repair: The atom targets a real uncovered requirement and correctly avoids the prior overconstraint requiring context.hospitals to equal resource.hospitals. However, the proposed reference Cedar condition `context.hospitals == context.hospitals` is tautological, so the property still collapses to a generic Administrator/LHCP assignment floor and does not materially bind the permission to the chosen/requested hospital set. Repair the atom to make the existing `context.hospitals` assignment payload explicit as the hospital set being authorized, without using a tautology or requiring equality to the LHCP's current hospitals.",
+    "edit_delta": {
+      "critic_decision": "repair",
+      "critic_tags": [
+        "missing-boundary",
+        "context-hospitals",
+        "chosen-hospital-set",
+        "tautological-condition",
+        "generic-principal-resource-floor",
+        "repair-using-existing-schema-hook"
+      ]
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "admin_can_assign_lhcp_to_requested_hospital_set",
+    "action": "reject",
+    "reason": "Stage 2 decomposition critic repair: The atom targets a real uncovered requirement and uses the existing context.hospitals hook, but the added condition context.hospitals != resource.hospitals is an invented boundary not present in the source. It over-constrains the floor by requiring only changes that differ from the LHCP's current hospital set, whereas the source says the administrator may choose the hospitals to assign, not that authorization depends on the requested set being different from the current set. Repair the property to express permission for the administrator's requested/chosen hospital assignment payload without imposing equality or inequality against resource.hospitals.",
+    "edit_delta": {
+      "critic_decision": "repair",
+      "critic_tags": [
+        "missing-boundary",
+        "context-hospitals",
+        "chosen-hospital-set",
+        "invented-boundary",
+        "overconstrained-floor",
+        "incorrect-resource-state-inequality",
+        "repair-using-existing-schema-hook"
+      ]
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "admin_can_assign_lhcp_to_chosen_hospitals",
+    "action": "reject",
+    "reason": "Stage 2 decomposition critic repair: The atom targets a real uncovered requirement, but the proposed reference Cedar still collapses to a generic Administrator/LHCP principal-resource floor and does not explicitly use the schema's context.hospitals hook for the administrator's chosen/requested hospital assignment payload. Prior rejected variants specifically required making this named source boundary explicit without tautologies or invented equality/inequality checks against resource.hospitals.",
+    "edit_delta": {
+      "critic_decision": "repair",
+      "critic_tags": [
+        "missing-boundary",
+        "context-hospitals",
+        "chosen-hospital-set",
+        "generic-principal-resource-floor",
+        "repair-using-existing-schema-hook"
+      ]
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "user_can_request_own_password_change",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "password_change_only_own_account",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "user_can_logout_own_session",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "logout_only_own_authenticated_session",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "user_can_close_own_authenticated_session",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "close_application_only_own_authenticated_session",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "admin_can_set_inactivity_period_length",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "patient_can_view_own_past_and_designated_lhcps",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "view_past_and_designated_lhcps_only_own_patient_record",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "patient_can_add_provider_to_own_list",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "add_provider_only_to_own_list",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "patient_can_designate_lhcp_for_self",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "designate_lhcp_only_for_own_record",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "patient_can_undesignate_lhcp_for_self",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "undesignate_lhcp_only_for_own_record",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "patient_can_view_own_access_log",
+    "action": "reject",
+    "reason": "Stage 2 decomposition critic repair: The atom targets a real uncovered requirement and correctly uses the AccessLog.patient ownership boundary, but the source access-log requirement also names a date-period boundary: the patient can choose a beginning and end date for the access-log period. The validated schema exposes this through viewAccessLog context.beginDate and context.endDate, so the property should be repaired to make the requested access-log period explicit rather than only stating the ownership floor.",
+    "edit_delta": {
+      "critic_decision": "repair",
+      "critic_tags": [
+        "missing-boundary",
+        "access-log-period",
+        "begin-date",
+        "end-date",
+        "repair-using-existing-schema-hook"
+      ]
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "patient_can_view_own_access_log_for_chosen_period",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "view_access_log_only_own_log_for_valid_period",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "patient_can_view_own_medical_record_with_family_history",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "personal_representative_can_view_represented_medical_record_with_family_history",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "view_medical_record_only_own_or_represented_patient",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "patient_can_see_own_personal_health_information",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "see_health_information_only_own_or_represented_valid_category",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "patient_can_search_providers",
+    "action": "reject",
+    "reason": "Stage 2 decomposition critic repair: The source requirement describes a real, uncovered search capability, but the proposed atom collapses to a generic Patient/ProviderSearch principal-resource floor and does not make the named search-criteria boundary explicit: searching by name, specialty, and optionally zip code. The validated schema already exposes these as ProviderSearch.name, ProviderSearch.specialty, and optional ProviderSearch.zipCode, so repair the atom to scope the floor to provider-search requests using those criteria rather than only restating the action's principal/resource types.",
+    "edit_delta": {
+      "critic_decision": "repair",
+      "critic_tags": [
+        "missing-boundary",
+        "search-criteria",
+        "provider-name",
+        "provider-specialty",
+        "optional-zip-code",
+        "repair-using-existing-schema-hook",
+        "generic-principal-resource-floor"
+      ]
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "patient_can_search_providers_by_named_criteria",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "personal_representative_can_see_represented_personal_health_information",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "patient_can_see_own_immunizations",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "personal_representative_can_see_represented_immunizations",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "patient_can_see_own_office_visit_information",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "personal_representative_can_see_represented_office_visit_information",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "lhcp_creation_requires_specialty",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "admin_can_assign_lhcp_to_nonempty_chosen_hospitals",
+    "action": "reject",
+    "reason": "Stage 2 decomposition critic repair: The atom targets a real uncovered requirement and uses the existing context.hospitals payload, but it replaces the source's named 'multiple hospitals' boundary with a weaker nonempty-set proxy. `context.hospitals.containsAny(context.hospitals)` only distinguishes empty from nonempty and does not express that the administrator may assign an LHCP to multiple hospitals. If the intended property is about the chosen/requested hospital payload, repair it without inventing a nonempty-only boundary; if the property must enforce true multiplicity, the validated schema/Cedar hook lacks a cardinality/count boundary for the hospital set.",
+    "edit_delta": {
+      "critic_decision": "repair",
+      "critic_tags": [
+        "missing-boundary",
+        "chosen-hospital-set",
+        "multiple-hospitals",
+        "nonempty-proxy",
+        "schema-gap",
+        "hospital-set-cardinality"
+      ]
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "admin_can_assign_lhcp_to_multiple_hospitals",
+    "action": "reject",
+    "reason": "Stage 2 decomposition critic repair: The atom targets a real uncovered requirement and correctly uses the schema's context.assignsMultipleHospitals hook for the named multiple-hospitals boundary. However, the same source sentence also names the administrator's ability to choose the hospitals, and prior reviews specifically rejected generic or tautological assignment floors that failed to make the requested/chosen hospital set explicit. The validated schema exposes that boundary as context.hospitals, so the property should be repaired to scope the floor to the administrator's chosen/requested hospital assignment payload as well as the multiple-hospitals condition, rather than only checking the boolean multiplicity flag.",
+    "edit_delta": {
+      "critic_decision": "repair",
+      "critic_tags": [
+        "missing-boundary",
+        "context-hospitals",
+        "chosen-hospital-set",
+        "multiple-hospitals",
+        "repair-using-existing-schema-hook"
+      ]
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "admin_can_assign_chosen_hospitals_to_lhcp",
+    "action": "reject",
+    "reason": "Stage 2 decomposition critic repair: The atom targets a real uncovered administrative assignment requirement and correctly includes the multiple-hospitals boundary via context.assignsMultipleHospitals, but the reference Cedar again uses context.hospitals == resource.hospitals. That condition over-constrains the floor to cases where the requested hospital set already equals the LHCP's current hospital set, which can make the assignment a no-op and does not express the administrator's ability to choose the hospitals to assign. Repair the atom to scope authorization to the administrator's requested/chosen context.hospitals payload together with the multiple-hospitals boundary, without imposing equality or inequality against resource.hospitals.",
+    "edit_delta": {
+      "critic_decision": "repair",
+      "critic_tags": [
+        "overconstrained-floor",
+        "incorrect-resource-state-equality",
+        "context-hospitals",
+        "chosen-hospital-set",
+        "multiple-hospitals",
+        "repair-using-existing-schema-hook"
+      ]
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "admin_can_assign_multiple_chosen_hospitals_to_lhcp",
+    "action": "reject",
+    "reason": "Stage 2 decomposition critic repair: The atom targets a real uncovered requirement and preserves the multiple-hospitals boundary with context.assignsMultipleHospitals, but the reference Cedar still does not use context.hospitals, the schema hook for the administrator's chosen/requested hospital assignment payload. The source explicitly says the administrator can choose the hospitals, and prior rejected variants required making that chosen hospital set boundary explicit rather than only checking a generic Administrator/LHCP assignment plus the multiplicity flag. Repair the property to scope the floor to the requested context.hospitals payload together with context.assignsMultipleHospitals, without imposing equality or inequality against resource.hospitals.",
+    "edit_delta": {
+      "critic_decision": "repair",
+      "critic_tags": [
+        "missing-boundary",
+        "context-hospitals",
+        "chosen-hospital-set",
+        "multiple-hospitals",
+        "repair-using-existing-schema-hook"
+      ]
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "assign_lhcp_to_hospitals_only_admin",
+    "action": "reject",
+    "reason": "Stage 2 decomposition critic reject: The proposed ceiling is not a useful decomposition atom: it mainly restates the validated schema's appliesTo principal/resource typing for assignLHCPToHospitals, which already limits the action to Administrator principals and LHCP resources. The source sentence establishes an administrator assignment capability with named boundaries\u2014multiple hospitals and the administrator's chosen hospital set\u2014but it does not independently justify a generic 'only administrators' ceiling that omits those boundaries. A repaired assignment property should address the chosen-hospital-set and multiple-hospitals conditions rather than adding a schema-implied principal/resource ceiling.",
+    "edit_delta": {
+      "critic_decision": "reject",
+      "critic_tags": [
+        "schema-implied",
+        "generic-principal-resource-ceiling",
+        "restates-appliesTo",
+        "missing-boundary",
+        "context-hospitals",
+        "chosen-hospital-set",
+        "multiple-hospitals",
+        "unsupported-exclusivity"
+      ]
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "search_providers_only_by_named_criteria",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "admin_assignment_to_lhcp_hospitals_needs_payload_boundary",
+    "action": "reject",
+    "reason": "Stage 2 decomposition critic repair: The administrative LHCP-hospital assignment requirement is real and still useful, but this proposed atom is not a verifiable property atom: it has an empty reference Cedar body, uses a vague liveness formulation, and turns the missing chosen-hospital-set condition into a HITL note rather than a scoped floor/ceiling. The validated schema already exposes the relevant hooks as context.hospitals for the administrator's requested/chosen hospital payload and context.assignsMultipleHospitals for the multiple-hospitals boundary, so this should be repaired into a concrete assignment property using those hooks rather than accepted as a schema-gap/meta atom or approximated by a generic Administrator/LHCP permission.",
+    "edit_delta": {
+      "critic_decision": "repair",
+      "critic_tags": [
+        "repair-using-existing-schema-hook",
+        "missing-boundary",
+        "context-hospitals",
+        "chosen-hospital-set",
+        "multiple-hospitals",
+        "context-assignsMultipleHospitals",
+        "empty-reference-cedar",
+        "not-verifiable-property",
+        "generic-liveness-meta-atom"
+      ]
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "admin_can_assign_lhcp_to_multiple_chosen_hospitals",
+    "action": "reject",
+    "reason": "Stage 2 decomposition critic repair: The administrative LHCP-hospital assignment requirement is real and the atom correctly includes the multiple-hospitals hook, but `context.hospitals.containsAll(context.hospitals)` is tautological. It does not materially bind authorization to the administrator's chosen/requested hospital payload and repeats the previously rejected pattern of using a self-referential condition as a proxy for the chosen-hospital-set boundary. Repair the property to make the `context.hospitals` assignment payload non-tautologically explicit together with `context.assignsMultipleHospitals`, without comparing it to the LHCP's current `resource.hospitals` state or inventing an empty/nonempty proxy.",
+    "edit_delta": {
+      "critic_decision": "repair",
+      "critic_tags": [
+        "missing-boundary",
+        "context-hospitals",
+        "chosen-hospital-set",
+        "multiple-hospitals",
+        "context-assignsMultipleHospitals",
+        "tautological-condition",
+        "generic-principal-resource-floor",
+        "duplicate-rejected-pattern",
+        "repair-using-existing-schema-hook"
+      ]
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "assign_lhcp_only_multiple_hospitals",
+    "action": "reject",
+    "reason": "Stage 2 decomposition critic repair: The atom targets the real LHCP-hospital assignment requirement and uses the schema's context.assignsMultipleHospitals hook for the named multiple-hospitals boundary, but it still omits the source's other named boundary: the administrator chooses the hospitals to assign. The validated schema exposes that assignment payload as context.hospitals, and prior reviews specifically required making the chosen/requested hospital set explicit rather than accepting an assignment property that only checks multiplicity. Repair the ceiling to include the context.hospitals chosen-hospital-set boundary together with context.assignsMultipleHospitals, without using tautologies, nonempty-set proxies, or equality/inequality against resource.hospitals.",
+    "edit_delta": {
+      "critic_decision": "repair",
+      "critic_tags": [
+        "missing-boundary",
+        "context-hospitals",
+        "chosen-hospital-set",
+        "multiple-hospitals",
+        "context-assignsMultipleHospitals",
+        "repair-using-existing-schema-hook",
+        "duplicate-rejected-pattern"
+      ]
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "assign_lhcp_only_chosen_multiple_hospitals",
+    "action": "reject",
+    "reason": "Stage 2 decomposition critic repair: The atom targets a real uncovered administrative assignment requirement and includes the multiple-hospitals hook, but the proposed condition `context.hospitals.containsAll(resource.hospitals)` invents a boundary not stated in the source and again compares the requested hospital payload to the LHCP's current hospital state. Requiring the requested set to cover existing assigned hospitals can over-constrain the ceiling and does not express the administrator's ability to choose the hospitals to assign. Repair the property to use the existing `context.hospitals` payload and `context.assignsMultipleHospitals` boundary without tautologies, nonempty proxies, or equality/containment comparisons against `resource.hospitals`.",
+    "edit_delta": {
+      "critic_decision": "repair",
+      "critic_tags": [
+        "repair-using-existing-schema-hook",
+        "context-hospitals",
+        "chosen-hospital-set",
+        "multiple-hospitals",
+        "context-assignsMultipleHospitals",
+        "invented-boundary",
+        "incorrect-resource-state-comparison",
+        "overconstrained-ceiling",
+        "duplicate-rejected-pattern"
+      ]
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "assign_lhcp_to_multiple_requested_hospitals_only",
+    "action": "reject",
+    "reason": "Stage 2 decomposition critic repair: The atom targets the real LHCP-hospital assignment requirement and correctly preserves the multiple-hospitals boundary with context.assignsMultipleHospitals, but the reference Cedar still omits the source's named chosen/requested hospital-set boundary. The source says the administrator can choose the hospitals, and the validated schema exposes that payload as context.hospitals. As written, the property is effectively the previously rejected multiple-hospitals-only ceiling and does not materially bind authorization to the hospitals supplied in the request payload. Repair the atom to make the context.hospitals chosen-hospital-set boundary explicit together with context.assignsMultipleHospitals, without using tautologies, nonempty proxies, or comparisons to resource.hospitals.",
+    "edit_delta": {
+      "critic_decision": "repair",
+      "critic_tags": [
+        "repair-using-existing-schema-hook",
+        "missing-boundary",
+        "context-hospitals",
+        "chosen-hospital-set",
+        "multiple-hospitals",
+        "context-assignsMultipleHospitals",
+        "duplicate-rejected-pattern"
+      ]
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "patient_can_view_own_medical_record",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "personal_representative_can_view_represented_medical_record",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "set_inactivity_period_length_only_admin",
+    "action": "reject",
+    "reason": "Stage 2 decomposition critic reject: The proposed ceiling is not a useful decomposition atom. It mainly restates the validated schema's appliesTo typing for setInactivityPeriodLength, which already limits the action to Administrator principals and SystemConfiguration resources. The source excerpt establishes an administrator capability to set the inactivity period length and an approved floor already covers that capability; it does not add an independent, tightly scoped non-administrator exclusion beyond the schema-implied principal/resource boundary.",
+    "edit_delta": {
+      "critic_decision": "reject",
+      "critic_tags": [
+        "schema-implied",
+        "generic-principal-resource-ceiling",
+        "restates-appliesTo",
+        "unsupported-exclusivity",
+        "already-covered-by-approved-floor"
+      ]
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": false
+  }
+]

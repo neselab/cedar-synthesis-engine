@@ -3,14 +3,14 @@
 See ``docs/HITL_STEP_C_PLAN.md`` for the implementation contract.
 Per §2 of that plan:
 
-- Default model is ``claude-opus-4-7`` (the ``claude-api`` skill's
-  non-negotiable default). Configurable per-deployment.
+- Default provider is the local Codex OAuth bridge. Anthropic remains an
+  explicit opt-in provider for deployments that set ``AUTOCEDAR_PROVIDER``.
 - Adaptive thinking is on; ``effort`` defaults to ``"high"``.
 - The system prompt + the spec text are sent as cache-controlled
   blocks so repeated calls in one session amortize the input-token
   cost. Per-turn user content stays uncached.
 - The constructor accepts an optional ``client`` (an
-    ``anthropic.Anthropic`` instance, the internal Codex CLI adapter, or any
+    ``anthropic.Anthropic`` instance, the Codex OAuth adapter, or any
     object with the same ``messages.parse`` shape) so tests inject a mock
     without touching the network. The minimum cacheable prefix on Opus 4.7 is
     4096 tokens — short specs will silently bypass caching, which is fine.
@@ -40,17 +40,19 @@ from autocedar.atoms import (
     PropertyAtom,
     TypeAliasAtom,
 )
-from autocedar.codex_exec import DEFAULT_CODEX_MODEL, CodexExecClient, is_codex_provider
+from autocedar.codex_auth import DEFAULT_CODEX_MODEL, CodexAuthClient, is_codex_provider
+from autocedar.property_critic import PropertyCritique
 
 
 # ---------------------------------------------------------------------------
 # Module defaults.
 # ---------------------------------------------------------------------------
 
-DEFAULT_MODEL = "claude-opus-4-7"
+DEFAULT_ANTHROPIC_MODEL = "claude-opus-4-7"
+DEFAULT_MODEL = DEFAULT_CODEX_MODEL
 DEFAULT_MAX_TOKENS = 16000
 DEFAULT_EFFORT = "high"
-DEFAULT_PROVIDER = "anthropic"
+DEFAULT_PROVIDER = "codex"
 
 
 def default_provider() -> str:
@@ -65,7 +67,7 @@ def default_model_for_provider(provider: str | None = None) -> str:
         os.environ.get("AUTOCEDAR_MODEL")
         or os.environ.get("AUTOCEDAR_AUTHOR_MODEL")
         or os.environ.get("AUTOCEDAR_CHAT_MODEL")
-        or DEFAULT_MODEL
+        or DEFAULT_ANTHROPIC_MODEL
     )
 
 
@@ -205,6 +207,14 @@ class PropertyAtomsResponse(BaseModel):
     atoms: list[_LLMPropertyAtom]
 
 
+class PropertyCritiqueResponse(BaseModel):
+    """Top-level structured response for the Stage 2 decomposition critic."""
+
+    decision: Literal["accept", "repair", "reject"]
+    reason: str
+    tags: list[str] = Field(default_factory=list)
+
+
 # Translated atom types (returned by ``LLMClient.propose_schema_atoms``).
 Stage1Atom = Union[EntityAtom, AttributeAtom, ActionAtom, TypeAliasAtom]
 
@@ -289,6 +299,12 @@ def _translate_atom(llm_atom: Any) -> Stage1Atom:
 
 
 def _translate_property_atom(llm: _LLMPropertyAtom) -> PropertyAtom:
+    reference_cedar = llm.reference_cedar
+    disjoint_with = llm.disjoint_with
+    if llm.constraint_type == "disjointness":
+        reference_cedar = _normalize_disjointness_reference(llm)
+        if not disjoint_with and llm.disjoint_target_body:
+            disjoint_with = f"{llm.name}_target"
     return PropertyAtom(
         name=llm.name,
         rationale=llm.rationale,
@@ -298,7 +314,7 @@ def _translate_property_atom(llm: _LLMPropertyAtom) -> PropertyAtom:
         action=llm.action,
         principal_types=list(llm.principal_types),
         resource_types=list(llm.resource_types),
-        reference_cedar=llm.reference_cedar,
+        reference_cedar=reference_cedar,
         examples_adversarial=[
             Example(
                 description=e.description,
@@ -320,9 +336,43 @@ def _translate_property_atom(llm: _LLMPropertyAtom) -> PropertyAtom:
         rate_limit_window=llm.rate_limit_window,
         rate_limit_threshold=llm.rate_limit_threshold,
         rate_limit_counter_attr=llm.rate_limit_counter_attr,
-        disjoint_with=llm.disjoint_with,
+        disjoint_with=disjoint_with,
         disjoint_target_body=llm.disjoint_target_body,
     )
+
+
+def _normalize_disjointness_reference(llm: _LLMPropertyAtom) -> str:
+    """Render disjointness as the primitive ceiling form AutoCedar verifies.
+
+    The reviewable disjointness signal is ``disjoint_target_body``: the Cedar
+    boolean condition that must be excluded from otherwise-permitted floors.
+    The harness represents that signal as an ``implies`` ceiling whose
+    reference permits exactly the complement of the target body. Models often
+    reach for literal ``forbid`` policies because the prose says "cannot"; that
+    shape is semantically understandable but vacuous for the verifier's
+    permit-based satisfiability check, so canonicalize it here.
+    """
+    target = (llm.disjoint_target_body or "").strip()
+    reference = (llm.reference_cedar or "").strip()
+    if not target:
+        return reference
+    if _reference_negates_disjoint_target(reference, target):
+        return reference
+    principal = llm.principal_types[0] if llm.principal_types else ""
+    resource = llm.resource_types[0] if llm.resource_types else ""
+    principal_fragment = f"principal is {principal}" if principal else "principal"
+    resource_fragment = f"resource is {resource}" if resource else "resource"
+    action = llm.action if llm.action.startswith("Action::") else f'Action::"{llm.action}"'
+    return (
+        f"permit ({principal_fragment}, action == {action}, {resource_fragment})\n"
+        f"when {{ !({target}) }};"
+    )
+
+
+def _reference_negates_disjoint_target(reference: str, target: str) -> bool:
+    compact_reference = " ".join(reference.split())
+    compact_target = " ".join(target.split())
+    return f"!({compact_target})" in compact_reference or f"!{compact_target}" in compact_reference
 
 
 # ---------------------------------------------------------------------------
@@ -334,13 +384,14 @@ class LLMClient:
     """Thin wrapper around AutoCedar's configured LLM provider.
 
     Construction:
-      - ``client``: an ``anthropic.Anthropic`` instance, ``CodexExecClient``,
+      - ``client``: an ``anthropic.Anthropic`` instance, ``CodexAuthClient``,
         or any object exposing ``.messages.parse(**kwargs)``.
       - ``provider``: ``"anthropic"`` or ``"codex"``. When omitted, reads
-        ``AUTOCEDAR_PROVIDER`` and defaults to Anthropic.
-      - ``model``: model identifier; defaults to ``claude-opus-4-7``.
-        With ``provider="codex"``, the Anthropic default is replaced by
-        ``AUTOCEDAR_CODEX_MODEL`` or ``gpt-5.5``.
+        ``AUTOCEDAR_PROVIDER`` and defaults to Codex.
+      - ``model``: optional model identifier; when omitted, defaults to the selected provider's
+        default model. For Codex this is ``AUTOCEDAR_CODEX_MODEL`` or
+        ``gpt-5.5``; for Anthropic this is ``claude-opus-4-7`` unless
+        overridden by ``AUTOCEDAR_MODEL`` / ``AUTOCEDAR_AUTHOR_MODEL``.
       - ``max_tokens``: per-call ceiling; defaults to 16000.
       - ``effort``: ``"low" | "medium" | "high" | "max"``; defaults to
         ``"high"`` per the skill guidance for intelligence-sensitive
@@ -356,16 +407,16 @@ class LLMClient:
         *,
         client: Optional[Any] = None,
         provider: str | None = None,
-        model: str = DEFAULT_MODEL,
+        model: str | None = None,
         max_tokens: int = DEFAULT_MAX_TOKENS,
         effort: str = DEFAULT_EFFORT,
     ) -> None:
         resolved_provider = (provider or default_provider()).strip().lower()
-        if client is None and is_codex_provider(resolved_provider) and model == DEFAULT_MODEL:
+        if model is None:
             model = default_model_for_provider(resolved_provider)
         if client is None:
             if is_codex_provider(resolved_provider):
-                client = CodexExecClient()
+                client = CodexAuthClient()
             else:
                 # Lazy-import the SDK so tests can run without ANTHROPIC_API_KEY
                 # set; only the live path requires it.
@@ -409,27 +460,55 @@ class LLMClient:
     # Stage 2: property atom proposal.
     # ------------------------------------------------------------------
 
-    def propose_property_atoms(self, spec_text: str, schema_text: str) -> list[PropertyAtom]:
-        """Ask the LLM to propose Stage 2 property atoms for a spec + schema."""
+    def propose_property_atom(
+        self,
+        spec_text: str,
+        schema_text: str,
+        *,
+        prior_atoms: list[PropertyAtom] | None = None,
+        prior_decisions: list[Any] | None = None,
+    ) -> Optional[PropertyAtom]:
+        """Ask the LLM for exactly one next Stage 2 property atom.
+
+        Stage 2 is intentionally a one-atom protocol: the model proposes the
+        next property, the verifier checks that property, the human reviews it,
+        and only then do we ask for another. This keeps the model context
+        aligned with the HITL review unit instead of asking for a monolithic
+        list of property/reference pairs.
+        """
+        prior_atoms = prior_atoms or []
+        prior_decisions = prior_decisions or []
         system_prompt = _load_prompt("property_atomization.md")
+        prior_json = [_summarize_property_atom(atom) for atom in prior_atoms]
+        decision_json = [_summarize_atom_decision(decision) for decision in prior_decisions]
+        coverage_instruction = _property_coverage_instruction(prior_atoms)
         response = self._call_parse(
             system_prompt=system_prompt,
             spec_text=spec_text,
             user_turn=(
                 "Use this validated Cedar schema as the grounding context:\n\n"
                 f"```cedarschema\n{schema_text}\n```\n\n"
-                "Propose the Stage 2 property atoms needed to verify and "
-                "synthesize a policy for the spec above. Each atom must include "
-                "a valid `reference_cedar` policy except liveness atoms, which "
-                "may leave it empty. Prefer orthogonal ceiling/floor/liveness "
-                "properties over role-by-role duplication."
+                "Already-approved property atoms:\n\n"
+                f"```json\n{json.dumps(prior_json, indent=2)}\n```\n\n"
+                "Prior review decisions and rejected proposals:\n\n"
+                f"```json\n{json.dumps(decision_json, indent=2)}\n```\n\n"
+                f"Coverage instruction for this next atom: {coverage_instruction}\n\n"
+                "Propose exactly ONE next Stage 2 property atom for HITL review, "
+                "or return an empty `atoms` list if the approved atoms already "
+                "cover the spec. The property atom is the review unit. Focus on "
+                "one source requirement and attach only the signal/context needed "
+                "to verify that requirement. Do not bundle multiple requirements "
+                "into one atom. Do not emit a duplicate of an approved or rejected "
+                "atom. Non-liveness atoms must include a complete `reference_cedar` "
+                "policy; liveness atoms may leave it empty."
             ),
             output_format=PropertyAtomsResponse,
+            effort_override=_stage2_effort(self._provider, self._effort),
         )
-        return [
-            _translate_property_atom(atom)
-            for atom in response.parsed_output.atoms
-        ]
+        atoms = response.parsed_output.atoms
+        if not atoms:
+            return None
+        return _translate_property_atom(atoms[0])
 
     def propose_alternative_property_atom(
         self,
@@ -455,8 +534,13 @@ class LLMClient:
             "consistent with:\n\n"
             f"```json\n{json.dumps(prior_json, indent=2)}\n```\n\n"
             "Propose ONE replacement property atom that addresses the user's "
-            "concern. Preserve the same source requirement unless the user's "
-            "reason says it should be dropped. Return a PropertyAtomsResponse "
+            "concern. Preserve the same source requirement, action, principal "
+            "types, resource types, and constraint_type unless the user's reason "
+            "explicitly asks to change or drop one of those. If the rejected atom "
+            "was a floor with missing conditions, return a repaired floor; if it "
+            "was a ceiling with missing conditions, return a repaired ceiling. "
+            "Use a fresh atom name when changing semantics, and avoid reusing the "
+            "name of any already-approved atom. Return a PropertyAtomsResponse "
             "with a single atom. If no replacement should be proposed, return "
             "an empty atoms list."
         )
@@ -465,11 +549,98 @@ class LLMClient:
             spec_text=spec_text,
             user_turn=user_turn,
             output_format=PropertyAtomsResponse,
+            effort_override=_stage2_effort(self._provider, self._effort),
         )
         atoms = response.parsed_output.atoms
         if not atoms:
             return None
         return _translate_property_atom(atoms[0])
+
+    def critique_property_atom(
+        self,
+        spec_text: str,
+        schema_text: str,
+        proposed_atom: PropertyAtom,
+        *,
+        prior_atoms: list[PropertyAtom] | None = None,
+        prior_decisions: list[Any] | None = None,
+    ) -> PropertyCritique:
+        """Review a proposed Stage 2 atom as a decomposition/search step.
+
+        This is the LEAP-style planning filter for AutoCedar. It does not
+        replace Cedar/SymCC or HITL review; it only asks whether this atom is a
+        useful, materially distinct, well-scoped unit worth showing to the
+        human and sending through symbolic grounding.
+        """
+        from autocedar.atoms import to_dict as _atom_to_dict
+
+        prior_atoms = prior_atoms or []
+        prior_decisions = prior_decisions or []
+        prior_json = [_summarize_property_atom(atom) for atom in prior_atoms]
+        decision_json = [_summarize_atom_decision(decision) for decision in prior_decisions]
+        proposed_json = _atom_to_dict(proposed_atom)
+        response = self._call_parse(
+            system_prompt=(
+                "You are AutoCedar's Stage 2 decomposition critic. Review one "
+                "proposed property atom before it is shown to a human. Your job "
+                "is to prune weak proof-plan steps, like LEAP's blueprint "
+                "reviewer: reject atoms that are redundant, schema-implied, "
+                "duplicates of approved or rejected atoms, too broad for their "
+                "source excerpt, or missing named lifecycle/ownership/network/"
+                "authentication/conflict boundaries. Return `accept` only when "
+                "the atom is materially useful and tightly scoped. Return "
+                "`repair` when the same source requirement is useful but the "
+                "atom should be revised before HITL. Return `reject` when it "
+                "should be skipped entirely. If a source boundary is real but "
+                "the validated schema has no field/action/context hook that can "
+                "represent it, do not accept a correlated proxy as equivalent. "
+                "Return `repair` with a `schema-gap` tag and name the missing "
+                "boundary so the pipeline can repair the schema before HITL "
+                "property review. For `disjointness` atoms, do not interpret "
+                "a `reference_cedar` safe-complement permit as an affirmative "
+                "permission grant. AutoCedar represents disjointness as an "
+                "implies/ceiling check plus `disjoint_target_body`, and later "
+                "patches same-action floors with the negated target body. "
+                "Judge whether `disjoint_target_body` names the forbidden "
+                "slice correctly; request repair only if that target is wrong, "
+                "missing, or unsupported by the schema. Do not perform symbolic "
+                "proof checking here; Cedar/SymCC will do that later."
+            ),
+            spec_text=spec_text,
+            user_turn=(
+                "Validated Cedar schema:\n\n"
+                f"```cedarschema\n{schema_text}\n```\n\n"
+                "Already-approved property atoms:\n\n"
+                f"```json\n{json.dumps(prior_json, indent=2)}\n```\n\n"
+                "Prior review decisions and rejected proposals:\n\n"
+                f"```json\n{json.dumps(decision_json, indent=2)}\n```\n\n"
+                "Proposed property atom to critique:\n\n"
+                f"```json\n{json.dumps(proposed_json, indent=2)}\n```\n\n"
+                "Critique this proposed atom as a Stage 2 decomposition step. "
+                "If it is only restating the schema's principal/resource type, "
+                "or is already implied by a stricter approved atom, reject it. "
+                "If its floor or ceiling omits a condition named in the source "
+                "requirement, request repair and name the missing boundary. "
+                "When that boundary is not schema-expressible, return `repair` "
+                "with a `schema-gap` tag rather than accepting a proxy. If the "
+                "schema already exposes the relevant lifecycle/process hook "
+                "(for example a resource has `registrationProcess` and that "
+                "process has `isClosed`), request property repair using that "
+                "hook; do not label it a schema gap or ask for a duplicate "
+                "parallel field. If the atom is `disjointness`, focus on "
+                "`disjoint_target_body` as the forbidden slice. A complement "
+                "permit in `reference_cedar` is the verifier encoding for a "
+                "ceiling, not a claim that the complement must be permitted."
+            ),
+            output_format=PropertyCritiqueResponse,
+            effort_override=_stage2_effort(self._provider, self._effort),
+        )
+        parsed = response.parsed_output
+        return PropertyCritique(
+            decision=parsed.decision,
+            reason=parsed.reason,
+            tags=list(parsed.tags),
+        )
 
     # ------------------------------------------------------------------
     # Stage 1 fix: ask the LLM to fix a cedar-validate failure.
@@ -591,6 +762,7 @@ class LLMClient:
         spec_text: str,
         user_turn: str,
         output_format: type[BaseModel],
+        effort_override: str | None = None,
     ) -> Any:
         """Call ``messages.parse`` with cache-controlled system+spec block.
 
@@ -609,7 +781,11 @@ class LLMClient:
         Only one breakpoint is needed; the system+spec is the entire
         cached prefix.
         """
-        kwargs = self._message_kwargs(system_prompt=system_prompt, spec_text=spec_text)
+        kwargs = self._message_kwargs(
+            system_prompt=system_prompt,
+            spec_text=spec_text,
+            effort_override=effort_override,
+        )
         try:
             return self._client.messages.parse(
                 **kwargs,
@@ -624,6 +800,7 @@ class LLMClient:
                 spec_text=spec_text,
                 user_turn=user_turn,
                 output_format=output_format,
+                effort_override=effort_override,
             )
 
     def _call_parse_json_fallback(
@@ -633,6 +810,7 @@ class LLMClient:
         spec_text: str,
         user_turn: str,
         output_format: type[BaseModel],
+        effort_override: str | None = None,
     ) -> Any:
         """Fallback when provider-side structured-output grammar compilation times out."""
         schema_json = json.dumps(output_format.model_json_schema(), indent=2)
@@ -644,7 +822,11 @@ class LLMClient:
             f"```json\n{schema_json}\n```"
         )
         response = self._client.messages.create(
-            **self._message_kwargs(system_prompt=system_prompt, spec_text=spec_text),
+            **self._message_kwargs(
+                system_prompt=system_prompt,
+                spec_text=spec_text,
+                effort_override=effort_override,
+            ),
             messages=[{"role": "user", "content": fallback_turn}],
         )
         text = _first_text_block(response)
@@ -670,13 +852,19 @@ class LLMClient:
         )
         return _first_text_block(response)
 
-    def _message_kwargs(self, *, system_prompt: str, spec_text: str) -> dict[str, Any]:
+    def _message_kwargs(
+        self,
+        *,
+        system_prompt: str,
+        spec_text: str,
+        effort_override: str | None = None,
+    ) -> dict[str, Any]:
         return {
             "model": self._model,
             "max_tokens": self._max_tokens,
             "thinking": {"type": "adaptive"},
             "output_config": {
-                "effort": self._effort,
+                "effort": effort_override or self._effort,
             },
             "system": [
                 {"type": "text", "text": system_prompt},
@@ -687,6 +875,69 @@ class LLMClient:
                 },
             ],
         }
+
+
+def _stage2_effort(provider: str, configured_effort: str) -> str:
+    """Use cheap bounded reasoning for Codex property-level calls."""
+    if is_codex_provider(provider):
+        return "low"
+    return configured_effort
+
+
+def _summarize_property_atom(atom: PropertyAtom) -> dict[str, Any]:
+    return {
+        "name": atom.name,
+        "constraint_type": atom.constraint_type,
+        "action": atom.action,
+        "principal_types": list(atom.principal_types),
+        "resource_types": list(atom.resource_types),
+        "plain_english_summary": atom.plain_english_summary,
+        "source_excerpt": atom.source_excerpt,
+        "reference_cedar": atom.reference_cedar,
+    }
+
+
+def _summarize_atom_decision(decision: Any) -> dict[str, Any]:
+    return {
+        "atom_name": getattr(decision, "atom_name", "?"),
+        "action": getattr(decision, "action", "?"),
+        "reason": getattr(decision, "reason", ""),
+        "edit_delta": getattr(decision, "edit_delta", {}),
+    }
+
+
+def _property_coverage_instruction(prior_atoms: list[PropertyAtom]) -> str:
+    counts: dict[str, int] = {}
+    for atom in prior_atoms:
+        counts[atom.constraint_type] = counts.get(atom.constraint_type, 0) + 1
+    if counts.get("floor", 0) == 0:
+        return (
+            "No approved floor atoms exist yet. If the spec contains any positive "
+            "permission language such as 'can', 'may', 'must be able', 'allows', "
+            "or a use-case success path, propose one missing floor atom now before "
+            "adding more ceilings or disjointness atoms."
+        )
+    if counts.get("floor", 0) < counts.get("ceiling", 0) + counts.get("disjointness", 0):
+        return (
+            "Safety atoms currently outnumber floors. Prefer the next missing "
+            "floor for an explicit allowed workflow unless every positive "
+            "permission path in the spec already has a floor."
+        )
+    return (
+        "Continue with the most important missing property. Before returning an "
+        "empty atoms list, audit existing floors for necessary conditions such "
+        "as own/assigned resource, LAN, strong authentication, current/open "
+        "periods, upcoming/not-completed semester boundaries, add/drop windows, "
+        "eligible course, no conflict, registered student, or completed semester. "
+        "If any floor has such a boundary but no same-action ceiling/disjointness "
+        "contains that same boundary, propose the missing stricter safety atom "
+        "next. A same-action ceiling for only part of the floor body is not "
+        "enough; each named lifecycle, ownership, network, authentication, "
+        "eligibility, conflict, assignment, or completion boundary must be "
+        "covered. Otherwise propose a floor for an uncovered positive workflow, "
+        "a ceiling/disjointness for an uncovered safety boundary, or empty only "
+        "when both sides are covered."
+    )
 
 
 def _first_text_block(response: Any) -> str:

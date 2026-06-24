@@ -1,0 +1,157 @@
+[
+  {
+    "name": "patient_view_own_access_log_floor",
+    "rationale": "The specification explicitly grants patients the ability to view their own access log. Because no floor atoms have been approved yet, this positive permission must be represented so a synthesized policy cannot satisfy only safety constraints while denying the intended access-log workflow. The schema exposes the patient ownership relation as AccessLog.patient and the patient session hook as context.session.patientUser, so the floor encodes both own-record access and an authenticated active patient session.",
+    "plain_english_summary": "A patient should be permitted to view the access log for themself when using their own active patient session.",
+    "source_excerpt": "A patient can view their own access log; 'The patient views their access log for themself or a represented person.'",
+    "constraint_type": "floor",
+    "action": "viewAccessLog",
+    "principal_types": [
+      "Patient"
+    ],
+    "resource_types": [
+      "AccessLog"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"viewAccessLog\", resource) when { context.session.isActive && context.session has patientUser && context.session.patientUser == principal && principal == resource.patient && context.patient == principal };",
+    "examples_adversarial": [],
+    "alternatives_considered": [
+      {
+        "label": "role_only_patient_access_log",
+        "interpretive_choice": "Permit any Patient to view any AccessLog based only on the Patient principal type.",
+        "cedar_text": "permit (principal, action == Action::\"viewAccessLog\", resource) when { context.session.isActive && context.session has patientUser && context.session.patientUser == principal };"
+      },
+      {
+        "label": "context_patient_only",
+        "interpretive_choice": "Use only context.patient to identify the target patient without checking that the AccessLog resource belongs to that patient.",
+        "cedar_text": "permit (principal, action == Action::\"viewAccessLog\", resource) when { context.session.isActive && context.session has patientUser && context.session.patientUser == principal && context.patient == principal };"
+      }
+    ],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "patient_view_access_log_own_only_ceiling",
+    "rationale": "The approved floor permits a patient to view their own access log, but the ownership boundary is safety-critical: the prose says patients view their access log for themselves or for represented persons, not arbitrary patients' logs. A same-action ceiling is needed so synthesis cannot over-permit Patient principals to view AccessLog resources for other patients outside the own-record path.",
+    "plain_english_summary": "A patient must only be permitted to view an access log through the patient-own path when the log is for that same patient and the request is made from that patient's active session.",
+    "source_excerpt": "A patient can view their own access log; 'The patient views their access log for themself or a represented person.'",
+    "constraint_type": "ceiling",
+    "action": "viewAccessLog",
+    "principal_types": [
+      "Patient"
+    ],
+    "resource_types": [
+      "AccessLog"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"viewAccessLog\", resource) when { context.session.isActive && context.session has patientUser && context.session.patientUser == principal && principal == resource.patient && context.patient == principal };",
+    "examples_adversarial": [
+      {
+        "description": "A patient attempts to view another patient's access log while authenticated as themself.",
+        "request_dict": {},
+        "decision_under_chosen": "deny",
+        "decisions_under_alternatives": {},
+        "diagnostic_for": [
+          "ownership_boundary",
+          "patient_access_log_privacy"
+        ]
+      }
+    ],
+    "alternatives_considered": [
+      {
+        "label": "patient_type_only",
+        "interpretive_choice": "Allow any Patient principal with an active patient session to view any AccessLog, relying only on role type rather than the log's patient owner.",
+        "cedar_text": "permit (principal, action == Action::\"viewAccessLog\", resource) when { context.session.isActive && context.session has patientUser && context.session.patientUser == principal };"
+      },
+      {
+        "label": "resource_patient_only_without_context_patient",
+        "interpretive_choice": "Require principal == resource.patient but omit context.patient == principal, leaving the request's patient context unconstrained.",
+        "cedar_text": "permit (principal, action == Action::\"viewAccessLog\", resource) when { context.session.isActive && context.session has patientUser && context.session.patientUser == principal && principal == resource.patient };"
+      }
+    ],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "joint-consistency-with-patient_view_own_access_log_floor: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "personal_representative_view_represented_access_log_floor",
+    "rationale": "The approved atoms cover only a patient's own access-log path. The specification also explicitly allows access-log viewing for a person for whom the requester is a personal representative, so synthesis needs a positive floor for that represented-patient workflow rather than being satisfiable by denying it.",
+    "plain_english_summary": "A personal representative should be permitted to view the access log for a patient they represent when using their own active personal-representative session.",
+    "source_excerpt": "A patient can view their own access log, or the access log for a person for whom they are a personal representative.",
+    "constraint_type": "floor",
+    "action": "viewAccessLog",
+    "principal_types": [
+      "PersonalRepresentative"
+    ],
+    "resource_types": [
+      "AccessLog"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"viewAccessLog\", resource) when { context.session.isActive && context.session has personalRepresentativeUser && context.session.personalRepresentativeUser == principal && resource.patient in principal.representedPatients && context.patient == resource.patient };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": false,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "joint-consistency-with-patient_view_access_log_own_only_ceiling: FAILED (floor personal_representative_view_represented_access_log_floor not contained in ceiling patient_view_access_log_own_only_ceiling\nFloor reference:\npermit (principal, action == Action::\"viewAccessLog\", resource) when { context.session.isActive && context.session has personalRepresentativeUser && context.session.personalRepresentativeUser == principal && resource.patient in principal.representedPatients && context.patient == resource.patient };\nCeiling reference:\npermit (principal, action == Action::\"viewAccessLog\", resource) when { context.session.isActive && context.session has patientUser && context.session.patientUser == principal && principal == resource.patient && context.patient == principal };\nCedar symcc output:\n\u2717 Policy set 1 implies policy set 2: DOES NOT HOLD\n  Counterexample found:\nprincipal: PersonalRepresentative::\"\", action: Action::\"viewAccessLog\", resource: AccessLog::\"\"\ncontext: {patient: Patient::\"\", session: Session::\"\"}\nentities: [\n  Action::\"createUAP\",\n  Action::\"viewPersonalHealthInformation\",\n  LHCP::\"\" {\n    hospitals: [],\n  },\n  Action::\"undesignateLHCP\",\n  Action::\"restrictDiagnosticInformation\",\n  Action::\"editDemographicInformation\",\n  Action::\"viewImmunization\",\n  Action::\"takeOfficeVisitSurvey\",\n  Action::\"setInactivityPeriod\",\n  Action::\"viewLhcps\",\n  Action::\"createLabTechnician\",\n  Action::\"designateLHCP\",\n  Action::\"editImmunization\",\n  Action::\"logout\",\n  Action::\"assignHospital\",\n  Action::\"removePersonalRepresentative\",\n  Action::\"determineDiagnosisRestrictionAllowed\",\n  Action::\"viewMedicalRecord\",\n  Action::\"requestPasswordChange\",\n  Action::\"assignCredentials\",\n  Action::\"addPersonalRepresentative\",\n  Action::\"viewCredential\",\n  Patient::\"\" {\n    designatedLhc)",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": false,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "personal_representative_view_represented_access_log_floor",
+    "rationale": "The approved access-log properties include a floor for patients viewing their own logs and a ceiling allowing either patient-own or representative-represented access, but no positive floor yet requires the personal-representative workflow to be permitted. The specification explicitly allows viewing the access log for a represented person, so synthesis must not satisfy the ceiling with a policy that omits this permitted path.",
+    "plain_english_summary": "A personal representative should be permitted to view the access log for a patient they represent when using their own active personal-representative session.",
+    "source_excerpt": "A patient can view their own access log, or the access log for a person for whom they are a personal representative.",
+    "constraint_type": "floor",
+    "action": "viewAccessLog",
+    "principal_types": [
+      "PersonalRepresentative"
+    ],
+    "resource_types": [
+      "AccessLog"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"viewAccessLog\", resource) when { context.session.isActive && context.session has personalRepresentativeUser && context.session.personalRepresentativeUser == principal && resource.patient in principal.representedPatients && context.patient == resource.patient };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": false,
+    "symbolic_verification_log": [],
+    "intent_acknowledged_by_user": false,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  }
+]

@@ -1,0 +1,1 @@
+permit (principal is Administrator, action == Action::"assignLhcpToHospital", resource is Lhcp) when { !(!context.session.isActive) };

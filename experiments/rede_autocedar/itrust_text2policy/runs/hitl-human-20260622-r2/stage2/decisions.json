@@ -1,0 +1,10 @@
+[
+  {
+    "atom_name": "hcp_can_create_patient",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  }
+]

@@ -3,3 +3,8 @@ include LICENSE
 recursive-include autocedar/prompts *.md
 
 prune tests
+prune autocedar-runs
+prune eval_runs
+prune workspace
+prune build
+prune dist

@@ -1,0 +1,65 @@
+[
+  {
+    "atom_name": "hcp_cannot_view_patient_credentials",
+    "stage": "stage2_property_review",
+    "reason": "Stage 2 decomposition critic repair: The source requirement is materially useful, but the proposed atom uses `Credential.hasPassword` and `hasSecurityQuestion` as proxies for viewing the actual password/security-question contents. The schema does not expose a field/action/context boundary for the specific credential component being viewed, so denying `viewCredential` for any patient credential containing those components is broader than the source requirement and may also block viewing non-sensitive credential metadata such as MID. Repair by adding or using an explicit password/security-question component boundary before forming the disjointness property; also express the property as a prohibition target rather than a permissive Cedar rule for the complement.",
+    "critic_tags": [
+      "missing-credential-component-boundary",
+      "polarity-repair",
+      "schema-gap",
+      "too-broad"
+    ],
+    "required_action": "repair_schema_before_synthesis"
+  },
+  {
+    "atom_name": "hcp_can_edit_patient",
+    "stage": "stage2_property_review",
+    "reason": "Stage 2 decomposition critic repair: The positive HCP edit requirement is materially useful and not covered by approved atoms, but the proposed floor is too broad. The source scopes editing to patient data according to the data format, and the adjacent requirement explicitly excludes editing the patient's MID. The schema's `editPatient` action has no context/resource boundary for data-format validity or for the specific patient field being edited, so a blanket HCP+editPatient+Patient permit could cover MID or invalid-format edits. Repair by adding/using explicit editable-field and data-format-validity boundaries, or otherwise decomposing the property to an exposed narrower hook such as demographic information if that is the intended editable patient data.",
+    "critic_tags": [
+      "missing-data-format-validity-boundary",
+      "missing-editable-patient-field-boundary",
+      "schema-gap",
+      "too-broad"
+    ],
+    "required_action": "repair_schema_before_synthesis"
+  },
+  {
+    "atom_name": "user_can_login_with_own_credentials",
+    "stage": "stage2_property_review",
+    "reason": "Stage 2 decomposition critic repair: The login workflow is materially useful, but the proposed floor accepts a proxy for the actual authentication requirement. The source says a user enters their MID and password to gain role-based entry, which requires a boundary for submitted MID/password matching or an authentication-success predicate. The schema exposes Credential.user and hasPassword, but hasPassword only says a password exists; it does not prove the user supplied the correct password or MID. Do not accept the own-credential/hasPassword proxy as equivalent. Repair the schema/property with an explicit submitted-MID and password-verification/authentication-success boundary, while retaining the own-session and own-credential ownership constraints if appropriate.",
+    "critic_tags": [
+      "authentication-boundary",
+      "missing-password-verification-boundary",
+      "missing-submitted-mid-boundary",
+      "proxy-haspassword",
+      "schema-gap"
+    ],
+    "required_action": "repair_schema_before_synthesis"
+  },
+  {
+    "atom_name": "patient_can_add_provider_to_own_list",
+    "stage": "stage2_property_review",
+    "reason": "Stage 2 decomposition critic repair: The provider-list workflow is materially useful and not already covered by approved atoms, and the proposed atom correctly includes the own-provider-list ownership boundary. However, the source requirement specifically scopes the add operation to adding a provider by searching by name, specialty, and optionally zip code. The schema exposes search inputs in context but lacks provider attributes needed to validate that the selected provider actually matched the search terms: HCP has no name, specialty, or zip-code fields, and only LHCP has specialty. Accepting a floor that ignores the search-match boundary would permit adding any HCP to the patient's own provider list, which is broader than the source workflow. Repair by adding schema support for provider search-match semantics or provider name/specialty/zip attributes across the relevant HCP/LHCP provider set, then include the selected-provider-matches-search boundary in the property.",
+    "critic_tags": [
+      "missing-provider-name-boundary",
+      "missing-provider-search-match-boundary",
+      "missing-provider-zip-code-boundary",
+      "ownership-boundary-present",
+      "schema-gap",
+      "too-broad-floor"
+    ],
+    "required_action": "repair_schema_before_synthesis"
+  },
+  {
+    "atom_name": "patient_can_undesignate_lhcp_for_self",
+    "stage": "stage2_property_review",
+    "reason": "Stage 2 decomposition critic repair: The undesignation workflow is materially useful and not covered by the approved designation atoms, and the schema exposes the self-patient boundary. However, the proposed floor permits a patient to undesignate any LHCP for themselves without requiring that the LHCP is currently designated as that patient's DLHCP. The source action is specifically to undesignate an LHCP as being a DLHCP for that patient, so the property should use the existing patient-specific designation relationship exposed by `Patient.designatedProviders`, e.g. require `context.patient == principal` and `resource in principal.designatedProviders` or the equivalent context-patient relationship. This is a property repair, not a schema gap.",
+    "critic_tags": [
+      "missing-existing-dlhcp-designation-boundary",
+      "ownership-boundary-present",
+      "relationship-boundary-present",
+      "too-broad-floor"
+    ],
+    "required_action": "repair_schema_before_synthesis"
+  }
+]

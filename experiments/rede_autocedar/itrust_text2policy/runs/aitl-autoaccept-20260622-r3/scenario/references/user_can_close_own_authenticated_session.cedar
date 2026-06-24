@@ -1,0 +1,1 @@
+permit (principal, action == Action::"closeApplication", resource) when { principal is User && resource is Session && resource.user == principal && resource.isAuthenticated };

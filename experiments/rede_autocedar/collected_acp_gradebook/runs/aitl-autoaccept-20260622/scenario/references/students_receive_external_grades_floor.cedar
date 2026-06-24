@@ -1,0 +1,1 @@
+permit (principal is User, action == Action::"receiveExternalGrade", resource is ExternalGrade) when { principal.roles.contains(Role::"Student") };

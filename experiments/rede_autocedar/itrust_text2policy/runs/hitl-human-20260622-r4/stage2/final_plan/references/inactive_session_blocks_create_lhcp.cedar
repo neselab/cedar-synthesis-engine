@@ -1,0 +1,1 @@
+permit (principal is Administrator, action == Action::"createLhcp", resource is Lhcp) when { !(!context.session.isActive) };

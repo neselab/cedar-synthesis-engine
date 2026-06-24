@@ -1,0 +1,91 @@
+[
+  {
+    "name": "hcp_can_create_patient",
+    "rationale": "The specification explicitly grants HCPs the ability to create patients. Since no floor atoms exist yet, this positive permission must be represented so synthesis cannot satisfy the requirements with an empty or deny-only policy. The reference also ties the request to the authenticated session supplied by the schema, using the session user and active-session hook without adding unrelated patient-editing requirements.",
+    "plain_english_summary": "An HCP with an active session for that same HCP should be permitted to create a patient.",
+    "source_excerpt": "An HCP can create a patient and enter the patient as a new user of the system.",
+    "constraint_type": "floor",
+    "action": "createPatient",
+    "principal_types": [
+      "HCP"
+    ],
+    "resource_types": [
+      "Patient"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"createPatient\", resource) when { context.session.user == principal && context.session.isActive };",
+    "examples_adversarial": [],
+    "alternatives_considered": [
+      {
+        "label": "role_only_create_patient_floor",
+        "interpretive_choice": "Permit any HCP to create a patient without checking the session context.",
+        "cedar_text": "permit (principal, action == Action::\"createPatient\", resource);"
+      }
+    ],
+    "symbolic_verified": false,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: FAILED (encoding is vacuous (always denies))",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "create_patient_requires_active_own_session",
+    "rationale": "The approved createPatient floor is scoped to an active session belonging to the HCP, and the spec states that authorization is disabled after the inactivity limit is exceeded. A same-action safety bound is needed so a candidate policy cannot also permit patient creation using an inactive session or another user's session.",
+    "plain_english_summary": "An HCP may create a patient only when the request uses an active session for that same HCP.",
+    "source_excerpt": "Electronic sessions must terminate after the configured inactivity period; after the inactivity limit is exceeded, all authorization is disabled.",
+    "constraint_type": "ceiling",
+    "action": "createPatient",
+    "principal_types": [
+      "HCP"
+    ],
+    "resource_types": [
+      "Patient"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"createPatient\", resource) when { context.session.user == principal && context.session.isActive };",
+    "examples_adversarial": [
+      {
+        "description": "An HCP attempts to create a patient using their own session after it is no longer active; the ceiling should reject policies that still permit this request.",
+        "request_dict": {},
+        "decision_under_chosen": "deny",
+        "decisions_under_alternatives": {},
+        "diagnostic_for": [
+          "inactive_session_overpermission"
+        ]
+      },
+      {
+        "description": "An HCP attempts to create a patient while presenting a session that belongs to a different user; the ceiling should reject policies that ignore session ownership.",
+        "request_dict": {},
+        "decision_under_chosen": "deny",
+        "decisions_under_alternatives": {},
+        "diagnostic_for": [
+          "session_user_mismatch_overpermission"
+        ]
+      }
+    ],
+    "alternatives_considered": [
+      {
+        "label": "role_only_ceiling",
+        "interpretive_choice": "Limit createPatient only to HCP principals without checking the active session boundary.",
+        "cedar_text": "permit (principal, action == Action::\"createPatient\", resource);"
+      }
+    ],
+    "symbolic_verified": false,
+    "symbolic_verification_log": [],
+    "intent_acknowledged_by_user": false,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  }
+]

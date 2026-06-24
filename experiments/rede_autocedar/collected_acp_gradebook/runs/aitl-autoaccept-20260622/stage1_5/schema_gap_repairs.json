@@ -1,0 +1,71 @@
+[
+  {
+    "gap": {
+      "atom_name": "external_grade_assignment_requires_faculty",
+      "stage": "stage2_property_review",
+      "reason": "Stage 2 decomposition critic repair: The atom turns the source's 'faculty take final responsibility for external grades' and one-way faculty assignment permissions into a broad 'only faculty may assign external grades' ceiling. That may be a useful responsibility/ownership boundary, but the validated schema has no explicit hook for final responsibility or responsible faculty ownership, and using assignExternalGrade membership as a proxy would overstate the source. Repair should either cite a source that explicitly says external-grade assignment is faculty-only, or add/schema-repair a representation of the external-grade final-responsibility boundary before proposing a property over it.",
+      "critic_tags": [
+        "missing-final-responsibility-boundary",
+        "proxy-for-ownership-boundary",
+        "schema-gap",
+        "too-broad-for-source"
+      ],
+      "required_action": "repair_schema_before_synthesis"
+    },
+    "proposed_atoms": [
+      {
+        "name": "ExternalGrade__responsibleFaculty",
+        "rationale": "This field represents the faculty user who takes final responsibility for an external grade.",
+        "plain_english_summary": "Each external grade can record which faculty member is ultimately responsible for it.",
+        "source_excerpt": "Faculty members take final responsibility for external grades.",
+        "on_entity": "ExternalGrade",
+        "field_name": "responsibleFaculty",
+        "cedar_type": "User",
+        "optional": false,
+        "alternatives_considered": [
+          "Use assignExternalGrade permission as a proxy for responsibility, rejected because the reviewer said that would overstate the source.",
+          "Model Faculty as a separate entity type, rejected because the current schema represents faculty via User.roles.",
+          "Add action context responsibleFaculty to assignExternalGrade, rejected because final responsibility is a property of the external grade rather than only one request."
+        ]
+      }
+    ],
+    "decisions": [
+      {
+        "atom_name": "ExternalGrade__responsibleFaculty",
+        "action": "approve",
+        "reason": "",
+        "edit_delta": {},
+        "intent_acknowledged_by_user": true,
+        "symbolic_verified": false
+      }
+    ],
+    "approved_atoms": [
+      {
+        "name": "ExternalGrade__responsibleFaculty",
+        "rationale": "This field represents the faculty user who takes final responsibility for an external grade.",
+        "plain_english_summary": "Each external grade can record which faculty member is ultimately responsible for it.",
+        "source_excerpt": "Faculty members take final responsibility for external grades.",
+        "on_entity": "ExternalGrade",
+        "field_name": "responsibleFaculty",
+        "cedar_type": "User",
+        "optional": false,
+        "alternatives_considered": [
+          "Use assignExternalGrade permission as a proxy for responsibility, rejected because the reviewer said that would overstate the source.",
+          "Model Faculty as a separate entity type, rejected because the current schema represents faculty via User.roles.",
+          "Add action context responsibleFaculty to assignExternalGrade, rejected because final responsibility is a property of the external grade rather than only one request."
+        ]
+      }
+    ],
+    "schema_validation": [
+      {
+        "attempt_number": 1,
+        "schema_text": "entity Role enum [\"Student\", \"TeachingAssistant\", \"Faculty\", \"FacultyFamily\"];\n\nentity User {\n    roles: Set<Role>,\n};\n\nentity InternalGrade;\n\nentity ExternalGrade {\n    responsibleFaculty: User,\n};\n\nentity Course;\n\naction assignInternalGrade appliesTo {\n    principal: [User],\n    resource: [InternalGrade],\n};\n\naction assignExternalGrade appliesTo {\n    principal: [User],\n    resource: [ExternalGrade],\n};\n\naction viewInternalGrade appliesTo {\n    principal: [User],\n    resource: [InternalGrade],\n};\n\naction viewExternalGrade appliesTo {\n    principal: [User],\n    resource: [ExternalGrade],\n};\n\naction receiveExternalGrade appliesTo {\n    principal: [User],\n    resource: [ExternalGrade],\n};\n\naction enrollInCourse appliesTo {\n    principal: [User],\n    resource: [Course],\n};\n",
+        "validator_passed": true,
+        "validator_error": "",
+        "llm_was_called": false,
+        "schema_override": false,
+        "schema_gap_repair": true
+      }
+    ]
+  }
+]

@@ -1,0 +1,116 @@
+[
+  {
+    "atom_name": "students_receive_external_grades_floor",
+    "span_text": "Students receive external grades; Requests for students to Receive ExternalGrades ... will succeed.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "students_not_assign_external_grades_disjointness",
+    "span_text": "Students receive external grades but must not assign external grades; There do not exist members of Student who can Assign ExternalGrades.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "faculty_assign_internal_grades_floor",
+    "span_text": "Faculty members can assign internal grades and external grades; Requests for ... faculty to Assign ... InternalGrades ... will succeed.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "faculty_assign_external_grades_floor",
+    "span_text": "Faculty members can assign internal grades and external grades; Requests for ... faculty to Assign ... ExternalGrades ... will succeed.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "faculty_only_non_conflicting_assign_external_grades_floor",
+    "span_text": "Faculty members can assign internal grades and external grades; Requests for ... faculty to Assign ... ExternalGrades ... will succeed; Teaching assistants must not ... assign external grades; Faculty Family can receive External-Grades.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "teaching_assistants_not_assign_external_grades_disjointness",
+    "span_text": "Teaching assistants can view and assign internal grades, but teaching assistants must not view or assign external grades.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "faculty_family_not_assign_external_grades_disjointness",
+    "span_text": "No user should be able to both receive and assign external grades through any combination of roles; Members of the Faculty Family role can receive external grades.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "faculty_view_internal_grades_floor",
+    "span_text": "Faculty members can view internal grades and external grades; Requests for ... faculty to ... View ... InternalGrades ... will succeed.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "faculty_non_ta_view_external_grades_floor",
+    "span_text": "Faculty members can view internal grades and external grades; Requests for ... faculty to ... View ... ExternalGrades ... will succeed; Teaching assistants must not view ... external grades.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "teaching_assistants_not_view_external_grades_disjointness",
+    "span_text": "Teaching assistants can view and assign internal grades, but teaching assistants must not view or assign external grades.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "teaching_assistants_view_internal_grades_floor",
+    "span_text": "Teaching assistants can view and assign InternalGrades but not ExternalGrades.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "teaching_assistants_assign_internal_grades_floor",
+    "span_text": "Teaching assistants can view and assign InternalGrades but not ExternalGrades.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "teaching_assistants_non_student_assign_internal_grades_floor",
+    "span_text": "Teaching assistants can view and assign InternalGrades but not ExternalGrades; If the subject is a student, that subject must not assign grades.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "faculty_family_receive_external_grades_floor",
+    "span_text": "Members of the Faculty Family role can receive external grades; All members of role Faculty Family can receive External-Grades.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "external_grades_assigned_only_by_faculty_ceiling",
+    "span_text": "Faculty members can assign internal grades and external grades; Faculty members take final responsibility for external grades; If a subject is a faculty member, that subject may assign grades.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "students_not_assign_internal_grades_disjointness",
+    "span_text": "If the subject is a student, that subject must not assign grades.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "external_grade_assigning_faculty_not_receive_external_grades_disjointness",
+    "span_text": "No user should be able to both receive and assign external grades through any combination of roles.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "non_faculty_enroll_in_courses_floor",
+    "span_text": "If a subject is not a faculty member, then permit that subject to enroll in courses.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "faculty_not_enroll_in_courses_disjointness",
+    "span_text": "If a subject is not a faculty member, then permit that subject to enroll in courses; faculty;enroll;course;NEG-not - C.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  }
+]

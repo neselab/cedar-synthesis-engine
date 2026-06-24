@@ -1,0 +1,1 @@
+permit (principal is User, action == Action::"enrollInCourse", resource is Course) when { !principal.roles.contains(Role::"Faculty") };

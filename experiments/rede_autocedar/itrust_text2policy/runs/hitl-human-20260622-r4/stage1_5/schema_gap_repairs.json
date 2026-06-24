@@ -1,0 +1,447 @@
+[
+  {
+    "gap": {
+      "atom_name": "user_can_login_with_own_credentials",
+      "stage": "stage2_property_review",
+      "reason": "Stage 2 decomposition critic repair: The login floor is materially useful, but it replaces the source authentication boundary with a proxy. The requirement is that the user enters their MID and password to gain role-based entry; the schema exposes only a Credential owner and hasPassword flag, not request-entered MID/password values or a password/MID verification result. Requiring context.credential.user == principal and hasPassword does not represent successful authentication with the entered MID and password.",
+      "critic_tags": [
+        "missing-authentication-boundary",
+        "missing-entered-mid",
+        "missing-password-verification",
+        "schema-gap"
+      ],
+      "required_action": "repair_schema_before_synthesis"
+    },
+    "proposed_atoms": [
+      {
+        "name": "login",
+        "rationale": "The login action needs request authentication evidence so policies can require the entered MID to identify the principal and the entered password to have been verified.",
+        "plain_english_summary": "This adds the information supplied and checked during login so access can depend on a real successful login attempt.",
+        "source_excerpt": "Any user can enter their MID and password to gain role-based entry into iTrust.",
+        "principal_types": [
+          "User"
+        ],
+        "resource_types": [
+          "Session"
+        ],
+        "context_attributes": {
+          "enteredMid": {
+            "name": "login__context__enteredMid",
+            "rationale": "The request-entered MID is needed to compare the login identifier against the principal's MID.",
+            "plain_english_summary": "The MID typed by the user during login.",
+            "source_excerpt": "Any user can enter their MID and password to gain role-based entry into iTrust.",
+            "on_entity": "",
+            "field_name": "enteredMid",
+            "cedar_type": "String",
+            "optional": false,
+            "alternatives_considered": []
+          },
+          "passwordVerified": {
+            "name": "login__context__passwordVerified",
+            "rationale": "A boolean verification result is needed because Cedar policies should not compare or store plaintext passwords.",
+            "plain_english_summary": "Whether the password typed by the user was successfully verified for the entered MID.",
+            "source_excerpt": "Any user can enter their MID and password to gain role-based entry into iTrust.",
+            "on_entity": "",
+            "field_name": "passwordVerified",
+            "cedar_type": "Bool",
+            "optional": false,
+            "alternatives_considered": []
+          }
+        },
+        "parent_groups": []
+      }
+    ],
+    "decisions": [
+      {
+        "atom_name": "login",
+        "action": "approve",
+        "reason": "",
+        "edit_delta": {},
+        "intent_acknowledged_by_user": true,
+        "symbolic_verified": false
+      }
+    ],
+    "approved_atoms": [
+      {
+        "name": "login",
+        "rationale": "The login action needs request authentication evidence so policies can require the entered MID to identify the principal and the entered password to have been verified.",
+        "plain_english_summary": "This adds the information supplied and checked during login so access can depend on a real successful login attempt.",
+        "source_excerpt": "Any user can enter their MID and password to gain role-based entry into iTrust.",
+        "principal_types": [
+          "User"
+        ],
+        "resource_types": [
+          "Session"
+        ],
+        "context_attributes": {
+          "enteredMid": {
+            "name": "login__context__enteredMid",
+            "rationale": "The request-entered MID is needed to compare the login identifier against the principal's MID.",
+            "plain_english_summary": "The MID typed by the user during login.",
+            "source_excerpt": "Any user can enter their MID and password to gain role-based entry into iTrust.",
+            "on_entity": "",
+            "field_name": "enteredMid",
+            "cedar_type": "String",
+            "optional": false,
+            "alternatives_considered": []
+          },
+          "passwordVerified": {
+            "name": "login__context__passwordVerified",
+            "rationale": "A boolean verification result is needed because Cedar policies should not compare or store plaintext passwords.",
+            "plain_english_summary": "Whether the password typed by the user was successfully verified for the entered MID.",
+            "source_excerpt": "Any user can enter their MID and password to gain role-based entry into iTrust.",
+            "on_entity": "",
+            "field_name": "passwordVerified",
+            "cedar_type": "Bool",
+            "optional": false,
+            "alternatives_considered": []
+          }
+        },
+        "parent_groups": []
+      }
+    ],
+    "schema_validation": [
+      {
+        "attempt_number": 1,
+        "schema_text": "entity User {\n    mid: String,\n    name: String,\n    email: String,\n};\n\nentity Patient in [User] {\n    providerList: ProviderList,\n};\n\nentity Hcp in [User];\n\nentity Lhcp in [Hcp] {\n    specialty: String,\n    hospitals: Set<Hospital>,\n    zipCode?: String,\n};\n\nentity Administrator in [User];\n\nentity Uap in [User];\n\nentity EmergencyResponder in [User];\n\nentity PublicHealthAgent in [User];\n\nentity PersonalRepresentative in [User] {\n    representedPatients: Set<Patient>,\n};\n\nentity Hospital;\n\nentity ProviderList {\n    patient: Patient,\n    providers: Set<Hcp>,\n};\n\nentity ProviderDesignation {\n    patient: Patient,\n    lhcp: Lhcp,\n    isDesignated: Bool,\n};\n\nentity MedicalRecord {\n    patient: Patient,\n    hasFamilyHistory: Bool,\n    hasPersonalHealthInformation: Bool,\n    hasImmunizations: Bool,\n    hasOfficeVisitInformation: Bool,\n};\n\nentity DemographicInformation {\n    patient: Patient,\n};\n\nentity Credential {\n    user: User,\n    hasPassword: Bool,\n    hasSecurityQuestion: Bool,\n};\n\nentity AccessLog {\n    patient: Patient,\n    accessorName: String,\n    accessorRoleRelativeToPatient: String,\n    accessTimestamp: datetime,\n    transactionType: String,\n};\n\nentity Session {\n    user: User,\n    isActive: Bool,\n    inactivityPeriodLength: duration,\n    lastActivityAt: datetime,\n};\n\naction createPatient appliesTo {\n    principal: [Hcp],\n    resource: [Patient],\n    context: {\n        session: Session,\n    },\n};\n\naction editPatientData appliesTo {\n    principal: [Hcp],\n    resource: [Patient],\n    context: {\n        session: Session,\n        fieldName: String,\n    },\n};\n\naction enterCredential appliesTo {\n    principal: [Hcp, User],\n    resource: [Credential],\n    context: {\n        session: Session,\n        credentialField: String,\n    },\n};\n\naction editCredential appliesTo {\n    principal: [Hcp, User],\n    resource: [Credential],\n    context: {\n        session: Session,\n        credentialField: String,\n    },\n};\n\naction viewCredential appliesTo {\n    principal: [Hcp, User],\n    resource: [Credential],\n    context: {\n        session: Session,\n        credentialField: String,\n    },\n};\n\naction createLhcp appliesTo {\n    principal: [Administrator],\n    resource: [Lhcp],\n    context: {\n        session: Session,\n    },\n};\n\naction createEmergencyResponder appliesTo {\n    principal: [Administrator],\n    resource: [EmergencyResponder],\n    context: {\n        session: Session,\n    },\n};\n\naction createPublicHealthAgent appliesTo {\n    principal: [Administrator],\n    resource: [PublicHealthAgent],\n    context: {\n        session: Session,\n    },\n};\n\naction createUap appliesTo {\n    principal: [Lhcp],\n    resource: [Uap],\n    context: {\n        session: Session,\n    },\n};\n\naction assignLhcpToHospital appliesTo {\n    principal: [Administrator],\n    resource: [Lhcp],\n    context: {\n        session: Session,\n        hospital: Hospital,\n    },\n};\n\naction login appliesTo {\n    principal: [User],\n    resource: [Session],\n    context: {\n        credential: Credential,\n        enteredMid: String,\n        passwordVerified: Bool,\n    },\n};\n\naction requestPasswordChange appliesTo {\n    principal: [User],\n    resource: [Credential],\n    context: {\n        session: Session,\n    },\n};\n\naction logout appliesTo {\n    principal: [User],\n    resource: [Session],\n};\n\naction closeApplication appliesTo {\n    principal: [User],\n    resource: [Session],\n};\n\naction setInactivityPeriodLength appliesTo {\n    principal: [Administrator],\n    resource: [Session],\n    context: {\n        session: Session,\n    },\n};\n\naction viewPriorAndDesignatedLhcps appliesTo {\n    principal: [Patient],\n    resource: [ProviderList],\n    context: {\n        session: Session,\n    },\n};\n\naction addProviderToList appliesTo {\n    principal: [Patient],\n    resource: [ProviderList],\n    context: {\n        session: Session,\n        provider: Hcp,\n        searchName: String,\n        searchSpecialty?: String,\n        searchZipCode?: String,\n    },\n};\n\naction designateDlhcp appliesTo {\n    principal: [Patient],\n    resource: [ProviderDesignation],\n    context: {\n        session: Session,\n    },\n};\n\naction undesignateDlhcp appliesTo {\n    principal: [Patient],\n    resource: [ProviderDesignation],\n    context: {\n        session: Session,\n    },\n};\n\naction viewAccessLog appliesTo {\n    principal: [Patient],\n    resource: [AccessLog],\n    context: {\n        session: Session,\n        beginDate: datetime,\n        endDate: datetime,\n    },\n};\n\naction viewMedicalRecord appliesTo {\n    principal: [Patient, PersonalRepresentative],\n    resource: [MedicalRecord],\n    context: {\n        session: Session,\n        representedPatient?: Patient,\n    },\n};\n\naction viewFamilyHistory appliesTo {\n    principal: [Patient, PersonalRepresentative],\n    resource: [MedicalRecord],\n    context: {\n        session: Session,\n        representedPatient?: Patient,\n    },\n};\n\naction viewPersonalHealthInformation appliesTo {\n    principal: [Patient, PersonalRepresentative],\n    resource: [MedicalRecord],\n    context: {\n        session: Session,\n        representedPatient?: Patient,\n    },\n};\n\naction viewImmunizations appliesTo {\n    principal: [Patient, PersonalRepresentative],\n    resource: [MedicalRecord],\n    context: {\n        session: Session,\n        representedPatient?: Patient,\n    },\n};\n\naction viewOfficeVisitInformation appliesTo {\n    principal: [Patient, PersonalRepresentative],\n    resource: [MedicalRecord],\n    context: {\n        session: Session,\n        representedPatient?: Patient,\n    },\n};\n",
+        "validator_passed": true,
+        "validator_error": "",
+        "llm_was_called": false,
+        "schema_override": true,
+        "schema_gap_repair": true
+      }
+    ]
+  },
+  {
+    "gap": {
+      "atom_name": "patient_can_view_own_prior_and_designated_lhcps",
+      "stage": "stage2_property_review",
+      "reason": "Stage 2 decomposition critic repair: The source grant is not merely generic access to the patient's ProviderList; it is specifically to view LHCPs the patient has ever had an office visit with and LHCPs the patient has designated. The proposed floor correctly includes the own-patient boundary and active-session boundary, but it accepts ProviderList as a proxy even though the schema does not expose an office-visit history relationship and does not connect ProviderList to ProviderDesignation/isDesignated membership. Repair is needed to make the prior-office-visit and designated-LHCP boundaries explicit; if those cannot be represented with the current schema, this is a schema gap rather than an acceptable proxy.",
+      "critic_tags": [
+        "missing-designated-lhcp-membership-boundary",
+        "missing-prior-office-visit-lhcp-boundary",
+        "proxy-resource-not-equivalent",
+        "schema-gap"
+      ],
+      "required_action": "repair_schema_before_synthesis"
+    },
+    "proposed_atoms": [
+      {
+        "name": "OfficeVisit",
+        "rationale": "OfficeVisit represents the historical encounter relationship needed to identify LHCPs a patient has previously visited.",
+        "plain_english_summary": "A record that a patient had an office visit with a particular LHCP.",
+        "source_excerpt": "A patient can view all LHCPs the patient has ever had an office visit with and all LHCPs the patient has designated.",
+        "members_of": [],
+        "attributes": {},
+        "enum_values": null
+      },
+      {
+        "name": "OfficeVisit__patient",
+        "rationale": "The office visit must be tied to the patient whose prior LHCP relationship is being checked.",
+        "plain_english_summary": "The patient who had the office visit.",
+        "source_excerpt": "A patient can view all LHCPs the patient has ever had an office visit with and all LHCPs the patient has designated.",
+        "on_entity": "OfficeVisit",
+        "field_name": "patient",
+        "cedar_type": "Patient",
+        "optional": false,
+        "alternatives_considered": [
+          "Inferred from the phrase \"the patient has ever had an office visit with\"; alternatively could store only a Set<Lhcp> on ProviderList, but that would lose the visit relationship object."
+        ]
+      },
+      {
+        "name": "OfficeVisit__lhcp",
+        "rationale": "The office visit must identify the LHCP involved so policies can distinguish prior-visit LHCPs.",
+        "plain_english_summary": "The LHCP who participated in the patient's office visit.",
+        "source_excerpt": "A patient can view all LHCPs the patient has ever had an office visit with and all LHCPs the patient has designated.",
+        "on_entity": "OfficeVisit",
+        "field_name": "lhcp",
+        "cedar_type": "Lhcp",
+        "optional": false,
+        "alternatives_considered": [
+          "Inferred from the phrase \"LHCPs the patient has ever had an office visit with\"; alternatively could use a generic Hcp, but the requirement specifically names LHCPs."
+        ]
+      },
+      {
+        "name": "ProviderList__officeVisits",
+        "rationale": "ProviderList needs an explicit hook to the patient's office-visit history rather than acting as an undifferentiated provider proxy.",
+        "plain_english_summary": "The office visits that establish which LHCPs the patient has previously seen.",
+        "source_excerpt": "A patient can view all LHCPs the patient has ever had an office visit with and all LHCPs the patient has designated.",
+        "on_entity": "ProviderList",
+        "field_name": "officeVisits",
+        "cedar_type": "Set<OfficeVisit>",
+        "optional": false,
+        "alternatives_considered": [
+          "Store priorOfficeVisitLhcps as Set<Lhcp> directly on ProviderList; rejected because an OfficeVisit entity preserves the patient-LHCP relationship explicitly."
+        ]
+      },
+      {
+        "name": "ProviderList__designations",
+        "rationale": "ProviderList needs an explicit connection to ProviderDesignation entities so policies can test patient-specific designated-LHCP membership and isDesignated state.",
+        "plain_english_summary": "The provider designations that show which LHCPs the patient has designated.",
+        "source_excerpt": "A patient can view all LHCPs the patient has ever had an office visit with and all LHCPs the patient has designated.",
+        "on_entity": "ProviderList",
+        "field_name": "designations",
+        "cedar_type": "Set<ProviderDesignation>",
+        "optional": false,
+        "alternatives_considered": [
+          "Store designatedLhcps as Set<Lhcp> directly on ProviderList; rejected because existing ProviderDesignation already carries patient, LHCP, and isDesignated state."
+        ]
+      }
+    ],
+    "decisions": [
+      {
+        "atom_name": "OfficeVisit",
+        "action": "approve",
+        "reason": "",
+        "edit_delta": {},
+        "intent_acknowledged_by_user": true,
+        "symbolic_verified": false
+      },
+      {
+        "atom_name": "OfficeVisit__patient",
+        "action": "approve",
+        "reason": "",
+        "edit_delta": {},
+        "intent_acknowledged_by_user": true,
+        "symbolic_verified": false
+      },
+      {
+        "atom_name": "OfficeVisit__lhcp",
+        "action": "approve",
+        "reason": "",
+        "edit_delta": {},
+        "intent_acknowledged_by_user": true,
+        "symbolic_verified": false
+      },
+      {
+        "atom_name": "ProviderList__officeVisits",
+        "action": "approve",
+        "reason": "",
+        "edit_delta": {},
+        "intent_acknowledged_by_user": true,
+        "symbolic_verified": false
+      },
+      {
+        "atom_name": "ProviderList__designations",
+        "action": "approve",
+        "reason": "",
+        "edit_delta": {},
+        "intent_acknowledged_by_user": true,
+        "symbolic_verified": false
+      }
+    ],
+    "approved_atoms": [
+      {
+        "name": "OfficeVisit",
+        "rationale": "OfficeVisit represents the historical encounter relationship needed to identify LHCPs a patient has previously visited.",
+        "plain_english_summary": "A record that a patient had an office visit with a particular LHCP.",
+        "source_excerpt": "A patient can view all LHCPs the patient has ever had an office visit with and all LHCPs the patient has designated.",
+        "members_of": [],
+        "attributes": {},
+        "enum_values": null
+      },
+      {
+        "name": "OfficeVisit__patient",
+        "rationale": "The office visit must be tied to the patient whose prior LHCP relationship is being checked.",
+        "plain_english_summary": "The patient who had the office visit.",
+        "source_excerpt": "A patient can view all LHCPs the patient has ever had an office visit with and all LHCPs the patient has designated.",
+        "on_entity": "OfficeVisit",
+        "field_name": "patient",
+        "cedar_type": "Patient",
+        "optional": false,
+        "alternatives_considered": [
+          "Inferred from the phrase \"the patient has ever had an office visit with\"; alternatively could store only a Set<Lhcp> on ProviderList, but that would lose the visit relationship object."
+        ]
+      },
+      {
+        "name": "OfficeVisit__lhcp",
+        "rationale": "The office visit must identify the LHCP involved so policies can distinguish prior-visit LHCPs.",
+        "plain_english_summary": "The LHCP who participated in the patient's office visit.",
+        "source_excerpt": "A patient can view all LHCPs the patient has ever had an office visit with and all LHCPs the patient has designated.",
+        "on_entity": "OfficeVisit",
+        "field_name": "lhcp",
+        "cedar_type": "Lhcp",
+        "optional": false,
+        "alternatives_considered": [
+          "Inferred from the phrase \"LHCPs the patient has ever had an office visit with\"; alternatively could use a generic Hcp, but the requirement specifically names LHCPs."
+        ]
+      },
+      {
+        "name": "ProviderList__officeVisits",
+        "rationale": "ProviderList needs an explicit hook to the patient's office-visit history rather than acting as an undifferentiated provider proxy.",
+        "plain_english_summary": "The office visits that establish which LHCPs the patient has previously seen.",
+        "source_excerpt": "A patient can view all LHCPs the patient has ever had an office visit with and all LHCPs the patient has designated.",
+        "on_entity": "ProviderList",
+        "field_name": "officeVisits",
+        "cedar_type": "Set<OfficeVisit>",
+        "optional": false,
+        "alternatives_considered": [
+          "Store priorOfficeVisitLhcps as Set<Lhcp> directly on ProviderList; rejected because an OfficeVisit entity preserves the patient-LHCP relationship explicitly."
+        ]
+      },
+      {
+        "name": "ProviderList__designations",
+        "rationale": "ProviderList needs an explicit connection to ProviderDesignation entities so policies can test patient-specific designated-LHCP membership and isDesignated state.",
+        "plain_english_summary": "The provider designations that show which LHCPs the patient has designated.",
+        "source_excerpt": "A patient can view all LHCPs the patient has ever had an office visit with and all LHCPs the patient has designated.",
+        "on_entity": "ProviderList",
+        "field_name": "designations",
+        "cedar_type": "Set<ProviderDesignation>",
+        "optional": false,
+        "alternatives_considered": [
+          "Store designatedLhcps as Set<Lhcp> directly on ProviderList; rejected because existing ProviderDesignation already carries patient, LHCP, and isDesignated state."
+        ]
+      }
+    ],
+    "schema_validation": [
+      {
+        "attempt_number": 1,
+        "schema_text": "entity User {\n    mid: String,\n    name: String,\n    email: String,\n};\n\nentity Patient in [User] {\n    providerList: ProviderList,\n};\n\nentity Hcp in [User];\n\nentity Lhcp in [Hcp] {\n    specialty: String,\n    hospitals: Set<Hospital>,\n    zipCode?: String,\n};\n\nentity Administrator in [User];\n\nentity Uap in [User];\n\nentity EmergencyResponder in [User];\n\nentity PublicHealthAgent in [User];\n\nentity PersonalRepresentative in [User] {\n    representedPatients: Set<Patient>,\n};\n\nentity Hospital;\n\nentity ProviderList {\n    patient: Patient,\n    providers: Set<Hcp>,\n    officeVisits: Set<OfficeVisit>,\n    designations: Set<ProviderDesignation>,\n};\n\nentity ProviderDesignation {\n    patient: Patient,\n    lhcp: Lhcp,\n    isDesignated: Bool,\n};\n\nentity MedicalRecord {\n    patient: Patient,\n    hasFamilyHistory: Bool,\n    hasPersonalHealthInformation: Bool,\n    hasImmunizations: Bool,\n    hasOfficeVisitInformation: Bool,\n};\n\nentity DemographicInformation {\n    patient: Patient,\n};\n\nentity Credential {\n    user: User,\n    hasPassword: Bool,\n    hasSecurityQuestion: Bool,\n};\n\nentity AccessLog {\n    patient: Patient,\n    accessorName: String,\n    accessorRoleRelativeToPatient: String,\n    accessTimestamp: datetime,\n    transactionType: String,\n};\n\nentity Session {\n    user: User,\n    isActive: Bool,\n    inactivityPeriodLength: duration,\n    lastActivityAt: datetime,\n};\n\naction createPatient appliesTo {\n    principal: [Hcp],\n    resource: [Patient],\n    context: {\n        session: Session,\n    },\n};\n\naction editPatientData appliesTo {\n    principal: [Hcp],\n    resource: [Patient],\n    context: {\n        session: Session,\n        fieldName: String,\n    },\n};\n\naction enterCredential appliesTo {\n    principal: [Hcp, User],\n    resource: [Credential],\n    context: {\n        session: Session,\n        credentialField: String,\n    },\n};\n\naction editCredential appliesTo {\n    principal: [Hcp, User],\n    resource: [Credential],\n    context: {\n        session: Session,\n        credentialField: String,\n    },\n};\n\naction viewCredential appliesTo {\n    principal: [Hcp, User],\n    resource: [Credential],\n    context: {\n        session: Session,\n        credentialField: String,\n    },\n};\n\naction createLhcp appliesTo {\n    principal: [Administrator],\n    resource: [Lhcp],\n    context: {\n        session: Session,\n    },\n};\n\naction createEmergencyResponder appliesTo {\n    principal: [Administrator],\n    resource: [EmergencyResponder],\n    context: {\n        session: Session,\n    },\n};\n\naction createPublicHealthAgent appliesTo {\n    principal: [Administrator],\n    resource: [PublicHealthAgent],\n    context: {\n        session: Session,\n    },\n};\n\naction createUap appliesTo {\n    principal: [Lhcp],\n    resource: [Uap],\n    context: {\n        session: Session,\n    },\n};\n\naction assignLhcpToHospital appliesTo {\n    principal: [Administrator],\n    resource: [Lhcp],\n    context: {\n        session: Session,\n        hospital: Hospital,\n    },\n};\n\naction login appliesTo {\n    principal: [User],\n    resource: [Session],\n    context: {\n        credential: Credential,\n        enteredMid: String,\n        passwordVerified: Bool,\n    },\n};\n\naction requestPasswordChange appliesTo {\n    principal: [User],\n    resource: [Credential],\n    context: {\n        session: Session,\n    },\n};\n\naction logout appliesTo {\n    principal: [User],\n    resource: [Session],\n};\n\naction closeApplication appliesTo {\n    principal: [User],\n    resource: [Session],\n};\n\naction setInactivityPeriodLength appliesTo {\n    principal: [Administrator],\n    resource: [Session],\n    context: {\n        session: Session,\n    },\n};\n\naction viewPriorAndDesignatedLhcps appliesTo {\n    principal: [Patient],\n    resource: [ProviderList],\n    context: {\n        session: Session,\n    },\n};\n\naction addProviderToList appliesTo {\n    principal: [Patient],\n    resource: [ProviderList],\n    context: {\n        session: Session,\n        provider: Hcp,\n        searchName: String,\n        searchSpecialty?: String,\n        searchZipCode?: String,\n    },\n};\n\naction designateDlhcp appliesTo {\n    principal: [Patient],\n    resource: [ProviderDesignation],\n    context: {\n        session: Session,\n    },\n};\n\naction undesignateDlhcp appliesTo {\n    principal: [Patient],\n    resource: [ProviderDesignation],\n    context: {\n        session: Session,\n    },\n};\n\naction viewAccessLog appliesTo {\n    principal: [Patient],\n    resource: [AccessLog],\n    context: {\n        session: Session,\n        beginDate: datetime,\n        endDate: datetime,\n    },\n};\n\naction viewMedicalRecord appliesTo {\n    principal: [Patient, PersonalRepresentative],\n    resource: [MedicalRecord],\n    context: {\n        session: Session,\n        representedPatient?: Patient,\n    },\n};\n\naction viewFamilyHistory appliesTo {\n    principal: [Patient, PersonalRepresentative],\n    resource: [MedicalRecord],\n    context: {\n        session: Session,\n        representedPatient?: Patient,\n    },\n};\n\naction viewPersonalHealthInformation appliesTo {\n    principal: [Patient, PersonalRepresentative],\n    resource: [MedicalRecord],\n    context: {\n        session: Session,\n        representedPatient?: Patient,\n    },\n};\n\naction viewImmunizations appliesTo {\n    principal: [Patient, PersonalRepresentative],\n    resource: [MedicalRecord],\n    context: {\n        session: Session,\n        representedPatient?: Patient,\n    },\n};\n\naction viewOfficeVisitInformation appliesTo {\n    principal: [Patient, PersonalRepresentative],\n    resource: [MedicalRecord],\n    context: {\n        session: Session,\n        representedPatient?: Patient,\n    },\n};\n\nentity OfficeVisit {\n    patient: Patient,\n    lhcp: Lhcp,\n};\n",
+        "validator_passed": true,
+        "validator_error": "",
+        "llm_was_called": false,
+        "schema_override": true,
+        "schema_gap_repair": true
+      }
+    ]
+  },
+  {
+    "gap": {
+      "atom_name": "add_provider_only_own_list_active_session",
+      "stage": "stage2_property_review",
+      "reason": "Stage 2 decomposition critic repair: The add-provider safety bound is materially useful, but this proposed ceiling accepts a proxy for the source workflow. The source scopes the add operation not only to the patient's own provider list and an active session, but also to adding a provider found by search by provider name, specialty, and optionally zip code. Prior review already identified the unresolved search/name matching boundary; a ceiling that omits it would allow policies to add arbitrary providers as long as the list is owned by the patient. Because the current schema does not provide a reliable provider-name/search-match hook for Hcp/Lhcp, repair is needed rather than accepting the own-list proxy.",
+      "critic_tags": [
+        "missing-provider-name-match-boundary",
+        "missing-search-filter-boundary",
+        "proxy-resource-not-equivalent",
+        "schema-gap"
+      ],
+      "required_action": "repair_schema_before_synthesis"
+    },
+    "proposed_atoms": [
+      {
+        "name": "Hcp__name",
+        "rationale": "The add-provider workflow needs a provider name field on Hcp so policies can compare the selected provider to the searched name.",
+        "plain_english_summary": "This stores the provider's name for matching provider-list search results.",
+        "source_excerpt": "A patient can add a LHCP/HCP to their provider list by searching by name, specialty, and optionally zip code.",
+        "on_entity": "Hcp",
+        "field_name": "name",
+        "cedar_type": "String",
+        "optional": false,
+        "alternatives_considered": [
+          "Use User.name through Hcp membership; rejected because the current Cedar schema does not make inherited User attributes reliably available on Hcp entities.",
+          "Represent search matching only in action context; rejected because the selected provider still needs a provider-side name hook."
+        ]
+      },
+      {
+        "name": "Hcp__specialty",
+        "rationale": "The add-provider workflow needs a provider specialty field on Hcp so policies can compare the selected provider to the searched specialty.",
+        "plain_english_summary": "This stores the provider's specialty for matching provider-list search results.",
+        "source_excerpt": "A patient can add a LHCP/HCP to their provider list by searching by name, specialty, and optionally zip code.",
+        "on_entity": "Hcp",
+        "field_name": "specialty",
+        "cedar_type": "String",
+        "optional": true,
+        "alternatives_considered": [
+          "Use only Lhcp.specialty; rejected because the action context provider is typed as Hcp and the source says LHCP/HCP.",
+          "Represent specialty only as searchSpecialty in action context; rejected because the selected provider still needs a provider-side specialty hook."
+        ]
+      },
+      {
+        "name": "Hcp__zipCode",
+        "rationale": "The add-provider workflow needs an optional provider zip-code field on Hcp so policies can compare the selected provider to an optional searched zip code.",
+        "plain_english_summary": "This stores the provider's zip code when available for matching provider-list search results.",
+        "source_excerpt": "A patient can add a LHCP/HCP to their provider list by searching by name, specialty, and optionally zip code.",
+        "on_entity": "Hcp",
+        "field_name": "zipCode",
+        "cedar_type": "String",
+        "optional": true,
+        "alternatives_considered": [
+          "Use only Lhcp.zipCode; rejected because the add-provider action selects a provider typed as Hcp.",
+          "Represent zip code only as searchZipCode in action context; rejected because the selected provider still needs a provider-side zip-code hook."
+        ]
+      }
+    ],
+    "decisions": [
+      {
+        "atom_name": "Hcp__name",
+        "action": "approve",
+        "reason": "",
+        "edit_delta": {},
+        "intent_acknowledged_by_user": true,
+        "symbolic_verified": false
+      },
+      {
+        "atom_name": "Hcp__specialty",
+        "action": "approve",
+        "reason": "",
+        "edit_delta": {},
+        "intent_acknowledged_by_user": true,
+        "symbolic_verified": false
+      },
+      {
+        "atom_name": "Hcp__zipCode",
+        "action": "approve",
+        "reason": "",
+        "edit_delta": {},
+        "intent_acknowledged_by_user": true,
+        "symbolic_verified": false
+      }
+    ],
+    "approved_atoms": [
+      {
+        "name": "Hcp__name",
+        "rationale": "The add-provider workflow needs a provider name field on Hcp so policies can compare the selected provider to the searched name.",
+        "plain_english_summary": "This stores the provider's name for matching provider-list search results.",
+        "source_excerpt": "A patient can add a LHCP/HCP to their provider list by searching by name, specialty, and optionally zip code.",
+        "on_entity": "Hcp",
+        "field_name": "name",
+        "cedar_type": "String",
+        "optional": false,
+        "alternatives_considered": [
+          "Use User.name through Hcp membership; rejected because the current Cedar schema does not make inherited User attributes reliably available on Hcp entities.",
+          "Represent search matching only in action context; rejected because the selected provider still needs a provider-side name hook."
+        ]
+      },
+      {
+        "name": "Hcp__specialty",
+        "rationale": "The add-provider workflow needs a provider specialty field on Hcp so policies can compare the selected provider to the searched specialty.",
+        "plain_english_summary": "This stores the provider's specialty for matching provider-list search results.",
+        "source_excerpt": "A patient can add a LHCP/HCP to their provider list by searching by name, specialty, and optionally zip code.",
+        "on_entity": "Hcp",
+        "field_name": "specialty",
+        "cedar_type": "String",
+        "optional": true,
+        "alternatives_considered": [
+          "Use only Lhcp.specialty; rejected because the action context provider is typed as Hcp and the source says LHCP/HCP.",
+          "Represent specialty only as searchSpecialty in action context; rejected because the selected provider still needs a provider-side specialty hook."
+        ]
+      },
+      {
+        "name": "Hcp__zipCode",
+        "rationale": "The add-provider workflow needs an optional provider zip-code field on Hcp so policies can compare the selected provider to an optional searched zip code.",
+        "plain_english_summary": "This stores the provider's zip code when available for matching provider-list search results.",
+        "source_excerpt": "A patient can add a LHCP/HCP to their provider list by searching by name, specialty, and optionally zip code.",
+        "on_entity": "Hcp",
+        "field_name": "zipCode",
+        "cedar_type": "String",
+        "optional": true,
+        "alternatives_considered": [
+          "Use only Lhcp.zipCode; rejected because the add-provider action selects a provider typed as Hcp.",
+          "Represent zip code only as searchZipCode in action context; rejected because the selected provider still needs a provider-side zip-code hook."
+        ]
+      }
+    ],
+    "schema_validation": [
+      {
+        "attempt_number": 1,
+        "schema_text": "entity User {\n    mid: String,\n    name: String,\n    email: String,\n};\n\nentity Patient in [User] {\n    providerList: ProviderList,\n};\n\nentity Hcp in [User] {\n    name: String,\n    specialty?: String,\n    zipCode?: String,\n};\n\nentity Lhcp in [Hcp] {\n    specialty: String,\n    hospitals: Set<Hospital>,\n    zipCode?: String,\n};\n\nentity Administrator in [User];\n\nentity Uap in [User];\n\nentity EmergencyResponder in [User];\n\nentity PublicHealthAgent in [User];\n\nentity PersonalRepresentative in [User] {\n    representedPatients: Set<Patient>,\n};\n\nentity Hospital;\n\nentity ProviderList {\n    patient: Patient,\n    providers: Set<Hcp>,\n    officeVisits: Set<OfficeVisit>,\n    designations: Set<ProviderDesignation>,\n};\n\nentity ProviderDesignation {\n    patient: Patient,\n    lhcp: Lhcp,\n    isDesignated: Bool,\n};\n\nentity MedicalRecord {\n    patient: Patient,\n    hasFamilyHistory: Bool,\n    hasPersonalHealthInformation: Bool,\n    hasImmunizations: Bool,\n    hasOfficeVisitInformation: Bool,\n};\n\nentity DemographicInformation {\n    patient: Patient,\n};\n\nentity Credential {\n    user: User,\n    hasPassword: Bool,\n    hasSecurityQuestion: Bool,\n};\n\nentity AccessLog {\n    patient: Patient,\n    accessorName: String,\n    accessorRoleRelativeToPatient: String,\n    accessTimestamp: datetime,\n    transactionType: String,\n};\n\nentity Session {\n    user: User,\n    isActive: Bool,\n    inactivityPeriodLength: duration,\n    lastActivityAt: datetime,\n};\n\naction createPatient appliesTo {\n    principal: [Hcp],\n    resource: [Patient],\n    context: {\n        session: Session,\n    },\n};\n\naction editPatientData appliesTo {\n    principal: [Hcp],\n    resource: [Patient],\n    context: {\n        session: Session,\n        fieldName: String,\n    },\n};\n\naction enterCredential appliesTo {\n    principal: [Hcp, User],\n    resource: [Credential],\n    context: {\n        session: Session,\n        credentialField: String,\n    },\n};\n\naction editCredential appliesTo {\n    principal: [Hcp, User],\n    resource: [Credential],\n    context: {\n        session: Session,\n        credentialField: String,\n    },\n};\n\naction viewCredential appliesTo {\n    principal: [Hcp, User],\n    resource: [Credential],\n    context: {\n        session: Session,\n        credentialField: String,\n    },\n};\n\naction createLhcp appliesTo {\n    principal: [Administrator],\n    resource: [Lhcp],\n    context: {\n        session: Session,\n    },\n};\n\naction createEmergencyResponder appliesTo {\n    principal: [Administrator],\n    resource: [EmergencyResponder],\n    context: {\n        session: Session,\n    },\n};\n\naction createPublicHealthAgent appliesTo {\n    principal: [Administrator],\n    resource: [PublicHealthAgent],\n    context: {\n        session: Session,\n    },\n};\n\naction createUap appliesTo {\n    principal: [Lhcp],\n    resource: [Uap],\n    context: {\n        session: Session,\n    },\n};\n\naction assignLhcpToHospital appliesTo {\n    principal: [Administrator],\n    resource: [Lhcp],\n    context: {\n        session: Session,\n        hospital: Hospital,\n    },\n};\n\naction login appliesTo {\n    principal: [User],\n    resource: [Session],\n    context: {\n        credential: Credential,\n        enteredMid: String,\n        passwordVerified: Bool,\n    },\n};\n\naction requestPasswordChange appliesTo {\n    principal: [User],\n    resource: [Credential],\n    context: {\n        session: Session,\n    },\n};\n\naction logout appliesTo {\n    principal: [User],\n    resource: [Session],\n};\n\naction closeApplication appliesTo {\n    principal: [User],\n    resource: [Session],\n};\n\naction setInactivityPeriodLength appliesTo {\n    principal: [Administrator],\n    resource: [Session],\n    context: {\n        session: Session,\n    },\n};\n\naction viewPriorAndDesignatedLhcps appliesTo {\n    principal: [Patient],\n    resource: [ProviderList],\n    context: {\n        session: Session,\n    },\n};\n\naction addProviderToList appliesTo {\n    principal: [Patient],\n    resource: [ProviderList],\n    context: {\n        session: Session,\n        provider: Hcp,\n        searchName: String,\n        searchSpecialty?: String,\n        searchZipCode?: String,\n    },\n};\n\naction designateDlhcp appliesTo {\n    principal: [Patient],\n    resource: [ProviderDesignation],\n    context: {\n        session: Session,\n    },\n};\n\naction undesignateDlhcp appliesTo {\n    principal: [Patient],\n    resource: [ProviderDesignation],\n    context: {\n        session: Session,\n    },\n};\n\naction viewAccessLog appliesTo {\n    principal: [Patient],\n    resource: [AccessLog],\n    context: {\n        session: Session,\n        beginDate: datetime,\n        endDate: datetime,\n    },\n};\n\naction viewMedicalRecord appliesTo {\n    principal: [Patient, PersonalRepresentative],\n    resource: [MedicalRecord],\n    context: {\n        session: Session,\n        representedPatient?: Patient,\n    },\n};\n\naction viewFamilyHistory appliesTo {\n    principal: [Patient, PersonalRepresentative],\n    resource: [MedicalRecord],\n    context: {\n        session: Session,\n        representedPatient?: Patient,\n    },\n};\n\naction viewPersonalHealthInformation appliesTo {\n    principal: [Patient, PersonalRepresentative],\n    resource: [MedicalRecord],\n    context: {\n        session: Session,\n        representedPatient?: Patient,\n    },\n};\n\naction viewImmunizations appliesTo {\n    principal: [Patient, PersonalRepresentative],\n    resource: [MedicalRecord],\n    context: {\n        session: Session,\n        representedPatient?: Patient,\n    },\n};\n\naction viewOfficeVisitInformation appliesTo {\n    principal: [Patient, PersonalRepresentative],\n    resource: [MedicalRecord],\n    context: {\n        session: Session,\n        representedPatient?: Patient,\n    },\n};\n\nentity OfficeVisit {\n    patient: Patient,\n    lhcp: Lhcp,\n};\n",
+        "validator_passed": true,
+        "validator_error": "",
+        "llm_was_called": false,
+        "schema_override": true,
+        "schema_gap_repair": true
+      }
+    ]
+  }
+]

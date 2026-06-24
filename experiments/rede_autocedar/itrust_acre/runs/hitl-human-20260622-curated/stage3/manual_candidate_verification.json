@@ -1,0 +1,7 @@
+{
+  "candidate": "floor-reference-union",
+  "checks_total": 82,
+  "loss": 0,
+  "solver_time_s": 0.864187833853066,
+  "failed": []
+}

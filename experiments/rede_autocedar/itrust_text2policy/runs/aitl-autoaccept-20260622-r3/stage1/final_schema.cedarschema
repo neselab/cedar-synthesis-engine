@@ -1,0 +1,212 @@
+entity User {
+    mid: String,
+    password: String,
+    securityQuestion?: String,
+};
+
+entity HCP in [User];
+
+entity LHCP in [HCP] {
+    specialty: String,
+    hospitals: Set<Hospital>,
+};
+
+entity Administrator in [User];
+
+entity Patient in [User] {
+    name: String,
+    email: String,
+    mid: String,
+    designatedProviders: Set<LHCP>,
+    providerList: Set<HCP>,
+    visitedProviders: Set<LHCP>,
+    personalRepresentatives: Set<PersonalRepresentative>,
+};
+
+entity PersonalRepresentative in [User];
+
+entity UAP in [User];
+
+entity EmergencyResponder in [User];
+
+entity PublicHealthAgent in [User];
+
+entity Hospital;
+
+entity MedicalRecord {
+    patient: Patient,
+    includesFamilyHistory: Bool,
+    hasPersonalHealthInformation: Bool,
+    hasImmunizations: Bool,
+    hasOfficeVisitInformation: Bool,
+};
+
+entity AccessLog {
+    patient: Patient,
+    accessorName: String,
+    accessorRole: String,
+    accessTimestamp: datetime,
+    transactionType: String,
+};
+
+entity Session {
+    user: User,
+    isAuthenticated: Bool,
+    lastActivityAt: datetime,
+};
+
+entity SystemConfiguration {
+    inactivityPeriodLength: duration,
+};
+
+entity ProviderSearch {
+    name: String,
+    specialty: String,
+    zipCode?: String,
+};
+
+action createPatient appliesTo {
+    principal: [HCP],
+    resource: [Patient],
+};
+
+action editPatientData appliesTo {
+    principal: [HCP],
+    resource: [Patient],
+    context: {
+        editedField: String,
+    },
+};
+
+action viewPatientCredential appliesTo {
+    principal: [HCP],
+    resource: [Patient],
+    context: {
+        credentialField: String,
+    },
+};
+
+action editPatientCredential appliesTo {
+    principal: [HCP],
+    resource: [Patient],
+    context: {
+        credentialField: String,
+    },
+};
+
+action createLHCP appliesTo {
+    principal: [Administrator],
+    resource: [LHCP],
+};
+
+action createEmergencyResponder appliesTo {
+    principal: [Administrator],
+    resource: [EmergencyResponder],
+};
+
+action createPublicHealthAgent appliesTo {
+    principal: [Administrator],
+    resource: [PublicHealthAgent],
+};
+
+action assignLHCPToHospitals appliesTo {
+    principal: [Administrator],
+    resource: [LHCP],
+    context: {
+        hospitals: Set<Hospital>,
+        assignsMultipleHospitals: Bool,
+    },
+};
+
+action createUAP appliesTo {
+    principal: [LHCP],
+    resource: [UAP],
+};
+
+action login appliesTo {
+    principal: [User],
+    resource: [Session],
+    context: {
+        mid: String,
+        password: String,
+    },
+};
+
+action requestPasswordChange appliesTo {
+    principal: [User],
+    resource: [User],
+};
+
+action logout appliesTo {
+    principal: [User],
+    resource: [Session],
+};
+
+action closeApplication appliesTo {
+    principal: [User],
+    resource: [Session],
+};
+
+action setInactivityPeriodLength appliesTo {
+    principal: [Administrator],
+    resource: [SystemConfiguration],
+    context: {
+        newLength: duration,
+    },
+};
+
+action viewPastAndDesignatedLHCPs appliesTo {
+    principal: [Patient],
+    resource: [Patient],
+};
+
+action searchProviders appliesTo {
+    principal: [Patient],
+    resource: [ProviderSearch],
+};
+
+action addProviderToList appliesTo {
+    principal: [Patient],
+    resource: [Patient],
+    context: {
+        provider: HCP,
+    },
+};
+
+action designateDLHCP appliesTo {
+    principal: [Patient],
+    resource: [Patient],
+    context: {
+        lhcp: LHCP,
+    },
+};
+
+action undesignateDLHCP appliesTo {
+    principal: [Patient],
+    resource: [Patient],
+    context: {
+        lhcp: LHCP,
+    },
+};
+
+action viewAccessLog appliesTo {
+    principal: [Patient],
+    resource: [AccessLog],
+    context: {
+        beginDate: datetime,
+        endDate: datetime,
+    },
+};
+
+action viewMedicalRecord appliesTo {
+    principal: [Patient, PersonalRepresentative],
+    resource: [MedicalRecord],
+};
+
+action seeRecordHealthInformation appliesTo {
+    principal: [Patient, PersonalRepresentative],
+    resource: [MedicalRecord],
+    context: {
+        informationCategory: String,
+    },
+};

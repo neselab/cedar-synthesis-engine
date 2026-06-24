@@ -1,0 +1,11 @@
+[
+  {
+    "attempt_number": 1,
+    "schema_text": "entity Role enum [\"Student\", \"TeachingAssistant\", \"Faculty\", \"FacultyFamily\"];\n\nentity User {\n    roles: Set<Role>,\n};\n\nentity InternalGrade;\n\nentity ExternalGrade {\n    responsibleFaculty: User,\n};\n\nentity Course;\n\naction assignInternalGrade appliesTo {\n    principal: [User],\n    resource: [InternalGrade],\n};\n\naction assignExternalGrade appliesTo {\n    principal: [User],\n    resource: [ExternalGrade],\n};\n\naction viewInternalGrade appliesTo {\n    principal: [User],\n    resource: [InternalGrade],\n};\n\naction viewExternalGrade appliesTo {\n    principal: [User],\n    resource: [ExternalGrade],\n};\n\naction receiveExternalGrade appliesTo {\n    principal: [User],\n    resource: [ExternalGrade],\n};\n\naction enrollInCourse appliesTo {\n    principal: [User],\n    resource: [Course],\n};\n",
+    "validator_passed": true,
+    "validator_error": "",
+    "llm_was_called": false,
+    "schema_override": false,
+    "schema_gap_repair": true
+  }
+]

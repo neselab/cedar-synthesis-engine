@@ -19,6 +19,19 @@ recommended first step is the **honest scenario-difficulty grading task
 (Step A in the plan)** — don't write new scenarios or polish the paper
 until that's done.
 
+## Non-negotiable HITL validation rule
+
+Do **not** simulate human semantic HITL approval with a scripted reviewer and
+present that as validation. Automated TUI drivers may test plumbing only:
+paste handling, action routing, progress rendering, and backend invocation.
+
+Semantic HITL review means manually comparing the full natural-language
+requirements, the proposed atom, and the Cedar encoding/action semantics. Only
+approve, edit, or reject based on whether that atom is actually wanted by the
+requirements. This is central to AutoCedar's research claim: human intent
+verification cannot be replaced by brittle name-matching, alias lists, or other
+hidden heuristics.
+
 ## What this project is
 
 A two-phase CEGIS harness that synthesizes Cedar access-control policies
@@ -85,22 +98,19 @@ Check types in `verification_plan.py`:
 
 ## Running a scenario
 
-The harness needs `ANTHROPIC_API_KEY`. Copy `.env.example` to `.env`,
-fill it in (the file is gitignored). Then source it in-shell and run
+The harness uses Codex OAuth by default. Run `codex login` once, then run
 via `uv`:
 
 ```bash
-set -a && . ./.env && set +a
 uv run python eval_harness.py \
   --scenario cedarbench/scenarios/realworld/<name> \
   --no-review \
-  --phase1-model Codex-opus-4-6 \
-  --phase2-model Codex-haiku-4-5-20251001 \
+  --model gpt-5.5 \
   --max-iters 20
 ```
 
-(Note: `uv run --env-file .env` does NOT forward the key through to
-the subprocess — use shell-sourcing instead.)
+Anthropic remains supported only as an explicit opt-in via
+`AUTOCEDAR_PROVIDER=anthropic` plus `ANTHROPIC_API_KEY`.
 
 Output lands in `eval_runs/<timestamp>/`. Exit code is informational.
 

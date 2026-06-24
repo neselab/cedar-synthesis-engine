@@ -25,12 +25,21 @@ from textual import events
 from textual.message import Message
 from textual.widgets import Footer, Header, Input, RichLog, Static
 
+from autocedar.agent import AgentAction, AgentState, ProviderAgentPlanner
 from autocedar.api_key import (
     format_api_key_validation_error,
     is_anthropic_auth_error,
     mask_api_key_for_display,
     normalize_anthropic_api_key,
     validate_anthropic_api_key,
+)
+from autocedar.codex_auth import (
+    DEFAULT_CODEX_MODEL,
+    CodexAuthClient,
+    codex_auth_available,
+    codex_auth_path,
+    codex_runtime_info,
+    is_codex_provider,
 )
 from autocedar.corpus import AtomDecision
 from autocedar.env import (
@@ -43,7 +52,7 @@ from autocedar.env import (
 from autocedar.harness_adapter import make_harness_synthesizer
 from autocedar.llm import DEFAULT_EFFORT, LLMClient, default_model_for_provider, default_provider
 from autocedar.pipeline import author as author_pipeline
-from autocedar.property_atomizer import propose_property_atoms
+from autocedar.property_atomizer import propose_property_atom
 from autocedar.schema_atomizer import propose_schema_atoms
 from autocedar.ui.terminal import (
     ReviewedAtom,
@@ -65,41 +74,6 @@ TEAL = "#8fc9bd"
 GREEN = "#98c379"
 RED = "#e06c75"
 DRAFT_PATH = Path("autocedar-spec.md")
-_COMMON_WORDS = {
-    "a",
-    "an",
-    "and",
-    "as",
-    "at",
-    "author",
-    "build",
-    "can",
-    "check",
-    "create",
-    "draft",
-    "for",
-    "from",
-    "generate",
-    "it",
-    "me",
-    "no",
-    "of",
-    "please",
-    "policy",
-    "run",
-    "save",
-    "schema",
-    "show",
-    "synthesize",
-    "that",
-    "the",
-    "this",
-    "to",
-    "verify",
-    "with",
-    "workspace",
-}
-
 COMMANDS = {
     "api-key",
     "apikey",
@@ -113,8 +87,10 @@ COMMANDS = {
     "exit",
     "help",
     "model",
+    "models",
     "new",
     "policy",
+    "provider",
     "quit",
     "save",
     "schema",
@@ -125,16 +101,18 @@ COMMANDS = {
 }
 
 SLASH_COMMAND_DESCRIPTIONS = {
-    "/author": "run HITL authoring for a spec",
+    "/author": "run HITL authoring for a spec or current draft",
     "/verify": "verify a workspace",
     "/synthesize": "run the synthesis harness",
     "/setup": "show Cedar/CVC5 install steps",
     "/doctor": "check API key and verifier setup",
-    "/settings": "show model, effort, and API-key status",
+    "/settings": "show provider, model, effort, and auth status",
+    "/provider": "switch Anthropic or Codex",
+    "/models": "show models available to the active provider",
     "/model": "set the default LLM model",
     "/effort": "set low, medium, high, or max effort",
     "/apikey": "set, show, or clear the saved API key",
-    "/draft": "show, start, or clear draft capture",
+    "/draft": "show, start, clear, edit, delete, or insert draft lines",
     "/artifacts": "show latest session/schema/policy paths",
     "/schema": "show latest or provided Cedar schema",
     "/policy": "show latest or provided Cedar policy",
@@ -174,16 +152,21 @@ Talk normally:
 
 Slash shortcuts are also available:
 
-  [#f0c678]/author SPEC[/] [--out DIR] [--session-id ID] [--schema PATH] [--model MODEL] [--effort high]
+  [#f0c678]/author[/] [SPEC] [--out DIR] [--session-id ID] [--schema PATH] [--model MODEL] [--effort high]
   [#f0c678]/verify[/] [WORKSPACE]
   [#f0c678]/synthesize SCENARIO...[/] [--out DIR] [--max-iters N] [--no-review]
   [#f0c678]/setup[/]                 show local Cedar/CVC5 install steps
   [#f0c678]/doctor[/]                check API-key, Cedar SymCC, and CVC5 setup
-  [#f0c678]/settings[/]              show model, effort, and API key status
+  [#f0c678]/settings[/]              show provider, model, effort, and auth status
+  [#f0c678]/provider anthropic|codex[/]
+  [#f0c678]/models[/]                show available models for the active provider
   [#f0c678]/model MODEL[/]           set the default LLM model
   [#f0c678]/effort low|medium|high|max[/]
   [#f0c678]/apikey[/] [KEY|status|clear] set, show, or clear the saved API key
   [#f0c678]/draft[/] [show|start|clear] show, start, or clear draft capture
+  [#f0c678]/draft edit 2 TEXT[/]      replace line 2 in the working draft
+  [#f0c678]/draft delete 2[/]         delete line 2 from the working draft
+  [#f0c678]/draft insert 2 TEXT[/]    insert TEXT before line 2
   [#f0c678]/artifacts[/]             show latest session/schema/policy paths
   [#f0c678]/schema[/] [PATH]         show latest or provided Cedar schema
   [#f0c678]/policy[/] [PATH]         show latest or provided Cedar policy
@@ -200,6 +183,7 @@ During atom review, use one-line review commands:
   [#f0c678]E field=value[/]      edit an atom field
   [#f0c678]E cedar_type=Bool[/]  fix a schema attribute type
   [#f0c678]E action=view[/]      fix a property action
+  [#f0c678]E context.onCampusLan=Bool[/] add action request context
   [#f0c678]Q question[/]         record a question in the corpus
   [#f0c678]S[/]                  show the Cedar/schema declaration
   [#f0c678]V[/]                  view patch notes
@@ -235,7 +219,9 @@ COMMAND_RAIL = """\
 [#f0c678]/setup[/]
 [#f0c678]/doctor[/]
 [#f0c678]/settings[/]
-[#f0c678]/model[/] claude-opus-4-7
+[#f0c678]/provider[/] codex
+[#f0c678]/models[/]
+[#f0c678]/model[/] gpt-5.5
 [#f0c678]/effort[/] high
 [#f0c678]/apikey[/]
 [#f0c678]/draft[/]
@@ -278,28 +264,6 @@ class SynthesizeOptions:
     max_iters: int | None = None
     gen_references: bool = False
     no_review: bool = False
-
-
-@dataclass
-class NaturalLanguageIntent:
-    kind: str
-    message: str = ""
-    path: Path | None = None
-    workspace: Path | None = None
-    author_options: AuthorOptions | None = None
-    synthesize_options: SynthesizeOptions | None = None
-    settings_update: "SettingsUpdate | None" = None
-    from_draft: bool = False
-
-
-@dataclass
-class SettingsUpdate:
-    show: bool = False
-    model: str | None = None
-    effort: str | None = None
-    api_key: str | None = None
-    clear_api_key: bool = False
-    prompt_api_key: bool = False
 
 
 @dataclass
@@ -362,7 +326,7 @@ class TuiAtomReviewer:
         self.stage_total: int | None = None
         self.stage_index = 0
 
-    def begin_stage(self, label: str, total: int) -> None:
+    def begin_stage(self, label: str, total: int | None) -> None:
         self.stage_label = label
         self.stage_total = total
         self.stage_index = 0
@@ -385,18 +349,18 @@ class TuiAtomReviewer:
     def __call__(self, atom: Any) -> ReviewedAtom:
         self.sequence += 1
         stage_label = self.stage_label
+        self.stage_index += 1
         if self.stage_total is None:
-            index = self.sequence
+            index = self.stage_index
             total = None
         else:
-            self.stage_index += 1
             if self.stage_index > self.stage_total:
                 index = self.stage_index - self.stage_total
                 total = None
                 stage_label = f"{self.stage_label} replacement"
                 self.app.call_from_thread(
                     self.app._say,
-                    "Reviewing a replacement property atom proposed after rejection.",
+                    "Reviewing a replacement atom proposed after rejection.",
                 )
             else:
                 index = self.stage_index
@@ -540,7 +504,6 @@ class AutoCedarApp(App[None]):
         self.pending_review: ReviewRequest | None = None
         self.pending_action: PendingAction | None = None
         self.pending_secret: str | None = None
-        self.chat_history: list[tuple[str, str]] = []
         self.llm_provider = default_provider()
         self.llm_model = _initial_model()
         self.llm_effort = _normalize_effort(os.environ.get("AUTOCEDAR_EFFORT")) or DEFAULT_EFFORT
@@ -552,6 +515,9 @@ class AutoCedarApp(App[None]):
         self.latest_policy_path: Path | None = None
         self.copyable_transcript: list[str] = []
         self.last_assistant_text = ""
+        self.activity_message = ""
+        self.activity_frame = 0
+        self.agent_planner_factory: Callable[[], Any] | None = None
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -592,6 +558,7 @@ class AutoCedarApp(App[None]):
         self._show_setup_hint_if_needed()
         self._update_status()
         self._clear_stream_output()
+        self.set_interval(0.2, self._tick_activity)
         self.query_one(Input).focus()
 
     def action_clear_log(self) -> None:
@@ -641,9 +608,13 @@ class AutoCedarApp(App[None]):
         if self.pending_action is not None:
             self._handle_confirmation_input(raw)
             return
+        if self.busy:
+            self._handle_busy_input(raw)
+            return
         self._handle_shell_input(raw)
 
     def begin_review(self, request: ReviewRequest) -> None:
+        self._stop_activity()
         self.pending_review = request
         self.active_task = request.stage_label.lower()
         self.query_one(Input).placeholder = "Review: A, R reason, E field=value, Q question, S, V"
@@ -651,7 +622,22 @@ class AutoCedarApp(App[None]):
         self._render_review_request(request)
         self._update_status()
 
-    def begin_review_stage(self, label: str, total: int) -> None:
+    def begin_review_stage(self, label: str, total: int | None) -> None:
+        if total is None:
+            self._write(
+                Panel(
+                    (
+                        f"{escape(label)} starts now.\n"
+                        "AutoCedar will propose one property atom at a time, "
+                        "verify it, and wait for your decision before asking "
+                        "for the next one."
+                    ),
+                    title=f"[bold {COPPER}]Review stage[/]",
+                    border_style=TEAL,
+                    padding=(1, 2),
+                ),
+            )
+            return
         if total <= 0:
             self._write(f"[dim {MUTED}]{escape(label)}: no atoms proposed.[/]")
             return
@@ -723,7 +709,8 @@ class AutoCedarApp(App[None]):
             if not detail:
                 self._write(
                     f"[bold {RED}]Use E field=value.[/] "
-                    "Examples: E cedar_type=Bool, E optional=true, E action=view.",
+                    "Examples: E cedar_type=Bool, E optional=true, "
+                    "E context.onCampusLan=Bool, E action=view.",
                 )
                 return
             try:
@@ -829,47 +816,31 @@ class AutoCedarApp(App[None]):
             return
         self._say("Please answer “yes” to proceed or “no” to cancel.")
 
+    def _handle_busy_input(self, raw: str) -> None:
+        lowered = _squash(raw).lower()
+        if lowered in {"status", "what is happening", "what's happening", "wait", "help"}:
+            self._say(
+                f"I’m still working on `{self.active_task}`. "
+                "When the next atom review is ready, I’ll show the A/R/E/Q/S/V review card.",
+            )
+            return
+        if lowered in {"a", "approve", "r", "reject", "s", "show", "v", "q"} or raw.startswith("/"):
+            self._say(
+                f"I’m still working on `{self.active_task}`. "
+                "Review commands are only active after an atom review card is visible.",
+            )
+            return
+        self._say(
+            f"I’m still working on `{self.active_task}`. "
+            "Wait for the next atom review card before sending more input.",
+        )
+
     def _handle_shell_input(self, raw: str) -> None:
         stripped = raw.strip()
         if stripped.startswith("+"):
             self._handle_explicit_draft_line(stripped[1:].strip())
             return
         if not raw.startswith("/"):
-            lowered = _squash(raw).lower().rstrip("?.!")
-            if lowered in {"show schema", "show the schema", "show me the schema"}:
-                self._show_schema_command([])
-                return
-            if lowered in {
-                "show policy",
-                "show the policy",
-                "show me the policy",
-                "show policies",
-                "show the policies",
-                "show cedar policy",
-                "show the cedar policy",
-            }:
-                self._show_policy_command([])
-                return
-            if lowered in {
-                "show artifacts",
-                "show the artifacts",
-                "show paths",
-                "show the paths",
-                "where are the artifacts",
-            }:
-                self._show_artifacts()
-                return
-            if lowered in {
-                "copy session",
-                "copy session path",
-                "copy the session path",
-                "copy session link",
-                "copy the session link",
-                "copy session directory",
-                "copy the session directory",
-            }:
-                self._handle_copy_command(["session"])
-                return
             self._handle_natural_language_input(raw)
             return
         self._handle_command_input(raw)
@@ -882,61 +853,300 @@ class AutoCedarApp(App[None]):
             self._hide_command_palette()
 
     def _handle_natural_language_input(self, raw: str) -> None:
-        lowered = _squash(raw).lower()
-        if self.drafting_active and lowered in {"clear it", "wipe it", "reset it", "delete it"}:
-            self._request_confirmation(
-                "I’m going to clear the working policy draft.",
-                self._clear_draft,
+        if self.agent_planner_factory or self._planner_provider_ready():
+            self._start_agent_planning(raw)
+            return
+        if is_codex_provider(self.llm_provider):
+            self._say(
+                "Natural-language control is set to Codex, but no local Codex "
+                "OAuth session is available. Run `codex login`, then try again, "
+                "or switch providers with /provider anthropic.",
             )
+        else:
+            self._say(
+                "Natural-language control needs the live agent planner. Run /apikey "
+                "to add your Anthropic API key, or switch providers with /provider codex "
+                "after running `codex login`.",
+            )
+
+    def _planner_provider_ready(self) -> bool:
+        if is_codex_provider(self.llm_provider):
+            return codex_auth_available()
+        return is_real_anthropic_api_key(self._active_api_key())
+
+    def _start_agent_planning(self, raw: str) -> None:
+        if self.busy:
+            self._handle_busy_input(raw)
             return
-        intent = interpret_natural_language(raw, has_draft=bool(self.draft_lines))
-        if (
-            self.drafting_active
-            and intent.kind == "message"
-            and _looks_like_active_draft_statement(raw)
-        ):
-            self._append_draft_text(raw)
-            return
+        self.busy = True
+        self.active_task = "model planning"
+        self.query_one(Input).placeholder = "AutoCedar is thinking..."
+        self._update_status()
+        self._start_activity("model planning")
+        self.run_worker(
+            lambda: self._plan_and_execute_agent(raw),
+            thread=True,
+            exclusive=False,
+            exit_on_error=False,
+        )
+
+    def _plan_and_execute_agent(self, raw: str) -> None:
         try:
-            if intent.kind == "help":
+            planner = self._make_agent_planner()
+            action = planner.plan(raw, self._agent_state())
+        except Exception as exc:
+            self.call_from_thread(self._finish_agent_planning, None, exc)
+            return
+        self.call_from_thread(self._finish_agent_planning, action, None)
+
+    def _finish_agent_planning(
+        self,
+        action: AgentAction | None,
+        error: Exception | None,
+    ) -> None:
+        self.busy = False
+        self._stop_activity()
+        self.active_task = "idle"
+        self.query_one(Input).placeholder = "Tell AutoCedar what to do, or type /help"
+        self._update_status()
+        if error is not None:
+            if is_anthropic_auth_error(error):
+                remove_user_config_value(ANTHROPIC_API_KEY)
+                self.active_api_key = ""
+                os.environ.pop(ANTHROPIC_API_KEY, None)
+                self._update_status()
+            self._say(_agent_failure_message(error))
+            return
+        if action is None:
+            self._say("The planner returned no action.")
+            return
+        self._execute_agent_action(action)
+
+    def _make_agent_planner(self) -> Any:
+        if self.agent_planner_factory is not None:
+            return self.agent_planner_factory()
+        return ProviderAgentPlanner(
+            client=self._make_provider_client(),
+            model=self.llm_model,
+            effort=self.llm_effort,
+        )
+
+    def _make_provider_client(self) -> Any:
+        if is_codex_provider(self.llm_provider):
+            return CodexAuthClient()
+        return self._make_anthropic_client()
+
+    def _agent_state(self) -> AgentState:
+        review_summary = None
+        if self.pending_review is not None:
+            atom_name = getattr(self.pending_review.current, "name", "?")
+            review_summary = f"{self.pending_review.stage_label}: {atom_name}"
+        return AgentState(
+            active_task=self.active_task,
+            busy=self.busy,
+            drafting_active=self.drafting_active,
+            draft_line_count=len(self.draft_lines),
+            draft_excerpt=self.draft_lines[-8:],
+            pending_confirmation=self.pending_action.summary if self.pending_action else None,
+            pending_review=review_summary,
+            latest_session_dir=str(self.latest_session_dir) if self.latest_session_dir else None,
+            latest_schema_path=str(self.latest_schema_path) if self.latest_schema_path else None,
+            latest_policy_path=str(self.latest_policy_path) if self.latest_policy_path else None,
+            provider=self.llm_provider,
+            model=self.llm_model,
+            effort=self.llm_effort,
+            api_key_set=is_real_anthropic_api_key(self._active_api_key()),
+            codex_auth_set=codex_auth_available(),
+        )
+
+    def _agent_action_from_command(
+        self,
+        command: str,
+        args: Sequence[str],
+    ) -> AgentAction | None:
+        if command == "help":
+            return AgentAction(kind="help")
+        if command == "clear":
+            target = args[0].lower() if args else "transcript"
+            if target in {"draft", "spec", "policy"}:
+                return AgentAction(kind="clear_draft")
+            if target in {"transcript", "screen", "chat", "log"}:
+                return AgentAction(kind="clear_transcript")
+            raise ValueError("Use /clear transcript or /clear draft.")
+        if command == "settings":
+            return AgentAction(kind="show_settings")
+        if command == "provider":
+            return (
+                AgentAction(kind="set_provider", provider=args[0])
+                if args
+                else AgentAction(kind="show_settings")
+            )
+        if command == "models":
+            return AgentAction(kind="show_models")
+        if command == "setup":
+            return AgentAction(kind="setup")
+        if command == "doctor":
+            return AgentAction(kind="doctor")
+        if command == "model":
+            return AgentAction(kind="set_model", model=args[0]) if args else AgentAction(kind="show_settings")
+        if command == "effort":
+            return AgentAction(kind="set_effort", effort=args[0]) if args else AgentAction(kind="show_settings")
+        if command in {"apikey", "api-key"}:
+            if not args:
+                return AgentAction(kind="set_api_key_prompt")
+            value = args[0]
+            if value.lower() in {"clear", "unset", "remove", "delete"}:
+                return AgentAction(kind="clear_api_key")
+            if value.lower() in {"status", "show"}:
+                return AgentAction(kind="api_key_status")
+            return AgentAction(kind="set_api_key", value=value)
+        if command == "new":
+            return AgentAction(kind="clear_draft")
+        if command == "draft":
+            target = args[0].lower() if args else ""
+            if target in {"clear", "reset", "wipe", "new"}:
+                return AgentAction(kind="clear_draft")
+            if target in {"start", "capture", "begin"}:
+                return AgentAction(kind="start_draft", confirmed=True)
+            if target in {"show", "view"}:
+                return AgentAction(kind="show_draft")
+            if target in {"edit", "set", "replace"}:
+                if len(args) < 3:
+                    raise ValueError("Use /draft edit LINE replacement text.")
+                return AgentAction(
+                    kind="edit_draft",
+                    mode="set_line",
+                    line=_parse_line_number(args[1]),
+                    value=" ".join(args[2:]),
+                )
+            if target in {"delete", "del", "remove"}:
+                if len(args) != 2:
+                    raise ValueError("Use /draft delete LINE.")
+                return AgentAction(
+                    kind="edit_draft",
+                    mode="delete_line",
+                    line=_parse_line_number(args[1]),
+                )
+            if target in {"insert", "add"}:
+                if len(args) < 3:
+                    raise ValueError("Use /draft insert LINE text to insert.")
+                return AgentAction(
+                    kind="edit_draft",
+                    mode="insert_line",
+                    line=_parse_line_number(args[1]),
+                    value=" ".join(args[2:]),
+                )
+            if target == "":
+                return AgentAction(
+                    kind="show_draft" if self.drafting_active or self.draft_lines else "start_draft",
+                    confirmed=not self.drafting_active and not self.draft_lines,
+                )
+            raise ValueError(
+                "Use /draft, /draft show, /draft start, /draft clear, "
+                "/draft edit LINE TEXT, /draft delete LINE, or /draft insert LINE TEXT.",
+            )
+        if command == "artifacts":
+            return AgentAction(kind="show_artifacts")
+        if command == "schema":
+            return AgentAction(kind="show_schema", path=str(args[0]) if args else None)
+        if command == "policy":
+            return AgentAction(kind="show_policy", path=str(args[0]) if args else None)
+        if command == "copy":
+            if not args:
+                raise ValueError(
+                    "Use /copy last, /copy transcript, /copy session, /copy schema, "
+                    "/copy schema path, /copy policy, /copy policy path, or /copy draft.",
+                )
+            if args[0].lower() in {"path", "text"}:
+                return AgentAction(
+                    kind="copy",
+                    target=args[0],
+                    value=" ".join(args[1:]),
+                )
+            return AgentAction(
+                kind="copy",
+                target=args[0],
+                mode=args[1] if len(args) > 1 else None,
+            )
+        if command == "save":
+            return AgentAction(kind="save_draft", path=str(args[0]) if args else None)
+        if command in {"quit", "exit"}:
+            return AgentAction(kind="quit")
+        if command == "verify":
+            return AgentAction(kind="verify_workspace", workspace=str(args[0]) if args else "workspace")
+        if command == "author":
+            if args:
+                if args[0].startswith("--"):
+                    if not self.draft_lines:
+                        raise ValueError(
+                            "Draft is empty. Use /author SPEC, or start a draft and add requirements first.",
+                        )
+                    return _agent_action_from_author_options(
+                        parse_author_args([str(DRAFT_PATH), *args]),
+                        from_draft=True,
+                    )
+                return _agent_action_from_author_options(parse_author_args(args), from_draft=False)
+            if not self.draft_lines:
+                raise ValueError("Draft is empty. Use /author SPEC, or start a draft and add requirements first.")
+            return AgentAction(kind="author_current_draft", spec=str(DRAFT_PATH))
+        if command == "synthesize":
+            return _agent_action_from_synthesize_options(parse_synthesize_args(args))
+        return None
+
+    def _execute_agent_action(self, action: AgentAction) -> None:
+        try:
+            if action.kind == "help":
                 self._say(HELP_TEXT)
-            elif intent.kind == "settings":
-                if intent.settings_update is None:
-                    self._show_settings()
-                else:
-                    self._apply_settings_update(intent.settings_update)
-            elif intent.kind == "quit":
+            elif action.kind == "respond":
+                self._say(escape(action.message or ""))
+            elif action.kind == "quit":
                 self._say("I’ll close the session.")
                 self.exit()
-            elif intent.kind == "clear_transcript":
+            elif action.kind == "clear_transcript":
                 self.action_clear_log()
-            elif intent.kind == "clear_draft":
+            elif action.kind == "clear_draft":
                 self._request_confirmation(
                     "I’m going to clear the working policy draft.",
                     self._clear_draft,
                 )
-            elif intent.kind == "start_draft":
+            elif action.kind == "start_draft":
                 if self.drafting_active:
                     self._say(
-                        "Drafting is already active. Policy requirements you give me "
-                        "will be added to the working draft.",
+                        "Drafting is already active. Paste natural-language requirements "
+                        "and I’ll add those lines to the working draft.",
                     )
+                elif action.confirmed:
+                    self._start_drafting()
                 else:
                     self._request_confirmation(
                         _describe_start_draft_action(),
                         self._start_drafting,
                     )
-            elif intent.kind == "show_draft":
+            elif action.kind == "append_requirements":
+                if not self.drafting_active:
+                    self._request_confirmation(
+                        _describe_start_draft_action(),
+                        self._start_drafting,
+                    )
+                else:
+                    self._append_draft_text(action.content)
+            elif action.kind == "edit_draft":
+                self._edit_draft(
+                    mode=action.mode,
+                    line=action.line,
+                    value=action.value,
+                )
+            elif action.kind == "show_draft":
                 self._show_draft()
-            elif intent.kind == "save_draft":
-                args = [str(intent.path)] if intent.path else []
-                path = Path(args[0]) if args else DRAFT_PATH
+            elif action.kind == "save_draft":
+                args = [action.path] if action.path else []
+                path = Path(action.path) if action.path else DRAFT_PATH
                 self._request_confirmation(
                     f"I’m going to save the current draft to {path}.",
                     lambda args=args: self._save_draft(args),
                 )
-            elif intent.kind == "verify":
-                workspace = intent.workspace or Path("workspace")
+            elif action.kind == "verify_workspace":
+                workspace = Path(action.workspace or "workspace")
                 self._request_confirmation(
                     (
                         f"I’m going to verify {workspace} with Cedar symcc. "
@@ -947,23 +1157,20 @@ class AutoCedarApp(App[None]):
                         lambda: self._verify_workspace(workspace),
                     ),
                 )
-            elif intent.kind == "author":
-                options = intent.author_options
-                if options is None:
-                    raise ValueError("I need a spec path or a draft before authoring.")
-                options = self._resolve_author_options(options)
+            elif action.kind in {"author_current_draft", "author_spec"}:
+                options = self._resolve_author_options(_author_options_from_agent_action(action))
+                from_draft = action.kind == "author_current_draft"
+                if from_draft and not self.draft_lines:
+                    raise ValueError("Draft is empty. Start a draft and paste requirements before authoring.")
                 self._request_confirmation(
-                    _describe_author_action(options, from_draft=intent.from_draft),
-                    lambda options=options, intent=intent: self._run_author_action(
+                    _describe_author_action(options, from_draft=from_draft),
+                    lambda options=options, from_draft=from_draft: self._run_author_action(
                         options,
-                        from_draft=intent.from_draft,
+                        from_draft=from_draft,
                     ),
                 )
-            elif intent.kind == "synthesize":
-                options = intent.synthesize_options
-                if options is None:
-                    raise ValueError("I need a scenario path before synthesis.")
-                options = self._resolve_synthesize_options(options)
+            elif action.kind == "synthesize":
+                options = self._resolve_synthesize_options(_synthesize_options_from_agent_action(action))
                 self._request_confirmation(
                     _describe_synthesize_action(options),
                     lambda options=options: self._start_task(
@@ -971,19 +1178,55 @@ class AutoCedarApp(App[None]):
                         lambda: self._synthesize(options),
                     ),
                 )
-            elif intent.kind == "append_draft":
-                if self.drafting_active:
-                    self._append_draft_text(raw)
-                else:
-                    self._request_confirmation(
-                        _describe_start_draft_action(),
-                        self._start_drafting,
-                    )
-            else:
-                self._start_chat_response(
-                    raw,
-                    fallback=intent.message or "I’m not sure what to do with that yet.",
+            elif action.kind == "show_schema":
+                self._show_schema_command([action.path] if action.path else [])
+            elif action.kind == "show_policy":
+                self._show_policy_command([action.path] if action.path else [])
+            elif action.kind == "show_artifacts":
+                self._show_artifacts()
+            elif action.kind == "show_models":
+                self._show_models()
+            elif action.kind == "copy":
+                args = [action.target or ""]
+                if action.mode:
+                    args.append(action.mode)
+                if action.value and action.target in {"path", "text"}:
+                    args.extend(action.value.split())
+                self._handle_copy_command([arg for arg in args if arg])
+            elif action.kind == "show_settings":
+                self._show_settings()
+            elif action.kind == "set_provider":
+                if not action.provider:
+                    raise ValueError("Provider must be anthropic or codex.")
+                self._set_provider(action.provider)
+            elif action.kind == "set_model":
+                if not action.model:
+                    raise ValueError("Model cannot be empty.")
+                self._set_model(action.model)
+            elif action.kind == "set_effort":
+                if not action.effort:
+                    raise ValueError("Effort must be one of: low, medium, high, max.")
+                self._set_effort(action.effort)
+            elif action.kind == "set_api_key":
+                if not action.value:
+                    raise ValueError("API key cannot be empty.")
+                self._set_api_key(action.value)
+            elif action.kind == "set_api_key_prompt":
+                self._handle_api_key_command([])
+            elif action.kind == "clear_api_key":
+                self._clear_api_key()
+            elif action.kind == "api_key_status":
+                self._show_api_key_status()
+            elif action.kind == "setup":
+                self._show_setup_plan()
+            elif action.kind == "doctor":
+                self._show_doctor_report()
+            elif action.kind in {"answer_review", "edit_atom"}:
+                self._handle_review_input(
+                    f"{action.review_key or 'Q'} {action.review_detail}".strip(),
                 )
+            else:
+                raise ValueError(f"Unsupported agent action: {action.kind}")
         except ValueError as exc:
             self._write(f"[bold {RED}]{escape(str(exc))}[/]")
 
@@ -1003,72 +1246,11 @@ class AutoCedarApp(App[None]):
             return
 
         try:
-            if command == "help":
-                self._write(HELP_TEXT)
-            elif command == "clear":
-                self._handle_clear_command(args)
-            elif command == "settings":
-                self._show_settings()
-            elif command == "setup":
-                self._show_setup_plan()
-            elif command == "doctor":
-                self._show_doctor_report()
-            elif command == "model":
-                self._handle_model_command(args)
-            elif command == "effort":
-                self._handle_effort_command(args)
-            elif command in {"apikey", "api-key"}:
-                self._handle_api_key_command(args)
-            elif command == "new":
-                self._request_confirmation(
-                    "I’m going to clear the working policy draft.",
-                    self._clear_draft,
-                )
-            elif command == "draft":
-                self._handle_draft_command(args)
-            elif command == "artifacts":
-                self._show_artifacts()
-            elif command == "schema":
-                self._show_schema_command(args)
-            elif command == "policy":
-                self._show_policy_command(args)
-            elif command == "copy":
-                self._handle_copy_command(args)
-            elif command == "save":
-                path = Path(args[0]) if args else DRAFT_PATH
-                self._request_confirmation(
-                    f"I’m going to save the current draft to {path}.",
-                    lambda args=args: self._save_draft(args),
-                )
-            elif command in {"quit", "exit"}:
-                self.exit()
-            elif command == "verify":
-                workspace = Path(args[0]) if args else Path("workspace")
-                self._request_confirmation(
-                    (
-                        f"I’m going to verify {workspace} with Cedar symcc. "
-                        "This checks the existing candidate against the workspace verification plan."
-                    ),
-                    lambda workspace=workspace: self._start_task(
-                        f"verify {workspace}",
-                        lambda: self._verify_workspace(workspace),
-                    ),
-                )
-            elif command == "author":
-                options = self._resolve_author_options(parse_author_args(args))
-                self._request_confirmation(
-                    _describe_author_action(options, from_draft=False),
-                    lambda options=options: self._run_author_action(options, from_draft=False),
-                )
-            elif command == "synthesize":
-                options = self._resolve_synthesize_options(parse_synthesize_args(args))
-                self._request_confirmation(
-                    _describe_synthesize_action(options),
-                    lambda options=options: self._start_task(
-                        "synthesize",
-                        lambda: self._synthesize(options),
-                    ),
-                )
+            action = self._agent_action_from_command(command, args)
+            if action is not None:
+                self._execute_agent_action(action)
+                return
+            raise ValueError(f"Unsupported shortcut: /{command}")
         except ValueError as exc:
             self._write(f"[bold {RED}]{escape(str(exc))}[/]")
 
@@ -1079,56 +1261,6 @@ class AutoCedarApp(App[None]):
         if not self.drafting_active:
             self.drafting_active = True
         self._append_draft_text(line)
-
-    def _handle_clear_command(self, args: Sequence[str]) -> None:
-        target = args[0].lower() if args else "transcript"
-        if target in {"draft", "spec", "policy"}:
-            self._request_confirmation(
-                "I’m going to clear the working policy draft.",
-                self._clear_draft,
-            )
-            return
-        if target in {"transcript", "screen", "chat", "log"}:
-            self.action_clear_log()
-            return
-        raise ValueError("Use /clear transcript or /clear draft.")
-
-    def _handle_draft_command(self, args: Sequence[str]) -> None:
-        target = args[0].lower() if args else ""
-        if target in {"clear", "reset", "wipe", "new"}:
-            self._request_confirmation(
-                "I’m going to clear the working policy draft.",
-                self._clear_draft,
-            )
-            return
-        if target in {"start", "capture", "begin"}:
-            if self.drafting_active:
-                self._say(
-                    "Drafting is already active. Send policy requirements and I’ll "
-                    "add them to the working draft.",
-                )
-            else:
-                self._start_drafting()
-            return
-        if target in {"show", "view", ""}:
-            if not self.drafting_active and not self.draft_lines and target == "":
-                self._start_drafting()
-            else:
-                self._show_draft()
-            return
-        raise ValueError("Use /draft, /draft show, /draft start, or /draft clear.")
-
-    def _handle_model_command(self, args: Sequence[str]) -> None:
-        if not args:
-            self._show_settings()
-            return
-        self._set_model(args[0])
-
-    def _handle_effort_command(self, args: Sequence[str]) -> None:
-        if not args:
-            self._show_settings()
-            return
-        self._set_effort(args[0])
 
     def _handle_api_key_command(self, args: Sequence[str]) -> None:
         if not args:
@@ -1160,25 +1292,78 @@ class AutoCedarApp(App[None]):
             return
         self._set_api_key(value)
 
-    def _apply_settings_update(self, update: SettingsUpdate) -> None:
-        changed = False
-        if update.clear_api_key:
-            self._clear_api_key()
-            changed = True
-        if update.api_key:
-            self._set_api_key(update.api_key)
-            changed = True
-        if update.prompt_api_key:
-            self._handle_api_key_command([])
-            changed = True
-        if update.model:
-            self._set_model(update.model)
-            changed = True
-        if update.effort:
-            self._set_effort(update.effort)
-            changed = True
-        if update.show or not changed:
-            self._show_settings()
+    def _set_provider(self, provider: str) -> None:
+        normalized = provider.strip().lower()
+        if normalized in {"anthropic", "claude"}:
+            self.llm_provider = "anthropic"
+            if self.llm_model.startswith("gpt-"):
+                self.llm_model = default_model_for_provider("anthropic")
+        elif normalized in {"codex", "openai-codex", "openai"}:
+            self.llm_provider = "codex"
+            if self.llm_model.startswith("claude-"):
+                self.llm_model = os.environ.get("AUTOCEDAR_CODEX_MODEL", DEFAULT_CODEX_MODEL)
+        else:
+            raise ValueError("Provider must be anthropic or codex.")
+        os.environ["AUTOCEDAR_PROVIDER"] = self.llm_provider
+        os.environ["AUTOCEDAR_MODEL"] = self.llm_model
+        os.environ["AUTOCEDAR_CHAT_MODEL"] = self.llm_model
+        os.environ["AUTOCEDAR_AUTHOR_MODEL"] = self.llm_model
+        if is_codex_provider(self.llm_provider):
+            auth_note = (
+                "Codex OAuth is available."
+                if codex_auth_available()
+                else "Run `codex login` before natural-language planning."
+            )
+            self._say(
+                f"Provider set to [bold {AMBER}]Codex[/] with model "
+                f"[bold {AMBER}]{escape(self.llm_model)}[/]. {auth_note}",
+            )
+        else:
+            self._say(
+                f"Provider set to [bold {AMBER}]Anthropic[/] with model "
+                f"[bold {AMBER}]{escape(self.llm_model)}[/].",
+            )
+        self._update_status()
+
+    def _show_models(self) -> None:
+        if is_codex_provider(self.llm_provider):
+            info = codex_runtime_info()
+            if info.auth_available:
+                body = _codex_models_text(info)
+            else:
+                body = "\n".join([
+                    f"[bold {CORAL}]Codex OAuth is not available.[/]",
+                    f"Expected auth file: {escape(info.auth_source)}",
+                    f"Base URL: {escape(info.base_url)}",
+                    "",
+                    "Run `codex login` once, then use /provider codex and /models again.",
+                    "",
+                    f"[dim {MUTED}]{escape(info.error or '')}[/]",
+                ])
+            self._write(
+                Panel(
+                    body,
+                    title=f"[bold {COPPER}]Codex models[/]",
+                    border_style=TEAL if info.auth_available else CORAL,
+                    padding=(1, 2),
+                ),
+            )
+            return
+        body = "\n".join([
+            f"[dim {MUTED}]provider[/]\n[bold {CREAM}]anthropic[/]",
+            f"[dim {MUTED}]current model[/]\n[bold {CREAM}]{escape(self.llm_model)}[/]",
+            f"[dim {MUTED}]thinking[/]\n[bold {CREAM}]low, medium, high, max[/]",
+            "",
+            "AutoCedar does not call an Anthropic model-list endpoint. Use /model MODEL to set a model.",
+        ])
+        self._write(
+            Panel(
+                body,
+                title=f"[bold {COPPER}]Anthropic models[/]",
+                border_style=TEAL,
+                padding=(1, 2),
+            ),
+        )
 
     def _set_model(self, model: str) -> None:
         normalized = model.strip()
@@ -1301,22 +1486,28 @@ class AutoCedarApp(App[None]):
     def _settings_text(self) -> str:
         api_key = self._active_api_key()
         api_key_is_real = is_real_anthropic_api_key(api_key)
-        codex_auth = "uses local Codex login" if self.llm_provider in {"codex", "openai-codex"} else ""
+        codex_selected = is_codex_provider(self.llm_provider)
+        codex_auth = codex_auth_available() if codex_selected else False
+        auth_label = "Codex OAuth"
+        auth_state = "set" if codex_auth else "not set"
+        auth_color = TEAL if codex_auth else CORAL
         return "\n".join(
             [
                 f"[dim {MUTED}]provider[/]\n[bold {CREAM}]{escape(self.llm_provider)}[/]",
                 f"[dim {MUTED}]model[/]\n[bold {CREAM}]{escape(self.llm_model)}[/]",
                 f"[dim {MUTED}]effort[/]\n[bold {CREAM}]{escape(self.llm_effort)}[/]",
                 (
+                    f"[dim {MUTED}]{auth_label}[/]\n[bold {auth_color}]{auth_state}[/]\n"
+                    f"[dim {MUTED}]source: {escape(str(codex_auth_path()))}[/]"
+                    if codex_selected
+                    else
                     f"[dim {MUTED}]api key[/]\n[bold {TEAL}]set[/] "
                     f"[dim {MUTED}]({_mask_api_key(api_key)})[/]"
                     if api_key_is_real
-                    else f"[dim {MUTED}]api key[/]\n[bold {TEAL}]{codex_auth}[/]"
-                    if codex_auth
                     else f"[dim {MUTED}]api key[/]\n[bold {CORAL}]not set[/]"
                 ),
                 "",
-                f"[dim {MUTED}]Use /model, /effort, or /apikey to change these.[/]",
+                f"[dim {MUTED}]Use /provider, /models, /model, /effort, or /apikey to change these.[/]",
             ],
         )
 
@@ -1350,7 +1541,7 @@ class AutoCedarApp(App[None]):
             return
         self._write(
             Panel(
-                "\n".join(self.draft_lines),
+                _numbered_draft_text(self.draft_lines),
                 title=f"[bold {COPPER}]Current draft[/]",
                 border_style=TEAL,
                 padding=(1, 2),
@@ -1522,6 +1713,78 @@ class AutoCedarApp(App[None]):
         )
         self._update_status()
 
+    def _edit_draft(
+        self,
+        *,
+        mode: str | None,
+        line: int | None,
+        value: str | None,
+    ) -> None:
+        if not self.draft_lines:
+            self._say("The draft is empty. Start a policy draft and add requirements first.")
+            return
+        normalized_mode = (mode or "").strip().lower()
+        if normalized_mode == "replace_all":
+            lines = _draft_lines_from_text(value or "")
+            if not lines:
+                self._write(f"[bold {RED}]Replacement draft text cannot be empty.[/]")
+                return
+            self.draft_lines = lines
+            self.drafting_active = True
+            self._say(f"I replaced the working draft. It now has {len(lines)} line(s).")
+            self._show_draft()
+            self._update_status()
+            return
+
+        if line is None:
+            self._write(f"[bold {RED}]Draft edit needs a 1-based line number.[/]")
+            return
+        index = line - 1
+        if normalized_mode in {"set_line", "delete_line"} and not (0 <= index < len(self.draft_lines)):
+            self._write(
+                f"[bold {RED}]Line {line} does not exist.[/] "
+                f"The draft has {len(self.draft_lines)} line(s).",
+            )
+            return
+        if normalized_mode == "insert_line" and not (0 <= index <= len(self.draft_lines)):
+            self._write(
+                f"[bold {RED}]Insert position {line} is out of range.[/] "
+                f"Use 1 through {len(self.draft_lines) + 1}.",
+            )
+            return
+
+        if normalized_mode == "set_line":
+            replacement = (value or "").strip()
+            if not replacement:
+                self._write(f"[bold {RED}]Replacement line cannot be empty.[/]")
+                return
+            old = self.draft_lines[index]
+            self.draft_lines[index] = replacement
+            self._say(f"I replaced draft line {line}.")
+            self._write(f"[dim {MUTED}]old:[/] {escape(old)}")
+            self._write(f"[dim {MUTED}]new:[/] {escape(replacement)}")
+        elif normalized_mode == "delete_line":
+            removed = self.draft_lines.pop(index)
+            self._say(f"I deleted draft line {line}.")
+            self._write(f"[dim {MUTED}]removed:[/] {escape(removed)}")
+        elif normalized_mode == "insert_line":
+            inserted = (value or "").strip()
+            if not inserted:
+                self._write(f"[bold {RED}]Inserted line cannot be empty.[/]")
+                return
+            self.draft_lines.insert(index, inserted)
+            self.drafting_active = True
+            self._say(f"I inserted a new draft line at {line}.")
+            self._write(f"[dim {MUTED}]inserted:[/] {escape(inserted)}")
+        else:
+            self._write(
+                f"[bold {RED}]Unsupported draft edit mode:[/] {escape(str(mode))}. "
+                "Use set_line, delete_line, insert_line, or replace_all.",
+            )
+            return
+        self._show_draft()
+        self._update_status()
+
     def _start_author(self, options: AuthorOptions) -> None:
         self._start_task(
             f"author {options.spec}",
@@ -1539,149 +1802,16 @@ class AutoCedarApp(App[None]):
             return
         self.busy = True
         self.active_task = name
+        self.query_one(Input).placeholder = "Working. Wait for the next prompt or atom review..."
         self._update_status()
+        self._start_activity(f"{name} in progress")
         self._write(f"[bold {COPPER}]Starting:[/] {escape(name)}")
         self.run_worker(func, thread=True, exclusive=False, exit_on_error=False)
-
-    def _start_chat_response(self, raw: str, *, fallback: str) -> None:
-        if self.busy:
-            self._say(fallback)
-            return
-        self.busy = True
-        self.active_task = "thinking"
-        self._update_status()
-        self.run_worker(
-            lambda: self._answer_chat(raw, fallback=fallback),
-            thread=True,
-            exclusive=False,
-            exit_on_error=False,
-        )
-
-    def _answer_chat(self, raw: str, *, fallback: str) -> None:
-        try:
-            if is_real_anthropic_api_key(self._active_api_key()):
-                answer = self._stream_chat_model(raw)
-            else:
-                answer = self._local_chat_response(raw, fallback=fallback)
-                self.call_from_thread(self._say, answer)
-            self.chat_history.append((raw, answer))
-            self.chat_history = self.chat_history[-8:]
-        except Exception as exc:
-            self.call_from_thread(self._clear_stream_output)
-            if is_anthropic_auth_error(exc):
-                remove_user_config_value(ANTHROPIC_API_KEY)
-                self.active_api_key = ""
-                os.environ.pop(ANTHROPIC_API_KEY, None)
-                self.call_from_thread(self._update_status)
-            self.call_from_thread(self._say, _chat_failure_message(exc))
-        finally:
-            self.call_from_thread(self._finish_task)
-
-    def _local_chat_response(self, raw: str, *, fallback: str) -> str:
-        lowered = _squash(raw).lower().rstrip("?!.")
-        if "llm" in lowered or "language model" in lowered or "ai" in lowered:
-            if self.llm_provider in {"codex", "openai-codex"}:
-                return (
-                    "Yes. AutoCedar is configured to use the local Codex CLI "
-                    "login for internal authoring calls. Deterministic code "
-                    "still handles confirmations, verification, synthesis, and "
-                    "HITL review gates."
-                )
-            return (
-                "Yes. AutoCedar uses an Anthropic chat model for open-ended "
-                "conversation when ANTHROPIC_API_KEY is loaded. Deterministic "
-                "code still handles confirmations, draft capture, verification, "
-                "synthesis, and HITL review gates."
-            )
-        if _mentions(lowered, "api key", "chat model", "model working"):
-            return (
-                "I do not currently see an active Anthropic API key. Run "
-                "`/apikey` to paste and validate one; it will be active "
-                "immediately and saved for later AutoCedar sessions."
-            )
-        if lowered in {"you didn't answer my question", "you didnt answer my question"}:
-            return "You are right. That was a fallback response, not a real answer."
-        return fallback
-
-    def _call_chat_model(self, raw: str) -> str:
-        import anthropic
-
-        system, messages = self._chat_request(raw)
-        client = anthropic.Anthropic(api_key=self._active_api_key())
-        response = client.messages.create(
-            model=self.llm_model,
-            max_tokens=800,
-            thinking={"type": "adaptive"},
-            output_config={"effort": self.llm_effort},
-            system=system,
-            messages=messages,
-        )
-        for block in response.content:
-            if getattr(block, "type", None) == "text":
-                return block.text
-        return ""
-
-    def _stream_chat_model(self, raw: str) -> str:
-        system, messages = self._chat_request(raw)
-        client = self._make_anthropic_client()
-        chunks: list[str] = []
-        self.call_from_thread(self._start_stream_output)
-        with client.messages.stream(
-            model=self.llm_model,
-            max_tokens=800,
-            thinking={"type": "adaptive"},
-            output_config={"effort": self.llm_effort},
-            system=system,
-            messages=messages,
-        ) as stream:
-            for text in stream.text_stream:
-                if not text:
-                    continue
-                chunks.append(text)
-                self.call_from_thread(self._update_stream_output, "".join(chunks))
-        answer = "".join(chunks)
-        self.call_from_thread(self._finish_stream_output, answer)
-        return answer
 
     def _make_anthropic_client(self) -> Any:
         import anthropic
 
         return anthropic.Anthropic(api_key=self._active_api_key())
-
-    def _chat_request(self, raw: str) -> tuple[str, list[dict[str, str]]]:
-        draft = "\n".join(self.draft_lines[-12:]) or "(empty)"
-        state = self._state_snapshot(for_model=True)
-        process_context = self._process_context()
-        tui_legend = self._tui_legend_context()
-        history = "\n".join(
-            f"User: {user}\nAutoCedar: {assistant}"
-            for user, assistant in self.chat_history[-4:]
-        ) or "(none)"
-        system = (
-            "You are AutoCedar, a concise conversational interface for a "
-            "human-in-the-loop Cedar policy authoring tool. Talk like a useful "
-            "engineering product, not a command manual. You can help the user "
-            "draft policy requirements, author a Cedar policy with HITL atom "
-            "review, verify a workspace, synthesize benchmark scenarios, save "
-            "or show a draft, and explain whether a spec or schema is needed. "
-            "You have current TUI state, process context, and TUI legend "
-            "context in the user message. Use that context when answering "
-            "questions about the backend process, schema behavior, what is "
-            "pending, whether drafting is active, or what UI labels mean. "
-            "Do not invent capabilities beyond the process context. "
-            "Do not claim to execute actions in chat; execution is handled by "
-            "the app after confirmation. Keep answers to one or two short "
-            "paragraphs unless the user asks for detail."
-        )
-        user_turn = (
-            f"Current TUI state:\n{state}\n\n"
-            f"AutoCedar process context:\n{process_context}\n\n"
-            f"TUI legend context:\n{tui_legend}\n\n"
-            f"Recent conversation:\n{history}\n\n"
-            f"Current working draft:\n{draft}\n\n"
-            f"User just said: {raw}"
-        )
-        return system, [{"role": "user", "content": user_turn}]
 
     def _author(self, options: AuthorOptions) -> None:
         try:
@@ -1696,10 +1826,31 @@ class AutoCedarApp(App[None]):
             spec_text = options.spec.read_text()
 
             def schema_proposer(text: str) -> list[Any]:
+                self.call_from_thread(self._start_activity, "schema atomization")
                 return propose_schema_atoms(text, llm)
 
-            def property_proposer(text: str, schema_path: str) -> list[Any]:
-                return propose_property_atoms(text, schema_path, llm)
+            def property_proposer(
+                text: str,
+                schema_path: str,
+                prior_atoms: list[Any],
+                prior_decisions: list[Any],
+            ) -> Any:
+                self.call_from_thread(self._start_activity, "property atomization")
+                return propose_property_atom(text, schema_path, llm, prior_atoms, prior_decisions)
+
+            def schema_repairer(
+                text: str,
+                rejected_atom: Any,
+                reason: str,
+                prior_atoms: list[Any],
+            ) -> Any:
+                _ = prior_atoms
+                self.call_from_thread(self._start_activity, "schema atom repair")
+                return llm.propose_alternative_atom(rejected_atom, reason, text)
+
+            def schema_fixer(schema_text: str, cedar_error: str, text: str) -> str:
+                self.call_from_thread(self._start_activity, "schema validation repair")
+                return llm.fix_schema(schema_text, cedar_error, text)
 
             def property_repairer(
                 text: str,
@@ -1708,6 +1859,7 @@ class AutoCedarApp(App[None]):
                 reason: str,
                 prior_atoms: list[Any],
             ) -> Any:
+                self.call_from_thread(self._start_activity, "property repair")
                 schema_text = Path(schema_path).read_text()
                 return llm.propose_alternative_property_atom(
                     rejected_atom,
@@ -1715,6 +1867,22 @@ class AutoCedarApp(App[None]):
                     text,
                     schema_text,
                     prior_atoms,
+                )
+
+            def property_critic(
+                text: str,
+                schema_path: str,
+                atom: Any,
+                prior_atoms: list[Any],
+                prior_decisions: list[Any],
+            ) -> Any:
+                self.call_from_thread(self._start_activity, "property decomposition review")
+                return llm.critique_property_atom(
+                    text,
+                    Path(schema_path).read_text(),
+                    atom,
+                    prior_atoms=prior_atoms,
+                    prior_decisions=prior_decisions,
                 )
 
             reviewer = TuiAtomReviewer(self)
@@ -1730,29 +1898,34 @@ class AutoCedarApp(App[None]):
                 review_atom.schema_ready = reviewer.schema_ready  # type: ignore[attr-defined]
                 review_atom.property_plan_ready = reviewer.property_plan_ready  # type: ignore[attr-defined]
 
-            kwargs: dict[str, Any] = {}
-            if options.schema is None:
-                kwargs["propose_schema_atoms"] = schema_proposer
+            stage3_synthesizer = make_harness_synthesizer(
+                phase1_model=options.model or self.llm_model,
+                phase2_model=options.model or self.llm_model,
+                no_review=True,
+                quiet=True,
+                output_callback=lambda text: self.call_from_thread(
+                    self._write,
+                    text,
+                ),
+            )
+
+            def synthesize_with_status(scenario_dir: Path) -> Path:
+                self.call_from_thread(self._start_activity, "synthesis iterations")
+                return stage3_synthesizer(scenario_dir)
 
             result = author_pipeline(
                 spec_path=options.spec,
                 output_dir=options.out,
                 session_id=options.session_id,
                 review_atom=review_atom,
-                propose_property_atoms=property_proposer,
+                propose_schema_atoms=schema_proposer,
+                propose_property_atom=property_proposer,
+                repair_schema_atom=schema_repairer,
+                fix_schema=schema_fixer,
+                critique_property_atom=property_critic,
                 repair_property_atom=property_repairer,
-                synthesize=make_harness_synthesizer(
-                    phase1_model=options.model or self.llm_model,
-                    phase2_model=options.model or self.llm_model,
-                    no_review=True,
-                    quiet=True,
-                    output_callback=lambda text: self.call_from_thread(
-                        self._write,
-                        text,
-                    ),
-                ),
+                synthesize=synthesize_with_status,
                 schema_path_override=str(options.schema) if options.schema else None,
-                **kwargs,
             )
             self.call_from_thread(
                 self._register_authoring_artifacts,
@@ -1888,8 +2061,10 @@ class AutoCedarApp(App[None]):
 
     def _finish_task(self) -> None:
         self.busy = False
+        self._stop_activity()
         if self.pending_review is None:
             self.active_task = "idle"
+            self.query_one(Input).placeholder = "Tell AutoCedar what to do, or type /help"
         self._update_status()
 
     def _render_review_request(self, request: ReviewRequest) -> None:
@@ -1919,29 +2094,40 @@ class AutoCedarApp(App[None]):
     def _assistant_line(self, text: str) -> str:
         return f"[bold {AMBER}]autocedar[/] [dim {MUTED}]>[/] {text}"
 
-    def _start_stream_output(self) -> None:
-        stream = self.query_one("#stream", Static)
-        stream.display = True
-        stream.update(self._assistant_line(f"[dim {MUTED}]thinking...[/]"))
-
-    def _update_stream_output(self, text: str) -> None:
-        stream = self.query_one("#stream", Static)
-        stream.display = True
-        stream.update(
-            self._assistant_line(
-                f"{escape(text)}[dim {MUTED}]▌[/]",
-            ),
-        )
-
-    def _finish_stream_output(self, text: str) -> None:
-        self._clear_stream_output()
-        if text:
-            self._say(escape(text))
-
     def _clear_stream_output(self) -> None:
         stream = self.query_one("#stream", Static)
         stream.update("")
         stream.display = False
+        self.activity_message = ""
+
+    def _start_activity(self, message: str) -> None:
+        self.activity_message = message
+        self.activity_frame = 0
+        self._render_activity()
+
+    def _stop_activity(self) -> None:
+        self._clear_stream_output()
+
+    def _tick_activity(self) -> None:
+        if not self.activity_message:
+            return
+        self.activity_frame += 1
+        self._render_activity()
+
+    def _render_activity(self) -> None:
+        if not self.activity_message:
+            return
+        frames = "|/-\\"
+        frame = frames[self.activity_frame % len(frames)]
+        stream = self.query_one("#stream", Static)
+        stream.display = True
+        stream.update(
+            self._assistant_line(
+                f"[bold {TEAL}]{frame}[/] "
+                f"{escape(self.activity_message)} "
+                f"[dim {MUTED}]waiting for next step...[/]",
+            ),
+        )
 
     def _show_command_palette(self, value: str) -> None:
         palette = self.query_one("#command_palette", Static)
@@ -1958,7 +2144,12 @@ class AutoCedarApp(App[None]):
         drafting_state = "active" if self.drafting_active else "off"
         review_state = "yes" if self.pending_review is not None else "no"
         action_state = "yes" if self.pending_action is not None else "no"
-        key_state = "set" if is_real_anthropic_api_key(self._active_api_key()) else "not set"
+        if is_codex_provider(self.llm_provider):
+            auth_label = "codex auth"
+            key_state = "set" if codex_auth_available() else "not set"
+        else:
+            auth_label = "api key"
+            key_state = "set" if is_real_anthropic_api_key(self._active_api_key()) else "not set"
         busy_color = AMBER if self.busy else TEAL
         drafting_color = GREEN if self.drafting_active else MUTED
         review_color = CORAL if self.pending_review is not None else MUTED
@@ -1970,7 +2161,7 @@ class AutoCedarApp(App[None]):
             f"[dim {MUTED}]agent state[/]\n[bold {busy_color}]{'working' if self.busy else 'ready'}[/]\n\n"
             f"[dim {MUTED}]model[/]\n[bold {CREAM}]{escape(_short_model(self.llm_model))}[/]\n\n"
             f"[dim {MUTED}]effort[/]\n[bold {CREAM}]{escape(self.llm_effort)}[/]\n\n"
-            f"[dim {MUTED}]api key[/]\n[bold {key_color}]{key_state}[/]\n\n"
+            f"[dim {MUTED}]{auth_label}[/]\n[bold {key_color}]{key_state}[/]\n\n"
             f"[dim {MUTED}]pending atom review[/]\n[bold {review_color}]{review_state}[/]\n\n"
             f"[dim {MUTED}]pending yes/no[/]\n[bold {action_color}]{action_state}[/]\n\n"
             f"[dim {MUTED}]draft capture[/]\n[bold {drafting_color}]{drafting_state}[/]\n\n"
@@ -1992,6 +2183,7 @@ class AutoCedarApp(App[None]):
             f"model: {self.llm_model}",
             f"effort: {self.llm_effort}",
             f"api key: {'set' if is_real_anthropic_api_key(self._active_api_key()) else 'not set'}",
+            f"codex auth: {'set' if codex_auth_available() else 'not set'}",
             f"latest session: {self.latest_session_dir or 'none'}",
             f"latest schema: {self.latest_schema_path or 'none'}",
             f"latest policy: {self.latest_policy_path or 'none'}",
@@ -2014,13 +2206,13 @@ class AutoCedarApp(App[None]):
     def _process_context(self) -> str:
         return "\n".join(
             [
-                "Deterministic routing handles concrete actions: draft capture gates, author, verify, synthesize, save, show, artifact inspection, clipboard copy, clear, quit, and slash shortcuts.",
-                "Open-ended questions should be answered conversationally from this context, not by deterministic process-answer branches.",
+                "AutoCedar uses one tool-action control plane: the model proposes a structured AgentAction, and the executor performs concrete actions such as draft capture, author, verify, synthesize, save, show, artifact inspection, clipboard copy, clear, quit, and slash shortcuts.",
+                "Slash commands are shortcuts into the same AgentAction executor as natural language.",
                 "Authoring from prose without a schema override: AutoCedar saves the prose spec, runs Stage 1 schema atomization, proposes entity/action/attribute/type-alias atoms, and sends each proposed schema atom through HITL review before composing the schema.",
                 "Authoring with a schema path: AutoCedar uses that existing schema directly and skips Stage 1 schema atomization/review.",
-                "Stage 2 property atoms: AutoCedar proposes property atoms from the spec and validated schema, symbolically verifies each atom, and sends each proposed property through the same HITL review callback before compiling the verification plan.",
+                "Stage 2 property atoms: AutoCedar proposes one property atom at a time from the spec, validated schema, approved prior atoms, and review history; symbolically verifies it; and sends it through HITL review before asking for the next one.",
                 "The authoring engine receives clean inputs: saved spec text, optional schema path, and HITL review decisions. The chat transcript is not passed into authoring.",
-                "Runtime LLM settings are user-selectable inside the TUI through /settings, /model, /effort, and /apikey. The selected model is used for chat, authoring atomization, and default synthesis phase models unless an explicit command overrides it. Effort is used for chat and authoring atomization calls that support adaptive thinking.",
+                "Runtime LLM settings are user-selectable inside the TUI through /settings, /provider, /models, /model, /effort, and /apikey. Anthropic uses ANTHROPIC_API_KEY; Codex uses local Codex OAuth from the Codex auth cache. The selected model is used for agent planning, authoring atomization, and default synthesis phase models unless an explicit command overrides it. Effort is used for planning and authoring atomization calls that support adaptive thinking.",
                 "Artifact inspection commands: /artifacts lists latest session/schema/policy paths, /schema shows the latest or provided schema file, /policy shows the latest or provided Cedar policy, and /copy can copy the latest session path, schema text/path, policy text/path, draft, or literal text.",
             ],
         )
@@ -2036,649 +2228,8 @@ class AutoCedarApp(App[None]):
         )
 
 
-def interpret_natural_language(raw: str, *, has_draft: bool) -> NaturalLanguageIntent:
-    """Map input into action intents while leaving open-ended text for chat."""
-    text = raw.strip()
-    lowered = _squash(text).lower()
-    if not lowered:
-        return NaturalLanguageIntent("message", message="I’m here.")
-
-    if _looks_like_greeting(lowered):
-        return NaturalLanguageIntent(
-            "message",
-            message=(
-                "Hey. Ask me questions normally, or say “start a policy draft” "
-                "when you want me to begin capturing requirements."
-            ),
-        )
-    if _looks_like_frustration(lowered):
-        return NaturalLanguageIntent(
-            "message",
-            message=(
-                "Fair. I should only begin policy drafting after an explicit "
-                "approval. Until then, I’ll treat normal language as conversation."
-            ),
-        )
-    if _looks_like_meta_complaint(lowered):
-        return NaturalLanguageIntent(
-            "message",
-            message=(
-                "That sounds like feedback about the session, not policy text. "
-                "I won’t add it to the draft."
-            ),
-        )
-    if _looks_like_help(lowered):
-        return NaturalLanguageIntent("help")
-    if lowered in {"quit", "exit", "bye", "goodbye"}:
-        return NaturalLanguageIntent("quit")
-    settings_update = _settings_update_from_nl(text)
-    if settings_update is not None:
-        return NaturalLanguageIntent("settings", settings_update=settings_update)
-    if _mentions(lowered, "clear transcript", "clear screen", "clear chat"):
-        return NaturalLanguageIntent("clear_transcript")
-    if _mentions(lowered, "clear draft", "clear spec", "start over", "reset draft") or (
-        has_draft and lowered in {"clear it", "wipe it", "reset it", "delete it"}
-    ):
-        return NaturalLanguageIntent("clear_draft")
-    if _is_start_draft_request(lowered):
-        return NaturalLanguageIntent("start_draft")
-    if _is_show_draft_request(lowered):
-        return NaturalLanguageIntent("show_draft")
-    if _is_save_request(lowered):
-        return NaturalLanguageIntent("save_draft", path=_extract_save_path(text))
-    if _is_verify_request(lowered):
-        return NaturalLanguageIntent(
-            "verify",
-            workspace=_extract_workspace_path(text) or Path("workspace"),
-        )
-    if _is_synthesize_request(lowered):
-        options = _synthesize_options_from_nl(text)
-        if options is None:
-            return NaturalLanguageIntent(
-                "message",
-                message="Tell me which scenario to synthesize.",
-            )
-        return NaturalLanguageIntent("synthesize", synthesize_options=options)
-    if _is_author_request(lowered):
-        options, from_draft = _author_options_from_nl(text, has_draft=has_draft)
-        if options is None:
-            return NaturalLanguageIntent(
-                "message",
-                message=(
-                    "I need either a spec path or a draft. Say “start a policy "
-                    "draft” first, then give me requirements and say “author this”."
-                ),
-            )
-        return NaturalLanguageIntent(
-            "author",
-            author_options=options,
-            from_draft=from_draft,
-        )
-    if _looks_like_question(lowered):
-        return NaturalLanguageIntent(
-            "message",
-            message=(
-                "I can help draft a Cedar policy spec, author it through HITL "
-                "review, verify a workspace, or synthesize a benchmark scenario. "
-                "Say “start a policy draft” when you want me to begin capturing "
-                "requirements, or say something like “verify the workspace”."
-            ),
-        )
-    if not _looks_like_policy_requirement(lowered):
-        return NaturalLanguageIntent(
-            "message",
-            message=(
-                "I’m listening. I’ll treat this as conversation unless you ask "
-                "me to start drafting or approve a draft-capture prompt."
-            ),
-        )
-
-    return NaturalLanguageIntent("append_draft")
-
-
 def _squash(text: str) -> str:
     return re.sub(r"\s+", " ", text.strip())
-
-
-def _mentions(text: str, *phrases: str) -> bool:
-    return any(phrase in text for phrase in phrases)
-
-
-def _settings_update_from_nl(raw: str) -> SettingsUpdate | None:
-    text = _squash(raw)
-    lowered = text.lower()
-
-    if lowered in {
-        "settings",
-        "show settings",
-        "show me settings",
-        "show runtime settings",
-        "show model settings",
-        "what model are you using",
-        "what model are you using?",
-        "what effort are you using",
-        "what effort are you using?",
-    }:
-        return SettingsUpdate(show=True)
-
-    if _mentions(lowered, "api key", "apikey", "anthropic key", "anthropic api key"):
-        if _mentions(lowered, "clear api key", "unset api key", "remove api key", "delete api key"):
-            return SettingsUpdate(clear_api_key=True)
-        key = _extract_api_key(text)
-        if key:
-            return SettingsUpdate(api_key=key)
-        if lowered.startswith((
-            "set api key",
-            "set the api key",
-            "add api key",
-            "add the api key",
-            "update api key",
-            "use api key",
-            "set anthropic api key",
-            "set the anthropic api key",
-        )):
-            return SettingsUpdate(prompt_api_key=True)
-
-    model = _extract_settings_model(text)
-    effort = _extract_effort(text)
-    if model or effort:
-        return SettingsUpdate(model=model, effort=effort)
-
-    return None
-
-
-def _extract_settings_model(raw: str) -> str | None:
-    match = re.search(
-        r"\b(?:set|switch|change|use)\s+(?:the\s+)?(?:llm\s+|chat\s+|authoring\s+)?"
-        r"model(?:\s+(?:to|as))?\s+(?P<value>[^\s]+)",
-        raw,
-        flags=re.IGNORECASE,
-    )
-    if not match:
-        return None
-    return _clean_path_token(match.group("value"))
-
-
-def _extract_effort(raw: str) -> str | None:
-    match = re.search(
-        r"\b(?:set|switch|change|use)\s+(?:the\s+)?effort(?:\s+(?:to|as))?\s+"
-        r"(?P<value>low|medium|high|max)\b",
-        raw,
-        flags=re.IGNORECASE,
-    )
-    if not match:
-        match = re.search(
-            r"\beffort\s+(?P<value>low|medium|high|max)\b",
-            raw,
-            flags=re.IGNORECASE,
-        )
-    return _normalize_effort(match.group("value")) if match else None
-
-
-def _extract_api_key(raw: str) -> str | None:
-    match = re.search(
-        r"\bANTHROPIC_API_KEY\s*=\s*(?P<value>[^\s]+)",
-        raw,
-        flags=re.IGNORECASE,
-    )
-    if match:
-        return _strip_wrapping_quotes(match.group("value"))
-    match = re.search(r"\b(?P<value>sk-ant-[A-Za-z0-9_\-.]+)", raw)
-    if match:
-        return _strip_wrapping_quotes(match.group("value"))
-    match = re.search(
-        r"\b(?:api[- ]?key|apikey|anthropic(?:\s+api)?\s+key)"
-        r"(?:\s+(?:to|as|is))?\s+(?P<value>[^\s]+)",
-        raw,
-        flags=re.IGNORECASE,
-    )
-    if not match:
-        return None
-    value = _strip_wrapping_quotes(match.group("value"))
-    if value.lower() in {"clear", "unset", "remove", "delete", "cancel"}:
-        return None
-    return value
-
-
-def _looks_like_help(text: str) -> bool:
-    return text in {"help", "commands", "shortcuts"} or _mentions(
-        text,
-        "show me commands",
-        "show shortcuts",
-    )
-
-
-def _looks_like_greeting(text: str) -> bool:
-    return text in {
-        "hey",
-        "hi",
-        "hello",
-        "yo",
-        "sup",
-        "good morning",
-        "good afternoon",
-        "good evening",
-    }
-
-
-def _looks_like_frustration(text: str) -> bool:
-    return text in {
-        "really",
-        "really?",
-        "seriously",
-        "seriously?",
-        "bruh",
-        "my guy",
-        "come on",
-        "what's wrong with you",
-        "whats wrong with you",
-    }
-
-
-def _looks_like_meta_complaint(text: str) -> bool:
-    return text.startswith((
-        "i said ",
-        "i told ",
-        "you said ",
-        "u said ",
-        "you didn't ",
-        "you didnt ",
-        "it won't ",
-        "it wont ",
-        "this won't ",
-        "this wont ",
-    ))
-
-
-def _looks_like_question(text: str) -> bool:
-    return text.endswith("?") or text.startswith((
-        "are ",
-        "can you ",
-        "could you ",
-        "do ",
-        "does ",
-        "how ",
-        "is ",
-        "tell me ",
-        "what ",
-        "why ",
-    ))
-
-
-def _looks_like_policy_requirement(text: str) -> bool:
-    if len(text.split()) < 4:
-        return False
-    if _looks_like_domain_setup_statement(text):
-        return True
-    if _mentions(
-        text,
-        " can ",
-        " cannot ",
-        " can't ",
-        " may ",
-        " must ",
-        " should ",
-        " should not ",
-        " only ",
-        " deny ",
-        " allow ",
-        " permit ",
-        " forbid ",
-        " access ",
-        " read ",
-        " write ",
-        " edit ",
-        " delete ",
-        " approve ",
-        " view ",
-        " create ",
-        " update ",
-        " owner ",
-        " admin ",
-        " admins ",
-        " user ",
-        " users ",
-        " role ",
-        " roles ",
-        " resource ",
-        " resources ",
-        " document ",
-        " documents ",
-        " entity ",
-        " entities ",
-        " action ",
-        " actions ",
-        " policy ",
-    ):
-        return True
-    return text.startswith((
-        "only ",
-        "allow ",
-        "deny ",
-        "permit ",
-        "forbid ",
-        "users ",
-        "admins ",
-        "owners ",
-    ))
-
-
-def _looks_like_active_draft_statement(raw: str) -> bool:
-    text = _squash(raw).lower()
-    if not text or _looks_like_question(text) or _looks_like_greeting(text):
-        return False
-    if _looks_like_frustration(text) or _looks_like_meta_complaint(text):
-        return False
-    return _looks_like_policy_requirement(text) or _looks_like_domain_setup_statement(text)
-
-
-def _is_show_draft_request(text: str) -> bool:
-    return (
-        text in {
-            "show draft",
-            "show the draft",
-            "show me the draft",
-            "display draft",
-            "display the draft",
-            "view draft",
-            "view the draft",
-            "draft state",
-            "show draft state",
-            "show the draft state",
-            "current draft",
-            "current spec",
-            "what is in the draft",
-            "what's in the draft",
-            "whats in the draft",
-            "what is in my draft",
-            "what's in my draft",
-            "whats in my draft",
-        }
-        or text.startswith((
-            "show the current draft",
-            "show current draft",
-            "show me current draft",
-            "show me the current draft",
-            "peek at the draft",
-            "list the draft",
-        ))
-    )
-
-
-def _looks_like_domain_setup_statement(text: str) -> bool:
-    return (
-        _mentions(
-            text,
-            " system has ",
-            " system contains ",
-            " has users ",
-            " has documents ",
-            " has resources ",
-            " has entities ",
-            " includes users ",
-            " includes documents ",
-            " includes resources ",
-            " includes entities ",
-            " there are users ",
-            " there are documents ",
-            " there are resources ",
-            " there are entities ",
-        )
-        or re.search(r"\b(users?|documents?|resources?|entities|actions?)\b.*\b(users?|documents?|resources?|entities|actions?)\b", text)
-        is not None
-    )
-
-
-def _is_save_request(text: str) -> bool:
-    return text.startswith(("save ", "write ")) or text in {
-        "save this",
-        "save draft",
-        "save the draft",
-    }
-
-
-def _is_start_draft_request(text: str) -> bool:
-    return (
-        text in {
-            "start a policy draft",
-            "start policy draft",
-            "start drafting",
-            "begin drafting",
-            "begin a policy draft",
-            "new policy draft",
-            "draft a policy",
-        }
-        or text.startswith((
-            "start a draft",
-            "start the draft",
-            "start drafting ",
-            "begin drafting ",
-            "begin a draft",
-            "begin the draft",
-            "let's draft",
-            "lets draft",
-        ))
-    )
-
-
-def _is_verify_request(text: str) -> bool:
-    return text.startswith(("verify", "check the workspace", "check workspace")) or (
-        "run verification" in text
-    )
-
-
-def _is_author_request(text: str) -> bool:
-    return text.startswith((
-        "author",
-        "build policy",
-        "generate policy",
-        "make policy",
-        "create policy",
-    ))
-
-
-def _is_synthesize_request(text: str) -> bool:
-    return text.startswith(("synthesize", "run synthesis", "run scenario"))
-
-
-def _extract_save_path(raw: str) -> Path | None:
-    match = re.search(
-        r"\b(?:save|write)(?:\s+(?:this|it|draft|the draft|spec|policy))*"
-        r"\s+(?:as|to)\s+(?P<path>[^\s]+)",
-        raw,
-        flags=re.IGNORECASE,
-    )
-    if match:
-        return Path(_clean_path_token(match.group("path")))
-    for token in _path_tokens(raw):
-        if token.suffix in {".md", ".txt"}:
-            return token
-    return None
-
-
-def _extract_workspace_path(raw: str) -> Path | None:
-    lowered = raw.lower()
-    match = re.search(r"\b(?:workspace|directory|dir)\s+(?P<path>[^\s]+)", raw)
-    if match and match.group("path").lower() not in {"and", "please", "now"}:
-        return Path(_clean_path_token(match.group("path")))
-    for token in _path_tokens(raw):
-        if str(token) == "workspace" or "workspace" in str(token):
-            return token
-    if "workspace" in lowered:
-        return Path("workspace")
-    paths = _path_tokens(raw)
-    return paths[0] if paths else None
-
-
-def _author_options_from_nl(
-    raw: str,
-    *,
-    has_draft: bool,
-) -> tuple[AuthorOptions | None, bool]:
-    schema = _extract_schema_path(raw)
-    spec = _extract_spec_path(raw)
-    lowered = raw.lower()
-    from_draft = False
-    if spec is None and (
-        has_draft
-        and _mentions(lowered, "this", "draft", "it", "current spec", "current draft")
-    ):
-        spec = DRAFT_PATH
-        from_draft = True
-    if spec is None:
-        return None, False
-    return (
-        AuthorOptions(
-            spec=spec,
-            out=_extract_output_path(raw) or Path("autocedar-runs"),
-            session_id=_extract_session_id(raw),
-            schema=schema,
-            model=_extract_author_model(raw),
-            effort=_extract_effort(raw),
-            auto_approve=_mentions(lowered, "auto approve", "auto-approve", "without review"),
-        ),
-        from_draft,
-    )
-
-
-def _synthesize_options_from_nl(raw: str) -> SynthesizeOptions | None:
-    out = _extract_output_path(raw) or Path("eval_runs")
-    paths = [path for path in _path_tokens(raw) if path != out]
-    scenarios = [_resolve_scenario_path(path) for path in paths]
-    scenarios = [path for path in scenarios if path is not None]
-    if not scenarios:
-        return None
-    max_iters_match = re.search(
-        r"\b(?:max(?:imum)?(?:\s+(?:iters|iterations))?|iters?)\D+(?P<n>\d+)",
-        raw,
-        flags=re.IGNORECASE,
-    )
-    return SynthesizeOptions(
-        scenarios=scenarios,
-        out=out,
-        run_id=_extract_run_id(raw),
-        phase1_model=_extract_phase_model(raw, "phase1"),
-        phase2_model=_extract_phase_model(raw, "phase2"),
-        max_iters=int(max_iters_match.group("n")) if max_iters_match else None,
-        gen_references=_mentions(
-            raw.lower(),
-            "generate references",
-            "gen references",
-            "regenerate references",
-            "with references",
-        ),
-        no_review=_mentions(raw.lower(), "no review", "without review", "skip review"),
-    )
-
-
-def _extract_output_path(raw: str) -> Path | None:
-    match = re.search(
-        r"\b(?:out|output|output dir|output directory|into|under)\s+(?P<path>[^\s]+)",
-        raw,
-        flags=re.IGNORECASE,
-    )
-    if match:
-        return Path(_clean_path_token(match.group("path")))
-    return None
-
-
-def _extract_run_id(raw: str) -> str | None:
-    match = re.search(r"\brun[-\s]?id\s+(?P<value>[^\s]+)", raw, flags=re.IGNORECASE)
-    return _clean_path_token(match.group("value")) if match else None
-
-
-def _extract_session_id(raw: str) -> str | None:
-    match = re.search(
-        r"\bsession[-\s]?id\s+(?P<value>[^\s]+)",
-        raw,
-        flags=re.IGNORECASE,
-    )
-    return _clean_path_token(match.group("value")) if match else None
-
-
-def _extract_author_model(raw: str) -> str | None:
-    match = re.search(
-        r"(?<!phase1\s)(?<!phase2\s)\bmodel\s+(?P<value>[^\s]+)",
-        raw,
-        flags=re.IGNORECASE,
-    )
-    return _clean_path_token(match.group("value")) if match else None
-
-
-def _extract_phase_model(raw: str, phase: str) -> str | None:
-    spaced = phase.replace("phase", "phase ")
-    match = re.search(
-        rf"\b(?:{phase}|{spaced})[-\s]?model\s+(?P<value>[^\s]+)",
-        raw,
-        flags=re.IGNORECASE,
-    )
-    return _clean_path_token(match.group("value")) if match else None
-
-
-def _extract_schema_path(raw: str) -> Path | None:
-    match = re.search(r"\bschema\s+(?P<path>[^\s]+)", raw, flags=re.IGNORECASE)
-    if match:
-        return Path(_clean_path_token(match.group("path")))
-    for token in _path_tokens(raw):
-        if token.suffix == ".cedarschema":
-            return token
-    return None
-
-
-def _extract_spec_path(raw: str) -> Path | None:
-    schema = _extract_schema_path(raw)
-    for token in _path_tokens(raw):
-        if token == schema:
-            continue
-        if token.suffix in {".md", ".txt"}:
-            return token
-    return None
-
-
-def _path_tokens(raw: str) -> list[Path]:
-    try:
-        tokens = shlex.split(raw)
-    except ValueError:
-        tokens = raw.split()
-    paths: list[Path] = []
-    for token in tokens:
-        cleaned = _clean_path_token(token)
-        lowered = cleaned.lower()
-        if not cleaned or lowered in _COMMON_WORDS:
-            continue
-        path = Path(cleaned)
-        if _looks_like_path(cleaned, path):
-            paths.append(path)
-    return paths
-
-
-def _clean_path_token(token: str) -> str:
-    return token.strip().strip("\"'`").rstrip(".,;:)")
-
-
-def _looks_like_path(token: str, path: Path) -> bool:
-    return (
-        "/" in token
-        or token.startswith(".")
-        or token == "workspace"
-        or token.startswith("cedarbench")
-        or path.suffix in {".md", ".txt", ".cedarschema"}
-        or path.exists()
-        or (Path("cedarbench/scenarios/realworld") / token).exists()
-        or (Path("cedarbench/scenarios") / token).exists()
-    )
-
-
-def _resolve_scenario_path(path: Path) -> Path | None:
-    if path.exists() or "/" in str(path):
-        return path
-    realworld = Path("cedarbench/scenarios/realworld") / str(path)
-    if realworld.exists():
-        return realworld
-    scenario = Path("cedarbench/scenarios") / str(path)
-    if scenario.exists():
-        return scenario
-    return path
 
 
 def _describe_start_draft_action() -> str:
@@ -2707,7 +2258,7 @@ def _describe_author_action(options: AuthorOptions, *, from_draft: bool) -> str:
             "schema path: none supplied; propose schema atoms from the spec and pause for HITL review.",
         )
     lines.append(
-        "properties: propose and symbolically verify Stage 2 property atoms, then pause for HITL review.",
+        "properties: propose one Stage 2 property atom at a time, symbolically verify it, then pause for HITL review before the next proposal.",
     )
     if from_draft:
         lines.append(f"I’ll first save the current draft to {options.spec}.")
@@ -2735,6 +2286,70 @@ def _describe_synthesize_action(options: SynthesizeOptions) -> str:
     lines.append(f"reference generation: {'yes' if options.gen_references else 'no'}")
     lines.append(f"review gate: {'skipped' if options.no_review else 'enabled'}")
     return "\n".join(lines)
+
+
+def _agent_action_from_author_options(
+    options: AuthorOptions,
+    *,
+    from_draft: bool,
+) -> AgentAction:
+    return AgentAction(
+        kind="author_current_draft" if from_draft else "author_spec",
+        spec=str(options.spec),
+        out=str(options.out),
+        session_id=options.session_id,
+        schema_path=str(options.schema) if options.schema else None,
+        model=options.model,
+        effort=options.effort,
+        auto_approve=options.auto_approve,
+    )
+
+
+def _author_options_from_agent_action(action: AgentAction) -> AuthorOptions:
+    if action.kind == "author_current_draft":
+        spec = Path(action.spec or DRAFT_PATH)
+    else:
+        if not action.spec:
+            raise ValueError("I need a spec path before authoring.")
+        spec = Path(action.spec)
+    return AuthorOptions(
+        spec=spec,
+        out=Path(action.out) if action.out else Path("autocedar-runs"),
+        session_id=action.session_id,
+        schema=Path(action.schema_path) if action.schema_path else None,
+        model=action.model,
+        effort=action.effort,
+        auto_approve=action.auto_approve,
+    )
+
+
+def _agent_action_from_synthesize_options(options: SynthesizeOptions) -> AgentAction:
+    return AgentAction(
+        kind="synthesize",
+        scenarios=[str(path) for path in options.scenarios],
+        out=str(options.out),
+        run_id=options.run_id,
+        phase1_model=options.phase1_model,
+        phase2_model=options.phase2_model,
+        max_iters=options.max_iters,
+        gen_references=options.gen_references,
+        no_review=options.no_review,
+    )
+
+
+def _synthesize_options_from_agent_action(action: AgentAction) -> SynthesizeOptions:
+    if not action.scenarios:
+        raise ValueError("I need a scenario path before synthesis.")
+    return SynthesizeOptions(
+        scenarios=[Path(scenario) for scenario in action.scenarios],
+        out=Path(action.out) if action.out else Path("eval_runs"),
+        run_id=action.run_id,
+        phase1_model=action.phase1_model,
+        phase2_model=action.phase2_model,
+        max_iters=action.max_iters,
+        gen_references=action.gen_references,
+        no_review=action.no_review,
+    )
 
 
 def tokenize(raw: str) -> list[str]:
@@ -2962,6 +2577,86 @@ def _property_overview_text(properties: list[Any]) -> str:
     return "\n".join(out).rstrip()
 
 
+def _codex_models_text(info: Any) -> str:
+    lines = [
+        f"[dim {MUTED}]provider[/]\n[bold {CREAM}]openai-codex[/]",
+        f"[dim {MUTED}]auth source[/]\n[bold {CREAM}]{escape(info.auth_source)}[/]",
+        f"[dim {MUTED}]base url[/]\n[bold {CREAM}]{escape(info.base_url)}[/]",
+        f"[dim {MUTED}]selectable thinking[/]\n[bold {CREAM}]{', '.join(info.thinking_efforts)}[/]",
+        "",
+        f"[bold {AMBER}]Visible models[/]",
+    ]
+    details = list(getattr(info, "model_details", []) or [])
+    if not details:
+        details = [type("_Model", (), {"slug": model})() for model in getattr(info, "models", [])]
+    for detail in details:
+        slug = str(getattr(detail, "slug", ""))
+        display_name = str(getattr(detail, "display_name", "") or "")
+        heading = slug if not display_name or display_name == slug else f"{slug} ({display_name})"
+        lines.append(f"- [bold {CREAM}]{escape(heading)}[/]")
+        reason = _format_reasoning_levels(detail)
+        if reason:
+            default_reasoning = str(getattr(detail, "default_reasoning_level", "") or "")
+            suffix = f"; default {default_reasoning}" if default_reasoning else ""
+            lines.append(f"  reasoning: {escape(reason)}{escape(suffix)}")
+        context = _format_context_window(detail)
+        if context:
+            lines.append(f"  context: {escape(context)}")
+        tiers = _join_nonempty(getattr(detail, "service_tiers", ()))
+        speed = _join_nonempty(getattr(detail, "speed_tiers", ()))
+        if tiers or speed:
+            lines.append(f"  tiers: {escape(tiers or 'standard')}; speed: {escape(speed or 'standard')}")
+        verbosity = str(getattr(detail, "default_verbosity", "") or "")
+        if getattr(detail, "support_verbosity", False) or verbosity:
+            lines.append(f"  verbosity: {escape(verbosity or 'supported')}")
+        if getattr(detail, "supports_reasoning_summaries", False):
+            lines.append("  summaries: reasoning summaries supported")
+    lines.extend([
+        "",
+        f"[dim {MUTED}]Use /model MODEL and /effort low|medium|high|max. "
+        "For Codex, /effort max sends the token-visible xhigh reasoning level.[/]",
+    ])
+    return "\n".join(lines)
+
+
+def _format_reasoning_levels(detail: Any) -> str:
+    levels = getattr(detail, "supported_reasoning_levels", ()) or ()
+    if not levels:
+        return ""
+    out = []
+    for item in levels:
+        if not isinstance(item, tuple) or not item:
+            continue
+        effort = str(item[0])
+        label = "max" if effort == "xhigh" else effort
+        description = str(item[1]) if len(item) > 1 else ""
+        if description:
+            out.append(f"{label} ({description})")
+        else:
+            out.append(label)
+    return "; ".join(out)
+
+
+def _format_context_window(detail: Any) -> str:
+    context = getattr(detail, "context_window", None)
+    max_context = getattr(detail, "max_context_window", None)
+    if context is None and max_context is None:
+        return ""
+    if context == max_context or max_context is None:
+        return _format_int(context)
+    return f"{_format_int(context)} default, {_format_int(max_context)} max"
+
+
+def _format_int(value: Any) -> str:
+    return f"{value:,}" if isinstance(value, int) else "unknown"
+
+
+def _join_nonempty(values: Any) -> str:
+    if not values:
+        return ""
+    return ", ".join(str(value) for value in values if str(value).strip())
+
+
 def _render_cedar_for_review(atom: Any) -> str:
     if atom.__class__.__name__ == "PropertyAtom":
         return render_property_reference(atom)
@@ -2981,6 +2676,8 @@ def _normalize_effort(effort: str | None) -> str | None:
     if effort is None:
         return None
     normalized = effort.strip().lower()
+    if normalized in {"xhigh", "extra-high", "extra_high"}:
+        return "max"
     return normalized if normalized in EFFORT_LEVELS else None
 
 
@@ -3097,6 +2794,21 @@ def _draft_lines_from_text(text: str) -> list[str]:
     return [line.strip() for line in text.splitlines() if line.strip()]
 
 
+def _numbered_draft_text(lines: Sequence[str]) -> str:
+    width = len(str(len(lines)))
+    return "\n".join(f"{index:>{width}}. {line}" for index, line in enumerate(lines, start=1))
+
+
+def _parse_line_number(value: str) -> int:
+    try:
+        line = int(value)
+    except ValueError as exc:
+        raise ValueError(f"Line number must be an integer, got {value!r}.") from exc
+    if line < 1:
+        raise ValueError("Line number must be 1 or greater.")
+    return line
+
+
 def _short_model(model: str) -> str:
     if len(model) <= 30:
         return model
@@ -3109,7 +2821,7 @@ def run_tui() -> int:
     return 0
 
 
-def _chat_failure_message(exc: Exception) -> str:
+def _agent_failure_message(exc: Exception) -> str:
     if is_anthropic_auth_error(exc):
         return (
             "Anthropic rejected the saved API key, so I cleared it from this "
@@ -3117,6 +2829,6 @@ def _chat_failure_message(exc: Exception) -> str:
             "full key from the Anthropic console."
         )
     return (
-        "The chat model call failed, so I’m not going to pretend that was "
-        f"model-backed. Error: {exc.__class__.__name__}: {escape(str(exc))}"
+        "The agent planner failed before any tool ran. I did not execute or "
+        f"mutate anything. Error: {exc.__class__.__name__}: {escape(str(exc))}"
     )

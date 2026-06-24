@@ -1,0 +1,72 @@
+{
+  "students_receive_external_grades_floor": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "students_not_assign_external_grades": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (syntactic disjointness sanity check ok)"
+  ],
+  "external_grade_receivers_not_assign_external_grades": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (syntactic disjointness sanity check ok)"
+  ],
+  "faculty_assign_internal_grades_floor": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "faculty_assign_external_grades_floor": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "faculty_view_internal_grades_floor": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "faculty_view_external_grades_floor": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "tas_assign_internal_grades_floor": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "tas_view_internal_grades_floor": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "tas_not_assign_external_grades": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (syntactic disjointness sanity check ok)"
+  ],
+  "tas_not_view_external_grades": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (syntactic disjointness sanity check ok)"
+  ],
+  "faculty_family_receive_external_grades_floor": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "students_not_assign_internal_grades": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (syntactic disjointness sanity check ok)"
+  ],
+  "nonfaculty_enroll_in_courses_floor": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ]
+}

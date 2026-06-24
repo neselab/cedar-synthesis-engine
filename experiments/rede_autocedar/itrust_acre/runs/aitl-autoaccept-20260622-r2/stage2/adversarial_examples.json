@@ -1,0 +1,374 @@
+{
+  "patient_view_own_access_log_floor": [],
+  "patient_view_access_log_own_ceiling": [
+    {
+      "description": "A patient attempts to view another patient's access log while the request context names the other patient. This should not be permitted under the patient's own-access-log path.",
+      "request_dict": {},
+      "decision_under_chosen": "deny",
+      "decisions_under_alternatives": {},
+      "diagnostic_for": [
+        "patient_view_access_log_own_ceiling"
+      ]
+    }
+  ],
+  "personal_representative_view_represented_access_log_floor": [
+    {
+      "description": "A personal representative with an active session tries to view the access log for a patient included in their representedPatients set; a policy that only permits patients to view their own logs would incorrectly deny this required workflow.",
+      "request_dict": {},
+      "decision_under_chosen": "permit",
+      "decisions_under_alternatives": {},
+      "diagnostic_for": [
+        "missing_personal_representative_access_log_permission",
+        "patient_specific_representative_relationship"
+      ]
+    }
+  ],
+  "personal_representative_view_represented_access_log_ceiling": [
+    {
+      "description": "A personal representative tries to view an access log for a patient who is not in their representedPatients set, even though the session is active.",
+      "request_dict": {},
+      "decision_under_chosen": "deny",
+      "decisions_under_alternatives": {},
+      "diagnostic_for": [
+        "missing_represented_patient_boundary",
+        "overbroad_personal_representative_access_log_access"
+      ]
+    }
+  ],
+  "patient_view_own_medical_record_floor": [
+    {
+      "description": "A patient attempts to view another patient's medical record while using their own active session. The own-record equality should prevent treating Patient role membership alone as sufficient.",
+      "request_dict": {},
+      "decision_under_chosen": "deny",
+      "decisions_under_alternatives": {},
+      "diagnostic_for": [
+        "own-record-boundary",
+        "patient-specific-resource-scope"
+      ]
+    }
+  ],
+  "patient_view_own_medical_record_ceiling": [
+    {
+      "description": "A patient attempts to view another patient's medical record while using their own active session; the ownership boundary should prevent this over-permission.",
+      "request_dict": {},
+      "decision_under_chosen": "deny",
+      "decisions_under_alternatives": {},
+      "diagnostic_for": [
+        "own-record-boundary",
+        "patient-medical-record-privacy"
+      ]
+    }
+  ],
+  "personal_representative_view_represented_medical_record_floor": [],
+  "personal_representative_view_represented_medical_record_ceiling": [
+    {
+      "description": "A personal representative attempts to view a medical record for a patient not in their representedPatients set; a broad role-only policy would incorrectly permit it.",
+      "request_dict": {},
+      "decision_under_chosen": "deny",
+      "decisions_under_alternatives": {},
+      "diagnostic_for": [
+        "patient-specific-representation-boundary",
+        "role-only-overpermission"
+      ]
+    }
+  ],
+  "lhcp_view_patient_allowed_diagnostic_information_floor": [
+    {
+      "description": "An LHCP who is explicitly listed in the diagnostic information's allowedViewers attempts to view that patient's diagnostic information using their own active session; a deny-only policy would incorrectly block this approved workflow.",
+      "request_dict": {},
+      "decision_under_chosen": "permit",
+      "decisions_under_alternatives": {},
+      "diagnostic_for": [
+        "missing-positive-approved-diagnostic-information-access",
+        "patient-specific-allowed-viewer-boundary"
+      ]
+    }
+  ],
+  "lhcp_view_patient_allowed_diagnostic_information_ceiling": [
+    {
+      "description": "An LHCP attempts to view diagnostic information for the patient named in the request, but the patient has not included that LHCP in the diagnostic information's allowed viewers.",
+      "request_dict": {},
+      "decision_under_chosen": "deny",
+      "decisions_under_alternatives": {},
+      "diagnostic_for": [
+        "allowed-viewer-boundary",
+        "patient-specific-diagnostic-approval"
+      ]
+    }
+  ],
+  "patient_view_own_personal_health_information_floor": [],
+  "patient_view_own_personal_health_information_ceiling": [
+    {
+      "description": "A patient attempts to view another patient's personal health information by setting the request context to the other patient; the ownership boundary should block this even though the principal is a Patient.",
+      "request_dict": {},
+      "decision_under_chosen": "deny",
+      "decisions_under_alternatives": {},
+      "diagnostic_for": [
+        "own-records-boundary",
+        "patient-privacy",
+        "overpermission-ceiling"
+      ]
+    }
+  ],
+  "personal_representative_view_represented_personal_health_information_floor": [],
+  "personal_representative_view_represented_personal_health_information_ceiling": [
+    {
+      "description": "A personal representative tries to view personal health information for a patient who is not in their representedPatients set, even though the session is active.",
+      "request_dict": {},
+      "decision_under_chosen": "deny",
+      "decisions_under_alternatives": {},
+      "diagnostic_for": [
+        "patient-specific personal representative boundary",
+        "over-permission to non-represented patient records"
+      ]
+    }
+  ],
+  "patient_view_own_family_history_floor": [],
+  "patient_view_own_family_history_ceiling": [
+    {
+      "description": "A patient attempts to view another patient's family-history record by setting the request patient context to the other patient. The ceiling rejects this broader access because both context.patient and resource.patient must equal the principal.",
+      "request_dict": {},
+      "decision_under_chosen": "deny",
+      "decisions_under_alternatives": {},
+      "diagnostic_for": [
+        "ownership-boundary",
+        "own-records-ceiling"
+      ]
+    }
+  ],
+  "patient_view_own_immunization_floor": [],
+  "patient_view_own_immunization_ceiling": [
+    {
+      "description": "A patient attempts to view another patient's immunization record by supplying the other patient in the request context.",
+      "request_dict": {},
+      "decision_under_chosen": "deny",
+      "decisions_under_alternatives": {},
+      "diagnostic_for": [
+        "own-record-boundary",
+        "patient-immunization-privacy"
+      ]
+    }
+  ],
+  "personal_representative_view_represented_family_history_floor": [],
+  "personal_representative_view_represented_family_history_ceiling": [
+    {
+      "description": "A personal representative attempts to view a family-history record for a patient they do not represent, even though their session is active.",
+      "request_dict": {},
+      "decision_under_chosen": "deny",
+      "decisions_under_alternatives": {},
+      "diagnostic_for": [
+        "represented-patient-boundary",
+        "family-history-privacy"
+      ]
+    }
+  ],
+  "personal_representative_view_represented_immunization_floor": [],
+  "personal_representative_view_represented_immunization_ceiling": [
+    {
+      "description": "A personal representative tries to view an immunization record for a patient who is not in their representedPatients set, even though the session is active.",
+      "request_dict": {},
+      "decision_under_chosen": "deny",
+      "decisions_under_alternatives": {},
+      "diagnostic_for": [
+        "representation-boundary",
+        "immunization-privacy"
+      ]
+    }
+  ],
+  "patient_view_own_office_visit_floor": [],
+  "patient_view_own_office_visit_ceiling": [],
+  "personal_representative_view_represented_office_visit_floor": [],
+  "personal_representative_view_represented_office_visit_ceiling": [
+    {
+      "description": "A personal representative attempts to view an office visit for a patient who is not in their representedPatients set, even though the session is active and belongs to them.",
+      "request_dict": {},
+      "decision_under_chosen": "deny",
+      "decisions_under_alternatives": {},
+      "diagnostic_for": [
+        "representation-boundary",
+        "office-visit-privacy"
+      ]
+    }
+  ],
+  "patient_take_own_untaken_office_visit_survey_floor": [
+    {
+      "description": "A patient attempts to take the survey for another patient's office visit; the ownership boundary should prevent this floor from requiring permission.",
+      "request_dict": {},
+      "decision_under_chosen": "deny",
+      "decisions_under_alternatives": {},
+      "diagnostic_for": [
+        "own-record-boundary",
+        "patient-specific-office-visit"
+      ]
+    },
+    {
+      "description": "A patient attempts to take their own office-visit survey after it has already been taken; the survey lifecycle boundary should prevent this floor from requiring permission.",
+      "request_dict": {},
+      "decision_under_chosen": "deny",
+      "decisions_under_alternatives": {},
+      "diagnostic_for": [
+        "surveyTaken-lifecycle-boundary"
+      ]
+    }
+  ],
+  "patient_take_own_untaken_office_visit_survey_ceiling": [
+    {
+      "description": "A patient attempts to take a survey for their own office visit after the survey has already been submitted. The ceiling should reject policies that permit this broader lifecycle case.",
+      "request_dict": {},
+      "decision_under_chosen": "deny",
+      "decisions_under_alternatives": {},
+      "diagnostic_for": [
+        "surveyTaken lifecycle boundary",
+        "same-action ceiling for approved patient survey floor"
+      ]
+    },
+    {
+      "description": "A patient attempts to take a survey for another patient's office visit. The ceiling should reject policies that omit the own-record boundary.",
+      "request_dict": {},
+      "decision_under_chosen": "deny",
+      "decisions_under_alternatives": {},
+      "diagnostic_for": [
+        "own office-visit boundary",
+        "context.patient/resource.patient consistency"
+      ]
+    }
+  ],
+  "personal_representative_take_represented_untaken_office_visit_survey_floor": [],
+  "personal_representative_take_represented_untaken_office_visit_survey_ceiling": [
+    {
+      "description": "A personal representative tries to take a survey for an office visit belonging to a patient they do not represent, even though the session is active and the survey has not yet been taken.",
+      "request_dict": {},
+      "decision_under_chosen": "deny",
+      "decisions_under_alternatives": {},
+      "diagnostic_for": [
+        "represented-patient-boundary",
+        "personal-representative-survey-ceiling"
+      ]
+    },
+    {
+      "description": "A personal representative tries to take a survey for a represented patient's office visit after the survey has already been taken.",
+      "request_dict": {},
+      "decision_under_chosen": "deny",
+      "decisions_under_alternatives": {},
+      "diagnostic_for": [
+        "surveyTaken-boundary",
+        "previously-submitted-survey-denial"
+      ]
+    }
+  ],
+  "hcp_create_patient_floor": [],
+  "hcp_create_patient_ceiling": [
+    {
+      "description": "An HCP attempts to create a patient using an inactive session. The floor alone would not prevent a broader synthesized policy from allowing this mutable account creation, so the ceiling bounds it to active sessions.",
+      "request_dict": {},
+      "decision_under_chosen": "deny",
+      "decisions_under_alternatives": {},
+      "diagnostic_for": [
+        "inactive-session-overpermission",
+        "mutable-account-creation-boundary"
+      ]
+    }
+  ],
+  "hcp_disable_patient_floor": [
+    {
+      "description": "A candidate policy that never permits HCPs to disable patients would violate the explicit workflow even if it satisfies unrelated safety constraints.",
+      "request_dict": {},
+      "decision_under_chosen": "permit",
+      "decisions_under_alternatives": {},
+      "diagnostic_for": [
+        "missing-positive-disablePatient-workflow"
+      ]
+    }
+  ],
+  "hcp_disable_patient_ceiling": [],
+  "administrator_reactivate_inactive_patient_floor": [],
+  "administrator_reactivate_inactive_patient_ceiling": [],
+  "administrator_create_lhcp_floor": [],
+  "administrator_create_lhcp_ceiling": [],
+  "administrator_create_emergency_responder_floor": [],
+  "administrator_create_emergency_responder_ceiling": [],
+  "administrator_create_lab_technician_floor": [],
+  "administrator_create_lab_technician_ceiling": [],
+  "administrator_create_public_health_agent_floor": [],
+  "administrator_create_public_health_agent_ceiling": [],
+  "lhcp_create_uap_floor": [],
+  "lhcp_create_uap_ceiling": [],
+  "administrator_assign_lhcp_credentials_floor": [],
+  "administrator_assign_lhcp_credentials_ceiling": [],
+  "administrator_assign_listed_hospital_floor": [
+    {
+      "description": "An administrator tries to assign an LHCP to a Hospital entity that is not included in the hospital list supplied in the request context; this should not satisfy the listed-hospital floor.",
+      "request_dict": {},
+      "decision_under_chosen": "deny",
+      "decisions_under_alternatives": {},
+      "diagnostic_for": [
+        "hospital-list-membership-boundary",
+        "too-broad-floor-if-omitted"
+      ]
+    }
+  ],
+  "administrator_assign_listed_hospital_ceiling": [
+    {
+      "description": "An administrator with an active session attempts to assign an LHCP to a Hospital entity that is not a member of the provided hospital list; the ceiling should reject any candidate policy that permits this request.",
+      "request_dict": {},
+      "decision_under_chosen": "deny",
+      "decisions_under_alternatives": {},
+      "diagnostic_for": [
+        "hospital-list-membership",
+        "administrator-hospital-assignment-ceiling"
+      ]
+    }
+  ],
+  "patient_view_own_lhcps_floor": [],
+  "patient_view_own_lhcps_ceiling": [],
+  "patient_add_lhcp_to_own_provider_list_floor": [
+    {
+      "description": "A patient attempts to add an LHCP to another patient's provider list. The chosen floor does not require permission for that cross-patient request because the provider-list resource is not the requesting patient.",
+      "request_dict": {},
+      "decision_under_chosen": "deny",
+      "decisions_under_alternatives": {},
+      "diagnostic_for": [
+        "own-provider-list-boundary",
+        "avoid-cross-patient-provider-management"
+      ]
+    }
+  ],
+  "patient_add_lhcp_to_own_provider_list_ceiling": [],
+  "patient_designate_lhcp_for_self_floor": [],
+  "patient_designate_lhcp_for_self_ceiling": [
+    {
+      "description": "A patient attempts to designate an LHCP on a ProviderDesignation record whose patient is someone else; relying only on the Patient principal type would over-permit this cross-patient mutation.",
+      "request_dict": {},
+      "decision_under_chosen": "deny",
+      "decisions_under_alternatives": {},
+      "diagnostic_for": [
+        "patient-specific-designation-boundary",
+        "their-own-resource-scope"
+      ]
+    }
+  ],
+  "patient_undesignate_lhcp_for_self_floor": [],
+  "patient_undesignate_lhcp_for_self_ceiling": [],
+  "hcp_edit_active_selected_patient_personal_health_information_floor": [
+    {
+      "description": "An HCP attempts to edit personal health information for a selected patient whose Patient.isActive flag is false. The repaired floor should not require permission because deactivated patients cannot be modified.",
+      "request_dict": {},
+      "decision_under_chosen": "deny",
+      "decisions_under_alternatives": {},
+      "diagnostic_for": [
+        "deactivated-patient-modification-boundary",
+        "active-patient-lifecycle-condition"
+      ]
+    },
+    {
+      "description": "An HCP attempts to edit personal health information for a different patient than the one selected in the request context; this should not be required by the floor even if both patients are active.",
+      "request_dict": {},
+      "decision_under_chosen": "deny",
+      "decisions_under_alternatives": {},
+      "diagnostic_for": [
+        "selected-patient-boundary",
+        "resource-context-patient-match"
+      ]
+    }
+  ]
+}

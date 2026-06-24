@@ -1,0 +1,155 @@
+{
+  "hcp_can_create_patient": [],
+  "administrator_can_create_lhcp": [],
+  "administrator_can_create_emergency_responder": [],
+  "administrator_can_create_public_health_agent": [],
+  "lhcp_can_create_uap": [],
+  "hcp_can_edit_valid_non_mid_patient_data": [
+    {
+      "description": "An HCP attempts to edit the patient's MID even with otherwise valid formatting; the chosen property does not require this request to be permitted.",
+      "request_dict": {},
+      "decision_under_chosen": "deny",
+      "decisions_under_alternatives": {},
+      "diagnostic_for": [
+        "mid_not_editable_boundary",
+        "avoid_broad_hcp_edit_patient_floor"
+      ]
+    }
+  ],
+  "hcp_edit_patient_limited_to_valid_non_mid_data": [
+    {
+      "description": "An HCP attempts to edit the patient's MID even though MID is explicitly not editable.",
+      "request_dict": {},
+      "decision_under_chosen": "deny",
+      "decisions_under_alternatives": {},
+      "diagnostic_for": [
+        "missing_mid_edit_safety_bound"
+      ]
+    },
+    {
+      "description": "An HCP attempts to edit patient data when the submitted data format is invalid.",
+      "request_dict": {},
+      "decision_under_chosen": "deny",
+      "decisions_under_alternatives": {},
+      "diagnostic_for": [
+        "missing_data_format_safety_bound"
+      ]
+    }
+  ],
+  "user_can_login_with_verified_own_credentials": [
+    {
+      "description": "A user attempts to log in to a session belonging to another user even though the submitted MID and password verification are otherwise valid for the credential.",
+      "request_dict": {},
+      "decision_under_chosen": "deny",
+      "decisions_under_alternatives": {},
+      "diagnostic_for": [
+        "own-session-boundary"
+      ]
+    },
+    {
+      "description": "A user submits an MID that does not match the credential MID, even if password verification is claimed true.",
+      "request_dict": {},
+      "decision_under_chosen": "deny",
+      "decisions_under_alternatives": {},
+      "diagnostic_for": [
+        "submitted-mid-boundary"
+      ]
+    }
+  ],
+  "login_limited_to_verified_own_credentials": [
+    {
+      "description": "A user attempts to log in to a session for themselves but supplies a credential belonging to a different user, with the correct submitted MID for that other credential and passwordVerified true.",
+      "request_dict": {},
+      "decision_under_chosen": "deny",
+      "decisions_under_alternatives": {},
+      "diagnostic_for": [
+        "own-credential-boundary",
+        "login-overpermission"
+      ]
+    },
+    {
+      "description": "A user attempts login with their own credential and own session, but the submitted MID does not match the credential MID or the password has not been verified.",
+      "request_dict": {},
+      "decision_under_chosen": "deny",
+      "decisions_under_alternatives": {},
+      "diagnostic_for": [
+        "submitted-mid-boundary",
+        "password-verification-boundary"
+      ]
+    }
+  ],
+  "user_can_request_own_password_change": [],
+  "password_change_limited_to_own_credential": [
+    {
+      "description": "A user attempts to request a password change for another user's credential; this should not be permitted under the ownership boundary.",
+      "request_dict": {},
+      "decision_under_chosen": "deny",
+      "decisions_under_alternatives": {},
+      "diagnostic_for": [
+        "missing-own-credential-ceiling",
+        "overpermission-password-change"
+      ]
+    }
+  ],
+  "administrator_can_assign_lhcp_to_hospital": [],
+  "user_can_logout_active_own_session": [
+    {
+      "description": "A user attempts to log out of their own authenticated session after the inactivity limit has already been exceeded; because all authorization is disabled after that boundary, this floor does not require the request to be permitted.",
+      "request_dict": {},
+      "decision_under_chosen": "deny",
+      "decisions_under_alternatives": {},
+      "diagnostic_for": [
+        "inactivity-limit-authorization-disabled-boundary"
+      ]
+    },
+    {
+      "description": "A user attempts to log out of an authenticated session belonging to another user; the ownership boundary means this floor does not require the request to be permitted.",
+      "request_dict": {},
+      "decision_under_chosen": "deny",
+      "decisions_under_alternatives": {},
+      "diagnostic_for": [
+        "own-session-boundary"
+      ]
+    }
+  ],
+  "logout_limited_to_active_own_session": [],
+  "user_can_close_application_active_own_session": [],
+  "close_application_limited_to_active_own_session": [],
+  "administrator_can_set_inactivity_period_length": [],
+  "patient_can_view_own_provider_history": [],
+  "provider_history_limited_to_own_patient": [
+    {
+      "description": "A patient attempts to view another patient's provider history; a role-only policy would allow this, but the ownership-scoped ceiling excludes it.",
+      "request_dict": {},
+      "decision_under_chosen": "deny",
+      "decisions_under_alternatives": {},
+      "diagnostic_for": [
+        "missing-own-patient-boundary",
+        "overbroad-patient-provider-history-access"
+      ]
+    }
+  ],
+  "patient_can_add_matching_provider_to_own_list": [],
+  "add_provider_limited_to_matching_own_list": [
+    {
+      "description": "A patient attempts to add an HCP to another patient's provider list, even though the provider matches the search terms.",
+      "request_dict": {},
+      "decision_under_chosen": "deny",
+      "decisions_under_alternatives": {},
+      "diagnostic_for": [
+        "missing-own-provider-list-boundary"
+      ]
+    },
+    {
+      "description": "A patient attempts to add an HCP to their own provider list without the selected provider matching the submitted specialty search term.",
+      "request_dict": {},
+      "decision_under_chosen": "deny",
+      "decisions_under_alternatives": {},
+      "diagnostic_for": [
+        "missing-provider-search-match-boundary"
+      ]
+    }
+  ],
+  "patient_can_designate_lhcp_for_self": [],
+  "designate_dlhcp_limited_to_self": []
+}

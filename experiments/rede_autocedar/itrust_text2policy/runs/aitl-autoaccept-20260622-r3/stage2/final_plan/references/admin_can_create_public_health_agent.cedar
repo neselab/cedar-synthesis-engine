@@ -1,0 +1,1 @@
+permit (principal, action == Action::"createPublicHealthAgent", resource) when { principal is Administrator && resource is PublicHealthAgent };

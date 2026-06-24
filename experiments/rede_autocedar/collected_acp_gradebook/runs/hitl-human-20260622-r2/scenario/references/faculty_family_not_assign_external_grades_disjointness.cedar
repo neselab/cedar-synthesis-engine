@@ -1,0 +1,1 @@
+permit (principal, action == Action::"assignExternalGrade", resource) when { !(principal in FacultyFamily::"FacultyFamily") && resource is ExternalGrade };

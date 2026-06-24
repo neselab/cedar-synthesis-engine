@@ -1,0 +1,1 @@
+permit (principal, action == Action::"undesignateDLHCP", resource) when { principal is Patient && resource is Patient && principal == resource && context.lhcp is LHCP };

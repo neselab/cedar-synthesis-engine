@@ -1,0 +1,658 @@
+[
+  {
+    "atom_name": "patient_view_own_viewAccessLog_floor",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "personal_representative_view_viewAccessLog_floor",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "viewAccessLog_subject_scope_ceiling",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "patient_view_own_viewMedicalRecord_floor",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "personal_representative_view_viewMedicalRecord_floor",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "viewMedicalRecord_subject_scope_ceiling",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "patient_view_own_viewFamilyHistory_floor",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "personal_representative_view_viewFamilyHistory_floor",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "viewFamilyHistory_subject_scope_ceiling",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "patient_view_own_viewPersonalHealthInformation_floor",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "personal_representative_view_viewPersonalHealthInformation_floor",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "viewPersonalHealthInformation_subject_scope_ceiling",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "patient_view_own_viewImmunization_floor",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "personal_representative_view_viewImmunization_floor",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "viewImmunization_subject_scope_ceiling",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "patient_view_own_viewOfficeVisit_floor",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "personal_representative_view_viewOfficeVisit_floor",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "viewOfficeVisit_subject_scope_ceiling",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "patient_take_own_untaken_survey_floor",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "personal_representative_take_represented_untaken_survey_floor",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "take_survey_subject_and_not_taken_ceiling",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "lhcp_view_allowed_diagnostic_info_floor",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "lhcp_view_allowed_diagnostic_info_ceiling",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "patient_restrict_own_diagnostic_info_floor",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "patient_restrict_own_diagnostic_info_ceiling",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "lhcp_determine_diagnosis_restriction_floor",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "lhcp_determine_diagnosis_restriction_ceiling",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "hcp_cannot_view_patient_password_or_security_question",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "deactivated_patient_cannot_login",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "deactivated_patient_cannot_be_edited",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "hcp_create_patient_floor",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "hcp_create_patient_ceiling",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "hcp_disable_patient_floor",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "hcp_disable_patient_ceiling",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "administrator_reactivate_inactive_patient_floor",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "administrator_reactivate_inactive_patient_ceiling",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "hcp_edit_active_patient_floor",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "hcp_edit_active_patient_ceiling",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "administrator_create_lhcp_floor",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "administrator_create_lhcp_ceiling",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "administrator_create_emergency_responder_floor",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "administrator_create_emergency_responder_ceiling",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "administrator_create_lab_technician_floor",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "administrator_create_lab_technician_ceiling",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "administrator_create_public_health_agent_floor",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "administrator_create_public_health_agent_ceiling",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "lhcp_create_uap_floor",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "lhcp_create_uap_ceiling",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "administrator_assign_lhcp_credentials_floor",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "administrator_assign_lhcp_credentials_ceiling",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "administrator_set_inactivity_period_floor",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "administrator_set_inactivity_period_ceiling",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "administrator_assign_listed_hospital_floor",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "administrator_assign_listed_hospital_ceiling",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "patient_view_lhcps_floor",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "patient_view_lhcps_ceiling",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "patient_add_provider_floor",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "patient_add_provider_ceiling",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "patient_designate_lhcp_floor",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "patient_designate_lhcp_ceiling",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "patient_undesignate_lhcp_floor",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "patient_undesignate_lhcp_ceiling",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "hcp_editPersonalHealthInformation_selected_active_patient_floor",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "hcp_editPersonalHealthInformation_selected_active_patient_ceiling",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "hcp_editImmunization_selected_active_patient_floor",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "hcp_editImmunization_selected_active_patient_ceiling",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "hcp_editFamilyHistory_selected_active_patient_floor",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "hcp_editFamilyHistory_selected_active_patient_ceiling",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "hcp_documentOfficeVisit_selected_active_patient_floor",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "hcp_documentOfficeVisit_selected_active_patient_ceiling",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "hcp_editOfficeVisit_selected_active_patient_floor",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "hcp_editOfficeVisit_selected_active_patient_ceiling",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "hcp_addPersonalRepresentative_selected_active_patient_floor",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "hcp_addPersonalRepresentative_selected_active_patient_ceiling",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "hcp_removePersonalRepresentative_selected_active_patient_floor",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "hcp_removePersonalRepresentative_selected_active_patient_ceiling",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "uap_enterDemographicInformation_selected_active_patient_floor",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "uap_enterDemographicInformation_selected_active_patient_ceiling",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "uap_editDemographicInformation_selected_active_patient_floor",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "uap_editDemographicInformation_selected_active_patient_ceiling",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "uap_view_medical_record_floor",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "uap_view_medical_record_ceiling",
+    "action": "approve",
+    "reason": "Manual HITL property review: matches the selected iTrust ACRE requirements slice.",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  }
+]

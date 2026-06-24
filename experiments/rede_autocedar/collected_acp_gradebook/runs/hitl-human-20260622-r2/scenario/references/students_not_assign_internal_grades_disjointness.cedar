@@ -1,0 +1,1 @@
+permit (principal, action == Action::"assignInternalGrade", resource) when { !(principal in Student::"Student") && resource is InternalGrade };

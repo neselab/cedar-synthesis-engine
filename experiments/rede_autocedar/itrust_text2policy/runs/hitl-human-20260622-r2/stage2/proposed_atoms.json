@@ -1,0 +1,83 @@
+[
+  {
+    "name": "hcp_can_create_patient",
+    "rationale": "The specification explicitly grants HCPs the ability to create patients, so synthesis must include a positive permission rather than satisfying the model with only denials or unrelated role checks. The request is scoped to an active session for the acting HCP because the schema represents actions through sessions and the spec says authorization occurs through role-based entry into iTrust.",
+    "plain_english_summary": "An HCP with an active session for that HCP can create a patient.",
+    "source_excerpt": "\u201cAn HCP can create a patient and enter the patient as a new user of the system.\u201d / \u201cAn HCP creates patients.\u201d",
+    "constraint_type": "floor",
+    "action": "createPatient",
+    "principal_types": [
+      "Hcp"
+    ],
+    "resource_types": [
+      "Patient"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"createPatient\", resource) when { context.session.user == principal && context.session.isActive };",
+    "examples_adversarial": [],
+    "alternatives_considered": [
+      {
+        "label": "role_only_create_patient_floor",
+        "interpretive_choice": "Permit any HCP to create a patient without checking the session context.",
+        "cedar_text": "permit (principal, action == Action::\"createPatient\", resource);"
+      }
+    ],
+    "symbolic_verified": false,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: FAILED (encoding is vacuous (always denies))",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "create_patient_requires_active_own_session",
+    "rationale": "The approved createPatient floor permits HCP creation only when the request is tied to an active session for that HCP. The specification also states that after inactivity authorization is disabled, so this session boundary must be enforced as a safety ceiling rather than only appearing in the positive workflow.",
+    "plain_english_summary": "An HCP must not be permitted to create a patient unless the request uses an active session belonging to that HCP.",
+    "source_excerpt": "\u201cElectronic sessions must terminate after the configured inactivity period; after the inactivity limit is exceeded, all authorization is disabled.\u201d",
+    "constraint_type": "ceiling",
+    "action": "createPatient",
+    "principal_types": [
+      "Hcp"
+    ],
+    "resource_types": [
+      "Patient"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"createPatient\", resource) when { context.session.user == principal && context.session.isActive };",
+    "examples_adversarial": [
+      {
+        "description": "An HCP attempts to create a patient using an inactive or expired session. A policy that only checks the HCP role would over-permit this request.",
+        "request_dict": {},
+        "decision_under_chosen": "deny",
+        "decisions_under_alternatives": {},
+        "diagnostic_for": [
+          "missing_active_session_boundary",
+          "role_only_overpermission"
+        ]
+      }
+    ],
+    "alternatives_considered": [
+      {
+        "label": "role_only_hcp_create_patient",
+        "interpretive_choice": "Permit any HCP to create patients without checking the session. Rejected because the spec says authorization is disabled after the inactivity limit and the approved floor already scopes the workflow to an active session for the principal.",
+        "cedar_text": "permit (principal, action == Action::\"createPatient\", resource);"
+      }
+    ],
+    "symbolic_verified": false,
+    "symbolic_verification_log": [],
+    "intent_acknowledged_by_user": false,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  }
+]

@@ -238,6 +238,49 @@ def test_consistent_floor_passes_joint_consistency(
     assert floor.symbolic_verified is True
 
 
+@requires_solvers
+def test_disjointness_does_not_fail_against_raw_unpatched_floor(
+    schema_path: str,
+    workdir: Path,
+) -> None:
+    """Disjointness patches same-action floors during plan compilation.
+
+    Per-atom verification should not compare the raw floor against the raw
+    disjointness ceiling, because that reports a false inconsistency before the
+    §8.8 patch is applied.
+    """
+    floor = _owner_must_read_floor()
+    symbolic_verify_atom(floor, schema_path, prior_atoms=[], workdir=workdir)
+    assert floor.symbolic_verified
+
+    disjointness = PropertyAtom(
+        name="public_read_disjointness",
+        rationale="public resources excluded from this path",
+        plain_english_summary="Public resources are excluded from this read path.",
+        source_excerpt="Public resources cannot be read through this path.",
+        constraint_type="disjointness",
+        action="read",
+        principal_types=["User"],
+        resource_types=["Resource"],
+        reference_cedar=(
+            'permit (principal is User, action == Action::"read", resource is Resource)\n'
+            "when { !(resource.isPublic) };\n"
+        ),
+        disjoint_with="public_read_path",
+        disjoint_target_body="resource.isPublic",
+    )
+
+    result = symbolic_verify_atom(
+        disjointness,
+        schema_path,
+        prior_atoms=[floor],
+        workdir=workdir,
+    )
+
+    assert result.all_passed, result.log_lines()
+    assert not any(c.name.startswith("joint-consistency") for c in result.checks)
+
+
 def test_run_symcc_retries_without_cvc5_path_when_cedar_rejects_flag(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

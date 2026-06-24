@@ -1,0 +1,394 @@
+[
+  {
+    "atom_name": "hcp_can_create_patient",
+    "decision": "accept",
+    "reason": "The atom captures an explicit positive authorization from the source: HCPs may create patients. It is not implied by the Cedar schema's appliesTo declaration, and no stricter approved atom already covers it. The omitted name/email and credential/MID constraints are separate field-level lifecycle restrictions that should be handled by separate atoms rather than blocking this basic create-patient floor.",
+    "tags": [
+      "positive-floor",
+      "source-supported",
+      "not-schema-implied"
+    ]
+  },
+  {
+    "atom_name": "hcp_cannot_view_patient_credentials",
+    "decision": "repair",
+    "reason": "The source requirement is materially useful, but the proposed atom uses `Credential.hasPassword` and `hasSecurityQuestion` as proxies for viewing the actual password/security-question contents. The schema does not expose a field/action/context boundary for the specific credential component being viewed, so denying `viewCredential` for any patient credential containing those components is broader than the source requirement and may also block viewing non-sensitive credential metadata such as MID. Repair by adding or using an explicit password/security-question component boundary before forming the disjointness property; also express the property as a prohibition target rather than a permissive Cedar rule for the complement.",
+    "tags": [
+      "schema-gap",
+      "missing-credential-component-boundary",
+      "too-broad",
+      "polarity-repair"
+    ]
+  },
+  {
+    "atom_name": "hcp_cannot_view_patient_password_or_security_question",
+    "decision": "repair",
+    "reason": "The source requirement is materially useful and the schema now exposes the credential-component boundary needed to target Password and SecurityQuestion for patient-owned credentials. However, the proposed reference Cedar is a complement permit rule: it would affirmatively permit HCPs to view all non-sensitive credential components and non-patient credentials, which is broader than the negative source requirement. Repair the atom as a pure disjointness/prohibition property whose forbidden target is HCP + viewCredential + Credential where resource.user is Patient and context.component is Password or SecurityQuestion, without encoding the complement as an allow rule.",
+    "tags": [
+      "polarity-repair",
+      "overbroad-complement-permit",
+      "credential-component-boundary-present"
+    ]
+  },
+  {
+    "atom_name": "hcp_forbidden_view_patient_sensitive_credential_components",
+    "decision": "repair",
+    "reason": "The atom targets a materially useful negative requirement and now includes the needed owner and credential-component boundaries: HCP, viewCredential, Credential whose user is a Patient, and component Password or SecurityQuestion. However, the reference_cedar is still a complement permit rule that would affirmatively allow HCPs to view all credential components except the forbidden patient password/security-question case. For a disjointness/prohibition atom, the property should be stated only as the forbidden target body, not as a permit for the complement. Repair by removing the complement permit and expressing the disjointness target directly using `principal is HCP && resource.user is Patient && (context.component == Password || context.component == SecurityQuestion)`.",
+    "tags": [
+      "polarity-repair",
+      "overbroad-complement-permit",
+      "credential-component-boundary-present"
+    ]
+  },
+  {
+    "atom_name": "hcp_forbidden_view_patient_password_or_security_question",
+    "decision": "repair",
+    "reason": "The source requirement is materially useful and the atom includes the needed boundaries: HCP principal, viewCredential action, Credential resource owned by a Patient, and context.component limited to Password or SecurityQuestion. However, the reference_cedar is still a complement permit rule: it would affirmatively permit HCP credential views outside the forbidden patient password/security-question case, which is broader than the negative source requirement and repeats the polarity problem in prior rejected proposals. Repair by removing the complement permit and expressing only the disjointness/prohibition target body, e.g. principal is HCP && resource.user is Patient && (context.component == CredentialComponent::\"Password\" || context.component == CredentialComponent::\"SecurityQuestion\").",
+    "tags": [
+      "polarity-repair",
+      "overbroad-complement-permit",
+      "credential-component-boundary-present",
+      "duplicate-prior-repair-issue"
+    ]
+  },
+  {
+    "atom_name": "administrator_can_create_lhcp",
+    "decision": "accept",
+    "reason": "The atom captures a distinct positive authorization from the source: administrators may create LHCP users. It is not redundant with the approved HCP patient-creation floor and is not merely schema-implied, since the schema's appliesTo only constrains action typing and does not grant permission. The proposed floor is tightly scoped to the named principal, action, and resource in the source excerpt; additional administrator obligations such as specifying LHCP specialty or assigning hospitals are separate requirements and need not be bundled into this basic creation floor.",
+    "tags": [
+      "materially-useful",
+      "tightly-scoped",
+      "not-duplicate",
+      "not-schema-implied"
+    ]
+  },
+  {
+    "atom_name": "administrator_can_create_emergency_responder",
+    "decision": "accept",
+    "reason": "The atom is a materially useful floor property directly supported by the source sentence allowing administrators to create emergency responders. It is not covered by the existing approved administrator_can_create_lhcp atom, and it is not merely restating the schema because it asserts the intended permit for a distinct administrator creation workflow. The source excerpt does not name additional lifecycle, ownership, network, authentication, or conflict boundaries for creating emergency responders, so the proposed principal/action/resource scope is appropriately tight.",
+    "tags": [
+      "useful-floor",
+      "distinct-from-approved",
+      "source-supported",
+      "tightly-scoped"
+    ]
+  },
+  {
+    "atom_name": "administrator_can_create_public_health_agent",
+    "decision": "accept",
+    "reason": "The atom captures a distinct positive requirement from the source: administrators may create public health agents. It is not yet covered by an approved atom; the existing approved creation floors cover only LHCPs and emergency responders. The schema has a specific createPublicHealthAgent action with Administrator principal and PublicHealthAgent resource, and the source excerpt does not name additional lifecycle, ownership, network, authentication, or conflict boundaries for this permission.",
+    "tags": [
+      "materially-useful",
+      "distinct-from-approved",
+      "tightly-scoped",
+      "schema-supported"
+    ]
+  },
+  {
+    "atom_name": "lhcp_can_create_uap",
+    "decision": "accept",
+    "reason": "The atom captures a distinct, explicitly stated positive requirement that an LHCP can create UAP users. It is not duplicative of approved atoms, is not implied by any stricter approved property, and the schema exposes a direct action/principal/resource boundary for this workflow with no additional source condition omitted.",
+    "tags": [
+      "material-positive-floor",
+      "tightly-scoped",
+      "not-duplicate"
+    ]
+  },
+  {
+    "atom_name": "hcp_can_edit_patient",
+    "decision": "repair",
+    "reason": "The positive HCP edit requirement is materially useful and not covered by approved atoms, but the proposed floor is too broad. The source scopes editing to patient data according to the data format, and the adjacent requirement explicitly excludes editing the patient's MID. The schema's `editPatient` action has no context/resource boundary for data-format validity or for the specific patient field being edited, so a blanket HCP+editPatient+Patient permit could cover MID or invalid-format edits. Repair by adding/using explicit editable-field and data-format-validity boundaries, or otherwise decomposing the property to an exposed narrower hook such as demographic information if that is the intended editable patient data.",
+    "tags": [
+      "schema-gap",
+      "missing-editable-patient-field-boundary",
+      "missing-data-format-validity-boundary",
+      "too-broad"
+    ]
+  },
+  {
+    "atom_name": "hcp_can_edit_valid_non_mid_patient_data",
+    "decision": "accept",
+    "reason": "The atom is materially useful and tightly scoped to the previously missing boundaries now exposed by the schema: HCP principal, editPatient action, Patient resource, valid data format, and exclusion of the MID field. It is not redundant with approved atoms and avoids the prior overbroad HCP edit-patient floor. The MID non-editability ceiling should still be represented separately as a prohibition atom, but this floor is a valid decomposition of the positive HCP edit workflow for valid non-MID patient data.",
+    "tags": [
+      "materially-useful",
+      "properly-scoped",
+      "data-format-boundary-present",
+      "mid-exclusion-boundary-present",
+      "positive-floor"
+    ]
+  },
+  {
+    "atom_name": "patient_mid_not_editable",
+    "decision": "repair",
+    "reason": "The MID non-editability requirement is materially useful and is not implied by the approved non-MID edit floor, because a candidate policy could still add a separate MID-edit permit. The schema exposes the needed field boundary via context.patientField. However, the proposed reference_cedar is again a complement permit rule: it would affirmatively permit HCPs to edit every non-MID patient field and, by omitting context.isDataFormatValid, would allow invalid-format edits beyond the source requirement. Repair the atom as a pure disjointness/prohibition target using the stated forbidden body, e.g. HCP + editPatient + Patient where context.patientField == \"MID\", without encoding a permit for the complement.",
+    "tags": [
+      "polarity-repair",
+      "overbroad-complement-permit",
+      "missing-data-format-validity-boundary-in-complement",
+      "mid-field-boundary-present"
+    ]
+  },
+  {
+    "atom_name": "hcp_mid_edit_forbidden",
+    "decision": "repair",
+    "reason": "The underlying MID non-editability requirement is materially useful and not implied by the approved valid non-MID edit floor, because a policy could still add a separate MID-edit permit. The schema exposes the needed boundary via context.patientField, and the proposed disjoint_target_body is appropriately scoped. However, the reference_cedar is still a complement permit rule: it would affirmatively permit HCP editPatient requests for all non-MID patient fields, including invalid-format edits, which exceeds the negative source requirement and repeats the prior polarity issue. Repair by expressing this as a pure disjointness/prohibition target only: HCP principal, editPatient action, Patient resource, and context.patientField == \"MID\", without a permit for the complement.",
+    "tags": [
+      "polarity-repair",
+      "overbroad-complement-permit",
+      "missing-data-format-validity-boundary-in-complement",
+      "mid-field-boundary-present",
+      "duplicate-prior-repair-issue"
+    ]
+  },
+  {
+    "atom_name": "hcp_mid_edit_prohibition_target",
+    "decision": "repair",
+    "reason": "The MID non-editability requirement is materially useful and not implied by the approved valid non-MID edit floor, because a policy could still separately permit MID edits. The schema exposes the needed boundary through `context.patientField`, and the proposed `disjoint_target_body` is correctly scoped to HCP + editPatient + Patient where the field is MID. However, the `reference_cedar` is still a complement permit rule: it would affirmatively permit HCP edits to all non-MID patient fields and omits the source-required data-format validity condition for those permitted edits. Repair by removing the complement permit and expressing this atom only as the disjointness/prohibition target body: `principal is HCP && resource is Patient && context.patientField == \"MID\"`.",
+    "tags": [
+      "polarity-repair",
+      "overbroad-complement-permit",
+      "missing-data-format-validity-boundary-in-complement",
+      "mid-field-boundary-present",
+      "duplicate-prior-repair-issue"
+    ]
+  },
+  {
+    "atom_name": "hcp_edit_patient_limited_to_valid_non_mid_data",
+    "decision": "accept",
+    "reason": "The atom is materially useful as a same-action ceiling complementing, but not implied by, the already-approved floor. It uses schema-exposed boundaries for both source constraints: `context.isDataFormatValid` for data-format compliance and `context.patientField != \"MID\"` for MID non-editability. It is tightly scoped to HCP `editPatient` requests on Patient resources and does not rely on a proxy or omit a named boundary.",
+    "tags": [
+      "useful-ceiling",
+      "not-duplicate-floor",
+      "data-format-boundary-present",
+      "mid-field-boundary-present",
+      "tightly-scoped"
+    ]
+  },
+  {
+    "atom_name": "user_can_login_with_own_credentials",
+    "decision": "repair",
+    "reason": "The login workflow is materially useful, but the proposed floor accepts a proxy for the actual authentication requirement. The source says a user enters their MID and password to gain role-based entry, which requires a boundary for submitted MID/password matching or an authentication-success predicate. The schema exposes Credential.user and hasPassword, but hasPassword only says a password exists; it does not prove the user supplied the correct password or MID. Do not accept the own-credential/hasPassword proxy as equivalent. Repair the schema/property with an explicit submitted-MID and password-verification/authentication-success boundary, while retaining the own-session and own-credential ownership constraints if appropriate.",
+    "tags": [
+      "schema-gap",
+      "missing-submitted-mid-boundary",
+      "missing-password-verification-boundary",
+      "authentication-boundary",
+      "proxy-hasPassword"
+    ]
+  },
+  {
+    "atom_name": "user_can_login_with_verified_own_credentials",
+    "decision": "accept",
+    "reason": "The atom repairs the prior authentication-boundary issue by using the schema-exposed submitted MID, password verification, credential ownership, credential MID, and session ownership hooks. It is materially useful, tightly scoped to the successful login floor from the source requirement, and is not merely restating principal/resource types or duplicating an approved atom.",
+    "tags": [
+      "authentication-boundary-present",
+      "submitted-mid-boundary-present",
+      "password-verification-boundary-present",
+      "own-credential-boundary",
+      "own-session-boundary"
+    ]
+  },
+  {
+    "atom_name": "login_limited_to_verified_own_credentials",
+    "decision": "accept",
+    "reason": "The atom is a materially useful same-action ceiling that is not implied by the already-approved login floor. It uses the schema-exposed authentication and ownership boundaries named by the source requirement: User principal, Session resource, principal-owned session, principal-owned credential, submitted MID matching the credential MID, and verified password. It is tightly scoped to the login action and does not rely on the prior rejected hasPassword proxy.",
+    "tags": [
+      "authentication-boundary",
+      "ownership-boundary",
+      "submitted-mid-boundary-present",
+      "password-verification-boundary-present",
+      "not-implied-by-floor"
+    ]
+  },
+  {
+    "atom_name": "user_can_request_own_password_change",
+    "decision": "accept",
+    "reason": "The atom is materially useful and tightly scoped to the password-change request requirement. It is not merely restating the action schema because it adds the credential ownership boundary `resource.user == principal`, which matches the source phrasing that the user requests a change to their own password and avoids overbroad requests against another user's credential. No approved atom already covers `requestPasswordChange`.",
+    "tags": [
+      "useful-floor",
+      "ownership-boundary-present",
+      "not-duplicate"
+    ]
+  },
+  {
+    "atom_name": "password_change_limited_to_own_credential",
+    "decision": "accept",
+    "reason": "The atom adds a materially useful same-action ceiling that is not implied by the approved own-credential floor: a policy could otherwise also permit password-change requests against other users' credentials. The schema exposes the relevant ownership boundary through `Credential.user`, and the atom is tightly scoped to `requestPasswordChange` by `User` principals on `Credential` resources with `resource.user == principal`.",
+    "tags": [
+      "useful-ceiling",
+      "ownership-boundary-present",
+      "not-implied-by-floor"
+    ]
+  },
+  {
+    "atom_name": "administrator_can_assign_lhcp_to_hospital",
+    "decision": "accept",
+    "reason": "The atom captures a distinct source requirement not covered by the approved administrator creation atoms: administrators may assign an LHCP to hospitals and choose the hospital. The validated schema exposes the needed hook with action assignLHCPToHospital, LHCP resource, Administrator principal, and context.hospital: Hospital. The proposed floor is tightly scoped to that workflow and includes the chosen-hospital boundary; the 'multiple hospitals' aspect is represented by repeated assignment to an LHCP whose hospitals field is a set, so no additional per-request boundary is required for this floor.",
+    "tags": [
+      "distinct-requirement",
+      "hospital-assignment-boundary-present",
+      "chosen-hospital-context-present",
+      "not-duplicate"
+    ]
+  },
+  {
+    "atom_name": "user_can_logout_own_session",
+    "decision": "repair",
+    "reason": "The logout workflow is materially useful and not redundant, and the schema exposes the relevant ownership and authentication lifecycle hooks. However, the proposed floor permits logout for any authenticated own session without respecting the source requirement that after the inactivity limit is exceeded, all authorization is disabled. Since `Session.inactivityLimitExceeded` is schema-expressible, repair the atom to include the inactivity boundary, e.g. require `resource.user == principal`, `resource.isAuthenticated`, and `!resource.inactivityLimitExceeded`, or pair it with an explicit ceiling that disables authorization for sessions whose inactivity limit has been exceeded.",
+    "tags": [
+      "missing-inactivity-boundary",
+      "lifecycle-boundary-present",
+      "too-broad-floor"
+    ]
+  },
+  {
+    "atom_name": "user_can_logout_active_own_session",
+    "decision": "accept",
+    "reason": "The atom is materially useful, not redundant with approved atoms, and is tightly scoped to the logout lifecycle requirement. It uses the schema-exposed ownership, authenticated-session, and inactivity-limit boundaries rather than a proxy, and the floor does not require authorization after the source-stated inactivity cutoff where all authorization is disabled.",
+    "tags": [
+      "lifecycle-boundary-present",
+      "own-session-boundary",
+      "inactivity-boundary-present",
+      "not-redundant"
+    ]
+  },
+  {
+    "atom_name": "logout_limited_to_active_own_session",
+    "decision": "accept",
+    "reason": "The atom is a materially useful ceiling complement to the approved logout floor and is not implied by it. It preserves the named lifecycle and ownership boundaries present in the source and schema: own session, authenticated session, and inactivity-limit-not-exceeded. The schema exposes these hooks directly via Session.user, Session.isAuthenticated, and Session.inactivityLimitExceeded, and the proposed ceiling is tightly scoped to the logout action rather than approximating a broader session rule.",
+    "tags": [
+      "useful-ceiling",
+      "not-redundant-with-floor",
+      "ownership-boundary-present",
+      "authentication-boundary-present",
+      "inactivity-boundary-present",
+      "tightly-scoped"
+    ]
+  },
+  {
+    "atom_name": "user_can_close_application_active_own_session",
+    "decision": "accept",
+    "reason": "The atom covers a distinct source workflow not already covered by the approved logout atoms: ending an authenticated session by closing the application. It is tightly scoped to the exposed lifecycle and ownership boundaries in the schema: User principal, closeApplication action, Session resource, own session, authenticated session, and inactivity limit not exceeded. It does not merely restate principal/resource typing and it respects the source requirement that authorization is disabled after inactivity is exceeded.",
+    "tags": [
+      "materially-useful",
+      "distinct-action",
+      "lifecycle-boundary-present",
+      "ownership-boundary-present",
+      "inactivity-boundary-present"
+    ]
+  },
+  {
+    "atom_name": "close_application_limited_to_active_own_session",
+    "decision": "accept",
+    "reason": "The atom is a materially useful ceiling counterpart to the already approved closeApplication floor and is not implied by that floor: a candidate policy could otherwise add broader closeApplication permits. It is tightly scoped to the source lifecycle boundaries that are schema-expressible: User principal, Session resource, own session ownership, authenticated session state, and the inactivity-limit authorization cutoff. It mirrors the approved logout ceiling for the parallel session-ending action and does not introduce a proxy or omit a named source condition.",
+    "tags": [
+      "useful-ceiling",
+      "lifecycle-boundary-present",
+      "ownership-boundary-present",
+      "inactivity-boundary-present",
+      "not-implied-by-floor"
+    ]
+  },
+  {
+    "atom_name": "administrator_can_set_inactivity_period_length",
+    "decision": "accept",
+    "reason": "The atom captures a distinct source requirement not covered by approved atoms: administrators may set the inactivity period length. The validated schema has a direct action and resource hook (`setInactivityPeriodLength` on `SystemConfiguration`), and the source excerpt does not name additional constraints such as value range, ownership, session state, or process lifecycle conditions. The floor is tightly scoped to the administrator principal and system configuration resource rather than using a proxy.",
+    "tags": [
+      "useful-floor",
+      "not-duplicate",
+      "direct-schema-hook",
+      "tightly-scoped"
+    ]
+  },
+  {
+    "atom_name": "patient_can_view_own_provider_history",
+    "decision": "accept",
+    "reason": "The atom is materially useful and tightly scoped to the source requirement. It covers an uncovered patient workflow, uses the schema's dedicated `viewProviderHistory` action, and includes the necessary ownership boundary by requiring the patient principal to be the same Patient resource whose provider history is viewed. The visited/designated LHCP content is represented by the purpose of the action and Patient fields, and the proposed floor does not overclaim a broader permission.",
+    "tags": [
+      "useful-floor",
+      "own-patient-boundary",
+      "not-duplicate",
+      "provider-history"
+    ]
+  },
+  {
+    "atom_name": "provider_history_limited_to_own_patient",
+    "decision": "accept",
+    "reason": "The atom adds a materially useful same-action ceiling that is not implied by the approved floor: a policy could permit a patient to view their own provider history while also permitting access to other patients' provider histories. The source is explicitly patient-specific, and the schema exposes the relevant ownership boundary through `principal == resource` on `viewProviderHistory` with both principal and resource as `Patient`. The atom is tightly scoped to that boundary and does not rely on a proxy or omit a schema-expressible lifecycle/ownership condition.",
+    "tags": [
+      "ownership-boundary-present",
+      "useful-ceiling",
+      "not-redundant-with-floor",
+      "patient-specific-access"
+    ]
+  },
+  {
+    "atom_name": "patient_can_add_provider_to_own_list",
+    "decision": "repair",
+    "reason": "The provider-list workflow is materially useful and not already covered by approved atoms, and the proposed atom correctly includes the own-provider-list ownership boundary. However, the source requirement specifically scopes the add operation to adding a provider by searching by name, specialty, and optionally zip code. The schema exposes search inputs in context but lacks provider attributes needed to validate that the selected provider actually matched the search terms: HCP has no name, specialty, or zip-code fields, and only LHCP has specialty. Accepting a floor that ignores the search-match boundary would permit adding any HCP to the patient's own provider list, which is broader than the source workflow. Repair by adding schema support for provider search-match semantics or provider name/specialty/zip attributes across the relevant HCP/LHCP provider set, then include the selected-provider-matches-search boundary in the property.",
+    "tags": [
+      "schema-gap",
+      "missing-provider-name-boundary",
+      "missing-provider-zip-code-boundary",
+      "missing-provider-search-match-boundary",
+      "too-broad-floor",
+      "ownership-boundary-present"
+    ]
+  },
+  {
+    "atom_name": "patient_can_add_matching_provider_to_own_list",
+    "decision": "accept",
+    "reason": "The atom is materially useful and not redundant with approved provider-history atoms. It repairs the prior too-broad provider-list floor by including the patient-owned ProviderList boundary and the source-named search-match boundaries for provider name, specialty, and optional zip code. The validated schema now exposes these hooks on HCP/context, and HCP covers LHCP as a subtype, so this is tightly scoped to the stated LHCP/HCP provider-list workflow.",
+    "tags": [
+      "provider-list",
+      "ownership-boundary-present",
+      "search-match-boundary-present",
+      "optional-zip-boundary-present",
+      "not-duplicate"
+    ]
+  },
+  {
+    "atom_name": "add_provider_limited_to_matching_own_list",
+    "decision": "accept",
+    "reason": "The atom is a materially useful ceiling paired with the already-approved floor and is not schema-implied by that floor. It preserves the source-scoped ownership boundary (`resource.patient == principal`) and the provider-search boundaries named in the requirement: selected provider, name match, specialty match, and optional zip-code match. The validated schema exposes the needed hooks (`ProviderList.patient`, `context.provider`, HCP name/specialty/zipCode, and search context fields), so no schema gap or proxy issue is present.",
+    "tags": [
+      "useful-ceiling",
+      "ownership-boundary-present",
+      "provider-search-match-boundary-present",
+      "not-implied-by-floor"
+    ]
+  },
+  {
+    "atom_name": "patient_can_designate_lhcp_for_self",
+    "decision": "accept",
+    "reason": "The atom is materially useful and tightly scoped to the patient-specific DLHCP designation requirement. It uses the schema's explicit designation action, LHCP resource boundary, and context.patient self-ownership boundary, avoiding the weak proxy of treating DLHCP as a global principal type. It is not redundant with any approved atom and does not omit a source-named condition expressible in the schema.",
+    "tags": [
+      "patient-specific-designation-boundary",
+      "ownership-boundary-present",
+      "dlhcp-modeled-as-relationship",
+      "not-duplicate"
+    ]
+  },
+  {
+    "atom_name": "designate_dlhcp_limited_to_self",
+    "decision": "accept",
+    "reason": "The atom adds a materially useful same-action ceiling that is not implied by the approved floor: a broader policy could otherwise permit a Patient to designate an LHCP as a DLHCP for some other patient. It is tightly scoped to the source phrase 'for that patient' and uses the schema-exposed ownership boundary `context.patient == principal` with the correct Patient principal and LHCP resource/action boundaries.",
+    "tags": [
+      "useful-ceiling",
+      "ownership-boundary-present",
+      "not-redundant",
+      "tightly-scoped"
+    ]
+  },
+  {
+    "atom_name": "patient_can_undesignate_lhcp_for_self",
+    "decision": "repair",
+    "reason": "The undesignation workflow is materially useful and not covered by the approved designation atoms, and the schema exposes the self-patient boundary. However, the proposed floor permits a patient to undesignate any LHCP for themselves without requiring that the LHCP is currently designated as that patient's DLHCP. The source action is specifically to undesignate an LHCP as being a DLHCP for that patient, so the property should use the existing patient-specific designation relationship exposed by `Patient.designatedProviders`, e.g. require `context.patient == principal` and `resource in principal.designatedProviders` or the equivalent context-patient relationship. This is a property repair, not a schema gap.",
+    "tags": [
+      "missing-existing-dlhcp-designation-boundary",
+      "relationship-boundary-present",
+      "too-broad-floor",
+      "ownership-boundary-present"
+    ]
+  }
+]

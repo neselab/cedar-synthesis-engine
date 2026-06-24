@@ -1,0 +1,14 @@
+[
+  {
+    "atom_name": "external_grade_assignment_requires_faculty",
+    "stage": "stage2_property_review",
+    "reason": "Stage 2 decomposition critic repair: The atom turns the source's 'faculty take final responsibility for external grades' and one-way faculty assignment permissions into a broad 'only faculty may assign external grades' ceiling. That may be a useful responsibility/ownership boundary, but the validated schema has no explicit hook for final responsibility or responsible faculty ownership, and using assignExternalGrade membership as a proxy would overstate the source. Repair should either cite a source that explicitly says external-grade assignment is faculty-only, or add/schema-repair a representation of the external-grade final-responsibility boundary before proposing a property over it.",
+    "critic_tags": [
+      "missing-final-responsibility-boundary",
+      "proxy-for-ownership-boundary",
+      "schema-gap",
+      "too-broad-for-source"
+    ],
+    "required_action": "repair_schema_before_synthesis"
+  }
+]

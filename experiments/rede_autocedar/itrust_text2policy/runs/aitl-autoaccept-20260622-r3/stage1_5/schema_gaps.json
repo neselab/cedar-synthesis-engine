@@ -1,0 +1,28 @@
+[
+  {
+    "atom_name": "hcp_can_edit_patient_data",
+    "stage": "stage2_property_review",
+    "reason": "Stage 2 decomposition critic repair: The positive HCP edit floor is materially relevant, but the source requirement includes a named field-level boundary: the patient's MID must not be editable. The proposed atom permits editPatientData for any HCP/Patient without any way to exclude MID edits. The validated schema/action lacks an edited-field or data-field context hook for editPatientData, so this cannot be repaired as a scoped property without a schema change.",
+    "critic_tags": [
+      "field-level-edit-scope",
+      "mid-not-editable",
+      "missing-boundary",
+      "schema-gap"
+    ],
+    "required_action": "repair_schema_before_synthesis"
+  },
+  {
+    "atom_name": "admin_can_assign_lhcp_to_nonempty_chosen_hospitals",
+    "stage": "stage2_property_review",
+    "reason": "Stage 2 decomposition critic repair: The atom targets a real uncovered requirement and uses the existing context.hospitals payload, but it replaces the source's named 'multiple hospitals' boundary with a weaker nonempty-set proxy. `context.hospitals.containsAny(context.hospitals)` only distinguishes empty from nonempty and does not express that the administrator may assign an LHCP to multiple hospitals. If the intended property is about the chosen/requested hospital payload, repair it without inventing a nonempty-only boundary; if the property must enforce true multiplicity, the validated schema/Cedar hook lacks a cardinality/count boundary for the hospital set.",
+    "critic_tags": [
+      "chosen-hospital-set",
+      "hospital-set-cardinality",
+      "missing-boundary",
+      "multiple-hospitals",
+      "nonempty-proxy",
+      "schema-gap"
+    ],
+    "required_action": "repair_schema_before_synthesis"
+  }
+]

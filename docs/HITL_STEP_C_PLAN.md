@@ -42,6 +42,10 @@ Out of scope (Step D and beyond):
 
 ### 2.1 Model choices
 
+Current implementation note: this plan predates the Codex-provider pivot.
+AutoCedar now defaults all live model-backed steps to Codex OAuth with
+`gpt-5.5`; Anthropic is an explicit opt-in provider only.
+
 Default model: **`claude-opus-4-7`** per the `claude-api` skill's
 non-negotiable default ("never downgrade for cost — that's the user's
 decision, not ours"). The schema-atomization task is a multi-step

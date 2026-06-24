@@ -1,0 +1,39 @@
+[
+  {
+    "atom_name": "patient_view_own_access_log_floor",
+    "decision": "accept",
+    "reason": "The atom captures a concrete positive permission from the source: a Patient may view their own AccessLog. It is not merely schema-implied because it adds the ownership boundary via resource.patient, the authenticated active patient-session boundary via context.session, and consistency with the action's context.patient. The represented-person case is a distinct workflow and can be covered by a separate atom, so omitting it here does not make this own-record floor too broad or incomplete.",
+    "tags": [
+      "useful-floor",
+      "patient-ownership-boundary",
+      "authenticated-session-boundary"
+    ]
+  },
+  {
+    "atom_name": "patient_view_access_log_own_only_ceiling",
+    "decision": "accept",
+    "reason": "The atom is a materially useful same-action ceiling complementing, not duplicating, the approved floor: the floor establishes one permitted own-log case, while this ceiling prevents Patient principals from being over-permitted to access other patients' AccessLog resources through the patient-own path. It is tightly scoped to the source ownership/session boundary and uses schema-exposed hooks: resource.patient, context.patient, and context.session.patientUser/isActive.",
+    "tags": [
+      "ownership-boundary",
+      "same-action-ceiling",
+      "access-log-privacy"
+    ]
+  },
+  {
+    "atom_name": "personal_representative_view_represented_access_log_floor",
+    "decision": "accept",
+    "reason": "The atom covers a distinct, explicitly required represented-patient access-log workflow not covered by the approved patient-own access-log atoms. It is tightly scoped to PersonalRepresentative principals, AccessLog resources, an active personal-representative session owned by the principal, and the patient-specific representation relationship exposed by the schema via representedPatients.",
+    "tags": []
+  },
+  {
+    "atom_name": "personal_representative_view_represented_access_log_floor",
+    "decision": "accept",
+    "reason": "The atom adds a non-duplicative positive floor for the personal-representative access-log workflow that is allowed by the source but not guaranteed by the approved patient-own floor or the combined ceiling. It is tightly scoped to an active personal-representative session, the principal's patient-specific representedPatients relationship, and the requested log's patient.",
+    "tags": [
+      "access-log",
+      "personal-representative",
+      "patient-specific-boundary",
+      "floor"
+    ]
+  }
+]

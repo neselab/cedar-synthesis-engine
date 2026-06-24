@@ -1,0 +1,1 @@
+permit (principal, action == Action::"viewPriorAndDesignatedLhcps", resource) when { context.session.isActive && resource.patient == principal };

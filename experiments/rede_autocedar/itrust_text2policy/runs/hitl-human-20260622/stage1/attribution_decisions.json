@@ -1,0 +1,404 @@
+[
+  {
+    "atom_name": "User",
+    "span_text": "ordinary authenticated user",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "HCP",
+    "span_text": "HCP",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "LHCP",
+    "span_text": "LHCP",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "Administrator",
+    "span_text": "administrator",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "Patient",
+    "span_text": "patient",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "PersonalRepresentative",
+    "span_text": "personal representative",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "UAP",
+    "span_text": "UAP",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "EmergencyResponder",
+    "span_text": "emergency responders",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "PublicHealthAgent",
+    "span_text": "public health agents",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "Hospital",
+    "span_text": "hospitals",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "MedicalRecord",
+    "span_text": "medical records",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "MedicalRecord__patient",
+    "span_text": "their own records and for records of patients for whom the user is a personal representative",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "MedicalRecord__includesFamilyHistory",
+    "span_text": "medical records including family history",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "MedicalRecord__hasPersonalHealthInformation",
+    "span_text": "patient personal health information",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "MedicalRecord__hasImmunizations",
+    "span_text": "immunizations",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "MedicalRecord__hasOfficeVisitInformation",
+    "span_text": "office-visit information",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "DemographicInformation",
+    "span_text": "demographic information",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "DemographicInformation__patient",
+    "span_text": "patient data",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "DemographicInformation__name",
+    "span_text": "Only the patient's name and email are initially provided by the HCP.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "DemographicInformation__email",
+    "span_text": "Only the patient's name and email are initially provided by the HCP.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "Patient__mid",
+    "span_text": "The HCP can edit patient data according to the data format, but the patient's MID must not be editable.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "Credentials",
+    "span_text": "credentials",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "Credentials__user",
+    "span_text": "A user enters their MID and their password to gain role-based entry into iTrust.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "Credentials__mid",
+    "span_text": "A user enters their MID and their password to gain role-based entry into iTrust.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "Credentials__hasPassword",
+    "span_text": "password",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "Credentials__hasSecurityQuestion",
+    "span_text": "security question",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "Session",
+    "span_text": "sessions",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "Session__user",
+    "span_text": "An authenticated session ends when the user logs out or closes the application.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "Session__isActive",
+    "span_text": "after the inactivity limit is exceeded, all authorization is disabled",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "Session__lastActivityAt",
+    "span_text": "Electronic sessions must terminate after the configured inactivity period",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "Session__inactivityPeriodSeconds",
+    "span_text": "The administrator can set the inactivity period length.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "ProviderList",
+    "span_text": "provider lists",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "ProviderList__patient",
+    "span_text": "their provider list",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "ProviderList__providers",
+    "span_text": "A patient can add a LHCP/HCP to their provider list",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "ProviderDesignation",
+    "span_text": "provider designations",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "ProviderDesignation__patient",
+    "span_text": "for that patient",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "ProviderDesignation__provider",
+    "span_text": "A patient can designate any LHCP as a DLHCP for that patient",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "ProviderDesignation__isDesignated",
+    "span_text": "can undesignate any LHCP as a DLHCP for that patient",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "AccessLog",
+    "span_text": "access logs",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "AccessLog__patient",
+    "span_text": "A patient can view the patient's own access log.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "AccessLog__accessorName",
+    "span_text": "The access-log result contains the accessor name, the accessor role relative to the patient, the access timestamp, and the transaction type.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "AccessLog__accessorRoleRelativeToPatient",
+    "span_text": "The access-log result contains the accessor name, the accessor role relative to the patient, the access timestamp, and the transaction type.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "AccessLog__accessTimestamp",
+    "span_text": "The access-log result contains the accessor name, the accessor role relative to the patient, the access timestamp, and the transaction type.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "AccessLog__transactionType",
+    "span_text": "The access-log result contains the accessor name, the accessor role relative to the patient, the access timestamp, and the transaction type.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "LHCP__specialty",
+    "span_text": "The administrator must specify the specialty for a new LHCP.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "LHCP__hospitals",
+    "span_text": "The administrator can assign an LHCP to multiple hospitals and choose the hospitals.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "PersonalRepresentative__representedPatients",
+    "span_text": "patients for whom the user is a personal representative",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "createPatient",
+    "span_text": "An HCP can create a patient and enter the patient as a new user of the system.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "editPatientData",
+    "span_text": "The HCP can edit patient data according to the data format, but the patient's MID must not be editable.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "viewCredentials",
+    "span_text": "The HCP must not enter, edit, or view the patient's security question or password.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "editCredentials",
+    "span_text": "Any user can request a password change.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "createLHCP",
+    "span_text": "An administrator can create LHCPs, emergency responders, and public health agents.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "createEmergencyResponder",
+    "span_text": "An administrator can create LHCPs, emergency responders, and public health agents.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "createPublicHealthAgent",
+    "span_text": "An administrator can create LHCPs, emergency responders, and public health agents.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "assignLHCPToHospital",
+    "span_text": "The administrator can assign an LHCP to multiple hospitals and choose the hospitals.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "createUAP",
+    "span_text": "A LHCP can create UAP users.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "login",
+    "span_text": "Any user can enter their MID and password to gain role-based entry into iTrust.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "logout",
+    "span_text": "An authenticated session ends when the user logs out or closes the application.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "closeApplication",
+    "span_text": "An authenticated session ends when the user logs out or closes the application.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "setInactivityPeriod",
+    "span_text": "The administrator can set the inactivity period length.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "viewProviderList",
+    "span_text": "A patient can view all LHCPs the patient has ever had an office visit with and all LHCPs the patient has designated.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "addProviderToList",
+    "span_text": "A patient can add a LHCP/HCP to their provider list by searching by name, specialty, and optionally zip code.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "designateProvider",
+    "span_text": "A patient can designate any LHCP as a DLHCP for that patient",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "undesignateProvider",
+    "span_text": "can undesignate any LHCP as a DLHCP for that patient",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "viewAccessLog",
+    "span_text": "A patient can view the patient's own access log. The patient can choose a beginning and end date for the access-log period.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "viewMedicalRecord",
+    "span_text": "A patient or personal representative may view medical records including family history.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "seeRecordDetails",
+    "span_text": "The patient or personal representative can see patient personal health information, immunizations, and office visit information for their own records and the records for whom the user is a personal representative.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  }
+]

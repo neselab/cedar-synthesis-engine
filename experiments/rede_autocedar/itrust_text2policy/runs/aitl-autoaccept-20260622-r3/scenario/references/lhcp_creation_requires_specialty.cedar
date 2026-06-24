@@ -1,0 +1,1 @@
+permit (principal, action == Action::"createLHCP", resource) when { principal is Administrator && resource is LHCP && !(resource.specialty == "") };

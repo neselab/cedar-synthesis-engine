@@ -1,0 +1,379 @@
+[
+  {
+    "name": "patient_view_own_access_log_floor",
+    "rationale": "The specification explicitly grants patients the ability to view their own access log. Because no floor atoms have been approved yet, this positive permission must be represented so a synthesized policy cannot satisfy the specification with no permits.",
+    "plain_english_summary": "A patient should be permitted to view the access log for themself during their own active session.",
+    "source_excerpt": "A patient can view their own access log, or the access log for a person for whom they are a personal representative.",
+    "constraint_type": "floor",
+    "action": "viewAccessLog",
+    "principal_types": [
+      "Patient"
+    ],
+    "resource_types": [
+      "AccessLog"
+    ],
+    "reference_cedar": "permit (principal is Patient, action == Action::\"viewAccessLog\", resource is AccessLog) when { context.session.isActive && context.session.user == principal && resource.patient == principal && context.patient == resource.patient };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": false,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: FAILED (encoding is vacuous (always denies))",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": false,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "access_log_subject_scope_ceiling",
+    "rationale": "The approved floor permits a patient to view their own access log, but the same action still needs a safety boundary preventing access-log viewing for unrelated patients. The prose explicitly limits access logs to the patient themself or a person the requester represents, so ownership/representation must be part of the ceiling rather than inferred from principal type.",
+    "plain_english_summary": "Access-log viewing should be permitted only for the patient whose log it is, or for a personal representative of that patient, during the requester\u2019s active session.",
+    "source_excerpt": "A patient can view their own access log, or the access log for a person for whom they are a personal representative.",
+    "constraint_type": "ceiling",
+    "action": "viewAccessLog",
+    "principal_types": [
+      "Patient",
+      "PersonalRepresentative"
+    ],
+    "resource_types": [
+      "AccessLog"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"viewAccessLog\", resource) when { context.session.isActive && context.session.user == principal && context.patient == resource.patient && ((principal is Patient && resource.patient == principal) || (principal is PersonalRepresentative && principal.representedPatients.contains(resource.patient))) };",
+    "examples_adversarial": [
+      {
+        "description": "A patient attempts to view another patient's access log without being that patient's personal representative.",
+        "request_dict": {},
+        "decision_under_chosen": "deny",
+        "decisions_under_alternatives": {},
+        "diagnostic_for": [
+          "Prevents a policy from allowing any Patient to view any AccessLog merely because the action principal type is Patient."
+        ]
+      }
+    ],
+    "alternatives_considered": [
+      {
+        "label": "patient_only_ceiling",
+        "interpretive_choice": "Limit only Patient principals to their own logs and defer personal representatives to a separate ceiling.",
+        "cedar_text": "permit (principal is Patient, action == Action::\"viewAccessLog\", resource) when { context.session.isActive && context.session.user == principal && context.patient == principal && resource.patient == principal };"
+      }
+    ],
+    "symbolic_verified": false,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: FAILED (encoding is vacuous (always denies))",
+      "joint-consistency-with-patient_view_own_access_log_floor: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": false,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "personal_representative_view_represented_access_log_floor",
+    "rationale": "The approved access-log floor covers only a patient viewing their own log. The specification also explicitly grants the positive workflow where a personal representative views the access log of a represented person, and the schema exposes the patient-specific representation boundary via PersonalRepresentative.representedPatients.",
+    "plain_english_summary": "A personal representative should be permitted to view the access log for a patient they represent during their own active session.",
+    "source_excerpt": "A patient can view their own access log, or the access log for a person for whom they are a personal representative.",
+    "constraint_type": "floor",
+    "action": "viewAccessLog",
+    "principal_types": [
+      "PersonalRepresentative"
+    ],
+    "resource_types": [
+      "AccessLog"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"viewAccessLog\", resource) when { context.session.isActive && context.session.user == principal && context.patient == resource.patient && principal.representedPatients.contains(resource.patient) };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": false,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: FAILED (encoding is vacuous (always denies))",
+      "joint-consistency-with-access_log_subject_scope_ceiling: ok",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": false,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "hcp_patient_credential_view_disjointness",
+    "rationale": "The specification explicitly denies HCPs the ability to view a patient's password or security question. This is a sensitive credential-secrecy boundary and should patch any otherwise broad credential-viewing permission so it cannot include those fields for patient accounts.",
+    "plain_english_summary": "An HCP must not be permitted to view a patient's password or security question.",
+    "source_excerpt": "The HCP must not enter, edit, or view the patient's security question or password.",
+    "constraint_type": "disjointness",
+    "action": "viewCredential",
+    "principal_types": [
+      "HCP"
+    ],
+    "resource_types": [
+      "User"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"viewCredential\", resource) when { !(principal is HCP && resource is Patient && (context.credentialField == \"password\" || context.credentialField == \"securityQuestion\")) };",
+    "examples_adversarial": [],
+    "alternatives_considered": [
+      {
+        "label": "active_session_plus_credential_ceiling",
+        "interpretive_choice": "Also require an active session in this credential-secrecy ceiling. That would mix the field-specific denial with a separate session-validity boundary, so this atom stays focused on the explicit credential fields.",
+        "cedar_text": "permit (principal, action == Action::\"viewCredential\", resource) when { context.session.isActive && !(principal is HCP && resource is Patient && (context.credentialField == \"password\" || context.credentialField == \"securityQuestion\")) };"
+      }
+    ],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "sugar-universal: ok (syntactic disjointness sanity check ok)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": "HCP viewing patient password or security question",
+    "disjoint_target_body": "principal is HCP && resource is Patient && (context.credentialField == \"password\" || context.credentialField == \"securityQuestion\")"
+  },
+  {
+    "name": "deactivated_patient_edit_disjointness",
+    "rationale": "The specification explicitly says a deactivated patient cannot be modified. The schema exposes Patient.isActive, so editPatient permissions must be disjoint from inactive patient resources rather than relying only on principal role or session state.",
+    "plain_english_summary": "An inactive/deactivated patient must not be permitted to be edited by an HCP.",
+    "source_excerpt": "A deactivated patient cannot be modified or log into the system and can only be reactivated by an administrator.",
+    "constraint_type": "disjointness",
+    "action": "editPatient",
+    "principal_types": [
+      "HCP"
+    ],
+    "resource_types": [
+      "Patient"
+    ],
+    "reference_cedar": "permit (principal is HCP, action == Action::\"editPatient\", resource is Patient)\nwhen { !(!resource.isActive) };",
+    "examples_adversarial": [],
+    "alternatives_considered": [
+      {
+        "label": "session_only_bound",
+        "interpretive_choice": "Require only an active session for HCP edits, without checking whether the patient resource is active.",
+        "cedar_text": "permit (principal, action == Action::\"editPatient\", resource) when { context.session.isActive };"
+      }
+    ],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: ok",
+      "sugar-universal: ok (syntactic disjointness sanity check ok)"
+    ],
+    "intent_acknowledged_by_user": true,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": "deactivated_patient_modification",
+    "disjoint_target_body": "!resource.isActive"
+  },
+  {
+    "name": "patient_view_own_medical_record_floor",
+    "rationale": "The spec explicitly grants patients access to medical records for their own records. Existing approved atoms cover access logs and selected safety constraints, but not this positive medical-record viewing workflow. The property uses the patient/resource ownership equality exposed by the schema rather than relying on the Patient principal type alone.",
+    "plain_english_summary": "A patient should be permitted to view their own medical record during an active session for themself.",
+    "source_excerpt": "A patient or personal representative can view medical records ... for their own records and for patients they represent.",
+    "constraint_type": "floor",
+    "action": "viewMedicalRecord",
+    "principal_types": [
+      "Patient"
+    ],
+    "resource_types": [
+      "MedicalRecord"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"viewMedicalRecord\", resource) when { context.session.isActive && context.session.user == principal && context.patient == principal && resource.patient == principal };",
+    "examples_adversarial": [],
+    "alternatives_considered": [
+      {
+        "label": "patient_type_only",
+        "interpretive_choice": "Permit any Patient principal to view any MedicalRecord based only on principal type.",
+        "cedar_text": "permit (principal is Patient, action == Action::\"viewMedicalRecord\", resource is MedicalRecord) when { context.session.isActive && context.session.user == principal };"
+      }
+    ],
+    "symbolic_verified": false,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: FAILED (encoding is vacuous (always denies))",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": false,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "patient_representative_medical_record_subject_scope_ceiling",
+    "rationale": "The approved patient medical-record floor includes an ownership boundary: patients may view their own records, and personal representatives may view records only for patients they represent. A same-action safety property is needed so synthesis cannot satisfy the floor while also permitting patients or personal representatives to view unrelated patients' medical records.",
+    "plain_english_summary": "Patients and personal representatives should be permitted to view a medical record only when it belongs to the patient requester or to a patient represented by the requester, during an active session.",
+    "source_excerpt": "A patient or personal representative can view medical records ... for their own records and for patients they represent.",
+    "constraint_type": "ceiling",
+    "action": "viewMedicalRecord",
+    "principal_types": [
+      "Patient",
+      "PersonalRepresentative"
+    ],
+    "resource_types": [
+      "MedicalRecord"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"viewMedicalRecord\", resource) when { context.session.isActive && context.patient == resource.patient && ((principal == resource.patient) || (principal is PersonalRepresentative && principal.representedPatients.contains(resource.patient))) };",
+    "examples_adversarial": [
+      {
+        "description": "A patient attempts to view another patient's medical record without being that patient's personal representative.",
+        "request_dict": {},
+        "decision_under_chosen": "deny",
+        "decisions_under_alternatives": {},
+        "diagnostic_for": [
+          "own_or_represented_patient_boundary"
+        ]
+      }
+    ],
+    "alternatives_considered": [
+      {
+        "label": "active_session_only",
+        "interpretive_choice": "Require only an active session for patient or representative access.",
+        "cedar_text": "permit (principal, action == Action::\"viewMedicalRecord\", resource) when { context.session.isActive };"
+      }
+    ],
+    "symbolic_verified": false,
+    "symbolic_verification_log": [],
+    "intent_acknowledged_by_user": false,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "medical_record_subject_scope_session_ceiling",
+    "rationale": "The medical-record viewing requirement is patient-specific and representative-specific, and the user's review identified that the safety boundary must also ensure the active session belongs to the requester. This ceiling prevents policies from permitting patients or personal representatives to view unrelated medical records, or to rely on some other user's active session, by using the schema's explicit context.session.user hook together with the own-or-represented patient boundary.",
+    "plain_english_summary": "Patients and personal representatives should be permitted to view a medical record only during their own active session and only when the record belongs to the requester or to a patient represented by the requester.",
+    "source_excerpt": "A patient or personal representative can view medical records ... for their own records and for patients they represent.",
+    "constraint_type": "ceiling",
+    "action": "viewMedicalRecord",
+    "principal_types": [
+      "Patient",
+      "PersonalRepresentative"
+    ],
+    "resource_types": [
+      "MedicalRecord"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"viewMedicalRecord\", resource) when { context.session.isActive && context.session.user == principal && context.patient == resource.patient && ((principal == resource.patient) || (principal is PersonalRepresentative && principal.representedPatients.contains(resource.patient))) };",
+    "examples_adversarial": [
+      {
+        "description": "A patient attempts to view another patient's medical record without being that patient's personal representative, or attempts to use an active session that belongs to someone else.",
+        "request_dict": {},
+        "decision_under_chosen": "deny",
+        "decisions_under_alternatives": {},
+        "diagnostic_for": [
+          "own_or_represented_patient_boundary",
+          "session_user_matches_requester_boundary"
+        ]
+      }
+    ],
+    "alternatives_considered": [
+      {
+        "label": "subject_scope_without_session_ownership",
+        "interpretive_choice": "Require an active session and the own-or-represented patient boundary, but do not require that the session belongs to the requesting principal.",
+        "cedar_text": "permit (principal, action == Action::\"viewMedicalRecord\", resource) when { context.session.isActive && context.patient == resource.patient && ((principal == resource.patient) || (principal is PersonalRepresentative && principal.representedPatients.contains(resource.patient))) };"
+      }
+    ],
+    "symbolic_verified": false,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "satisfiable: FAILED (encoding is vacuous (always denies))",
+      "joint-consistency-with-patient_view_own_medical_record_floor: FAILED (floor patient_view_own_medical_record_floor not contained in ceiling medical_record_subject_scope_session_ceiling\nFloor reference:\npermit (principal, action == Action::\"viewMedicalRecord\", resource) when { context.session.isActive && context.patient == principal && resource.patient == principal };\nCeiling reference:\npermit (principal, action == Action::\"viewMedicalRecord\", resource) when { context.session.isActive && context.session.user == principal && context.patient == resource.patient && ((principal == resource.patient) || (principal is PersonalRepresentative && principal.representedPatients.contains(resource.patient))) };\nCedar symcc output:\n\u2717 Policy set 1 implies policy set 2: DOES NOT HOLD\n  Counterexample found:\nprincipal: Patient::\"\", action: Action::\"viewMedicalRecord\", resource: MedicalRecord::\"\"\ncontext: {patient: Patient::\"\", session: Session::\"\"}\nentities: [\n  Action::\"editPatient\",\n  Action::\"createLabTechnician\",\n  Session::\"\" {\n    isActive: true,\n    user: User::\"\",\n  },\n  Action::\"viewAccessLog\",\n  Action::\"logout\",\n  Action::\"viewFamilyHistory\",\n  Action::\"viewMedicalRecord\",\n  Action::\"determineDiagnosisRestrictionAllowed\",\n  Action::\"createPatient\",\n  Action::\"createUAP\",\n  Action::\"removePersonalRepresentative\",\n  Action::\"assignCredentials\",\n  Action::\"reactivatePatient\",\n  Action::\"createEmergencyResponder\",\n  Action::\"editPersonalHealthInformation\",\n  LHCP::\"\" {\n    hospitals: [],\n  },\n  Action::\"takeOfficeVisitSurvey\",\n  Action::\"disablePatient\",\n  Action::\"requestPasswordChange\",\n  Action::\"viewDiagnosticInformation\",\n  Action::\"editOfficeVisit\",\n  Action::\"viewImmunization\",\n  Action::\"addProvider\",)",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": false,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "personal_representative_view_represented_medical_record_floor",
+    "rationale": "The approved atoms include the patient-own medical-record floor and a subject-scope ceiling, but the explicit allowed workflow for a personal representative viewing records of a patient they represent still needs a floor so synthesis cannot omit that positive permission.",
+    "plain_english_summary": "A personal representative should be permitted to view the medical record for a patient they represent during an active session.",
+    "source_excerpt": "A patient or personal representative can view medical records ... for their own records and for patients they represent.",
+    "constraint_type": "floor",
+    "action": "viewMedicalRecord",
+    "principal_types": [
+      "PersonalRepresentative"
+    ],
+    "resource_types": [
+      "MedicalRecord"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"viewMedicalRecord\", resource) when { context.session.isActive && context.patient == resource.patient && principal is PersonalRepresentative && principal.representedPatients.contains(resource.patient) };",
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": false,
+    "symbolic_verification_log": [],
+    "intent_acknowledged_by_user": false,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "personal_representative_view_represented_medical_record_own_session_floor",
+    "rationale": "The rejected floor correctly captured the explicit represented-patient medical-record workflow, but omitted the schema-exposed boundary that the active session must belong to the requesting personal representative. This repaired floor preserves the positive permission while requiring context.session.user == principal, context.session.isActive, the context patient to match the record patient, and the representative relationship to the record patient.",
+    "plain_english_summary": "A personal representative should be permitted to view the medical record for a patient they represent during their own active session.",
+    "source_excerpt": "A patient or personal representative can view medical records ... for their own records and for patients they represent.",
+    "constraint_type": "floor",
+    "action": "viewMedicalRecord",
+    "principal_types": [
+      "PersonalRepresentative"
+    ],
+    "resource_types": [
+      "MedicalRecord"
+    ],
+    "reference_cedar": "permit (principal, action == Action::\"viewMedicalRecord\", resource) when { context.session.isActive && context.session.user == principal && context.patient == resource.patient && principal is PersonalRepresentative && principal.representedPatients.contains(resource.patient) };",
+    "examples_adversarial": [],
+    "alternatives_considered": [
+      {
+        "label": "represented_record_without_session_ownership",
+        "interpretive_choice": "Permit a personal representative to view a represented patient's medical record during any active session, without requiring that the session belongs to the requesting representative.",
+        "cedar_text": "permit (principal, action == Action::\"viewMedicalRecord\", resource) when { context.session.isActive && context.patient == resource.patient && principal is PersonalRepresentative && principal.representedPatients.contains(resource.patient) };"
+      }
+    ],
+    "symbolic_verified": false,
+    "symbolic_verification_log": [],
+    "intent_acknowledged_by_user": false,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  }
+]

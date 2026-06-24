@@ -1,0 +1,82 @@
+{
+  "students_receive_external_grades_floor": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "students_not_assign_external_grades_disjointness": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (syntactic disjointness sanity check ok)"
+  ],
+  "faculty_assign_internal_grades_floor": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "faculty_only_non_conflicting_assign_external_grades_floor": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "teaching_assistants_not_assign_external_grades_disjointness": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (syntactic disjointness sanity check ok)"
+  ],
+  "faculty_family_not_assign_external_grades_disjointness": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (syntactic disjointness sanity check ok)"
+  ],
+  "faculty_view_internal_grades_floor": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "faculty_non_ta_view_external_grades_floor": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "teaching_assistants_not_view_external_grades_disjointness": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (syntactic disjointness sanity check ok)"
+  ],
+  "teaching_assistants_view_internal_grades_floor": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "teaching_assistants_non_student_assign_internal_grades_floor": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "faculty_family_receive_external_grades_floor": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "students_not_assign_internal_grades_disjointness": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (syntactic disjointness sanity check ok)"
+  ],
+  "external_grade_assigning_faculty_not_receive_external_grades_disjointness": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (syntactic disjointness sanity check ok)"
+  ],
+  "non_faculty_enroll_in_courses_floor": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "faculty_not_enroll_in_courses_disjointness": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (syntactic disjointness sanity check ok)"
+  ]
+}

@@ -1,0 +1,1 @@
+permit (principal, action == Action::"assignCredentials", resource) when { context.session.isActive && context.session.user == principal };

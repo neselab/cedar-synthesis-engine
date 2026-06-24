@@ -1,0 +1,308 @@
+{
+  "hcp_can_create_patient": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "patient_mid_not_editable": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (syntactic disjointness sanity check ok)"
+  ],
+  "hcp_cannot_enter_patient_credentials": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (syntactic disjointness sanity check ok)"
+  ],
+  "hcp_can_edit_patient_data": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "hcp_cannot_edit_patient_credentials": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (syntactic disjointness sanity check ok)"
+  ],
+  "administrator_can_create_lhcp": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "hcp_cannot_view_patient_credentials": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (syntactic disjointness sanity check ok)"
+  ],
+  "administrator_can_create_emergency_responder": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "administrator_can_create_public_health_agent": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "lhcp_can_create_uap": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "administrator_can_assign_lhcp_to_hospital": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "user_can_login_with_verified_credentials": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "login_only_with_verified_own_credentials": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "joint-consistency-with-user_can_login_with_verified_credentials: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "user_can_request_own_password_change": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "password_change_only_own_credential_active_own_session": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "joint-consistency-with-user_can_request_own_password_change: FAILED (floor user_can_request_own_password_change not contained in ceiling password_change_only_own_credential_active_own_session\nFloor reference:\npermit (principal, action == Action::\"requestPasswordChange\", resource) when { context.session.isActive && resource.user == principal };\nCeiling reference:\npermit (principal, action == Action::\"requestPasswordChange\", resource) when { context.session.isActive && context.session.user == principal && resource.user == principal };\nCedar symcc output:\n\u2717 Policy set 1 implies policy set 2: DOES NOT HOLD\n  Counterexample found:\nprincipal: User::\"\", action: Action::\"requestPasswordChange\", resource: Credential::\"\"\ncontext: {session: Session::\"\"}\nentities: [\n  Action::\"designateDlhcp\",\n  Action::\"assignLhcpToHospital\",\n  Action::\"viewImmunizations\",\n  Lhcp::\"\" {\n    hospitals: [],\n    specialty: \"\",\n  },\n  User::\"A\" {\n    email: \"\",\n    mid: \"\",\n    name: \"\",\n  },\n  Action::\"undesignateDlhcp\",\n  ProviderList::\"\" {\n    patient: Patient::\"\",\n    providers: [],\n  },\n  Action::\"enterCredential\",\n  Action::\"viewPersonalHealthInformation\",\n  Action::\"createUap\",\n  Patient::\"\" {\n    providerList: ProviderList::\"\",\n  },\n  Action::\"addProviderToList\",\n  Action::\"requestPasswordChange\",\n  User::\"\" {\n    email: \"\",\n    mid: \"\",\n    name: \"\",\n  },\n  Action::\"viewCredential\",\n  Action::\"login\",\n  Action::\"editPatientData\",\n  Action::\"createPublicHealthAgent\",\n  Action::\"editCredential\",\n  Action::\"viewAccessLog\",\n  Action::\"closeApplication\",\n  Actio)",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "password_change_only_own_credential_active_session": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "joint-consistency-with-user_can_request_own_password_change: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "inactive_session_blocks_create_patient": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (syntactic disjointness sanity check ok)"
+  ],
+  "inactive_session_blocks_edit_patient_data": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (syntactic disjointness sanity check ok)"
+  ],
+  "inactive_session_blocks_create_lhcp": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (syntactic disjointness sanity check ok)"
+  ],
+  "inactive_session_blocks_create_emergency_responder": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (syntactic disjointness sanity check ok)"
+  ],
+  "user_can_logout_own_active_session": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "logout_only_own_active_session": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "joint-consistency-with-user_can_logout_own_active_session: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "user_can_close_own_active_session": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "close_application_only_own_active_session": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "joint-consistency-with-user_can_close_own_active_session: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "administrator_can_set_inactivity_period_length": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "inactive_session_blocks_create_public_health_agent": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (syntactic disjointness sanity check ok)"
+  ],
+  "patient_can_view_own_access_log_for_period": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "access_log_view_only_own_period_active_session": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "joint-consistency-with-patient_can_view_own_access_log_for_period: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "patient_can_add_provider_to_own_list_by_search": [
+    "type-correct: FAILED (cedar validate rc=3: \u00d7 policy set validation failed\n  \u2570\u2500\u25b6 for policy `policy0`, attribute `name` on entity type `Hcp` not found\n   \u256d\u2500\u2500\u2500\u2500\n 1 \u2502 permit (principal, action == Action::\"addProviderToList\", resource) when { context.session.isActive && resource.patient == principal && context.provider.name == context.searchName)",
+    "satisfiable: FAILED (Cedar symcc setup error: Cedar symcc exited before producing a formal verification result. This is a verifier/tooling failure, not a policy counterexample. Check the Cedar and CVC5 installations, then rerun `uv run autocedar doctor`. Raw cedar output: Analysis failed: \u00d7 Failed to compile policy set: input policy (set) is not well typed with \u2502 respect to the schema [UnsafeAttributeAccess(UnsafeAttributeAccess \u2502 { source_loc: Some(Loc(`context.provider.name`)), policy_id: \u2502 PolicyID(\"policy0\"), attribute_access: EntityLUB(EntityLUB { lub_elements: \u2502 {EntityType(Name(InternalName { id: Id(\"Hcp\"), path: [] }))} }, [\"name\"]), \u2502 suggestion: None, may_exist: false })])",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "patient_can_add_provider_to_own_list_by_available_search_filters": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "patient_can_designate_lhcp_for_self": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "designate_dlhcp_only_for_self": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "joint-consistency-with-patient_can_designate_lhcp_for_self: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "patient_can_undesignate_current_dlhcp_for_self": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "undesignate_dlhcp_only_current_for_self": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "joint-consistency-with-patient_can_undesignate_current_dlhcp_for_self: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "patient_can_view_own_medical_record": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "medical_record_view_only_own_or_represented_active_session": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "joint-consistency-with-patient_can_view_own_medical_record: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "personal_representative_can_view_represented_medical_record": [
+    "type-correct: FAILED (cedar validate rc=3: \u00d7 policy set validation failed\n  \u2570\u2500\u25b6 for policy `policy0`, attribute `representedPatients` on entity type\n      `Patient` not found\n   \u256d\u2500\u2500\u2500\u2500\n 1 \u2502 permit (principal, action == Action::\"viewMedicalRecord\", resource) when { context.session.isActive && context has representedPatient && context.represent)",
+    "satisfiable: ok",
+    "joint-consistency-with-medical_record_view_only_own_or_represented_active_session: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "patient_can_view_own_family_history": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "family_history_view_only_own_or_represented_active_session": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "joint-consistency-with-patient_can_view_own_family_history: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "personal_representative_can_view_represented_family_history": [
+    "type-correct: FAILED (cedar validate rc=3: \u00d7 policy set validation failed\n  \u2570\u2500\u25b6 for policy `policy0`, attribute `representedPatients` on entity type\n      `Patient` not found\n   \u256d\u2500\u2500\u2500\u2500\n 1 \u2502 permit (principal, action == Action::\"viewFamilyHistory\", resource) when { context.session.isActive && resource.hasFamilyHistory && context has represente)",
+    "satisfiable: ok",
+    "joint-consistency-with-family_history_view_only_own_or_represented_active_session: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "patient_can_view_own_personal_health_information": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "personal_health_information_view_only_own_or_represented_active_session": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "joint-consistency-with-patient_can_view_own_personal_health_information: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "personal_representative_can_view_represented_personal_health_information": [
+    "type-correct: FAILED (cedar validate rc=3: \u00d7 policy set validation failed\n  \u2570\u2500\u25b6 for policy `policy0`, attribute `representedPatients` on entity type\n      `Patient` not found\n   \u256d\u2500\u2500\u2500\u2500\n 1 \u2502 permit (principal, action == Action::\"viewPersonalHealthInformation\", resource) when { context.session.isActive && resource.hasPersonalHealthInformation &)",
+    "satisfiable: ok",
+    "joint-consistency-with-personal_health_information_view_only_own_or_represented_active_session: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "patient_can_view_own_immunizations": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "immunizations_view_only_own_or_represented_active_session": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "joint-consistency-with-patient_can_view_own_immunizations: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "personal_representative_can_view_represented_immunizations": [
+    "type-correct: FAILED (cedar validate rc=3: \u00d7 policy set validation failed\n  \u2570\u2500\u25b6 for policy `policy0`, attribute `representedPatients` on entity type\n      `Patient` not found\n   \u256d\u2500\u2500\u2500\u2500\n 1 \u2502 permit (principal, action == Action::\"viewImmunizations\", resource) when { context.session.isActive && resource.hasImmunizations && context has represente)",
+    "satisfiable: ok",
+    "joint-consistency-with-immunizations_view_only_own_or_represented_active_session: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "patient_can_view_own_office_visit_information": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "office_visit_information_view_only_own_or_represented_active_session": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "joint-consistency-with-patient_can_view_own_office_visit_information: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "inactive_session_blocks_set_inactivity_period_length": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (syntactic disjointness sanity check ok)"
+  ],
+  "inactive_session_blocks_create_uap": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (syntactic disjointness sanity check ok)"
+  ],
+  "patient_can_view_own_prior_visit_and_designated_lhcp_providers": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "prior_designated_lhcp_view_only_composed_own_active_session": [
+    "type-correct: FAILED (cedar validate rc=1: \u00d7 failed to parse policy set\n  \u2570\u2500\u25b6 invalid variable: provider\n   \u256d\u2500\u2500\u2500\u2500\n 1 \u2502 permit (principal, action == Action::\"viewPriorAndDesignatedLhcps\", resource) when { context.session.isActive && resource.patient == principal && resource.providers.all(provider, provider is Lhcp && (resource.officeVisits.ex)",
+    "satisfiable: FAILED (Cedar symcc setup error: Cedar symcc exited before producing a formal verification result. This is a verifier/tooling failure, not a policy counterexample. Check the Cedar and CVC5 installations, then rerun `uv run autocedar doctor`. Raw cedar output: Analysis failed: \u00d7 failed to parse policy set \u2570\u2500\u25b6 invalid variable: provider \u256d\u2500\u2500\u2500\u2500 1 \u2502 permit (principal, action == Action::\"viewPriorAndDesignatedLhcps\", resource) when { context.session.isActive && resource.patient == principal && resource.providers.all(provider, provider is Lhcp && (resource.officeVisits.exists(visit, visit.patient == principal && visit.lhcp == provider) || resource.designations.exists(designation, designation.patient == principal && designation.isDesignated && designation.lhcp == provider))) && resource.officeVisits.all(visit, visit.patient == principal && resource.prov...)",
+    "joint-consistency-with-patient_can_view_own_prior_visit_and_designated_lhcp_providers: FAILED (floor patient_can_view_own_prior_visit_and_designated_lhcp_providers not contained in ceiling prior_designated_lhcp_view_only_composed_own_active_session\nFloor reference:\npermit (principal, action == Action::\"viewPriorAndDesignatedLhcps\", resource) when { context.session.isActive && resource.patient == principal };\nCeiling reference:\npermit (principal, action == Action::\"viewPriorAndDesignatedLhcps\", resource) when { context.session.isActive && resource.patient == principal && resource.providers.all(provider, provider is Lhcp && (resource.officeVisits.exists(visit, visit.patient == principal && visit.lhcp == provider) || resource.designations.exists(designation, designation.patient == principal && designation.isDesignated && designation.lhcp == provider))) && resource.officeVisits.all(visit, visit.patient == principal && resource.providers.contains(visit.lhcp)) && resource.designations.all(designation, designation.patient == principal && (!designation.isDesignated || resource.providers.contains(designation.lhcp))) };\nCedar symcc output:\nCedar symcc setup error: Cedar symcc exited before producing a formal verification result. This is a verifier/tooling failure, not a policy counterexample. Check the Cedar and CVC5 installations, then rerun `uv run autocedar doctor`. Raw cedar output: Analysis failed: \u00d7 failed to parse policy set \u2570\u2500\u25b6 invalid variable: provider \u256d\u2500\u2500\u2500\u2500 1 \u2502 permit (principal, action == Action::\"viewPriorAndDesignatedLhcps\", resource) when { context.session.isActive && resource.patient == principal && resource.providers.all(provider, provider is Lhcp && (resource.officeVisits.exists(visit, visit.patient == principal && visit.lhcp == provider) || resource.designations.exists(designation, designation.patient == principal && designation.isDesignated && designation.lhcp == provider))) && resource.officeVisits.all(visit, visit.patient == principal && resource.prov...)",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "prior_designated_lhcp_view_only_own_active_session": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "joint-consistency-with-patient_can_view_own_prior_visit_and_designated_lhcp_providers: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "inactive_session_blocks_assign_lhcp_to_hospital": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (syntactic disjointness sanity check ok)"
+  ],
+  "patient_can_add_provider_to_own_list_by_name_and_specialty_search": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "add_provider_only_own_list_by_name_and_specialty_search": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "joint-consistency-with-patient_can_add_provider_to_own_list_by_name_and_specialty_search: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "personal_representative_can_view_represented_office_visit_information": [
+    "type-correct: FAILED (cedar validate rc=3: \u00d7 policy set validation failed\n  \u2570\u2500\u25b6 for policy `policy0`, attribute `representedPatients` on entity type\n      `Patient` not found\n   \u256d\u2500\u2500\u2500\u2500\n 1 \u2502 permit (principal, action == Action::\"viewOfficeVisitInformation\", resource) when { context.session.isActive && resource.hasOfficeVisitInformation && cont)",
+    "satisfiable: ok",
+    "joint-consistency-with-office_visit_information_view_only_own_or_represented_active_session: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ]
+}

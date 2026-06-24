@@ -1,0 +1,1012 @@
+[
+  {
+    "name": "User",
+    "rationale": "Represents the common authenticated actor type for login and session-scoped actions.",
+    "plain_english_summary": "A person who can sign in to iTrust.",
+    "source_excerpt": "ordinary authenticated user",
+    "members_of": [],
+    "attributes": {},
+    "enum_values": null
+  },
+  {
+    "name": "User__mid",
+    "rationale": "MID is the user identifier entered during role-based login and must be represented for credentials.",
+    "plain_english_summary": "The user's medical ID or login identifier.",
+    "source_excerpt": "Any user can enter their MID and password to gain role-based entry into iTrust.",
+    "on_entity": "User",
+    "field_name": "mid",
+    "cedar_type": "String",
+    "optional": false,
+    "alternatives_considered": [
+      "Could be modeled only on Patient, but the spec says any user enters their MID."
+    ]
+  },
+  {
+    "name": "User__name",
+    "rationale": "Name is needed for patient creation and provider-list search.",
+    "plain_english_summary": "The user's name.",
+    "source_excerpt": "Only the patient's name and email are initially provided by the HCP.",
+    "on_entity": "User",
+    "field_name": "name",
+    "cedar_type": "String",
+    "optional": false,
+    "alternatives_considered": [
+      "Could duplicate name on Patient and Personnel, but User is the shared identity base."
+    ]
+  },
+  {
+    "name": "User__email",
+    "rationale": "Email is initially supplied when creating a patient user.",
+    "plain_english_summary": "The user's email address.",
+    "source_excerpt": "Only the patient's name and email are initially provided by the HCP.",
+    "on_entity": "User",
+    "field_name": "email",
+    "cedar_type": "String",
+    "optional": false,
+    "alternatives_considered": [
+      "Could model as Patient-only, but patient is also entered as a new user."
+    ]
+  },
+  {
+    "name": "HCP",
+    "rationale": "HCP is a principal role with patient creation and patient-data editing capabilities.",
+    "plain_english_summary": "A health care provider user.",
+    "source_excerpt": "Important actors include HCP, LHCP, DLHCP, administrator, patient, personal representative, UAP, emergency responder, public health agent, and ordinary authenticated user.",
+    "members_of": [
+      "User"
+    ],
+    "attributes": {},
+    "enum_values": null
+  },
+  {
+    "name": "LHCP",
+    "rationale": "LHCP is a specialized HCP role used for provider designations, hospital assignment, and UAP creation.",
+    "plain_english_summary": "A licensed health care provider.",
+    "source_excerpt": "Important actors include HCP, LHCP, DLHCP, administrator, patient, personal representative, UAP, emergency responder, public health agent, and ordinary authenticated user.",
+    "members_of": [
+      "HCP"
+    ],
+    "attributes": {},
+    "enum_values": null
+  },
+  {
+    "name": "LHCP__specialty",
+    "rationale": "The administrator must specify an LHCP specialty and patients may search by specialty.",
+    "plain_english_summary": "The licensed provider's medical specialty.",
+    "source_excerpt": "The administrator must specify the specialty for a new LHCP.",
+    "on_entity": "LHCP",
+    "field_name": "specialty",
+    "cedar_type": "String",
+    "optional": false,
+    "alternatives_considered": [
+      "Could be an enum entity, but the spec does not provide a closed list of specialties."
+    ]
+  },
+  {
+    "name": "LHCP__hospitals",
+    "rationale": "LHCP-to-hospital assignment must support multiple hospitals.",
+    "plain_english_summary": "The hospitals where this LHCP is assigned.",
+    "source_excerpt": "The administrator can assign an LHCP to multiple hospitals and choose the hospitals.",
+    "on_entity": "LHCP",
+    "field_name": "hospitals",
+    "cedar_type": "Set<Hospital>",
+    "optional": false,
+    "alternatives_considered": [
+      "Could be modeled as a separate Assignment entity, but the slice only needs the relationship."
+    ]
+  },
+  {
+    "name": "Administrator",
+    "rationale": "Administrator is a principal role for creating personnel and configuring inactivity periods.",
+    "plain_english_summary": "An administrative iTrust user.",
+    "source_excerpt": "administrator",
+    "members_of": [
+      "User"
+    ],
+    "attributes": {},
+    "enum_values": null
+  },
+  {
+    "name": "Patient",
+    "rationale": "Patient is both a principal and a protected subject for records, logs, providers, and demographics.",
+    "plain_english_summary": "A patient in iTrust.",
+    "source_excerpt": "patient",
+    "members_of": [
+      "User"
+    ],
+    "attributes": {},
+    "enum_values": null
+  },
+  {
+    "name": "Patient__demographicInformation",
+    "rationale": "Demographic information is an important patient resource in the requirements.",
+    "plain_english_summary": "The patient's demographic details.",
+    "source_excerpt": "Important resources include patients, personnel, medical records, demographic information, provider designations, access logs, sessions, credentials, and provider lists.",
+    "on_entity": "Patient",
+    "field_name": "demographicInformation",
+    "cedar_type": "Record { }",
+    "optional": true,
+    "alternatives_considered": [
+      "Could be a separate DemographicInformation entity, but no independent actions target it in this slice."
+    ]
+  },
+  {
+    "name": "Patient__providerList",
+    "rationale": "Patients add providers to their own provider list.",
+    "plain_english_summary": "The patient's list of providers.",
+    "source_excerpt": "A patient can add a LHCP/HCP to their provider list by searching by name, specialty, and optionally zip code.",
+    "on_entity": "Patient",
+    "field_name": "providerList",
+    "cedar_type": "ProviderList",
+    "optional": false,
+    "alternatives_considered": [
+      "Could use Set<HCP> directly, but provider-list operations are named as a resource."
+    ]
+  },
+  {
+    "name": "Patient__designatedProviders",
+    "rationale": "DLHCP is patient-specific and should be represented as a designation relationship rather than a global role only.",
+    "plain_english_summary": "The LHCPs designated by this patient as designated providers.",
+    "source_excerpt": "A patient can designate any LHCP as a DLHCP for that patient and can undesignate any LHCP as a DLHCP for that patient.",
+    "on_entity": "Patient",
+    "field_name": "designatedProviders",
+    "cedar_type": "Set<LHCP>",
+    "optional": false,
+    "alternatives_considered": [
+      "Modeled DLHCP as a separate principal type, but the spec emphasizes designation for that patient."
+    ]
+  },
+  {
+    "name": "Patient__personalRepresentatives",
+    "rationale": "Personal-representative access depends on a patient-specific relationship.",
+    "plain_english_summary": "The users who may act as this patient's personal representatives.",
+    "source_excerpt": "for records of patients for whom the user is a personal representative",
+    "on_entity": "Patient",
+    "field_name": "personalRepresentatives",
+    "cedar_type": "Set<PersonalRepresentative>",
+    "optional": false,
+    "alternatives_considered": [
+      "Could model represented patients on PersonalRepresentative, but record authorization naturally checks the record's patient."
+    ]
+  },
+  {
+    "name": "PersonalRepresentative",
+    "rationale": "Personal representative is a principal type allowed to view represented patients' medical records.",
+    "plain_english_summary": "A user who can act on behalf of a patient.",
+    "source_excerpt": "personal representative",
+    "members_of": [
+      "User"
+    ],
+    "attributes": {},
+    "enum_values": null
+  },
+  {
+    "name": "UAP",
+    "rationale": "UAP is a user role created by LHCPs.",
+    "plain_english_summary": "A user role called UAP in iTrust.",
+    "source_excerpt": "A LHCP can create UAP users.",
+    "members_of": [
+      "User"
+    ],
+    "attributes": {},
+    "enum_values": null
+  },
+  {
+    "name": "EmergencyResponder",
+    "rationale": "Emergency responders are personnel users created by administrators.",
+    "plain_english_summary": "An emergency responder user.",
+    "source_excerpt": "An administrator can create LHCPs, emergency responders, and public health agents.",
+    "members_of": [
+      "User"
+    ],
+    "attributes": {},
+    "enum_values": null
+  },
+  {
+    "name": "PublicHealthAgent",
+    "rationale": "Public health agents are personnel users created by administrators.",
+    "plain_english_summary": "A public health agent user.",
+    "source_excerpt": "An administrator can create LHCPs, emergency responders, and public health agents.",
+    "members_of": [
+      "User"
+    ],
+    "attributes": {},
+    "enum_values": null
+  },
+  {
+    "name": "Hospital",
+    "rationale": "Hospitals are assignment targets for LHCPs.",
+    "plain_english_summary": "A hospital that an LHCP can be assigned to.",
+    "source_excerpt": "The administrator can assign an LHCP to multiple hospitals and choose the hospitals.",
+    "members_of": [],
+    "attributes": {},
+    "enum_values": null
+  },
+  {
+    "name": "ProviderList",
+    "rationale": "Provider lists are explicitly named resources that patients update.",
+    "plain_english_summary": "A patient's list of health care providers.",
+    "source_excerpt": "provider lists",
+    "members_of": [],
+    "attributes": {},
+    "enum_values": null
+  },
+  {
+    "name": "ProviderList__patient",
+    "rationale": "Provider-list changes are patient-owned and need an owner link.",
+    "plain_english_summary": "The patient who owns this provider list.",
+    "source_excerpt": "their provider list",
+    "on_entity": "ProviderList",
+    "field_name": "patient",
+    "cedar_type": "Patient",
+    "optional": false,
+    "alternatives_considered": [
+      "Could rely on action context only, but ownership is persistent on the list."
+    ]
+  },
+  {
+    "name": "ProviderList__providers",
+    "rationale": "The provider list must contain HCP/LHCP providers added by the patient.",
+    "plain_english_summary": "The providers on the list.",
+    "source_excerpt": "A patient can add a LHCP/HCP to their provider list by searching by name, specialty, and optionally zip code.",
+    "on_entity": "ProviderList",
+    "field_name": "providers",
+    "cedar_type": "Set<HCP>",
+    "optional": false,
+    "alternatives_considered": [
+      "Could maintain separate LHCP and HCP sets, but LHCP is a member of HCP."
+    ]
+  },
+  {
+    "name": "MedicalRecord",
+    "rationale": "Medical records are protected resources viewed by patients and personal representatives.",
+    "plain_english_summary": "A patient's medical record.",
+    "source_excerpt": "medical records including family history",
+    "members_of": [],
+    "attributes": {},
+    "enum_values": null
+  },
+  {
+    "name": "MedicalRecord__patient",
+    "rationale": "Record access is restricted to own or represented-patient records.",
+    "plain_english_summary": "The patient this medical record belongs to.",
+    "source_excerpt": "their own records and for records of patients for whom the user is a personal representative",
+    "on_entity": "MedicalRecord",
+    "field_name": "patient",
+    "cedar_type": "Patient",
+    "optional": false,
+    "alternatives_considered": []
+  },
+  {
+    "name": "MedicalRecord__familyHistory",
+    "rationale": "Family history is explicitly included in viewable medical records.",
+    "plain_english_summary": "The family-history portion of the medical record.",
+    "source_excerpt": "medical records including family history",
+    "on_entity": "MedicalRecord",
+    "field_name": "familyHistory",
+    "cedar_type": "Record { }",
+    "optional": true,
+    "alternatives_considered": [
+      "Could be a separate FamilyHistory entity, but the spec treats it as included medical-record information."
+    ]
+  },
+  {
+    "name": "MedicalRecord__personalHealthInformation",
+    "rationale": "Personal health information is a named part of records that may be seen.",
+    "plain_english_summary": "The personal health information in the record.",
+    "source_excerpt": "patient personal health information",
+    "on_entity": "MedicalRecord",
+    "field_name": "personalHealthInformation",
+    "cedar_type": "Record { }",
+    "optional": true,
+    "alternatives_considered": [
+      "Could be a separate entity, but no independent lifecycle is specified."
+    ]
+  },
+  {
+    "name": "MedicalRecord__immunizations",
+    "rationale": "Immunizations are a named part of records that may be seen.",
+    "plain_english_summary": "The immunization information in the record.",
+    "source_excerpt": "immunizations",
+    "on_entity": "MedicalRecord",
+    "field_name": "immunizations",
+    "cedar_type": "Record { }",
+    "optional": true,
+    "alternatives_considered": [
+      "Could be a Set<Immunization> entity, but no attributes for individual immunizations are specified."
+    ]
+  },
+  {
+    "name": "MedicalRecord__officeVisitInformation",
+    "rationale": "Office-visit information is a named part of records that may be seen.",
+    "plain_english_summary": "The office-visit information in the record.",
+    "source_excerpt": "office-visit information",
+    "on_entity": "MedicalRecord",
+    "field_name": "officeVisitInformation",
+    "cedar_type": "Record { }",
+    "optional": true,
+    "alternatives_considered": [
+      "Could be a separate OfficeVisit entity, but this slice only requires viewing the record section."
+    ]
+  },
+  {
+    "name": "AccessLog",
+    "rationale": "Access logs are patient-owned resources viewable over a chosen date range.",
+    "plain_english_summary": "A log of accesses to a patient's information.",
+    "source_excerpt": "access logs",
+    "members_of": [],
+    "attributes": {},
+    "enum_values": null
+  },
+  {
+    "name": "AccessLog__patient",
+    "rationale": "Patients view their own access log, so the log needs an owner link.",
+    "plain_english_summary": "The patient whose access log this is.",
+    "source_excerpt": "A patient can view the patient's own access log.",
+    "on_entity": "AccessLog",
+    "field_name": "patient",
+    "cedar_type": "Patient",
+    "optional": false,
+    "alternatives_considered": []
+  },
+  {
+    "name": "AccessLog__entries",
+    "rationale": "The access-log result contains structured entry data.",
+    "plain_english_summary": "The entries shown in an access-log result.",
+    "source_excerpt": "The access-log result contains the accessor name, the accessor role relative to the patient, the access timestamp, and the transaction type.",
+    "on_entity": "AccessLog",
+    "field_name": "entries",
+    "cedar_type": "Set<Record { accessorName: String, accessorRole: String, accessTimestamp: datetime, transactionType: String }>",
+    "optional": false,
+    "alternatives_considered": [
+      "Could define a reusable type alias, but this shape appears only once."
+    ]
+  },
+  {
+    "name": "Session",
+    "rationale": "Sessions represent the authenticated boundary and inactivity termination state for protected actions.",
+    "plain_english_summary": "A user's active iTrust login session.",
+    "source_excerpt": "An authenticated session ends when the user logs out or closes the application.",
+    "members_of": [],
+    "attributes": {},
+    "enum_values": null
+  },
+  {
+    "name": "Session__user",
+    "rationale": "A session belongs to the authenticated user whose actions it authorizes.",
+    "plain_english_summary": "The user signed in for this session.",
+    "source_excerpt": "An authenticated session ends when the user logs out or closes the application.",
+    "on_entity": "Session",
+    "field_name": "user",
+    "cedar_type": "User",
+    "optional": false,
+    "alternatives_considered": []
+  },
+  {
+    "name": "Session__isActive",
+    "rationale": "Authorization is disabled after logout, close, or inactivity expiry, so active state must be represented.",
+    "plain_english_summary": "Whether the session is still active.",
+    "source_excerpt": "after the inactivity limit is exceeded, all authorization is disabled.",
+    "on_entity": "Session",
+    "field_name": "isActive",
+    "cedar_type": "Bool",
+    "optional": false,
+    "alternatives_considered": [
+      "Could use expiresAt only, but logout and application close also end a session."
+    ]
+  },
+  {
+    "name": "Session__inactivityPeriodLength",
+    "rationale": "The administrator can configure the inactivity period length.",
+    "plain_english_summary": "The configured inactivity timeout for the session.",
+    "source_excerpt": "The administrator can set the inactivity period length.",
+    "on_entity": "Session",
+    "field_name": "inactivityPeriodLength",
+    "cedar_type": "duration",
+    "optional": false,
+    "alternatives_considered": [
+      "Could model a global SystemSettings entity, but the session boundary is the authorization hook requested by the spec."
+    ]
+  },
+  {
+    "name": "Credentials",
+    "rationale": "Credentials hold password and security-question data that HCPs must not enter, edit, or view for patients.",
+    "plain_english_summary": "A user's private login credential information.",
+    "source_excerpt": "credentials",
+    "members_of": [],
+    "attributes": {},
+    "enum_values": null
+  },
+  {
+    "name": "Credentials__user",
+    "rationale": "Credential secrecy rules refer to a patient's security question and password.",
+    "plain_english_summary": "The user these credentials belong to.",
+    "source_excerpt": "The HCP must not enter, edit, or view the patient's security question or password.",
+    "on_entity": "Credentials",
+    "field_name": "user",
+    "cedar_type": "User",
+    "optional": false,
+    "alternatives_considered": []
+  },
+  {
+    "name": "Credentials__password",
+    "rationale": "Password is a protected credential field used for login and password changes.",
+    "plain_english_summary": "The user's password credential.",
+    "source_excerpt": "password",
+    "on_entity": "Credentials",
+    "field_name": "password",
+    "cedar_type": "String",
+    "optional": false,
+    "alternatives_considered": [
+      "Could omit secret values from schema, but explicit field-level secrecy is required."
+    ]
+  },
+  {
+    "name": "Credentials__securityQuestion",
+    "rationale": "Security question is explicitly protected from HCP entry, editing, and viewing.",
+    "plain_english_summary": "The user's security question credential.",
+    "source_excerpt": "security question",
+    "on_entity": "Credentials",
+    "field_name": "securityQuestion",
+    "cedar_type": "String",
+    "optional": false,
+    "alternatives_considered": [
+      "Could group with password in an opaque secret record, but the spec names this field separately."
+    ]
+  },
+  {
+    "name": "createPatient",
+    "rationale": "HCPs can create patients and enter them as new users.",
+    "plain_english_summary": "Create a new patient user.",
+    "source_excerpt": "An HCP can create a patient and enter the patient as a new user of the system.",
+    "principal_types": [
+      "HCP"
+    ],
+    "resource_types": [
+      "Patient"
+    ],
+    "context_attributes": {
+      "session": {
+        "name": "createPatient__context__session",
+        "rationale": "Protected creation requires an active authenticated session.",
+        "plain_english_summary": "The login session for this request.",
+        "source_excerpt": "An HCP can create a patient and enter the patient as a new user of the system.",
+        "on_entity": "",
+        "field_name": "session",
+        "cedar_type": "Session",
+        "optional": false,
+        "alternatives_considered": []
+      }
+    },
+    "parent_groups": []
+  },
+  {
+    "name": "editPatientData",
+    "rationale": "HCPs can edit patient data but policies must exclude non-editable MID and credentials.",
+    "plain_english_summary": "Edit patient information.",
+    "source_excerpt": "The HCP can edit patient data according to the data format, but the patient's MID must not be editable.",
+    "principal_types": [
+      "HCP"
+    ],
+    "resource_types": [
+      "Patient"
+    ],
+    "context_attributes": {
+      "session": {
+        "name": "editPatientData__context__session",
+        "rationale": "Protected editing requires an active authenticated session.",
+        "plain_english_summary": "The login session for this request.",
+        "source_excerpt": "The HCP can edit patient data according to the data format, but the patient's MID must not be editable.",
+        "on_entity": "",
+        "field_name": "session",
+        "cedar_type": "Session",
+        "optional": false,
+        "alternatives_considered": []
+      }
+    },
+    "parent_groups": []
+  },
+  {
+    "name": "createLHCP",
+    "rationale": "Administrators create LHCP personnel users.",
+    "plain_english_summary": "Create a licensed health care provider user.",
+    "source_excerpt": "An administrator can create LHCPs, emergency responders, and public health agents.",
+    "principal_types": [
+      "Administrator"
+    ],
+    "resource_types": [
+      "LHCP"
+    ],
+    "context_attributes": {
+      "session": {
+        "name": "createLHCP__context__session",
+        "rationale": "Protected creation requires an active authenticated session.",
+        "plain_english_summary": "The login session for this request.",
+        "source_excerpt": "An administrator can create LHCPs, emergency responders, and public health agents.",
+        "on_entity": "",
+        "field_name": "session",
+        "cedar_type": "Session",
+        "optional": false,
+        "alternatives_considered": []
+      }
+    },
+    "parent_groups": []
+  },
+  {
+    "name": "createEmergencyResponder",
+    "rationale": "Administrators create emergency responder users.",
+    "plain_english_summary": "Create an emergency responder user.",
+    "source_excerpt": "An administrator can create LHCPs, emergency responders, and public health agents.",
+    "principal_types": [
+      "Administrator"
+    ],
+    "resource_types": [
+      "EmergencyResponder"
+    ],
+    "context_attributes": {
+      "session": {
+        "name": "createEmergencyResponder__context__session",
+        "rationale": "Protected creation requires an active authenticated session.",
+        "plain_english_summary": "The login session for this request.",
+        "source_excerpt": "An administrator can create LHCPs, emergency responders, and public health agents.",
+        "on_entity": "",
+        "field_name": "session",
+        "cedar_type": "Session",
+        "optional": false,
+        "alternatives_considered": []
+      }
+    },
+    "parent_groups": []
+  },
+  {
+    "name": "createPublicHealthAgent",
+    "rationale": "Administrators create public health agent users.",
+    "plain_english_summary": "Create a public health agent user.",
+    "source_excerpt": "An administrator can create LHCPs, emergency responders, and public health agents.",
+    "principal_types": [
+      "Administrator"
+    ],
+    "resource_types": [
+      "PublicHealthAgent"
+    ],
+    "context_attributes": {
+      "session": {
+        "name": "createPublicHealthAgent__context__session",
+        "rationale": "Protected creation requires an active authenticated session.",
+        "plain_english_summary": "The login session for this request.",
+        "source_excerpt": "An administrator can create LHCPs, emergency responders, and public health agents.",
+        "on_entity": "",
+        "field_name": "session",
+        "cedar_type": "Session",
+        "optional": false,
+        "alternatives_considered": []
+      }
+    },
+    "parent_groups": []
+  },
+  {
+    "name": "assignLHCPToHospital",
+    "rationale": "Administrators assign LHCPs to one or more hospitals.",
+    "plain_english_summary": "Assign an LHCP to hospitals.",
+    "source_excerpt": "The administrator can assign an LHCP to multiple hospitals and choose the hospitals.",
+    "principal_types": [
+      "Administrator"
+    ],
+    "resource_types": [
+      "LHCP"
+    ],
+    "context_attributes": {
+      "session": {
+        "name": "assignLHCPToHospital__context__session",
+        "rationale": "Protected assignment requires an active authenticated session.",
+        "plain_english_summary": "The login session for this request.",
+        "source_excerpt": "The administrator can assign an LHCP to multiple hospitals and choose the hospitals.",
+        "on_entity": "",
+        "field_name": "session",
+        "cedar_type": "Session",
+        "optional": false,
+        "alternatives_considered": []
+      },
+      "hospitals": {
+        "name": "assignLHCPToHospital__context__hospitals",
+        "rationale": "The administrator chooses the hospitals for the LHCP.",
+        "plain_english_summary": "The hospitals being assigned.",
+        "source_excerpt": "The administrator can assign an LHCP to multiple hospitals and choose the hospitals.",
+        "on_entity": "",
+        "field_name": "hospitals",
+        "cedar_type": "Set<Hospital>",
+        "optional": false,
+        "alternatives_considered": []
+      }
+    },
+    "parent_groups": []
+  },
+  {
+    "name": "createUAP",
+    "rationale": "LHCPs create UAP users.",
+    "plain_english_summary": "Create a UAP user.",
+    "source_excerpt": "A LHCP can create UAP users.",
+    "principal_types": [
+      "LHCP"
+    ],
+    "resource_types": [
+      "UAP"
+    ],
+    "context_attributes": {
+      "session": {
+        "name": "createUAP__context__session",
+        "rationale": "Protected creation requires an active authenticated session.",
+        "plain_english_summary": "The login session for this request.",
+        "source_excerpt": "A LHCP can create UAP users.",
+        "on_entity": "",
+        "field_name": "session",
+        "cedar_type": "Session",
+        "optional": false,
+        "alternatives_considered": []
+      }
+    },
+    "parent_groups": []
+  },
+  {
+    "name": "login",
+    "rationale": "Users enter MID and password to gain role-based entry.",
+    "plain_english_summary": "Sign in to iTrust.",
+    "source_excerpt": "Any user can enter their MID and password to gain role-based entry into iTrust.",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "Session"
+    ],
+    "context_attributes": {
+      "credentials": {
+        "name": "login__context__credentials",
+        "rationale": "Login depends on the user's MID and password credentials.",
+        "plain_english_summary": "The credentials submitted for sign-in.",
+        "source_excerpt": "Any user can enter their MID and password to gain role-based entry into iTrust.",
+        "on_entity": "",
+        "field_name": "credentials",
+        "cedar_type": "Credentials",
+        "optional": false,
+        "alternatives_considered": []
+      }
+    },
+    "parent_groups": []
+  },
+  {
+    "name": "requestPasswordChange",
+    "rationale": "Any user can request a password change.",
+    "plain_english_summary": "Ask to change your password.",
+    "source_excerpt": "Any user can request a password change.",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "Credentials"
+    ],
+    "context_attributes": {
+      "session": {
+        "name": "requestPasswordChange__context__session",
+        "rationale": "Password-change requests are made by an authenticated user.",
+        "plain_english_summary": "The login session for this request.",
+        "source_excerpt": "Any user can request a password change.",
+        "on_entity": "",
+        "field_name": "session",
+        "cedar_type": "Session",
+        "optional": false,
+        "alternatives_considered": []
+      }
+    },
+    "parent_groups": []
+  },
+  {
+    "name": "logout",
+    "rationale": "Logging out ends an authenticated session.",
+    "plain_english_summary": "End the current iTrust session by logging out.",
+    "source_excerpt": "An authenticated session ends when the user logs out or closes the application.",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "Session"
+    ],
+    "context_attributes": {},
+    "parent_groups": []
+  },
+  {
+    "name": "closeApplication",
+    "rationale": "Closing the application ends an authenticated session.",
+    "plain_english_summary": "End the current iTrust session by closing the application.",
+    "source_excerpt": "An authenticated session ends when the user logs out or closes the application.",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "Session"
+    ],
+    "context_attributes": {},
+    "parent_groups": []
+  },
+  {
+    "name": "setInactivityPeriodLength",
+    "rationale": "Administrators can configure the inactivity timeout.",
+    "plain_english_summary": "Set how long sessions may be inactive before expiring.",
+    "source_excerpt": "The administrator can set the inactivity period length.",
+    "principal_types": [
+      "Administrator"
+    ],
+    "resource_types": [
+      "Session"
+    ],
+    "context_attributes": {
+      "session": {
+        "name": "setInactivityPeriodLength__context__session",
+        "rationale": "Protected configuration requires an active administrator session.",
+        "plain_english_summary": "The administrator's login session.",
+        "source_excerpt": "The administrator can set the inactivity period length.",
+        "on_entity": "",
+        "field_name": "session",
+        "cedar_type": "Session",
+        "optional": false,
+        "alternatives_considered": []
+      }
+    },
+    "parent_groups": []
+  },
+  {
+    "name": "viewProviderHistory",
+    "rationale": "Patients can view LHCPs from office visits and designated providers.",
+    "plain_english_summary": "View the LHCPs connected to the patient.",
+    "source_excerpt": "A patient can view all LHCPs the patient has ever had an office visit with and all LHCPs the patient has designated.",
+    "principal_types": [
+      "Patient"
+    ],
+    "resource_types": [
+      "Patient"
+    ],
+    "context_attributes": {
+      "session": {
+        "name": "viewProviderHistory__context__session",
+        "rationale": "Protected viewing requires an active authenticated session.",
+        "plain_english_summary": "The login session for this request.",
+        "source_excerpt": "A patient can view all LHCPs the patient has ever had an office visit with and all LHCPs the patient has designated.",
+        "on_entity": "",
+        "field_name": "session",
+        "cedar_type": "Session",
+        "optional": false,
+        "alternatives_considered": []
+      }
+    },
+    "parent_groups": []
+  },
+  {
+    "name": "addProviderToProviderList",
+    "rationale": "Patients can add HCP/LHCP providers to their provider list using search criteria.",
+    "plain_english_summary": "Add a provider to the patient's provider list.",
+    "source_excerpt": "A patient can add a LHCP/HCP to their provider list by searching by name, specialty, and optionally zip code.",
+    "principal_types": [
+      "Patient"
+    ],
+    "resource_types": [
+      "ProviderList"
+    ],
+    "context_attributes": {
+      "session": {
+        "name": "addProviderToProviderList__context__session",
+        "rationale": "Protected update requires an active authenticated session.",
+        "plain_english_summary": "The login session for this request.",
+        "source_excerpt": "A patient can add a LHCP/HCP to their provider list by searching by name, specialty, and optionally zip code.",
+        "on_entity": "",
+        "field_name": "session",
+        "cedar_type": "Session",
+        "optional": false,
+        "alternatives_considered": []
+      },
+      "provider": {
+        "name": "addProviderToProviderList__context__provider",
+        "rationale": "The action adds a selected LHCP/HCP to the list.",
+        "plain_english_summary": "The provider being added.",
+        "source_excerpt": "A patient can add a LHCP/HCP to their provider list by searching by name, specialty, and optionally zip code.",
+        "on_entity": "",
+        "field_name": "provider",
+        "cedar_type": "HCP",
+        "optional": false,
+        "alternatives_considered": []
+      },
+      "searchName": {
+        "name": "addProviderToProviderList__context__searchName",
+        "rationale": "The provider search may use name.",
+        "plain_english_summary": "The name searched for.",
+        "source_excerpt": "A patient can add a LHCP/HCP to their provider list by searching by name, specialty, and optionally zip code.",
+        "on_entity": "",
+        "field_name": "searchName",
+        "cedar_type": "String",
+        "optional": true,
+        "alternatives_considered": []
+      },
+      "searchSpecialty": {
+        "name": "addProviderToProviderList__context__searchSpecialty",
+        "rationale": "The provider search may use specialty.",
+        "plain_english_summary": "The specialty searched for.",
+        "source_excerpt": "A patient can add a LHCP/HCP to their provider list by searching by name, specialty, and optionally zip code.",
+        "on_entity": "",
+        "field_name": "searchSpecialty",
+        "cedar_type": "String",
+        "optional": true,
+        "alternatives_considered": []
+      },
+      "searchZipCode": {
+        "name": "addProviderToProviderList__context__searchZipCode",
+        "rationale": "The provider search may optionally use zip code.",
+        "plain_english_summary": "The ZIP code searched for.",
+        "source_excerpt": "A patient can add a LHCP/HCP to their provider list by searching by name, specialty, and optionally zip code.",
+        "on_entity": "",
+        "field_name": "searchZipCode",
+        "cedar_type": "String",
+        "optional": true,
+        "alternatives_considered": []
+      }
+    },
+    "parent_groups": []
+  },
+  {
+    "name": "designateDLHCP",
+    "rationale": "Patients designate an LHCP as their patient-specific DLHCP.",
+    "plain_english_summary": "Mark an LHCP as this patient's designated provider.",
+    "source_excerpt": "A patient can designate any LHCP as a DLHCP for that patient",
+    "principal_types": [
+      "Patient"
+    ],
+    "resource_types": [
+      "LHCP"
+    ],
+    "context_attributes": {
+      "session": {
+        "name": "designateDLHCP__context__session",
+        "rationale": "Protected designation requires an active authenticated session.",
+        "plain_english_summary": "The login session for this request.",
+        "source_excerpt": "A patient can designate any LHCP as a DLHCP for that patient",
+        "on_entity": "",
+        "field_name": "session",
+        "cedar_type": "Session",
+        "optional": false,
+        "alternatives_considered": []
+      },
+      "patient": {
+        "name": "designateDLHCP__context__patient",
+        "rationale": "The designation is for a specific patient.",
+        "plain_english_summary": "The patient for whom the LHCP is being designated.",
+        "source_excerpt": "A patient can designate any LHCP as a DLHCP for that patient",
+        "on_entity": "",
+        "field_name": "patient",
+        "cedar_type": "Patient",
+        "optional": false,
+        "alternatives_considered": []
+      }
+    },
+    "parent_groups": []
+  },
+  {
+    "name": "undesignateDLHCP",
+    "rationale": "Patients remove patient-specific DLHCP designations.",
+    "plain_english_summary": "Remove an LHCP as this patient's designated provider.",
+    "source_excerpt": "A patient can undesignate any LHCP as a DLHCP for that patient.",
+    "principal_types": [
+      "Patient"
+    ],
+    "resource_types": [
+      "LHCP"
+    ],
+    "context_attributes": {
+      "session": {
+        "name": "undesignateDLHCP__context__session",
+        "rationale": "Protected undesignation requires an active authenticated session.",
+        "plain_english_summary": "The login session for this request.",
+        "source_excerpt": "A patient can undesignate any LHCP as a DLHCP for that patient.",
+        "on_entity": "",
+        "field_name": "session",
+        "cedar_type": "Session",
+        "optional": false,
+        "alternatives_considered": []
+      },
+      "patient": {
+        "name": "undesignateDLHCP__context__patient",
+        "rationale": "The designation being removed is for a specific patient.",
+        "plain_english_summary": "The patient for whom the LHCP is being undesignated.",
+        "source_excerpt": "A patient can undesignate any LHCP as a DLHCP for that patient.",
+        "on_entity": "",
+        "field_name": "patient",
+        "cedar_type": "Patient",
+        "optional": false,
+        "alternatives_considered": []
+      }
+    },
+    "parent_groups": []
+  },
+  {
+    "name": "viewAccessLog",
+    "rationale": "Patients view their own access log for a chosen period.",
+    "plain_english_summary": "View a patient's access log over a date range.",
+    "source_excerpt": "A patient can view the patient's own access log. The patient can choose a beginning and end date for the access-log period.",
+    "principal_types": [
+      "Patient"
+    ],
+    "resource_types": [
+      "AccessLog"
+    ],
+    "context_attributes": {
+      "session": {
+        "name": "viewAccessLog__context__session",
+        "rationale": "Protected viewing requires an active authenticated session.",
+        "plain_english_summary": "The login session for this request.",
+        "source_excerpt": "A patient can view the patient's own access log. The patient can choose a beginning and end date for the access-log period.",
+        "on_entity": "",
+        "field_name": "session",
+        "cedar_type": "Session",
+        "optional": false,
+        "alternatives_considered": []
+      },
+      "beginDate": {
+        "name": "viewAccessLog__context__beginDate",
+        "rationale": "The patient chooses the beginning date for the access-log period.",
+        "plain_english_summary": "The start of the log period.",
+        "source_excerpt": "A patient can view the patient's own access log. The patient can choose a beginning and end date for the access-log period.",
+        "on_entity": "",
+        "field_name": "beginDate",
+        "cedar_type": "datetime",
+        "optional": false,
+        "alternatives_considered": []
+      },
+      "endDate": {
+        "name": "viewAccessLog__context__endDate",
+        "rationale": "The patient chooses the end date for the access-log period.",
+        "plain_english_summary": "The end of the log period.",
+        "source_excerpt": "A patient can view the patient's own access log. The patient can choose a beginning and end date for the access-log period.",
+        "on_entity": "",
+        "field_name": "endDate",
+        "cedar_type": "datetime",
+        "optional": false,
+        "alternatives_considered": []
+      }
+    },
+    "parent_groups": []
+  },
+  {
+    "name": "viewMedicalRecord",
+    "rationale": "Patients and personal representatives may view own or represented patients' medical records.",
+    "plain_english_summary": "View a patient's medical record, including family history and visit information.",
+    "source_excerpt": "A patient or personal representative may view medical records including family history.",
+    "principal_types": [
+      "Patient",
+      "PersonalRepresentative"
+    ],
+    "resource_types": [
+      "MedicalRecord"
+    ],
+    "context_attributes": {
+      "session": {
+        "name": "viewMedicalRecord__context__session",
+        "rationale": "Protected viewing requires an active authenticated session.",
+        "plain_english_summary": "The login session for this request.",
+        "source_excerpt": "A patient or personal representative may view medical records including family history.",
+        "on_entity": "",
+        "field_name": "session",
+        "cedar_type": "Session",
+        "optional": false,
+        "alternatives_considered": []
+      },
+      "representedPatient": {
+        "name": "viewMedicalRecord__context__representedPatient",
+        "rationale": "Personal representative access depends on the patient represented by the user.",
+        "plain_english_summary": "The patient the requester represents, if any.",
+        "source_excerpt": "A patient or personal representative may view medical records including family history.",
+        "on_entity": "",
+        "field_name": "representedPatient",
+        "cedar_type": "Patient",
+        "optional": true,
+        "alternatives_considered": []
+      }
+    },
+    "parent_groups": []
+  }
+]

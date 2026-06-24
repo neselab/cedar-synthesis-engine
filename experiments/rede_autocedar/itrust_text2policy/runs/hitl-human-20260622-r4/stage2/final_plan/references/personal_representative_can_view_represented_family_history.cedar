@@ -1,0 +1,1 @@
+permit (principal, action == Action::"viewFamilyHistory", resource) when { principal is PersonalRepresentative && context.session.isActive && resource.hasFamilyHistory && context has representedPatient && context.representedPatient == resource.patient && principal.representedPatients.contains(context.representedPatient) };

@@ -1,0 +1,307 @@
+entity User {
+    mid: String,
+    password: String,
+    securityQuestion?: String,
+};
+
+entity Patient in [User] {
+    isActive: Bool,
+};
+
+entity Hcp in [User];
+
+entity Lhcp in [Hcp] {
+    hospitals: Set<Hospital>,
+};
+
+entity Administrator in [User];
+
+entity EmergencyResponder in [User];
+
+entity Uap in [User];
+
+entity PersonalRepresentative in [User];
+
+entity PublicHealthAgent in [User];
+
+entity LabTechnician in [User];
+
+entity SoftwareTester in [User];
+
+entity Hospital;
+
+entity Session {
+    user: User,
+    isActive: Bool,
+};
+
+entity SystemSettings {
+    inactivityPeriodLength: duration,
+};
+
+entity MedicalRecord {
+    patient: Patient,
+};
+
+entity DemographicInformation {
+    patient: Patient,
+};
+
+entity DiagnosticInformation {
+    patient: Patient,
+    isRestricted: Bool,
+    restrictionAllowed: Bool,
+    allowedAudience: String,
+    allowedAudienceType: DiagnosticInformationAudience,
+};
+
+entity OfficeVisit {
+    patient: Patient,
+    lhcp: Lhcp,
+    hospital: Hospital,
+    surveyTaken: Bool,
+};
+
+entity PersonalHealthInformation {
+    patient: Patient,
+};
+
+entity FamilyHistory {
+    patient: Patient,
+};
+
+entity Immunization {
+    patient: Patient,
+};
+
+entity AccessLog {
+    patient: Patient,
+    accessorName: String,
+    accessorRoleRelativeToPatient: String,
+    dateTime: datetime,
+    transactionType: String,
+};
+
+entity ProviderDesignation {
+    patient: Patient,
+    lhcp: Lhcp,
+    isDesignated: Bool,
+};
+
+entity PersonalRepresentativeRelationship {
+    patient: Patient,
+    representative: User,
+    isActive: Bool,
+};
+
+entity DiagnosticInformationAudience enum ["DesignatedLicensedHealthCareProfessionals", "OtherLicensedHealthCareProfessionals", "NoOne"];
+
+action login appliesTo {
+    principal: [User],
+    resource: [Session],
+};
+
+action logout appliesTo {
+    principal: [User],
+    resource: [Session],
+};
+
+action requestPasswordChange appliesTo {
+    principal: [User],
+    resource: [User],
+};
+
+action setInactivityPeriodLength appliesTo {
+    principal: [Administrator],
+    resource: [SystemSettings],
+};
+
+action createPatient appliesTo {
+    principal: [Hcp],
+    resource: [Patient],
+};
+
+action disablePatient appliesTo {
+    principal: [Hcp],
+    resource: [Patient],
+};
+
+action reactivatePatient appliesTo {
+    principal: [Administrator],
+    resource: [Patient],
+};
+
+action editPatient appliesTo {
+    principal: [Hcp],
+    resource: [Patient],
+};
+
+action createLhcp appliesTo {
+    principal: [Administrator],
+    resource: [Lhcp],
+};
+
+action createEmergencyResponder appliesTo {
+    principal: [Administrator],
+    resource: [EmergencyResponder],
+};
+
+action createLabTechnician appliesTo {
+    principal: [Administrator],
+    resource: [LabTechnician],
+};
+
+action createPublicHealthAgent appliesTo {
+    principal: [Administrator],
+    resource: [PublicHealthAgent],
+};
+
+action createUap appliesTo {
+    principal: [Lhcp],
+    resource: [Uap],
+};
+
+action assignLhcpCredentials appliesTo {
+    principal: [Administrator],
+    resource: [Lhcp],
+};
+
+action assignLhcpHospital appliesTo {
+    principal: [Administrator],
+    resource: [Lhcp],
+    context: {
+        hospital: Hospital,
+    },
+};
+
+action viewLhcps appliesTo {
+    principal: [Patient],
+    resource: [Lhcp],
+    context: {
+        patient: Patient,
+    },
+};
+
+action addProvider appliesTo {
+    principal: [Patient],
+    resource: [ProviderDesignation],
+};
+
+action designateLhcp appliesTo {
+    principal: [Patient],
+    resource: [ProviderDesignation],
+    context: {
+        session: Session,
+    },
+};
+
+action undesignateLhcp appliesTo {
+    principal: [Patient],
+    resource: [ProviderDesignation],
+};
+
+action viewAccessLog appliesTo {
+    principal: [Patient, PersonalRepresentative],
+    resource: [AccessLog],
+    context: {
+        session: Session,
+        representativeRelationship?: PersonalRepresentativeRelationship,
+    },
+};
+
+action viewMedicalRecord appliesTo {
+    principal: [Patient, PersonalRepresentative],
+    resource: [MedicalRecord],
+    context: {
+        session: Session,
+        representativeRelationship?: PersonalRepresentativeRelationship,
+    },
+};
+
+action viewFamilyHistory appliesTo {
+    principal: [Patient, PersonalRepresentative],
+    resource: [FamilyHistory],
+};
+
+action viewPersonalHealthInformation appliesTo {
+    principal: [Patient, PersonalRepresentative],
+    resource: [PersonalHealthInformation],
+};
+
+action viewImmunization appliesTo {
+    principal: [Patient, PersonalRepresentative],
+    resource: [Immunization],
+};
+
+action viewOfficeVisit appliesTo {
+    principal: [Patient, PersonalRepresentative],
+    resource: [OfficeVisit],
+};
+
+action takeOfficeVisitSurvey appliesTo {
+    principal: [Patient, PersonalRepresentative],
+    resource: [OfficeVisit],
+};
+
+action viewDiagnosticInformation appliesTo {
+    principal: [Lhcp, Patient, PersonalRepresentative],
+    resource: [DiagnosticInformation],
+    context: {
+        providerDesignation?: ProviderDesignation,
+    },
+};
+
+action restrictDiagnosticInformation appliesTo {
+    principal: [Patient],
+    resource: [DiagnosticInformation],
+};
+
+action determineDiagnosisRestrictionAllowed appliesTo {
+    principal: [Lhcp],
+    resource: [DiagnosticInformation],
+};
+
+action editPersonalHealthInformation appliesTo {
+    principal: [Hcp],
+    resource: [PersonalHealthInformation],
+};
+
+action editImmunization appliesTo {
+    principal: [Hcp],
+    resource: [Immunization],
+};
+
+action editFamilyHistory appliesTo {
+    principal: [Hcp],
+    resource: [FamilyHistory],
+};
+
+action documentOfficeVisit appliesTo {
+    principal: [Hcp],
+    resource: [OfficeVisit],
+};
+
+action editOfficeVisit appliesTo {
+    principal: [Hcp],
+    resource: [OfficeVisit],
+};
+
+action enterDemographicInformation appliesTo {
+    principal: [Uap],
+    resource: [DemographicInformation],
+};
+
+action editDemographicInformation appliesTo {
+    principal: [Uap],
+    resource: [DemographicInformation],
+};
+
+action addPersonalRepresentative appliesTo {
+    principal: [Hcp],
+    resource: [PersonalRepresentativeRelationship],
+};
+
+action removePersonalRepresentative appliesTo {
+    principal: [Hcp],
+    resource: [PersonalRepresentativeRelationship],
+};

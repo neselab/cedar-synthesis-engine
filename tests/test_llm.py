@@ -22,12 +22,15 @@ from autocedar.atoms import (
     PropertyAtom,
     TypeAliasAtom,
 )
+from autocedar.codex_auth import DEFAULT_CODEX_MODEL
 from autocedar.llm import (
+    DEFAULT_ANTHROPIC_MODEL,
     DEFAULT_EFFORT,
     DEFAULT_MAX_TOKENS,
     DEFAULT_MODEL,
     LLMClient,
     PropertyAtomsResponse,
+    PropertyCritiqueResponse,
     SchemaAtomsResponse,
     SchemaFixResponse,
     _LLMActionAtom,
@@ -36,7 +39,9 @@ from autocedar.llm import (
     _LLMEntityAtom,
     _LLMPropertyAtom,
     _LLMTypeAliasAtom,
+    _property_coverage_instruction,
     _translate_atom,
+    _translate_property_atom,
 )
 
 
@@ -100,12 +105,31 @@ def _make_response(parsed: Any) -> Any:
 # ---------------------------------------------------------------------------
 
 
-def test_default_construction_uses_opus_4_7() -> None:
-    """LLMClient defaults to claude-opus-4-7 per the claude-api skill."""
+def test_default_construction_uses_codex(monkeypatch: pytest.MonkeyPatch) -> None:
+    """LLMClient defaults to the local Codex OAuth provider."""
+    monkeypatch.delenv("AUTOCEDAR_PROVIDER", raising=False)
+    monkeypatch.delenv("AUTOCEDAR_CODEX_MODEL", raising=False)
     # Inject a stub client so we don't actually hit anthropic.Anthropic().
     fake = _FakeAnthropic(_make_response(SchemaAtomsResponse(atoms=[])))
     client = LLMClient(client=fake)
-    assert client._model == DEFAULT_MODEL == "claude-opus-4-7"
+    assert DEFAULT_MODEL == DEFAULT_CODEX_MODEL
+    assert client._provider == "codex"
+    assert client._model == DEFAULT_CODEX_MODEL
+
+
+def test_anthropic_provider_uses_anthropic_default_when_explicit(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fake = _FakeAnthropic(_make_response(SchemaAtomsResponse(atoms=[])))
+    monkeypatch.setenv("AUTOCEDAR_PROVIDER", "anthropic")
+    monkeypatch.delenv("AUTOCEDAR_MODEL", raising=False)
+    monkeypatch.delenv("AUTOCEDAR_AUTHOR_MODEL", raising=False)
+    monkeypatch.delenv("AUTOCEDAR_CHAT_MODEL", raising=False)
+
+    client = LLMClient(client=fake)
+
+    assert client._provider == "anthropic"
+    assert client._model == DEFAULT_ANTHROPIC_MODEL
 
 
 def test_construction_with_custom_model() -> None:
@@ -126,7 +150,7 @@ def test_codex_provider_uses_codex_default_model(monkeypatch: pytest.MonkeyPatch
 
     monkeypatch.setenv("AUTOCEDAR_PROVIDER", "codex")
     monkeypatch.setenv("AUTOCEDAR_CODEX_MODEL", "gpt-test")
-    monkeypatch.setattr("autocedar.llm.CodexExecClient", lambda: FakeCodex())
+    monkeypatch.setattr("autocedar.llm.CodexAuthClient", lambda: FakeCodex())
 
     client = LLMClient()
 
@@ -182,6 +206,52 @@ def test_schema_atomization_prompt_requires_lifecycle_state_to_be_representable(
     assert "lifecycle state" in system_text
     assert "registration open/closed" in system_text
     assert "connect" in system_text
+
+
+def test_schema_atomization_prompt_requires_request_environment_context() -> None:
+    fake = _FakeAnthropic(_make_response(SchemaAtomsResponse(atoms=[])))
+    client = LLMClient(client=fake)
+    client.propose_schema_atoms(
+        "Students register for courses from personal computers attached to the campus LAN.",
+    )
+
+    kwargs = fake.messages.last_kwargs
+    system_text = "\n".join(block["text"] for block in kwargs["system"])
+    assert "request environment" in system_text
+    assert "from campus LAN" in system_text
+    assert "addCourseOffering" in system_text
+    assert "request-context fields" in system_text
+
+
+def test_schema_atomization_prompt_requires_no_conflict_context() -> None:
+    fake = _FakeAnthropic(_make_response(SchemaAtomsResponse(atoms=[])))
+    client = LLMClient(client=fake)
+    client.propose_schema_atoms(
+        "A professor may select a course offering if there is no conflict.",
+    )
+
+    kwargs = fake.messages.last_kwargs
+    system_text = "\n".join(block["text"] for block in kwargs["system"])
+    assert "no conflict" in system_text
+    assert "hasScheduleConflict" in system_text
+    assert "unassigned" in system_text
+
+
+def test_schema_atomization_prompt_requires_owned_target_identity() -> None:
+    fake = _FakeAnthropic(_make_response(SchemaAtomsResponse(atoms=[])))
+    client = LLMClient(client=fake)
+    client.propose_schema_atoms(
+        "The system must prevent students from changing schedules other than their own.",
+    )
+
+    kwargs = fake.messages.last_kwargs
+    system_text = "\n".join(block["text"] for block in kwargs["system"])
+    assert "their own" in system_text
+    assert "owner/target identity" in system_text
+    assert "context.student: Student" in system_text
+    assert "principal ==" in system_text
+    assert "context.student" in system_text
+    assert "action name alone" in system_text
 
 
 def test_propose_schema_atoms_sends_adaptive_thinking_and_effort() -> None:
@@ -341,11 +411,11 @@ def test_propose_schema_atoms_calls_llm_exactly_once() -> None:
 
 
 # ---------------------------------------------------------------------------
-# propose_property_atoms — Stage 2 with mocked LLM.
+# propose_property_atom — Stage 2 one-atom protocol with mocked LLM.
 # ---------------------------------------------------------------------------
 
 
-def test_propose_property_atoms_returns_translated_dataclasses() -> None:
+def test_propose_property_atom_returns_translated_dataclass() -> None:
     fake_response = _make_response(
         PropertyAtomsResponse(
             atoms=[
@@ -368,22 +438,306 @@ def test_propose_property_atoms_returns_translated_dataclasses() -> None:
     )
     fake = _FakeAnthropic(fake_response)
     client = LLMClient(client=fake)
-    atoms = client.propose_property_atoms("Owners can read.", "entity User;")
+    atom = client.propose_property_atom(
+        "Owners can read.",
+        "entity User;",
+        prior_atoms=[],
+        prior_decisions=[],
+    )
 
-    assert len(atoms) == 1
-    assert isinstance(atoms[0], PropertyAtom)
-    assert atoms[0].constraint_type == "ceiling"
-    assert atoms[0].action == "read"
+    assert isinstance(atom, PropertyAtom)
+    assert atom.constraint_type == "ceiling"
+    assert atom.action == "read"
 
 
-def test_propose_property_atoms_includes_schema_in_user_turn() -> None:
+def test_propose_property_atom_includes_schema_and_one_atom_contract() -> None:
     fake = _FakeAnthropic(_make_response(PropertyAtomsResponse(atoms=[])))
     client = LLMClient(client=fake)
-    client.propose_property_atoms("Owners can read.", "entity User;")
+    prior = PropertyAtom(
+        name="owner_must_read",
+        rationale="required permission",
+        plain_english_summary="Owners must read.",
+        source_excerpt="Owners can read.",
+        constraint_type="floor",
+        action="read",
+        principal_types=["User"],
+        resource_types=["Resource"],
+        reference_cedar='permit (principal, action == Action::"read", resource);',
+    )
+    prior_decision = SimpleNamespace(
+        atom_name="bad_atom",
+        action="reject",
+        reason="not in the spec",
+        edit_delta={},
+    )
+    client.propose_property_atom(
+        "Owners can read.",
+        "entity User;",
+        prior_atoms=[prior],
+        prior_decisions=[prior_decision],
+    )
 
     kwargs = fake.messages.last_kwargs
     assert kwargs["output_format"] is PropertyAtomsResponse
-    assert "```cedarschema\nentity User;\n```" in kwargs["messages"][0]["content"]
+    user_turn = kwargs["messages"][0]["content"]
+    assert "```cedarschema\nentity User;\n```" in user_turn
+    assert "Propose exactly ONE next Stage 2 property atom" in user_turn
+    assert "The property atom is the review unit" in user_turn
+    assert "Coverage instruction for this next atom" in user_turn
+    assert "No approved floor atoms exist yet" not in user_turn
+    assert "owner_must_read" in user_turn
+    assert "bad_atom" in user_turn
+
+
+def test_property_atom_prompt_prioritizes_floor_when_none_approved() -> None:
+    fake = _FakeAnthropic(_make_response(PropertyAtomsResponse(atoms=[])))
+    client = LLMClient(client=fake)
+
+    client.propose_property_atom(
+        "Students can register for courses.",
+        "entity Student;",
+        prior_atoms=[],
+        prior_decisions=[],
+    )
+
+    user_turn = fake.messages.last_kwargs["messages"][0]["content"]
+    assert "No approved floor atoms exist yet" in user_turn
+    assert "propose one missing floor atom now" in user_turn
+
+
+def test_property_coverage_instruction_prioritizes_floor_with_only_safety() -> None:
+    safety = PropertyAtom(
+        name="owner_only_read",
+        rationale="safety",
+        plain_english_summary="Only owners read.",
+        source_excerpt="Only owners can read.",
+        constraint_type="ceiling",
+        action="read",
+        principal_types=["User"],
+        resource_types=["Resource"],
+        reference_cedar='permit (principal, action == Action::"read", resource);',
+    )
+
+    instruction = _property_coverage_instruction([safety])
+
+    assert "No approved floor atoms exist yet" in instruction
+    assert "propose one missing floor atom now" in instruction
+
+
+def test_property_coverage_instruction_balances_safety_after_some_floors() -> None:
+    floor = PropertyAtom(
+        name="owner_must_read",
+        rationale="floor",
+        plain_english_summary="Owners must read.",
+        source_excerpt="Owners can read.",
+        constraint_type="floor",
+        action="read",
+        principal_types=["User"],
+        resource_types=["Resource"],
+        reference_cedar='permit (principal, action == Action::"read", resource);',
+    )
+    safety_atoms = [
+        PropertyAtom(
+            name=f"safety_{i}",
+            rationale="safety",
+            plain_english_summary="Safety.",
+            source_excerpt="Only owners can read.",
+            constraint_type="ceiling",
+            action="read",
+            principal_types=["User"],
+            resource_types=["Resource"],
+            reference_cedar='permit (principal, action == Action::"read", resource);',
+        )
+        for i in range(3)
+    ]
+
+    instruction = _property_coverage_instruction([floor, *safety_atoms])
+
+    assert "Safety atoms currently outnumber floors" in instruction
+    assert "Prefer the next missing floor" in instruction
+
+
+def test_property_coverage_instruction_audits_scoped_floors_before_stopping() -> None:
+    floor = PropertyAtom(
+        name="professor_select_floor",
+        rationale="positive workflow",
+        plain_english_summary="Professor may select an eligible offering when there is no conflict.",
+        source_excerpt="If there is no conflict...",
+        constraint_type="floor",
+        action="selectCourseOfferingToTeach",
+        principal_types=["Professor"],
+        resource_types=["CourseOffering"],
+        reference_cedar=(
+            'permit (principal, action == Action::"selectCourseOfferingToTeach", resource) '
+            "when { principal.eligibleCourses.contains(resource.course) && !context.hasScheduleConflict };"
+        ),
+    )
+    ceiling = PropertyAtom(
+        name="some_other_ceiling",
+        rationale="safety",
+        plain_english_summary="Some other safety condition.",
+        source_excerpt="cannot...",
+        constraint_type="ceiling",
+        action="recordGrade",
+        principal_types=["Professor"],
+        resource_types=["CourseOffering"],
+        reference_cedar='permit (principal, action == Action::"recordGrade", resource);',
+    )
+
+    instruction = _property_coverage_instruction([floor, ceiling])
+
+    assert "audit existing floors" in instruction
+    assert "eligible course" in instruction
+    assert "no conflict" in instruction
+    assert "upcoming/not-completed semester boundaries" in instruction
+    assert "A same-action ceiling for only part of the floor body is not enough" in instruction
+    assert "no same-action ceiling/disjointness" in instruction
+
+
+def test_propose_property_atom_returns_none_for_completion() -> None:
+    fake = _FakeAnthropic(_make_response(PropertyAtomsResponse(atoms=[])))
+    client = LLMClient(client=fake)
+
+    atom = client.propose_property_atom(
+        "Owners can read.",
+        "entity User;",
+        prior_atoms=[],
+        prior_decisions=[],
+    )
+
+    assert atom is None
+
+
+def test_codex_property_proposal_uses_low_effort() -> None:
+    fake = _FakeAnthropic(_make_response(PropertyAtomsResponse(atoms=[])))
+    client = LLMClient(client=fake, provider="codex", model="gpt-5.5", effort="high")
+
+    client.propose_property_atom(
+        "Owners can read.",
+        "entity User;",
+        prior_atoms=[],
+        prior_decisions=[],
+    )
+
+    assert fake.messages.last_kwargs["output_config"]["effort"] == "low"
+
+
+def test_property_critic_includes_schema_history_and_proposed_atom() -> None:
+    fake = _FakeAnthropic(
+        _make_response(
+            PropertyCritiqueResponse(
+                decision="repair",
+                reason="missing owner boundary",
+                tags=["too-broad"],
+            ),
+        ),
+    )
+    client = LLMClient(client=fake, provider="codex", model="gpt-5.5", effort="high")
+    prior = PropertyAtom(
+        name="owner_must_read",
+        rationale="floor",
+        plain_english_summary="Owners must be allowed to read.",
+        source_excerpt="Owners can read.",
+        constraint_type="floor",
+        action="read",
+        principal_types=["User"],
+        resource_types=["Resource"],
+        reference_cedar='permit (principal, action == Action::"read", resource);',
+    )
+    proposed = PropertyAtom(
+        name="read_too_broad",
+        rationale="missing owner boundary",
+        plain_english_summary="Users may read resources.",
+        source_excerpt="Owners can read.",
+        constraint_type="floor",
+        action="read",
+        principal_types=["User"],
+        resource_types=["Resource"],
+        reference_cedar='permit (principal, action == Action::"read", resource);',
+    )
+    prior_decision = SimpleNamespace(
+        atom_name="schema_implied_read",
+        action="reject",
+        reason="schema-implied",
+        edit_delta={},
+    )
+
+    critique = client.critique_property_atom(
+        "Owners can read their own resources.",
+        "entity User;",
+        proposed,
+        prior_atoms=[prior],
+        prior_decisions=[prior_decision],
+    )
+
+    assert critique.decision == "repair"
+    assert critique.reason == "missing owner boundary"
+    assert critique.tags == ["too-broad"]
+
+    kwargs = fake.messages.last_kwargs
+    assert kwargs["output_format"] is PropertyCritiqueResponse
+    assert kwargs["output_config"]["effort"] == "low"
+    system_text = "\n".join(block["text"] for block in kwargs["system"])
+    user_turn = kwargs["messages"][0]["content"]
+    assert "Stage 2 decomposition critic" in system_text
+    assert "schema-implied" in system_text
+    assert "too broad" in system_text
+    assert "schema-gap" in system_text
+    assert "safe-complement permit" in system_text
+    assert "disjoint_target_body" in system_text
+    assert "not a claim that the complement must be permitted" in user_turn
+    assert "not schema-expressible" in user_turn
+    assert "```cedarschema\nentity User;\n```" in user_turn
+    assert "owner_must_read" in user_turn
+    assert "schema_implied_read" in user_turn
+    assert "read_too_broad" in user_turn
+
+
+def test_disjointness_translation_canonicalizes_forbid_reference() -> None:
+    atom = _translate_property_atom(
+        _LLMPropertyAtom(
+            name="closed_registration_disjointness",
+            rationale="registration is closed",
+            plain_english_summary="Students cannot register after registration closes.",
+            source_excerpt="Students cannot register ... after registration ... has been closed.",
+            constraint_type="disjointness",
+            action="registerForCourseOffering",
+            principal_types=["Student"],
+            resource_types=["CourseOffering"],
+            reference_cedar=(
+                'forbid (principal, action == Action::"registerForCourseOffering", resource) '
+                "when { resource.semester.isCurrent && !resource.registrationPeriod.isOpen };"
+            ),
+            disjoint_with="closed_registration",
+            disjoint_target_body="resource.semester.isCurrent && !resource.registrationPeriod.isOpen",
+        ),
+    )
+
+    assert atom.reference_cedar.startswith("permit (principal is Student")
+    assert 'action == Action::"registerForCourseOffering"' in atom.reference_cedar
+    assert "resource is CourseOffering" in atom.reference_cedar
+    assert "!(resource.semester.isCurrent && !resource.registrationPeriod.isOpen)" in atom.reference_cedar
+
+
+def test_disjointness_translation_infers_missing_disjoint_with_label() -> None:
+    atom = _translate_property_atom(
+        _LLMPropertyAtom(
+            name="tas_must_not_assign_external_grades",
+            rationale="TA external-grade assignment is forbidden.",
+            plain_english_summary="Teaching assistants must not assign external grades.",
+            source_excerpt="TA can view and assign InternalGrades but not ExternalGrades.",
+            constraint_type="disjointness",
+            action="assignExternalGrade",
+            principal_types=["User"],
+            resource_types=["ExternalGrade"],
+            reference_cedar="",
+            disjoint_target_body='principal in TeachingAssistant::"TeachingAssistant"',
+        ),
+    )
+
+    assert atom.disjoint_with == "tas_must_not_assign_external_grades_target"
+    assert atom.disjoint_target_body == 'principal in TeachingAssistant::"TeachingAssistant"'
+    assert "!(principal in TeachingAssistant::\"TeachingAssistant\")" in atom.reference_cedar
 
 
 def test_property_atomization_prompt_guards_scenario2_override_shape() -> None:
@@ -400,12 +754,14 @@ def test_property_atomization_prompt_guards_scenario2_override_shape() -> None:
         "entity Ticket { team: Team, status: String, };\n"
     )
 
-    client.propose_property_atoms(spec, schema)
+    client.propose_property_atom(spec, schema, prior_atoms=[], prior_decisions=[])
 
     kwargs = fake.messages.last_kwargs
     system_text = "\n".join(block["text"] for block in kwargs["system"])
     assert "Prefer `disjointness` for explicit deny/override language" in system_text
     assert "closed tickets cannot be commented on" in system_text
+    assert "not a `forbid` policy" in system_text
+    assert 'permit (...) when { !(resource.status == "closed") };' in system_text
     assert "Do not emit duplicate liveness atoms" in system_text
     assert spec in system_text
     assert f"```cedarschema\n{schema}\n```" in kwargs["messages"][0]["content"]
@@ -425,14 +781,65 @@ def test_property_atomization_prompt_covers_closed_periods_and_negated_has_trap(
         "entity Professor;\n"
     )
 
-    client.propose_property_atoms(spec, schema)
+    client.propose_property_atom(spec, schema, prior_atoms=[], prior_decisions=[])
 
     kwargs = fake.messages.last_kwargs
     system_text = "\n".join(block["text"] for block in kwargs["system"])
+    normalized_system_text = " ".join(system_text.split())
     assert "!(x has field) || (x has field && x.field == value)" in system_text
     assert "Cover every explicit safety sentence" in system_text
     assert "after X is closed" in system_text
     assert "registration is closed" in system_text
+    assert "For mutable actions" in system_text
+    assert "broad floor" in normalized_system_text
+    assert "open registration" in normalized_system_text
+    assert "eligible/no-conflict/upcoming" in normalized_system_text
+    assert "not a completed semester" in normalized_system_text
+    assert "for the upcoming semester" in normalized_system_text
+    assert "A same-action ceiling only covers the floor boundary" in system_text
+    assert "eligible && noConflict && upcoming && notCompleted" in system_text
+    assert "Ceilings are not optional when the prose names necessary conditions" in system_text
+    assert "Before returning an empty `atoms` list" in system_text
+
+
+def test_property_atomization_prompt_requires_action_context_conditions() -> None:
+    fake = _FakeAnthropic(_make_response(PropertyAtomsResponse(atoms=[])))
+    client = LLMClient(client=fake)
+    client.propose_property_atom(
+        "Students register from campus LAN and professors record grades with extra security.",
+        "entity Student; entity Professor;",
+        prior_atoms=[],
+        prior_decisions=[],
+    )
+
+    kwargs = fake.messages.last_kwargs
+    system_text = "\n".join(block["text"] for block in kwargs["system"])
+    assert "action has request context fields" in system_text
+    assert "Floors are not optional" in system_text
+    assert "context.fromCampusLan" in system_text
+    assert "context.strongAuthentication" in system_text
+    assert "context.hasScheduleConflict" in system_text
+    assert "context.student" in system_text
+    assert "context.grade" in system_text
+
+
+def test_property_atomization_prompt_requires_owned_target_equality() -> None:
+    fake = _FakeAnthropic(_make_response(PropertyAtomsResponse(atoms=[])))
+    client = LLMClient(client=fake)
+    client.propose_property_atom(
+        "Students must not change schedules other than their own.",
+        "entity Student;",
+        prior_atoms=[],
+        prior_decisions=[],
+    )
+
+    kwargs = fake.messages.last_kwargs
+    system_text = "\n".join(block["text"] for block in kwargs["system"])
+    assert "other than their own" in system_text
+    assert "principal == resource.owner" in system_text
+    assert "resource.student" in system_text
+    assert "principal == context.student" in system_text
+    assert "principal type alone" in system_text
 
 
 def test_propose_alternative_property_atom_includes_rejection_context() -> None:
@@ -487,9 +894,12 @@ def test_propose_alternative_property_atom_includes_rejection_context() -> None:
     assert "```cedarschema\nentity User;\n```" in user_turn
     assert "this should be a floor, not a ceiling" in user_turn
     assert "owner_ceiling_read" in user_turn
+    assert "Preserve the same source requirement, action, principal" in user_turn
+    assert "repaired floor" in user_turn
+    assert "avoid reusing the name of any already-approved atom" in user_turn
 
 
-def test_propose_property_atoms_falls_back_when_grammar_compilation_times_out() -> None:
+def test_propose_property_atom_falls_back_when_grammar_compilation_times_out() -> None:
     fallback = """
     ```json
     {
@@ -519,10 +929,15 @@ def test_propose_property_atoms_falls_back_when_grammar_compilation_times_out() 
     fake = _GrammarTimeoutAnthropic(fallback)
     client = LLMClient(client=fake)
 
-    atoms = client.propose_property_atoms("Owners can read.", "entity User;")
+    atom = client.propose_property_atom(
+        "Owners can read.",
+        "entity User;",
+        prior_atoms=[],
+        prior_decisions=[],
+    )
 
-    assert len(atoms) == 1
-    assert atoms[0].name == "owner_only_read"
+    assert atom is not None
+    assert atom.name == "owner_only_read"
     assert fake.messages.parse_count == 1
     assert fake.messages.create_count == 1
     assert fake.messages.create_kwargs is not None

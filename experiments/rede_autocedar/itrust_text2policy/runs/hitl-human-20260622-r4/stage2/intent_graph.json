@@ -1,0 +1,2540 @@
+{
+  "schema_version": 1,
+  "nodes": [
+    {
+      "id": "property:hcp_can_create_patient",
+      "kind": "property",
+      "name": "hcp_can_create_patient",
+      "constraint_type": "floor",
+      "summary": "An HCP with an active session should be allowed to create a patient.",
+      "source_excerpt": "An HCP can create a patient and enter the patient as a new user of the system.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "action:createPatient",
+      "kind": "action",
+      "name": "createPatient"
+    },
+    {
+      "id": "principal_type:Hcp",
+      "kind": "principal_type",
+      "name": "Hcp"
+    },
+    {
+      "id": "resource_type:Patient",
+      "kind": "resource_type",
+      "name": "Patient"
+    },
+    {
+      "id": "property:patient_mid_not_editable",
+      "kind": "property",
+      "name": "patient_mid_not_editable",
+      "constraint_type": "disjointness",
+      "summary": "HCPs must not be allowed to edit a patient's MID field when editing patient data.",
+      "source_excerpt": "The HCP can edit patient data according to the data format, but the patient's MID must not be editable.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "action:editPatientData",
+      "kind": "action",
+      "name": "editPatientData"
+    },
+    {
+      "id": "property:editPatientData permitted patient-data edits",
+      "kind": "property_ref",
+      "name": "editPatientData permitted patient-data edits"
+    },
+    {
+      "id": "property:hcp_cannot_enter_patient_credentials",
+      "kind": "property",
+      "name": "hcp_cannot_enter_patient_credentials",
+      "constraint_type": "disjointness",
+      "summary": "HCPs must not be allowed to enter a patient's password or security question.",
+      "source_excerpt": "The HCP must not enter, edit, or view the patient's security question or password.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "action:enterCredential",
+      "kind": "action",
+      "name": "enterCredential"
+    },
+    {
+      "id": "resource_type:Credential",
+      "kind": "resource_type",
+      "name": "Credential"
+    },
+    {
+      "id": "property:HCP entering a patient's password or security question",
+      "kind": "property_ref",
+      "name": "HCP entering a patient's password or security question"
+    },
+    {
+      "id": "property:hcp_can_edit_patient_data",
+      "kind": "property",
+      "name": "hcp_can_edit_patient_data",
+      "constraint_type": "floor",
+      "summary": "An HCP with an active session should be allowed to edit patient data fields other than the patient's MID.",
+      "source_excerpt": "The HCP can edit patient data according to the data format, but the patient's MID must not be editable.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "property:hcp_cannot_edit_patient_credentials",
+      "kind": "property",
+      "name": "hcp_cannot_edit_patient_credentials",
+      "constraint_type": "disjointness",
+      "summary": "HCPs must not be allowed to edit a patient's password or security question.",
+      "source_excerpt": "The HCP must not enter, edit, or view the patient's security question or password.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "action:editCredential",
+      "kind": "action",
+      "name": "editCredential"
+    },
+    {
+      "id": "property:HCP editing patient credential secrets",
+      "kind": "property_ref",
+      "name": "HCP editing patient credential secrets"
+    },
+    {
+      "id": "property:administrator_can_create_lhcp",
+      "kind": "property",
+      "name": "administrator_can_create_lhcp",
+      "constraint_type": "floor",
+      "summary": "An administrator with an active session should be allowed to create an LHCP.",
+      "source_excerpt": "An administrator can create LHCPs, emergency responders, and public health agents.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "action:createLhcp",
+      "kind": "action",
+      "name": "createLhcp"
+    },
+    {
+      "id": "principal_type:Administrator",
+      "kind": "principal_type",
+      "name": "Administrator"
+    },
+    {
+      "id": "resource_type:Lhcp",
+      "kind": "resource_type",
+      "name": "Lhcp"
+    },
+    {
+      "id": "property:hcp_cannot_view_patient_credentials",
+      "kind": "property",
+      "name": "hcp_cannot_view_patient_credentials",
+      "constraint_type": "disjointness",
+      "summary": "HCPs must not be allowed to view a patient's password or security question.",
+      "source_excerpt": "The HCP must not enter, edit, or view the patient's security question or password.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "action:viewCredential",
+      "kind": "action",
+      "name": "viewCredential"
+    },
+    {
+      "id": "property:patient password or security question viewing by HCP",
+      "kind": "property_ref",
+      "name": "patient password or security question viewing by HCP"
+    },
+    {
+      "id": "property:administrator_can_create_emergency_responder",
+      "kind": "property",
+      "name": "administrator_can_create_emergency_responder",
+      "constraint_type": "floor",
+      "summary": "An administrator with an active session should be allowed to create an emergency responder.",
+      "source_excerpt": "An administrator can create LHCPs, emergency responders, and public health agents.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "action:createEmergencyResponder",
+      "kind": "action",
+      "name": "createEmergencyResponder"
+    },
+    {
+      "id": "resource_type:EmergencyResponder",
+      "kind": "resource_type",
+      "name": "EmergencyResponder"
+    },
+    {
+      "id": "property:administrator_can_create_public_health_agent",
+      "kind": "property",
+      "name": "administrator_can_create_public_health_agent",
+      "constraint_type": "floor",
+      "summary": "An administrator with an active session should be allowed to create a public health agent.",
+      "source_excerpt": "An administrator can create LHCPs, emergency responders, and public health agents.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "action:createPublicHealthAgent",
+      "kind": "action",
+      "name": "createPublicHealthAgent"
+    },
+    {
+      "id": "resource_type:PublicHealthAgent",
+      "kind": "resource_type",
+      "name": "PublicHealthAgent"
+    },
+    {
+      "id": "property:lhcp_can_create_uap",
+      "kind": "property",
+      "name": "lhcp_can_create_uap",
+      "constraint_type": "floor",
+      "summary": "An LHCP with an active session should be allowed to create a UAP user.",
+      "source_excerpt": "A LHCP can create UAP users.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "action:createUap",
+      "kind": "action",
+      "name": "createUap"
+    },
+    {
+      "id": "principal_type:Lhcp",
+      "kind": "principal_type",
+      "name": "Lhcp"
+    },
+    {
+      "id": "resource_type:Uap",
+      "kind": "resource_type",
+      "name": "Uap"
+    },
+    {
+      "id": "property:administrator_can_assign_lhcp_to_hospital",
+      "kind": "property",
+      "name": "administrator_can_assign_lhcp_to_hospital",
+      "constraint_type": "floor",
+      "summary": "An administrator with an active session should be allowed to assign an LHCP to a hospital chosen in the request context.",
+      "source_excerpt": "The administrator can assign an LHCP to multiple hospitals and choose the hospitals.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "action:assignLhcpToHospital",
+      "kind": "action",
+      "name": "assignLhcpToHospital"
+    },
+    {
+      "id": "property:user_can_login_with_verified_credentials",
+      "kind": "property",
+      "name": "user_can_login_with_verified_credentials",
+      "constraint_type": "floor",
+      "summary": "A user should be allowed to log in to their own session when they use their own credential, enter their own MID, and the password has been verified.",
+      "source_excerpt": "Any user can enter their MID and password to gain role-based entry into iTrust.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "action:login",
+      "kind": "action",
+      "name": "login"
+    },
+    {
+      "id": "principal_type:User",
+      "kind": "principal_type",
+      "name": "User"
+    },
+    {
+      "id": "resource_type:Session",
+      "kind": "resource_type",
+      "name": "Session"
+    },
+    {
+      "id": "property:login_only_with_verified_own_credentials",
+      "kind": "property",
+      "name": "login_only_with_verified_own_credentials",
+      "constraint_type": "ceiling",
+      "summary": "Users should only be allowed to log in to their own session using their own credential, their own MID, and a verified password.",
+      "source_excerpt": "Any user can enter their MID and password to gain role-based entry into iTrust.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "property:user_can_request_own_password_change",
+      "kind": "property",
+      "name": "user_can_request_own_password_change",
+      "constraint_type": "floor",
+      "summary": "A user with an active session should be allowed to request a password change for their own credential.",
+      "source_excerpt": "Any user can request a password change.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "action:requestPasswordChange",
+      "kind": "action",
+      "name": "requestPasswordChange"
+    },
+    {
+      "id": "property:password_change_only_own_credential_active_session",
+      "kind": "property",
+      "name": "password_change_only_own_credential_active_session",
+      "constraint_type": "ceiling",
+      "summary": "Users should only be allowed to request a password change for their own credential when the request has an active session.",
+      "source_excerpt": "Any user can request a password change.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "property:inactive_session_blocks_create_patient",
+      "kind": "property",
+      "name": "inactive_session_blocks_create_patient",
+      "constraint_type": "disjointness",
+      "summary": "HCPs must not be allowed to create patients when the request session is inactive.",
+      "source_excerpt": "Electronic sessions must terminate after the configured inactivity period; after the inactivity limit is exceeded, all authorization is disabled.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "property:inactive_session",
+      "kind": "property_ref",
+      "name": "inactive_session"
+    },
+    {
+      "id": "property:inactive_session_blocks_edit_patient_data",
+      "kind": "property",
+      "name": "inactive_session_blocks_edit_patient_data",
+      "constraint_type": "disjointness",
+      "summary": "HCPs must not be allowed to edit patient data when the request session is inactive.",
+      "source_excerpt": "Electronic sessions must terminate after the configured inactivity period; after the inactivity limit is exceeded, all authorization is disabled.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "property:inactive session",
+      "kind": "property_ref",
+      "name": "inactive session"
+    },
+    {
+      "id": "property:inactive_session_blocks_create_lhcp",
+      "kind": "property",
+      "name": "inactive_session_blocks_create_lhcp",
+      "constraint_type": "disjointness",
+      "summary": "Administrators must not be allowed to create LHCP users when the request session is inactive.",
+      "source_excerpt": "Electronic sessions must terminate after the configured inactivity period; after the inactivity limit is exceeded, all authorization is disabled.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "property:inactive_session_blocks_create_emergency_responder",
+      "kind": "property",
+      "name": "inactive_session_blocks_create_emergency_responder",
+      "constraint_type": "disjointness",
+      "summary": "Administrators must not be allowed to create emergency responder users when the request session is inactive.",
+      "source_excerpt": "Electronic sessions must terminate after the configured inactivity period; after the inactivity limit is exceeded, all authorization is disabled.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "property:user_can_logout_own_active_session",
+      "kind": "property",
+      "name": "user_can_logout_own_active_session",
+      "constraint_type": "floor",
+      "summary": "A user should be allowed to log out of their own active session.",
+      "source_excerpt": "An authenticated session ends when the user logs out or closes the application.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "action:logout",
+      "kind": "action",
+      "name": "logout"
+    },
+    {
+      "id": "property:logout_only_own_active_session",
+      "kind": "property",
+      "name": "logout_only_own_active_session",
+      "constraint_type": "ceiling",
+      "summary": "Users should only be allowed to log out of their own active session.",
+      "source_excerpt": "An authenticated session ends when the user logs out or closes the application.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "property:user_can_close_own_active_session",
+      "kind": "property",
+      "name": "user_can_close_own_active_session",
+      "constraint_type": "floor",
+      "summary": "A user should be allowed to close the application to end their own active session.",
+      "source_excerpt": "An authenticated session ends when the user logs out or closes the application.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "action:closeApplication",
+      "kind": "action",
+      "name": "closeApplication"
+    },
+    {
+      "id": "property:close_application_only_own_active_session",
+      "kind": "property",
+      "name": "close_application_only_own_active_session",
+      "constraint_type": "ceiling",
+      "summary": "Users should only be allowed to close the application for their own active session.",
+      "source_excerpt": "An authenticated session ends when the user logs out or closes the application.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "property:administrator_can_set_inactivity_period_length",
+      "kind": "property",
+      "name": "administrator_can_set_inactivity_period_length",
+      "constraint_type": "floor",
+      "summary": "An administrator with an active session should be allowed to set the inactivity period length for a session.",
+      "source_excerpt": "The administrator can set the inactivity period length.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "action:setInactivityPeriodLength",
+      "kind": "action",
+      "name": "setInactivityPeriodLength"
+    },
+    {
+      "id": "property:inactive_session_blocks_create_public_health_agent",
+      "kind": "property",
+      "name": "inactive_session_blocks_create_public_health_agent",
+      "constraint_type": "disjointness",
+      "summary": "Administrators must not be allowed to create public health agent users when the request session is inactive.",
+      "source_excerpt": "Electronic sessions must terminate after the configured inactivity period; after the inactivity limit is exceeded, all authorization is disabled.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "property:patient_can_view_own_access_log_for_period",
+      "kind": "property",
+      "name": "patient_can_view_own_access_log_for_period",
+      "constraint_type": "floor",
+      "summary": "A patient with an active session should be allowed to view their own access log entries within the chosen beginning and end dates.",
+      "source_excerpt": "A patient can view the patient's own access log. The patient can choose a beginning and end date for the access-log period.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "action:viewAccessLog",
+      "kind": "action",
+      "name": "viewAccessLog"
+    },
+    {
+      "id": "principal_type:Patient",
+      "kind": "principal_type",
+      "name": "Patient"
+    },
+    {
+      "id": "resource_type:AccessLog",
+      "kind": "resource_type",
+      "name": "AccessLog"
+    },
+    {
+      "id": "property:access_log_view_only_own_period_active_session",
+      "kind": "property",
+      "name": "access_log_view_only_own_period_active_session",
+      "constraint_type": "ceiling",
+      "summary": "Patients should only be allowed to view their own access-log entries during the chosen beginning-to-end date period and with an active session.",
+      "source_excerpt": "A patient can view the patient's own access log. The patient can choose a beginning and end date for the access-log period.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "property:patient_can_designate_lhcp_for_self",
+      "kind": "property",
+      "name": "patient_can_designate_lhcp_for_self",
+      "constraint_type": "floor",
+      "summary": "A patient with an active session should be allowed to designate an LHCP as a DLHCP for that same patient.",
+      "source_excerpt": "A patient can designate any LHCP as a DLHCP for that patient.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "action:designateDlhcp",
+      "kind": "action",
+      "name": "designateDlhcp"
+    },
+    {
+      "id": "resource_type:ProviderDesignation",
+      "kind": "resource_type",
+      "name": "ProviderDesignation"
+    },
+    {
+      "id": "property:designate_dlhcp_only_for_self",
+      "kind": "property",
+      "name": "designate_dlhcp_only_for_self",
+      "constraint_type": "ceiling",
+      "summary": "Patients should only be allowed to designate an LHCP as a DLHCP for themselves, and only with an active session.",
+      "source_excerpt": "A patient can designate any LHCP as a DLHCP for that patient.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "property:patient_can_undesignate_current_dlhcp_for_self",
+      "kind": "property",
+      "name": "patient_can_undesignate_current_dlhcp_for_self",
+      "constraint_type": "floor",
+      "summary": "A patient with an active session should be allowed to undesignate an LHCP as a DLHCP for themselves when that LHCP is currently designated as a DLHCP for that patient.",
+      "source_excerpt": "A patient can designate any LHCP as a DLHCP for that patient and can undesignate any LHCP as a DLHCP for that patient.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "action:undesignateDlhcp",
+      "kind": "action",
+      "name": "undesignateDlhcp"
+    },
+    {
+      "id": "property:undesignate_dlhcp_only_current_for_self",
+      "kind": "property",
+      "name": "undesignate_dlhcp_only_current_for_self",
+      "constraint_type": "ceiling",
+      "summary": "Patients should only be allowed to undesignate an LHCP as a DLHCP for themselves when the designation is currently active and the request has an active session.",
+      "source_excerpt": "A patient can designate any LHCP as a DLHCP for that patient and can undesignate any LHCP as a DLHCP for that patient.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "property:patient_can_view_own_medical_record",
+      "kind": "property",
+      "name": "patient_can_view_own_medical_record",
+      "constraint_type": "floor",
+      "summary": "A patient with an active session should be allowed to view their own medical record.",
+      "source_excerpt": "A patient or personal representative may view medical records including family history; ... for their own records.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "action:viewMedicalRecord",
+      "kind": "action",
+      "name": "viewMedicalRecord"
+    },
+    {
+      "id": "resource_type:MedicalRecord",
+      "kind": "resource_type",
+      "name": "MedicalRecord"
+    },
+    {
+      "id": "property:medical_record_view_only_own_or_represented_active_session",
+      "kind": "property",
+      "name": "medical_record_view_only_own_or_represented_active_session",
+      "constraint_type": "ceiling",
+      "summary": "Patients and personal representatives should only be allowed to view a medical record with an active session when it is the patient's own record or a record of a patient represented by the personal representative.",
+      "source_excerpt": "A patient or personal representative may view medical records ... for their own records and for records of patients for whom the user is a personal representative.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "principal_type:PersonalRepresentative",
+      "kind": "principal_type",
+      "name": "PersonalRepresentative"
+    },
+    {
+      "id": "property:personal_representative_can_view_represented_medical_record",
+      "kind": "property",
+      "name": "personal_representative_can_view_represented_medical_record",
+      "constraint_type": "floor",
+      "summary": "A personal representative with an active session should be allowed to view the medical record of a patient they represent.",
+      "source_excerpt": "A patient or personal representative may view medical records including family history; ... for records of patients for whom the user is a personal representative.",
+      "symbolic_verified": false,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "property:patient_can_view_own_family_history",
+      "kind": "property",
+      "name": "patient_can_view_own_family_history",
+      "constraint_type": "floor",
+      "summary": "A patient with an active session should be allowed to view family history in their own medical record when the record contains family history.",
+      "source_excerpt": "A patient or personal representative may view medical records including family history; ... for their own records.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "action:viewFamilyHistory",
+      "kind": "action",
+      "name": "viewFamilyHistory"
+    },
+    {
+      "id": "property:family_history_view_only_own_or_represented_active_session",
+      "kind": "property",
+      "name": "family_history_view_only_own_or_represented_active_session",
+      "constraint_type": "ceiling",
+      "summary": "Patients and personal representatives should only be allowed to view family history with an active session when the record is the patient's own record or a record of a patient represented by the personal representative, and the record contains family history.",
+      "source_excerpt": "A patient or personal representative may view medical records including family history ... for their own records and for records of patients for whom the user is a personal representative.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "property:personal_representative_can_view_represented_family_history",
+      "kind": "property",
+      "name": "personal_representative_can_view_represented_family_history",
+      "constraint_type": "floor",
+      "summary": "A personal representative with an active session should be allowed to view family history in the medical record of a patient they represent when the record contains family history.",
+      "source_excerpt": "A patient or personal representative may view medical records including family history ... for records of patients for whom the user is a personal representative.",
+      "symbolic_verified": false,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "property:patient_can_view_own_personal_health_information",
+      "kind": "property",
+      "name": "patient_can_view_own_personal_health_information",
+      "constraint_type": "floor",
+      "summary": "A patient with an active session should be allowed to view personal health information in their own medical record when the record contains personal health information.",
+      "source_excerpt": "The patient or personal representative can see patient personal health information ... for their own records.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "action:viewPersonalHealthInformation",
+      "kind": "action",
+      "name": "viewPersonalHealthInformation"
+    },
+    {
+      "id": "property:personal_health_information_view_only_own_or_represented_active_session",
+      "kind": "property",
+      "name": "personal_health_information_view_only_own_or_represented_active_session",
+      "constraint_type": "ceiling",
+      "summary": "Patients and personal representatives should only be allowed to view personal health information with an active session when the record is the patient's own record or a record of a patient represented by the personal representative, and the record contains personal health information.",
+      "source_excerpt": "The patient or personal representative can see patient personal health information ... for their own records and for records of patients for whom the user is a personal representative.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "property:personal_representative_can_view_represented_personal_health_information",
+      "kind": "property",
+      "name": "personal_representative_can_view_represented_personal_health_information",
+      "constraint_type": "floor",
+      "summary": "A personal representative with an active session should be allowed to view personal health information in the medical record of a patient they represent when the record contains personal health information.",
+      "source_excerpt": "The patient or personal representative can see patient personal health information ... for ... records for whom the user is a personal representative.",
+      "symbolic_verified": false,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "property:patient_can_view_own_immunizations",
+      "kind": "property",
+      "name": "patient_can_view_own_immunizations",
+      "constraint_type": "floor",
+      "summary": "A patient with an active session should be allowed to view immunization information in their own medical record when the record contains immunizations.",
+      "source_excerpt": "The patient or personal representative can see patient personal health information, immunizations, and office visit information for their own records.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "action:viewImmunizations",
+      "kind": "action",
+      "name": "viewImmunizations"
+    },
+    {
+      "id": "property:immunizations_view_only_own_or_represented_active_session",
+      "kind": "property",
+      "name": "immunizations_view_only_own_or_represented_active_session",
+      "constraint_type": "ceiling",
+      "summary": "Patients and personal representatives should only be allowed to view immunization information with an active session when the record is the patient's own record or a record of a patient represented by the personal representative, and the record contains immunizations.",
+      "source_excerpt": "The patient or personal representative can see ... immunizations ... for their own records and for records of patients for whom the user is a personal representative.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "property:personal_representative_can_view_represented_immunizations",
+      "kind": "property",
+      "name": "personal_representative_can_view_represented_immunizations",
+      "constraint_type": "floor",
+      "summary": "A personal representative with an active session should be allowed to view immunization information in the medical record of a patient they represent when the record contains immunizations.",
+      "source_excerpt": "The patient or personal representative can see ... immunizations ... for ... records for whom the user is a personal representative.",
+      "symbolic_verified": false,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "property:patient_can_view_own_office_visit_information",
+      "kind": "property",
+      "name": "patient_can_view_own_office_visit_information",
+      "constraint_type": "floor",
+      "summary": "A patient with an active session should be allowed to view office-visit information in their own medical record when the record contains office-visit information.",
+      "source_excerpt": "The patient or personal representative can see ... office-visit information for their own records.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "action:viewOfficeVisitInformation",
+      "kind": "action",
+      "name": "viewOfficeVisitInformation"
+    },
+    {
+      "id": "property:office_visit_information_view_only_own_or_represented_active_session",
+      "kind": "property",
+      "name": "office_visit_information_view_only_own_or_represented_active_session",
+      "constraint_type": "ceiling",
+      "summary": "Patients and personal representatives should only be allowed to view office-visit information with an active session when the record is the patient's own record or a record of a patient represented by the personal representative, and the record contains office-visit information.",
+      "source_excerpt": "The patient or personal representative can see ... office visit information for their own records and the records for whom the user is a personal representative.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "property:inactive_session_blocks_set_inactivity_period_length",
+      "kind": "property",
+      "name": "inactive_session_blocks_set_inactivity_period_length",
+      "constraint_type": "disjointness",
+      "summary": "Administrators must not be allowed to set the inactivity period length when the request session is inactive.",
+      "source_excerpt": "Electronic sessions must terminate after the configured inactivity period; after the inactivity limit is exceeded, all authorization is disabled. The administrator can set the inactivity period length.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "property:inactive_session_blocks_create_uap",
+      "kind": "property",
+      "name": "inactive_session_blocks_create_uap",
+      "constraint_type": "disjointness",
+      "summary": "LHCPs must not be allowed to create UAP users when the request session is inactive.",
+      "source_excerpt": "Electronic sessions must terminate after the configured inactivity period; after the inactivity limit is exceeded, all authorization is disabled. A LHCP can create UAP users.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "property:patient_can_view_own_prior_visit_and_designated_lhcp_providers",
+      "kind": "property",
+      "name": "patient_can_view_own_prior_visit_and_designated_lhcp_providers",
+      "constraint_type": "floor",
+      "summary": "A patient with an active session should be allowed to view their own provider list of prior and designated LHCPs.",
+      "source_excerpt": "A patient can view all LHCPs the patient has ever had an office visit with and all LHCPs the patient has designated.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "action:viewPriorAndDesignatedLhcps",
+      "kind": "action",
+      "name": "viewPriorAndDesignatedLhcps"
+    },
+    {
+      "id": "resource_type:ProviderList",
+      "kind": "resource_type",
+      "name": "ProviderList"
+    },
+    {
+      "id": "property:prior_designated_lhcp_view_only_own_active_session",
+      "kind": "property",
+      "name": "prior_designated_lhcp_view_only_own_active_session",
+      "constraint_type": "ceiling",
+      "summary": "Patients should only be allowed to view their own prior/designated LHCP provider list when the request has an active session.",
+      "source_excerpt": "A patient can view all LHCPs the patient has ever had an office visit with and all LHCPs the patient has designated.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "property:inactive_session_blocks_assign_lhcp_to_hospital",
+      "kind": "property",
+      "name": "inactive_session_blocks_assign_lhcp_to_hospital",
+      "constraint_type": "disjointness",
+      "summary": "Administrators must not be allowed to assign an LHCP to a hospital when the request session is inactive.",
+      "source_excerpt": "Electronic sessions must terminate after the configured inactivity period; after the inactivity limit is exceeded, all authorization is disabled. The administrator can assign an LHCP to multiple hospitals and choose the hospitals.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "property:patient_can_add_provider_to_own_list_by_name_and_specialty_search",
+      "kind": "property",
+      "name": "patient_can_add_provider_to_own_list_by_name_and_specialty_search",
+      "constraint_type": "floor",
+      "summary": "A patient with an active session should be allowed to add a provider to their own provider list when the provider matches the searched name and searched specialty, and also matches the searched zip code if a zip code is supplied.",
+      "source_excerpt": "A patient can add a LHCP/HCP to their provider list by searching by name, specialty, and optionally zip code.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "action:addProviderToList",
+      "kind": "action",
+      "name": "addProviderToList"
+    },
+    {
+      "id": "property:add_provider_only_own_list_by_name_and_specialty_search",
+      "kind": "property",
+      "name": "add_provider_only_own_list_by_name_and_specialty_search",
+      "constraint_type": "ceiling",
+      "summary": "Patients should only be allowed to add a provider to their own provider list when the request has an active session, the provider matches the searched name and specialty, and the provider matches the searched zip code if one is supplied.",
+      "source_excerpt": "A patient can add a LHCP/HCP to their provider list by searching by name, specialty, and optionally zip code.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "property:personal_representative_can_view_represented_office_visit_information",
+      "kind": "property",
+      "name": "personal_representative_can_view_represented_office_visit_information",
+      "constraint_type": "floor",
+      "summary": "A personal representative with an active session should be allowed to view office-visit information in the medical record of a patient they represent when the record contains office-visit information.",
+      "source_excerpt": "The patient or personal representative can see ... office visit information ... for ... records for whom the user is a personal representative.",
+      "symbolic_verified": false,
+      "intent_acknowledged_by_user": true
+    },
+    {
+      "id": "critic:1:hcp_can_create_patient",
+      "kind": "critic_review",
+      "atom_name": "hcp_can_create_patient",
+      "decision": "accept",
+      "reason": "The atom captures a non-schema-implied affirmative grant from the source: HCPs may create patients. It is tightly scoped to the createPatient action, Hcp principal, Patient resource, and an active session owned by the principal, which aligns with the role-based entry/session lifecycle requirements. Adjacent constraints about initial patient fields and credential secrecy should be handled by separate field/ceiling atoms rather than blocking this basic creation floor.",
+      "tags": [
+        "useful-floor",
+        "role-boundary",
+        "session-boundary"
+      ]
+    },
+    {
+      "id": "critic:2:patient_mid_not_editable",
+      "kind": "critic_review",
+      "atom_name": "patient_mid_not_editable",
+      "decision": "accept",
+      "reason": "The atom captures a distinct safety boundary from the source: HCP patient-data editing must exclude the patient's MID field. The schema exposes this boundary through editPatientData.context.fieldName, and the disjoint_target_body correctly names the forbidden slice as context.fieldName == \"mid\". It is not redundant with the approved create-patient atom and is not merely restating principal/resource typing.",
+      "tags": [
+        "credential-and-identifier-integrity",
+        "field-level-ceiling",
+        "disjointness"
+      ]
+    },
+    {
+      "id": "critic:3:hcp_cannot_enter_patient_credentials",
+      "kind": "critic_review",
+      "atom_name": "hcp_cannot_enter_patient_credentials",
+      "decision": "accept",
+      "reason": "The atom captures a distinct credential-secrecy disjointness requirement not covered by approved atoms. The forbidden slice is tightly scoped to HCPs entering password or security-question fields for credentials whose user is a Patient, matching the source boundary and using schema-supported hooks.",
+      "tags": []
+    },
+    {
+      "id": "critic:4:hcp_can_edit_patient_data",
+      "kind": "critic_review",
+      "atom_name": "hcp_can_edit_patient_data",
+      "decision": "accept",
+      "reason": "The atom is materially useful as a same-action floor complementing the approved MID disjointness ceiling; the approved safety atom does not require any ordinary patient-data edit permission. It is tightly scoped to HCP, editPatientData, Patient, active sessions, and non-MID fields, matching the access-control portion of the source requirement without treating the prior disjointness complement permit as an affirmative grant.",
+      "tags": []
+    },
+    {
+      "id": "critic:5:hcp_cannot_edit_patient_credentials",
+      "kind": "critic_review",
+      "atom_name": "hcp_cannot_edit_patient_credentials",
+      "decision": "accept",
+      "reason": "The atom captures a distinct explicit prohibition from the source: HCPs may not edit a patient's password or security question. It is not redundant with the approved enterCredential disjointness because editCredential is a separate action. The schema exposes the needed boundaries through Credential.user and context.credentialField, and the disjoint_target_body correctly names the forbidden slice: patient-owned credentials where the edited field is password or securityQuestion.",
+      "tags": []
+    },
+    {
+      "id": "critic:6:administrator_can_create_lhcp",
+      "kind": "critic_review",
+      "atom_name": "administrator_can_create_lhcp",
+      "decision": "accept",
+      "reason": "The atom captures a distinct positive permission from the source: administrators may create LHCP users. It is not redundant with approved atoms and is not merely schema-implied, since appliesTo typing does not grant permission. The specialty requirement is represented by the required Lhcp.specialty attribute rather than an action/context boundary for this floor, so the proposed property remains tightly scoped to the create permission.",
+      "tags": []
+    },
+    {
+      "id": "critic:7:hcp_cannot_view_patient_credentials",
+      "kind": "critic_review",
+      "atom_name": "hcp_cannot_view_patient_credentials",
+      "decision": "accept",
+      "reason": "The atom captures a distinct, explicit credential-secrecy boundary from the source: HCPs must not view a patient's password or security question. It is not redundant with the approved enter/edit credential disjointness atoms because it covers the separate viewCredential action. The schema has direct hooks for the relevant boundaries via Credential.user and context.credentialField, and the disjoint_target_body correctly names the forbidden slice: patient-owned credentials where the requested field is password or securityQuestion.",
+      "tags": []
+    },
+    {
+      "id": "critic:8:administrator_can_create_emergency_responder",
+      "kind": "critic_review",
+      "atom_name": "administrator_can_create_emergency_responder",
+      "decision": "accept",
+      "reason": "The atom captures a distinct administrator creation permission for EmergencyResponder that is explicitly named in the same source requirement as the already-approved LHCP creation atom, but is not implied by it. The schema has a dedicated createEmergencyResponder action with Administrator principal, EmergencyResponder resource, and session context, and the active-session condition is consistent with the slice's authenticated-session authorization boundary.",
+      "tags": []
+    },
+    {
+      "id": "critic:9:administrator_can_create_public_health_agent",
+      "kind": "critic_review",
+      "atom_name": "administrator_can_create_public_health_agent",
+      "decision": "accept",
+      "reason": "The atom captures a distinct source permission not covered by the already-approved administrator creation atoms for LHCPs and emergency responders. It is tightly scoped to the createPublicHealthAgent action, Administrator principal, PublicHealthAgent resource, and active-session authorization boundary exposed by the schema.",
+      "tags": []
+    },
+    {
+      "id": "critic:10:lhcp_can_create_uap",
+      "kind": "critic_review",
+      "atom_name": "lhcp_can_create_uap",
+      "decision": "accept",
+      "reason": "The atom captures a distinct positive permission from the source requirement: LHCPs can create UAP users. It is not already covered by approved atoms, is not merely restating the schema because it asserts a floor permission, and the schema has a direct action/resource hook for this workflow. The active-session condition is consistent with the surrounding authorization model and does not omit a source-named boundary for this requirement.",
+      "tags": []
+    },
+    {
+      "id": "critic:11:administrator_can_assign_lhcp_to_hospital",
+      "kind": "critic_review",
+      "atom_name": "administrator_can_assign_lhcp_to_hospital",
+      "decision": "accept",
+      "reason": "The atom captures a distinct positive permission from the source: administrators may assign an LHCP to a chosen hospital. It is not duplicated by approved atoms, and the schema has a direct action hook with a required context.hospital field, so the chosen-hospital boundary is represented without needing an additional condition in the Cedar body.",
+      "tags": []
+    },
+    {
+      "id": "critic:12:user_can_login_with_own_credentials",
+      "kind": "critic_review",
+      "atom_name": "user_can_login_with_own_credentials",
+      "decision": "repair",
+      "reason": "The login floor is materially useful, but it replaces the source authentication boundary with a proxy. The requirement is that the user enters their MID and password to gain role-based entry; the schema exposes only a Credential owner and hasPassword flag, not request-entered MID/password values or a password/MID verification result. Requiring context.credential.user == principal and hasPassword does not represent successful authentication with the entered MID and password.",
+      "tags": [
+        "schema-gap",
+        "missing-authentication-boundary",
+        "missing-entered-mid",
+        "missing-password-verification"
+      ]
+    },
+    {
+      "id": "critic:13:user_can_login_with_verified_credentials",
+      "kind": "critic_review",
+      "atom_name": "user_can_login_with_verified_credentials",
+      "decision": "accept",
+      "reason": "The atom is materially useful and tightly scoped to the login/authentication requirement. Unlike the prior rejected proposal, the validated schema now exposes the relevant authentication hooks: entered MID, password verification, credential ownership, and session ownership. The floor captures the source boundary that a user gains entry by using their own MID and verified password, without merely restating role/type constraints.",
+      "tags": []
+    },
+    {
+      "id": "critic:14:login_only_with_verified_own_credentials",
+      "kind": "critic_review",
+      "atom_name": "login_only_with_verified_own_credentials",
+      "decision": "accept",
+      "reason": "The atom is materially useful and not redundant with the approved login floor: the floor requires the successful verified-authentication case to be permitted, while this ceiling prevents over-permissive login for another user's session or credential, an incorrect MID, or an unverified password. The schema now exposes the relevant authentication boundaries via resource.user, context.credential.user, context.enteredMid, and context.passwordVerified, so no schema gap is present.",
+      "tags": [
+        "authentication-boundary",
+        "non-redundant-ceiling"
+      ]
+    },
+    {
+      "id": "critic:15:user_can_request_own_password_change",
+      "kind": "critic_review",
+      "atom_name": "user_can_request_own_password_change",
+      "decision": "accept",
+      "reason": "The atom captures a distinct positive permission from the source requirement and is not implied by existing approved atoms. It uses the schema-exposed credential ownership boundary to scope the password-change request to the requesting user's own credential, and includes the active-session lifecycle condition consistent with the modeled action context.",
+      "tags": []
+    },
+    {
+      "id": "critic:16:password_change_only_own_credential",
+      "kind": "critic_review",
+      "atom_name": "password_change_only_own_credential",
+      "decision": "repair",
+      "reason": "The same-action ceiling for password-change requests is materially useful because the source's 'their password' creates an own-credential boundary not implied by the approved floor. However, the atom says the user may act only while they have an active session, and the schema exposes Session.user, but the Cedar condition only checks context.session.isActive and does not bind context.session.user to the principal. Repair the ceiling to include the session ownership/lifecycle boundary, e.g. context.session.user == principal in addition to resource.user == principal and context.session.isActive.",
+      "tags": [
+        "missing-session-ownership-boundary",
+        "repair-reference-cedar"
+      ]
+    },
+    {
+      "id": "critic:17:password_change_only_own_credential_active_own_session",
+      "kind": "critic_review",
+      "atom_name": "password_change_only_own_credential_active_own_session",
+      "decision": "accept",
+      "reason": "The atom is a materially useful same-action ceiling not implied by the approved floor: it enforces both the own-credential boundary from the password-change requirement and the session lifecycle/ownership boundary exposed by the schema. It also directly repairs the previously rejected proposal by binding context.session.user to the principal while requiring an active session.",
+      "tags": []
+    },
+    {
+      "id": "critic:18:inactive_session_blocks_create_patient",
+      "kind": "critic_review",
+      "atom_name": "inactive_session_blocks_create_patient",
+      "decision": "accept",
+      "reason": "The atom is materially useful as a same-action disjointness check: the forbidden slice `!context.session.isActive` correctly names the schema-expressible lifecycle state in which createPatient authorization must be blocked. This is not redundant with the approved active-session floor, because a floor does not prevent other policies from permitting inactive-session requests. The source\u2019s direct timeout calculation is not fully expressible without current request time, but the schema does expose `Session.isActive` as the lifecycle hook for terminated/disabled sessions, so using it here is an appropriate scoped representation rather than a schema-gap proxy.",
+      "tags": [
+        "session-lifecycle-boundary",
+        "same-action-safety",
+        "not-redundant-with-floor"
+      ]
+    },
+    {
+      "id": "critic:19:inactive_session_blocks_edit_patient_data",
+      "kind": "critic_review",
+      "atom_name": "inactive_session_blocks_edit_patient_data",
+      "decision": "accept",
+      "reason": "The atom is a materially useful per-action inactivity safety property, not a duplicate of the approved createPatient inactivity atom and not implied by the editPatientData floor. The source explicitly says that after the inactivity limit is exceeded all authorization is disabled, and the schema exposes the relevant lifecycle hook as context.session.isActive. For this disjointness atom, the forbidden slice is correctly named as !context.session.isActive for HCP editPatientData on Patient.",
+      "tags": []
+    },
+    {
+      "id": "critic:20:inactive_session_blocks_create_lhcp",
+      "kind": "critic_review",
+      "atom_name": "inactive_session_blocks_create_lhcp",
+      "decision": "accept",
+      "reason": "The atom is a materially useful same-action disjointness check for an approved administrator creation floor. The source states that after the inactivity limit is exceeded all authorization is disabled, and the schema exposes the relevant lifecycle hook as context.session.isActive. The forbidden slice is correctly named as !context.session.isActive for createLhcp by Administrator over Lhcp, and it is not redundant with the approved administrator_can_create_lhcp floor or the already-approved inactive-session atoms for different actions.",
+      "tags": []
+    },
+    {
+      "id": "critic:21:inactive_session_blocks_create_emergency_responder",
+      "kind": "critic_review",
+      "atom_name": "inactive_session_blocks_create_emergency_responder",
+      "decision": "accept",
+      "reason": "The atom is a materially useful same-action disjointness check for an already-approved administrator creation action that has not yet been covered by an inactive-session safety atom. The source explicitly says all authorization is disabled after inactivity, the schema exposes the lifecycle hook via context.session.isActive for this action, and the disjoint_target_body correctly names the forbidden slice as an inactive request session. It is not merely restating principal/resource typing and is not implied by an approved atom for a different action.",
+      "tags": []
+    },
+    {
+      "id": "critic:22:user_can_logout_own_session",
+      "kind": "critic_review",
+      "atom_name": "user_can_logout_own_session",
+      "decision": "repair",
+      "reason": "The logout floor is materially useful and not already covered, but it omits the lifecycle boundary in the source: the session being ended is an authenticated/active session. The schema exposes this as Session.isActive on the resource, so the floor should be scoped to the user's own active session, e.g. require resource.user == principal && resource.isActive.",
+      "tags": [
+        "missing-lifecycle-boundary",
+        "missing-authenticated-session-boundary",
+        "repair-reference-cedar"
+      ]
+    },
+    {
+      "id": "critic:23:user_can_logout_own_active_session",
+      "kind": "critic_review",
+      "atom_name": "user_can_logout_own_active_session",
+      "decision": "accept",
+      "reason": "The atom repairs the prior rejected logout floor by adding the source-required ownership and authenticated/active-session lifecycle boundary using schema-exposed Session.user and Session.isActive. It is materially useful, not already covered by an approved atom, and is tightly scoped to the logout workflow in the source excerpt.",
+      "tags": []
+    },
+    {
+      "id": "critic:24:logout_only_own_active_session",
+      "kind": "critic_review",
+      "atom_name": "logout_only_own_active_session",
+      "decision": "accept",
+      "reason": "The atom adds a materially useful same-action ceiling not implied by the approved logout floor: it prevents policies from also allowing logout of other users' sessions or inactive/unauthenticated sessions. The ownership boundary (resource.user == principal) and lifecycle/authenticated-session boundary (resource.isActive) are both named by the source intent and are directly expressible in the schema.",
+      "tags": []
+    },
+    {
+      "id": "critic:25:user_can_close_own_active_session",
+      "kind": "critic_review",
+      "atom_name": "user_can_close_own_active_session",
+      "decision": "accept",
+      "reason": "The atom captures a distinct positive workflow from the approved logout atoms: closing the application to end an authenticated session. It is tightly scoped to the schema-exposed lifecycle and ownership boundaries by requiring the resource session to belong to the principal and be active. It is not merely restating principal/resource types and is not implied by the approved logout floor or ceiling because it uses the separate closeApplication action.",
+      "tags": []
+    },
+    {
+      "id": "critic:26:close_application_only_own_active_session",
+      "kind": "critic_review",
+      "atom_name": "close_application_only_own_active_session",
+      "decision": "accept",
+      "reason": "The atom is a useful same-action ceiling corresponding to the already approved closeApplication floor. It is not just restating schema types: it adds the source-derived ownership and authenticated/active-session lifecycle boundaries for closing the application, using schema-exposed Session.user and Session.isActive. No stricter approved closeApplication ceiling already covers this; the approved closeApplication atom is only a floor.",
+      "tags": []
+    },
+    {
+      "id": "critic:27:administrator_can_set_inactivity_period_length",
+      "kind": "critic_review",
+      "atom_name": "administrator_can_set_inactivity_period_length",
+      "decision": "accept",
+      "reason": "The atom captures a distinct positive permission from the source that is not covered by existing approved atoms: administrators may configure the inactivity timeout period. It is scoped to the schema's explicit action, principal, resource, and active-session lifecycle hook, and does not merely restate the principal/resource type.",
+      "tags": []
+    },
+    {
+      "id": "critic:28:patient_can_view_own_prior_and_designated_lhcps",
+      "kind": "critic_review",
+      "atom_name": "patient_can_view_own_prior_and_designated_lhcps",
+      "decision": "repair",
+      "reason": "The source grant is not merely generic access to the patient's ProviderList; it is specifically to view LHCPs the patient has ever had an office visit with and LHCPs the patient has designated. The proposed floor correctly includes the own-patient boundary and active-session boundary, but it accepts ProviderList as a proxy even though the schema does not expose an office-visit history relationship and does not connect ProviderList to ProviderDesignation/isDesignated membership. Repair is needed to make the prior-office-visit and designated-LHCP boundaries explicit; if those cannot be represented with the current schema, this is a schema gap rather than an acceptable proxy.",
+      "tags": [
+        "schema-gap",
+        "missing-prior-office-visit-lhcp-boundary",
+        "missing-designated-lhcp-membership-boundary",
+        "proxy-resource-not-equivalent"
+      ]
+    },
+    {
+      "id": "critic:29:inactive_session_blocks_create_public_health_agent",
+      "kind": "critic_review",
+      "atom_name": "inactive_session_blocks_create_public_health_agent",
+      "decision": "accept",
+      "reason": "The atom captures a materially useful lifecycle safety boundary from the source requirement that all authorization is disabled after session inactivity. It is not merely restating principal/resource typing and is not already covered by the approved inactive-session atoms for other actions. The schema exposes the relevant hook as context.session.isActive for createPublicHealthAgent, and the disjoint_target_body correctly names the forbidden slice: requests with an inactive session.",
+      "tags": []
+    },
+    {
+      "id": "critic:30:patient_can_view_own_access_log_for_period",
+      "kind": "critic_review",
+      "atom_name": "patient_can_view_own_access_log_for_period",
+      "decision": "accept",
+      "reason": "The atom is materially useful and tightly scoped to an unapproved source grant. It includes the patient ownership boundary for the access log, the active-session lifecycle condition, and the chosen access-log period using the schema-exposed beginDate, endDate, and accessTimestamp fields. It is not merely a schema type restatement and is not implied by an existing approved atom.",
+      "tags": []
+    },
+    {
+      "id": "critic:31:access_log_view_only_own_period_active_session",
+      "kind": "critic_review",
+      "atom_name": "access_log_view_only_own_period_active_session",
+      "decision": "accept",
+      "reason": "This is a materially useful same-action ceiling for the already approved access-log floor. It captures the source-specific ownership boundary (the patient's own access log), chosen access-log period boundary (begin/end dates around the log timestamp), and lifecycle boundary (active session). It is not merely restating schema principal/resource types and is not implied by the floor alone, since a broader policy could otherwise permit other patients' logs, out-of-period entries, or inactive-session access.",
+      "tags": []
+    },
+    {
+      "id": "critic:32:patient_can_add_provider_to_own_list_by_search",
+      "kind": "critic_review",
+      "atom_name": "patient_can_add_provider_to_own_list_by_search",
+      "decision": "accept",
+      "reason": "The atom is materially useful and tightly scoped to the source workflow: it covers the patient-owned provider-list boundary, active-session lifecycle boundary, the provider being added, and the named search criteria including optional specialty and zip code using schema-exposed context fields. It is not a duplicate of an approved atom and is stricter than a generic own-provider-list add.",
+      "tags": []
+    },
+    {
+      "id": "critic:33:patient_can_designate_lhcp_for_self",
+      "kind": "critic_review",
+      "atom_name": "patient_can_designate_lhcp_for_self",
+      "decision": "accept",
+      "reason": "The atom captures a distinct positive permission from the source: a Patient may designate an LHCP as DLHCP for that same patient. It is not already covered by approved atoms, and it uses the schema-exposed patient-specific ownership boundary via resource.patient == principal rather than relying only on principal type. The LHCP target is represented by ProviderDesignation.lhcp: Lhcp, and the active-session lifecycle boundary is included consistently with other approved floors.",
+      "tags": []
+    },
+    {
+      "id": "critic:34:designate_dlhcp_only_for_self",
+      "kind": "critic_review",
+      "atom_name": "designate_dlhcp_only_for_self",
+      "decision": "accept",
+      "reason": "The atom adds a materially useful same-action ceiling for the patient ownership boundary in \u201cfor that patient,\u201d which is not implied by the approved floor. The schema directly exposes the needed boundary as ProviderDesignation.patient, and the active-session condition is consistent with the validated lifecycle model and existing approved designation floor. It is not merely restating principal/resource types and does not use an unsupported proxy.",
+      "tags": []
+    },
+    {
+      "id": "critic:35:patient_can_undesignate_lhcp_for_self",
+      "kind": "critic_review",
+      "atom_name": "patient_can_undesignate_lhcp_for_self",
+      "decision": "repair",
+      "reason": "The undesignation floor is materially useful and not covered by the approved designation atoms, but it omits the source state boundary that the LHCP is currently designated as a DLHCP for that patient. The schema exposes this as ProviderDesignation.isDesignated, so the floor should be scoped to an active session, resource.patient == principal, and resource.isDesignated before allowing undesignateDlhcp.",
+      "tags": [
+        "missing-designation-state-boundary",
+        "repair-reference-cedar"
+      ]
+    },
+    {
+      "id": "critic:36:patient_can_undesignate_current_dlhcp_for_self",
+      "kind": "critic_review",
+      "atom_name": "patient_can_undesignate_current_dlhcp_for_self",
+      "decision": "accept",
+      "reason": "The atom repairs the previously rejected undesignation floor by adding the missing currently-designated state boundary using the schema-exposed ProviderDesignation.isDesignated hook, while also preserving the patient ownership and active-session boundaries. It is not a duplicate of the approved designation atoms because it covers the distinct undesignateDlhcp action, and it is tightly scoped to the source requirement that a patient can undesignate an LHCP as a DLHCP for that patient.",
+      "tags": []
+    },
+    {
+      "id": "critic:37:undesignate_dlhcp_only_current_for_self",
+      "kind": "critic_review",
+      "atom_name": "undesignate_dlhcp_only_current_for_self",
+      "decision": "accept",
+      "reason": "The atom adds a materially useful same-action ceiling for undesignation that is not implied by the approved floor. It preserves the source-scoped ownership boundary for that patient, the current-designation state boundary for undesignating an existing DLHCP designation, and the active-session lifecycle boundary using fields exposed by the schema.",
+      "tags": []
+    },
+    {
+      "id": "critic:38:patient_can_view_own_medical_record",
+      "kind": "critic_review",
+      "atom_name": "patient_can_view_own_medical_record",
+      "decision": "accept",
+      "reason": "The atom is materially useful and tightly scoped. It captures the patient side of the source grant to view medical records for their own records, uses the correct viewMedicalRecord action and MedicalRecord resource, includes the active-session lifecycle condition, and enforces the ownership boundary exposed by MedicalRecord.patient == principal. It is not a duplicate of any approved atom and is not merely restating schema principal/resource types.",
+      "tags": []
+    },
+    {
+      "id": "critic:39:medical_record_view_only_own_or_represented_active_session",
+      "kind": "critic_review",
+      "atom_name": "medical_record_view_only_own_or_represented_active_session",
+      "decision": "accept",
+      "reason": "The atom adds a materially useful same-action ceiling for sensitive medical-record viewing that is not implied by the approved patient-only floor. It explicitly captures the source ownership and representation boundaries, plus the active-session lifecycle boundary, using schema-exposed hooks: MedicalRecord.patient, PersonalRepresentative.representedPatients, and context.session.isActive.",
+      "tags": []
+    },
+    {
+      "id": "critic:40:personal_representative_can_view_represented_medical_record",
+      "kind": "critic_review",
+      "atom_name": "personal_representative_can_view_represented_medical_record",
+      "decision": "accept",
+      "reason": "The atom adds a materially useful floor for personal representatives that is not implied by the approved patient self-access floor or by the approved ceiling. It is tightly scoped to the source requirement's represented-patient boundary, uses the schema-exposed representedPatients relationship, binds the represented patient to the medical record's patient, and includes the active-session lifecycle boundary.",
+      "tags": []
+    },
+    {
+      "id": "critic:41:patient_can_view_own_family_history",
+      "kind": "critic_review",
+      "atom_name": "patient_can_view_own_family_history",
+      "decision": "accept",
+      "reason": "The atom is materially useful and tightly scoped: family-history viewing is modeled as a distinct action from generic medical-record viewing, so the approved viewMedicalRecord atoms do not ensure permission for this specific component. The floor includes the relevant lifecycle boundary (active session), ownership boundary (resource.patient == principal), and content boundary exposed by the schema (resource.hasFamilyHistory).",
+      "tags": []
+    },
+    {
+      "id": "critic:42:family_history_view_only_own_or_represented_active_session",
+      "kind": "critic_review",
+      "atom_name": "family_history_view_only_own_or_represented_active_session",
+      "decision": "accept",
+      "reason": "The atom is a materially useful same-action ceiling for viewFamilyHistory and is not implied by the approved viewMedicalRecord ceiling because it constrains a different action. It captures the source ownership/representation boundary and the lifecycle boundary using schema-exposed hooks: active session, record contains family history, patient-owned record, or represented-patient record for a personal representative.",
+      "tags": []
+    },
+    {
+      "id": "critic:43:personal_representative_can_view_represented_family_history",
+      "kind": "critic_review",
+      "atom_name": "personal_representative_can_view_represented_family_history",
+      "decision": "accept",
+      "reason": "The atom is materially useful and tightly scoped: it adds the missing positive floor for a personal representative viewing family history for a represented patient, which is not implied by the approved ceiling or the patient-own-family-history floor. It preserves the relevant source boundaries: active session, family-history content, represented-patient record, and membership in the representative's representedPatients set. The schema exposes all required hooks, so no schema gap or proxy issue is present.",
+      "tags": []
+    },
+    {
+      "id": "critic:44:patient_can_view_own_personal_health_information",
+      "kind": "critic_review",
+      "atom_name": "patient_can_view_own_personal_health_information",
+      "decision": "accept",
+      "reason": "The atom is materially useful and tightly scoped to a source requirement not yet covered by approved atoms. Existing approvals cover generic medical-record viewing and family history, but not the distinct viewPersonalHealthInformation action. The proposed floor includes the relevant lifecycle boundary, own-record ownership boundary, and schema-exposed content boundary resource.hasPersonalHealthInformation.",
+      "tags": []
+    },
+    {
+      "id": "critic:45:personal_health_information_view_only_own_or_represented_active_session",
+      "kind": "critic_review",
+      "atom_name": "personal_health_information_view_only_own_or_represented_active_session",
+      "decision": "accept",
+      "reason": "The atom is materially useful and tightly scoped: it adds the same-action ceiling for viewPersonalHealthInformation, which is not implied by the approved patient floor or by ceilings on other medical-record actions. It preserves the source boundaries for active session, own patient record, represented-patient record, and presence of personal health information, all of which are expressible in the validated schema.",
+      "tags": []
+    },
+    {
+      "id": "critic:46:personal_representative_can_view_represented_personal_health_information",
+      "kind": "critic_review",
+      "atom_name": "personal_representative_can_view_represented_personal_health_information",
+      "decision": "accept",
+      "reason": "This is a materially useful floor for the personal-representative positive workflow that is not implied by the approved ceiling or by the patient-only floor. It is tightly scoped to the represented-patient ownership boundary, active-session lifecycle boundary, and the record-content boundary for personal health information, all of which are expressible in the validated schema.",
+      "tags": []
+    },
+    {
+      "id": "critic:47:patient_can_view_own_immunizations",
+      "kind": "critic_review",
+      "atom_name": "patient_can_view_own_immunizations",
+      "decision": "accept",
+      "reason": "The atom captures a distinct source-granted workflow that is not already covered by the approved medical-record, family-history, or personal-health-information atoms. It is tightly scoped to the patient principal, immunizations action, own MedicalRecord boundary, active session lifecycle boundary, and the schema-exposed hasImmunizations content boundary.",
+      "tags": []
+    },
+    {
+      "id": "critic:48:immunizations_view_only_own_or_represented_active_session",
+      "kind": "critic_review",
+      "atom_name": "immunizations_view_only_own_or_represented_active_session",
+      "decision": "accept",
+      "reason": "The atom is materially useful and tightly scoped: it adds the missing same-action ceiling for viewImmunizations, matching the source boundary that immunization access is limited to the patient's own records or records of patients represented by the personal representative, with the medical-record subcategory and active-session boundaries made explicit. It is not merely a schema type restatement and is not implied by the existing patient-only immunizations floor.",
+      "tags": []
+    },
+    {
+      "id": "critic:49:personal_representative_can_view_represented_immunizations",
+      "kind": "critic_review",
+      "atom_name": "personal_representative_can_view_represented_immunizations",
+      "decision": "accept",
+      "reason": "This is a materially useful represented-patient floor for the personal representative success path, not merely a schema type restatement and not implied by the approved patient-owned immunization floor or the same-action ceiling. It is tightly scoped to the source boundaries: active session, immunization-containing record, the record patient matching the represented patient, and that patient being in the representative's representedPatients set.",
+      "tags": []
+    },
+    {
+      "id": "critic:50:patient_can_view_own_office_visit_information",
+      "kind": "critic_review",
+      "atom_name": "patient_can_view_own_office_visit_information",
+      "decision": "accept",
+      "reason": "The atom captures a distinct source-granted access path not covered by the approved medical-record, family-history, personal-health-information, or immunization atoms: patient viewing office-visit information in the patient's own record. It is tightly scoped to the schema-exposed action, active-session lifecycle boundary, own-record ownership boundary, and the record's office-visit-information content flag.",
+      "tags": []
+    },
+    {
+      "id": "critic:51:office_visit_information_view_only_own_or_represented_active_session",
+      "kind": "critic_review",
+      "atom_name": "office_visit_information_view_only_own_or_represented_active_session",
+      "decision": "accept",
+      "reason": "The atom is materially useful and tightly scoped: it adds the same-action ceiling for viewOfficeVisitInformation that is not yet covered by the approved patient floor, and it captures the source boundaries for active session, own-or-represented patient record, and presence of office-visit information. It is not merely a schema type restatement and is not implied by the analogous approved ceilings for other medical-record subfields because this is a distinct action.",
+      "tags": []
+    },
+    {
+      "id": "critic:52:inactive_session_blocks_set_inactivity_period_length",
+      "kind": "critic_review",
+      "atom_name": "inactive_session_blocks_set_inactivity_period_length",
+      "decision": "accept",
+      "reason": "The atom is a non-duplicate same-action disjointness check for the lifecycle requirement that all authorization is disabled when the request session is inactive. The schema exposes the relevant hook as context.session.isActive, and the disjoint_target_body correctly names the forbidden slice for setInactivityPeriodLength: !context.session.isActive. It is not merely restating principal/resource typing and is not already covered by the approved floor, which only establishes an active-session grant.",
+      "tags": []
+    },
+    {
+      "id": "critic:53:inactive_session_blocks_create_uap",
+      "kind": "critic_review",
+      "atom_name": "inactive_session_blocks_create_uap",
+      "decision": "accept",
+      "reason": "The atom is a materially useful same-action inactivity safety check for createUap and is not already covered by the approved LHCP create-UAP floor or by another approved inactive-session atom. The schema exposes the lifecycle hook as context.session.isActive on createUap, and the disjoint_target_body correctly names the forbidden slice: requests with an inactive session.",
+      "tags": [
+        "inactive-session-boundary",
+        "lifecycle-boundary",
+        "same-action-disjointness"
+      ]
+    },
+    {
+      "id": "critic:54:patient_can_view_own_prior_and_designated_lhcps",
+      "kind": "critic_review",
+      "atom_name": "patient_can_view_own_prior_and_designated_lhcps",
+      "decision": "repair",
+      "reason": "The source requirement is materially useful and the schema now exposes relevant hooks, but the proposed floor still does not connect the LHCPs being viewed to the prior-office-visit and designation slices. It only checks that every OfficeVisit and ProviderDesignation stored on the ProviderList belongs to the requesting patient and that listed designations are active; it does not require the viewed ProviderList.providers to be exactly or at least composed from office-visit LHCPs and designated LHCPs, nor that the visit/designation LHCPs are included in the providers set. Repair the reference Cedar/summary to use the existing ProviderList.providers, ProviderList.officeVisits.lhcp, and ProviderList.designations.lhcp/isDesignated hooks rather than accepting patient-owned ProviderList metadata as a proxy.",
+      "tags": [
+        "missing-provider-membership-boundary",
+        "missing-prior-office-visit-lhcp-inclusion-boundary",
+        "missing-designated-lhcp-inclusion-boundary",
+        "repair-reference-cedar"
+      ]
+    },
+    {
+      "id": "critic:55:patient_can_view_own_prior_visit_and_designated_lhcp_providers",
+      "kind": "critic_review",
+      "atom_name": "patient_can_view_own_prior_visit_and_designated_lhcp_providers",
+      "decision": "accept",
+      "reason": "The atom is materially useful and addresses the previously identified provider-membership gap by tying the viewed ProviderList.providers set to the LHCPs from the patient's prior office visits and active provider designations, while also requiring patient ownership and an active session. It is not a duplicate of an approved atom and does not merely restate schema typing.",
+      "tags": []
+    },
+    {
+      "id": "critic:56:prior_designated_lhcp_view_only_own_active_session",
+      "kind": "critic_review",
+      "atom_name": "prior_designated_lhcp_view_only_own_active_session",
+      "decision": "repair",
+      "reason": "The same-action ceiling is materially useful because there is no approved safety bound for viewPriorAndDesignatedLhcps, but the proposed condition only enforces active session and ProviderList ownership. The source is not generic access to a patient's ProviderList; it is specifically the list of LHCPs the patient has ever had an office visit with and LHCPs the patient has designated. The schema exposes ProviderList.providers, ProviderList.officeVisits.lhcp, and ProviderList.designations.lhcp/isDesignated, so the ceiling should use those hooks to bound the viewed provider set rather than accepting a patient-owned ProviderList proxy.",
+      "tags": [
+        "missing-provider-membership-boundary",
+        "missing-prior-office-visit-lhcp-boundary",
+        "missing-designated-lhcp-boundary",
+        "repair-reference-cedar"
+      ]
+    },
+    {
+      "id": "critic:57:prior_designated_lhcp_view_only_composed_own_active_session",
+      "kind": "critic_review",
+      "atom_name": "prior_designated_lhcp_view_only_composed_own_active_session",
+      "decision": "accept",
+      "reason": "The atom is materially useful as the missing same-action ceiling for viewing prior/designated LHCPs. It is not redundant with the approved ownership-only floor, and it uses the schema-exposed ProviderList.providers, officeVisits.lhcp, designations.lhcp, and isDesignated hooks to enforce the source boundaries: own list, active session, providers limited to LHCPs from the patient's prior office visits or active designations, and inclusion of those authorized LHCPs. This directly repairs the previously rejected proxy-style ceiling rather than restating only principal/resource types.",
+      "tags": []
+    },
+    {
+      "id": "critic:58:inactive_session_blocks_assign_lhcp_to_hospital",
+      "kind": "critic_review",
+      "atom_name": "inactive_session_blocks_assign_lhcp_to_hospital",
+      "decision": "accept",
+      "reason": "The atom adds a same-action inactivity-session safety boundary for assignLhcpToHospital, which is materially useful and not already covered by the approved assignment floor or by other inactive-session atoms for different actions. The source explicitly says all authorization is disabled after the inactivity limit is exceeded, the schema exposes the relevant hook as context.session.isActive, and the disjoint_target_body correctly names the forbidden slice: an inactive request session.",
+      "tags": []
+    },
+    {
+      "id": "critic:59:add_provider_only_own_list_active_session",
+      "kind": "critic_review",
+      "atom_name": "add_provider_only_own_list_active_session",
+      "decision": "repair",
+      "reason": "The add-provider safety bound is materially useful, but this proposed ceiling accepts a proxy for the source workflow. The source scopes the add operation not only to the patient's own provider list and an active session, but also to adding a provider found by search by provider name, specialty, and optionally zip code. Prior review already identified the unresolved search/name matching boundary; a ceiling that omits it would allow policies to add arbitrary providers as long as the list is owned by the patient. Because the current schema does not provide a reliable provider-name/search-match hook for Hcp/Lhcp, repair is needed rather than accepting the own-list proxy.",
+      "tags": [
+        "schema-gap",
+        "missing-provider-name-match-boundary",
+        "missing-search-filter-boundary",
+        "proxy-resource-not-equivalent"
+      ]
+    },
+    {
+      "id": "critic:60:patient_can_add_provider_to_own_list_by_search",
+      "kind": "critic_review",
+      "atom_name": "patient_can_add_provider_to_own_list_by_search",
+      "decision": "repair",
+      "reason": "The add-provider floor is materially useful and no approved floor covers this workflow, and the current schema exposes provider name, specialty, and zip-code search hooks. However, the proposed condition weakens the source requirement by making specialty matching optional whenever context.searchSpecialty is absent. The source says the patient searches by name and specialty, with only zip code optional. Repair the atom to require a supplied specialty search value and provider specialty match, while keeping zip-code matching conditional on the optional zip-code field.",
+      "tags": [
+        "missing-specialty-search-boundary",
+        "source-boundary-weakened",
+        "repair-reference-cedar"
+      ]
+    },
+    {
+      "id": "critic:61:patient_can_add_provider_to_own_list_by_name_and_specialty_search",
+      "kind": "critic_review",
+      "atom_name": "patient_can_add_provider_to_own_list_by_name_and_specialty_search",
+      "decision": "accept",
+      "reason": "The atom is materially useful and repairs the previously rejected add-provider floor by enforcing the source workflow boundaries: active session, the patient's own provider list, provider name match, required specialty search/match, and optional zip-code match. The current schema exposes the needed hooks through context.provider.name, context.provider.specialty, context.provider.zipCode, searchName, searchSpecialty, and searchZipCode, so this is not a proxy or schema gap. No approved atom already covers this add-provider floor.",
+      "tags": []
+    },
+    {
+      "id": "critic:62:add_provider_only_own_list_by_name_and_specialty_search",
+      "kind": "critic_review",
+      "atom_name": "add_provider_only_own_list_by_name_and_specialty_search",
+      "decision": "accept",
+      "reason": "The atom is a materially useful same-action ceiling for the approved add-provider workflow. It is not merely restating principal/resource types and is not implied by the approved floor. It preserves the source boundaries: patient-owned provider list, active session, provider name match, required specialty search/match, and optional zip-code match using schema-exposed hooks.",
+      "tags": []
+    },
+    {
+      "id": "critic:63:personal_representative_can_view_represented_office_visit_information",
+      "kind": "critic_review",
+      "atom_name": "personal_representative_can_view_represented_office_visit_information",
+      "decision": "accept",
+      "reason": "This is a materially useful missing floor for the source requirement that personal representatives may see office-visit information for records of patients they represent. It is not implied by the approved patient floor or the same-action ceiling, and it is scoped to the schema-exposed boundaries: active session, record contains office-visit information, the context represented patient matches the medical-record patient, and that patient is in the representative's representedPatients set.",
+      "tags": []
+    }
+  ],
+  "edges": [
+    {
+      "source": "property:hcp_can_create_patient",
+      "target": "action:createPatient",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:hcp_can_create_patient",
+      "target": "principal_type:Hcp",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:hcp_can_create_patient",
+      "target": "resource_type:Patient",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:patient_mid_not_editable",
+      "target": "action:editPatientData",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:patient_mid_not_editable",
+      "target": "principal_type:Hcp",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:patient_mid_not_editable",
+      "target": "resource_type:Patient",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:patient_mid_not_editable",
+      "target": "property:editPatientData permitted patient-data edits",
+      "type": "disjoint_with"
+    },
+    {
+      "source": "property:hcp_cannot_enter_patient_credentials",
+      "target": "action:enterCredential",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:hcp_cannot_enter_patient_credentials",
+      "target": "principal_type:Hcp",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:hcp_cannot_enter_patient_credentials",
+      "target": "resource_type:Credential",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:hcp_cannot_enter_patient_credentials",
+      "target": "property:HCP entering a patient's password or security question",
+      "type": "disjoint_with"
+    },
+    {
+      "source": "property:hcp_can_edit_patient_data",
+      "target": "action:editPatientData",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:hcp_can_edit_patient_data",
+      "target": "principal_type:Hcp",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:hcp_can_edit_patient_data",
+      "target": "resource_type:Patient",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:hcp_cannot_edit_patient_credentials",
+      "target": "action:editCredential",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:hcp_cannot_edit_patient_credentials",
+      "target": "principal_type:Hcp",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:hcp_cannot_edit_patient_credentials",
+      "target": "resource_type:Credential",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:hcp_cannot_edit_patient_credentials",
+      "target": "property:HCP editing patient credential secrets",
+      "type": "disjoint_with"
+    },
+    {
+      "source": "property:administrator_can_create_lhcp",
+      "target": "action:createLhcp",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:administrator_can_create_lhcp",
+      "target": "principal_type:Administrator",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:administrator_can_create_lhcp",
+      "target": "resource_type:Lhcp",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:hcp_cannot_view_patient_credentials",
+      "target": "action:viewCredential",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:hcp_cannot_view_patient_credentials",
+      "target": "principal_type:Hcp",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:hcp_cannot_view_patient_credentials",
+      "target": "resource_type:Credential",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:hcp_cannot_view_patient_credentials",
+      "target": "property:patient password or security question viewing by HCP",
+      "type": "disjoint_with"
+    },
+    {
+      "source": "property:administrator_can_create_emergency_responder",
+      "target": "action:createEmergencyResponder",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:administrator_can_create_emergency_responder",
+      "target": "principal_type:Administrator",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:administrator_can_create_emergency_responder",
+      "target": "resource_type:EmergencyResponder",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:administrator_can_create_public_health_agent",
+      "target": "action:createPublicHealthAgent",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:administrator_can_create_public_health_agent",
+      "target": "principal_type:Administrator",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:administrator_can_create_public_health_agent",
+      "target": "resource_type:PublicHealthAgent",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:lhcp_can_create_uap",
+      "target": "action:createUap",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:lhcp_can_create_uap",
+      "target": "principal_type:Lhcp",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:lhcp_can_create_uap",
+      "target": "resource_type:Uap",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:administrator_can_assign_lhcp_to_hospital",
+      "target": "action:assignLhcpToHospital",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:administrator_can_assign_lhcp_to_hospital",
+      "target": "principal_type:Administrator",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:administrator_can_assign_lhcp_to_hospital",
+      "target": "resource_type:Lhcp",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:user_can_login_with_verified_credentials",
+      "target": "action:login",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:user_can_login_with_verified_credentials",
+      "target": "principal_type:User",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:user_can_login_with_verified_credentials",
+      "target": "resource_type:Session",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:login_only_with_verified_own_credentials",
+      "target": "action:login",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:login_only_with_verified_own_credentials",
+      "target": "principal_type:User",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:login_only_with_verified_own_credentials",
+      "target": "resource_type:Session",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:user_can_request_own_password_change",
+      "target": "action:requestPasswordChange",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:user_can_request_own_password_change",
+      "target": "principal_type:User",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:user_can_request_own_password_change",
+      "target": "resource_type:Credential",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:password_change_only_own_credential_active_session",
+      "target": "action:requestPasswordChange",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:password_change_only_own_credential_active_session",
+      "target": "principal_type:User",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:password_change_only_own_credential_active_session",
+      "target": "resource_type:Credential",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:inactive_session_blocks_create_patient",
+      "target": "action:createPatient",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:inactive_session_blocks_create_patient",
+      "target": "principal_type:Hcp",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:inactive_session_blocks_create_patient",
+      "target": "resource_type:Patient",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:inactive_session_blocks_create_patient",
+      "target": "property:inactive_session",
+      "type": "disjoint_with"
+    },
+    {
+      "source": "property:inactive_session_blocks_edit_patient_data",
+      "target": "action:editPatientData",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:inactive_session_blocks_edit_patient_data",
+      "target": "principal_type:Hcp",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:inactive_session_blocks_edit_patient_data",
+      "target": "resource_type:Patient",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:inactive_session_blocks_edit_patient_data",
+      "target": "property:inactive session",
+      "type": "disjoint_with"
+    },
+    {
+      "source": "property:inactive_session_blocks_create_lhcp",
+      "target": "action:createLhcp",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:inactive_session_blocks_create_lhcp",
+      "target": "principal_type:Administrator",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:inactive_session_blocks_create_lhcp",
+      "target": "resource_type:Lhcp",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:inactive_session_blocks_create_lhcp",
+      "target": "property:administrator_can_create_lhcp",
+      "type": "disjoint_with"
+    },
+    {
+      "source": "property:inactive_session_blocks_create_emergency_responder",
+      "target": "action:createEmergencyResponder",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:inactive_session_blocks_create_emergency_responder",
+      "target": "principal_type:Administrator",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:inactive_session_blocks_create_emergency_responder",
+      "target": "resource_type:EmergencyResponder",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:inactive_session_blocks_create_emergency_responder",
+      "target": "property:inactive_session",
+      "type": "disjoint_with"
+    },
+    {
+      "source": "property:user_can_logout_own_active_session",
+      "target": "action:logout",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:user_can_logout_own_active_session",
+      "target": "principal_type:User",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:user_can_logout_own_active_session",
+      "target": "resource_type:Session",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:logout_only_own_active_session",
+      "target": "action:logout",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:logout_only_own_active_session",
+      "target": "principal_type:User",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:logout_only_own_active_session",
+      "target": "resource_type:Session",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:user_can_close_own_active_session",
+      "target": "action:closeApplication",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:user_can_close_own_active_session",
+      "target": "principal_type:User",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:user_can_close_own_active_session",
+      "target": "resource_type:Session",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:close_application_only_own_active_session",
+      "target": "action:closeApplication",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:close_application_only_own_active_session",
+      "target": "principal_type:User",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:close_application_only_own_active_session",
+      "target": "resource_type:Session",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:administrator_can_set_inactivity_period_length",
+      "target": "action:setInactivityPeriodLength",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:administrator_can_set_inactivity_period_length",
+      "target": "principal_type:Administrator",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:administrator_can_set_inactivity_period_length",
+      "target": "resource_type:Session",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:inactive_session_blocks_create_public_health_agent",
+      "target": "action:createPublicHealthAgent",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:inactive_session_blocks_create_public_health_agent",
+      "target": "principal_type:Administrator",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:inactive_session_blocks_create_public_health_agent",
+      "target": "resource_type:PublicHealthAgent",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:inactive_session_blocks_create_public_health_agent",
+      "target": "property:inactive session",
+      "type": "disjoint_with"
+    },
+    {
+      "source": "property:patient_can_view_own_access_log_for_period",
+      "target": "action:viewAccessLog",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:patient_can_view_own_access_log_for_period",
+      "target": "principal_type:Patient",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:patient_can_view_own_access_log_for_period",
+      "target": "resource_type:AccessLog",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:access_log_view_only_own_period_active_session",
+      "target": "action:viewAccessLog",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:access_log_view_only_own_period_active_session",
+      "target": "principal_type:Patient",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:access_log_view_only_own_period_active_session",
+      "target": "resource_type:AccessLog",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:patient_can_designate_lhcp_for_self",
+      "target": "action:designateDlhcp",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:patient_can_designate_lhcp_for_self",
+      "target": "principal_type:Patient",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:patient_can_designate_lhcp_for_self",
+      "target": "resource_type:ProviderDesignation",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:designate_dlhcp_only_for_self",
+      "target": "action:designateDlhcp",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:designate_dlhcp_only_for_self",
+      "target": "principal_type:Patient",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:designate_dlhcp_only_for_self",
+      "target": "resource_type:ProviderDesignation",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:patient_can_undesignate_current_dlhcp_for_self",
+      "target": "action:undesignateDlhcp",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:patient_can_undesignate_current_dlhcp_for_self",
+      "target": "principal_type:Patient",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:patient_can_undesignate_current_dlhcp_for_self",
+      "target": "resource_type:ProviderDesignation",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:undesignate_dlhcp_only_current_for_self",
+      "target": "action:undesignateDlhcp",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:undesignate_dlhcp_only_current_for_self",
+      "target": "principal_type:Patient",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:undesignate_dlhcp_only_current_for_self",
+      "target": "resource_type:ProviderDesignation",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:patient_can_view_own_medical_record",
+      "target": "action:viewMedicalRecord",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:patient_can_view_own_medical_record",
+      "target": "principal_type:Patient",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:patient_can_view_own_medical_record",
+      "target": "resource_type:MedicalRecord",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:medical_record_view_only_own_or_represented_active_session",
+      "target": "action:viewMedicalRecord",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:medical_record_view_only_own_or_represented_active_session",
+      "target": "principal_type:Patient",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:medical_record_view_only_own_or_represented_active_session",
+      "target": "principal_type:PersonalRepresentative",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:medical_record_view_only_own_or_represented_active_session",
+      "target": "resource_type:MedicalRecord",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:personal_representative_can_view_represented_medical_record",
+      "target": "action:viewMedicalRecord",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:personal_representative_can_view_represented_medical_record",
+      "target": "principal_type:PersonalRepresentative",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:personal_representative_can_view_represented_medical_record",
+      "target": "resource_type:MedicalRecord",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:patient_can_view_own_family_history",
+      "target": "action:viewFamilyHistory",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:patient_can_view_own_family_history",
+      "target": "principal_type:Patient",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:patient_can_view_own_family_history",
+      "target": "resource_type:MedicalRecord",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:family_history_view_only_own_or_represented_active_session",
+      "target": "action:viewFamilyHistory",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:family_history_view_only_own_or_represented_active_session",
+      "target": "principal_type:Patient",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:family_history_view_only_own_or_represented_active_session",
+      "target": "principal_type:PersonalRepresentative",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:family_history_view_only_own_or_represented_active_session",
+      "target": "resource_type:MedicalRecord",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:personal_representative_can_view_represented_family_history",
+      "target": "action:viewFamilyHistory",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:personal_representative_can_view_represented_family_history",
+      "target": "principal_type:PersonalRepresentative",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:personal_representative_can_view_represented_family_history",
+      "target": "resource_type:MedicalRecord",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:patient_can_view_own_personal_health_information",
+      "target": "action:viewPersonalHealthInformation",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:patient_can_view_own_personal_health_information",
+      "target": "principal_type:Patient",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:patient_can_view_own_personal_health_information",
+      "target": "resource_type:MedicalRecord",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:personal_health_information_view_only_own_or_represented_active_session",
+      "target": "action:viewPersonalHealthInformation",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:personal_health_information_view_only_own_or_represented_active_session",
+      "target": "principal_type:Patient",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:personal_health_information_view_only_own_or_represented_active_session",
+      "target": "principal_type:PersonalRepresentative",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:personal_health_information_view_only_own_or_represented_active_session",
+      "target": "resource_type:MedicalRecord",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:personal_representative_can_view_represented_personal_health_information",
+      "target": "action:viewPersonalHealthInformation",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:personal_representative_can_view_represented_personal_health_information",
+      "target": "principal_type:PersonalRepresentative",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:personal_representative_can_view_represented_personal_health_information",
+      "target": "resource_type:MedicalRecord",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:patient_can_view_own_immunizations",
+      "target": "action:viewImmunizations",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:patient_can_view_own_immunizations",
+      "target": "principal_type:Patient",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:patient_can_view_own_immunizations",
+      "target": "resource_type:MedicalRecord",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:immunizations_view_only_own_or_represented_active_session",
+      "target": "action:viewImmunizations",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:immunizations_view_only_own_or_represented_active_session",
+      "target": "principal_type:Patient",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:immunizations_view_only_own_or_represented_active_session",
+      "target": "principal_type:PersonalRepresentative",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:immunizations_view_only_own_or_represented_active_session",
+      "target": "resource_type:MedicalRecord",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:personal_representative_can_view_represented_immunizations",
+      "target": "action:viewImmunizations",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:personal_representative_can_view_represented_immunizations",
+      "target": "principal_type:PersonalRepresentative",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:personal_representative_can_view_represented_immunizations",
+      "target": "resource_type:MedicalRecord",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:patient_can_view_own_office_visit_information",
+      "target": "action:viewOfficeVisitInformation",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:patient_can_view_own_office_visit_information",
+      "target": "principal_type:Patient",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:patient_can_view_own_office_visit_information",
+      "target": "resource_type:MedicalRecord",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:office_visit_information_view_only_own_or_represented_active_session",
+      "target": "action:viewOfficeVisitInformation",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:office_visit_information_view_only_own_or_represented_active_session",
+      "target": "principal_type:Patient",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:office_visit_information_view_only_own_or_represented_active_session",
+      "target": "principal_type:PersonalRepresentative",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:office_visit_information_view_only_own_or_represented_active_session",
+      "target": "resource_type:MedicalRecord",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:inactive_session_blocks_set_inactivity_period_length",
+      "target": "action:setInactivityPeriodLength",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:inactive_session_blocks_set_inactivity_period_length",
+      "target": "principal_type:Administrator",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:inactive_session_blocks_set_inactivity_period_length",
+      "target": "resource_type:Session",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:inactive_session_blocks_set_inactivity_period_length",
+      "target": "property:administrator_can_set_inactivity_period_length",
+      "type": "disjoint_with"
+    },
+    {
+      "source": "property:inactive_session_blocks_create_uap",
+      "target": "action:createUap",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:inactive_session_blocks_create_uap",
+      "target": "principal_type:Lhcp",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:inactive_session_blocks_create_uap",
+      "target": "resource_type:Uap",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:inactive_session_blocks_create_uap",
+      "target": "property:lhcp_can_create_uap",
+      "type": "disjoint_with"
+    },
+    {
+      "source": "property:patient_can_view_own_prior_visit_and_designated_lhcp_providers",
+      "target": "action:viewPriorAndDesignatedLhcps",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:patient_can_view_own_prior_visit_and_designated_lhcp_providers",
+      "target": "principal_type:Patient",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:patient_can_view_own_prior_visit_and_designated_lhcp_providers",
+      "target": "resource_type:ProviderList",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:prior_designated_lhcp_view_only_own_active_session",
+      "target": "action:viewPriorAndDesignatedLhcps",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:prior_designated_lhcp_view_only_own_active_session",
+      "target": "principal_type:Patient",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:prior_designated_lhcp_view_only_own_active_session",
+      "target": "resource_type:ProviderList",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:inactive_session_blocks_assign_lhcp_to_hospital",
+      "target": "action:assignLhcpToHospital",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:inactive_session_blocks_assign_lhcp_to_hospital",
+      "target": "principal_type:Administrator",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:inactive_session_blocks_assign_lhcp_to_hospital",
+      "target": "resource_type:Lhcp",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:inactive_session_blocks_assign_lhcp_to_hospital",
+      "target": "property:administrator_can_assign_lhcp_to_hospital",
+      "type": "disjoint_with"
+    },
+    {
+      "source": "property:patient_can_add_provider_to_own_list_by_name_and_specialty_search",
+      "target": "action:addProviderToList",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:patient_can_add_provider_to_own_list_by_name_and_specialty_search",
+      "target": "principal_type:Patient",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:patient_can_add_provider_to_own_list_by_name_and_specialty_search",
+      "target": "resource_type:ProviderList",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:add_provider_only_own_list_by_name_and_specialty_search",
+      "target": "action:addProviderToList",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:add_provider_only_own_list_by_name_and_specialty_search",
+      "target": "principal_type:Patient",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:add_provider_only_own_list_by_name_and_specialty_search",
+      "target": "resource_type:ProviderList",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:personal_representative_can_view_represented_office_visit_information",
+      "target": "action:viewOfficeVisitInformation",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:personal_representative_can_view_represented_office_visit_information",
+      "target": "principal_type:PersonalRepresentative",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:personal_representative_can_view_represented_office_visit_information",
+      "target": "resource_type:MedicalRecord",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "critic:1:hcp_can_create_patient",
+      "target": "property:hcp_can_create_patient",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:2:patient_mid_not_editable",
+      "target": "property:patient_mid_not_editable",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:3:hcp_cannot_enter_patient_credentials",
+      "target": "property:hcp_cannot_enter_patient_credentials",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:4:hcp_can_edit_patient_data",
+      "target": "property:hcp_can_edit_patient_data",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:5:hcp_cannot_edit_patient_credentials",
+      "target": "property:hcp_cannot_edit_patient_credentials",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:6:administrator_can_create_lhcp",
+      "target": "property:administrator_can_create_lhcp",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:7:hcp_cannot_view_patient_credentials",
+      "target": "property:hcp_cannot_view_patient_credentials",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:8:administrator_can_create_emergency_responder",
+      "target": "property:administrator_can_create_emergency_responder",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:9:administrator_can_create_public_health_agent",
+      "target": "property:administrator_can_create_public_health_agent",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:10:lhcp_can_create_uap",
+      "target": "property:lhcp_can_create_uap",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:11:administrator_can_assign_lhcp_to_hospital",
+      "target": "property:administrator_can_assign_lhcp_to_hospital",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:12:user_can_login_with_own_credentials",
+      "target": "property:user_can_login_with_own_credentials",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:13:user_can_login_with_verified_credentials",
+      "target": "property:user_can_login_with_verified_credentials",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:14:login_only_with_verified_own_credentials",
+      "target": "property:login_only_with_verified_own_credentials",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:15:user_can_request_own_password_change",
+      "target": "property:user_can_request_own_password_change",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:16:password_change_only_own_credential",
+      "target": "property:password_change_only_own_credential",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:17:password_change_only_own_credential_active_own_session",
+      "target": "property:password_change_only_own_credential_active_own_session",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:18:inactive_session_blocks_create_patient",
+      "target": "property:inactive_session_blocks_create_patient",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:19:inactive_session_blocks_edit_patient_data",
+      "target": "property:inactive_session_blocks_edit_patient_data",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:20:inactive_session_blocks_create_lhcp",
+      "target": "property:inactive_session_blocks_create_lhcp",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:21:inactive_session_blocks_create_emergency_responder",
+      "target": "property:inactive_session_blocks_create_emergency_responder",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:22:user_can_logout_own_session",
+      "target": "property:user_can_logout_own_session",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:23:user_can_logout_own_active_session",
+      "target": "property:user_can_logout_own_active_session",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:24:logout_only_own_active_session",
+      "target": "property:logout_only_own_active_session",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:25:user_can_close_own_active_session",
+      "target": "property:user_can_close_own_active_session",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:26:close_application_only_own_active_session",
+      "target": "property:close_application_only_own_active_session",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:27:administrator_can_set_inactivity_period_length",
+      "target": "property:administrator_can_set_inactivity_period_length",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:28:patient_can_view_own_prior_and_designated_lhcps",
+      "target": "property:patient_can_view_own_prior_and_designated_lhcps",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:29:inactive_session_blocks_create_public_health_agent",
+      "target": "property:inactive_session_blocks_create_public_health_agent",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:30:patient_can_view_own_access_log_for_period",
+      "target": "property:patient_can_view_own_access_log_for_period",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:31:access_log_view_only_own_period_active_session",
+      "target": "property:access_log_view_only_own_period_active_session",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:32:patient_can_add_provider_to_own_list_by_search",
+      "target": "property:patient_can_add_provider_to_own_list_by_search",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:33:patient_can_designate_lhcp_for_self",
+      "target": "property:patient_can_designate_lhcp_for_self",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:34:designate_dlhcp_only_for_self",
+      "target": "property:designate_dlhcp_only_for_self",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:35:patient_can_undesignate_lhcp_for_self",
+      "target": "property:patient_can_undesignate_lhcp_for_self",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:36:patient_can_undesignate_current_dlhcp_for_self",
+      "target": "property:patient_can_undesignate_current_dlhcp_for_self",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:37:undesignate_dlhcp_only_current_for_self",
+      "target": "property:undesignate_dlhcp_only_current_for_self",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:38:patient_can_view_own_medical_record",
+      "target": "property:patient_can_view_own_medical_record",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:39:medical_record_view_only_own_or_represented_active_session",
+      "target": "property:medical_record_view_only_own_or_represented_active_session",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:40:personal_representative_can_view_represented_medical_record",
+      "target": "property:personal_representative_can_view_represented_medical_record",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:41:patient_can_view_own_family_history",
+      "target": "property:patient_can_view_own_family_history",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:42:family_history_view_only_own_or_represented_active_session",
+      "target": "property:family_history_view_only_own_or_represented_active_session",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:43:personal_representative_can_view_represented_family_history",
+      "target": "property:personal_representative_can_view_represented_family_history",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:44:patient_can_view_own_personal_health_information",
+      "target": "property:patient_can_view_own_personal_health_information",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:45:personal_health_information_view_only_own_or_represented_active_session",
+      "target": "property:personal_health_information_view_only_own_or_represented_active_session",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:46:personal_representative_can_view_represented_personal_health_information",
+      "target": "property:personal_representative_can_view_represented_personal_health_information",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:47:patient_can_view_own_immunizations",
+      "target": "property:patient_can_view_own_immunizations",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:48:immunizations_view_only_own_or_represented_active_session",
+      "target": "property:immunizations_view_only_own_or_represented_active_session",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:49:personal_representative_can_view_represented_immunizations",
+      "target": "property:personal_representative_can_view_represented_immunizations",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:50:patient_can_view_own_office_visit_information",
+      "target": "property:patient_can_view_own_office_visit_information",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:51:office_visit_information_view_only_own_or_represented_active_session",
+      "target": "property:office_visit_information_view_only_own_or_represented_active_session",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:52:inactive_session_blocks_set_inactivity_period_length",
+      "target": "property:inactive_session_blocks_set_inactivity_period_length",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:53:inactive_session_blocks_create_uap",
+      "target": "property:inactive_session_blocks_create_uap",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:54:patient_can_view_own_prior_and_designated_lhcps",
+      "target": "property:patient_can_view_own_prior_and_designated_lhcps",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:55:patient_can_view_own_prior_visit_and_designated_lhcp_providers",
+      "target": "property:patient_can_view_own_prior_visit_and_designated_lhcp_providers",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:56:prior_designated_lhcp_view_only_own_active_session",
+      "target": "property:prior_designated_lhcp_view_only_own_active_session",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:57:prior_designated_lhcp_view_only_composed_own_active_session",
+      "target": "property:prior_designated_lhcp_view_only_composed_own_active_session",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:58:inactive_session_blocks_assign_lhcp_to_hospital",
+      "target": "property:inactive_session_blocks_assign_lhcp_to_hospital",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:59:add_provider_only_own_list_active_session",
+      "target": "property:add_provider_only_own_list_active_session",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:60:patient_can_add_provider_to_own_list_by_search",
+      "target": "property:patient_can_add_provider_to_own_list_by_search",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:61:patient_can_add_provider_to_own_list_by_name_and_specialty_search",
+      "target": "property:patient_can_add_provider_to_own_list_by_name_and_specialty_search",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:62:add_provider_only_own_list_by_name_and_specialty_search",
+      "target": "property:add_provider_only_own_list_by_name_and_specialty_search",
+      "type": "reviews"
+    },
+    {
+      "source": "critic:63:personal_representative_can_view_represented_office_visit_information",
+      "target": "property:personal_representative_can_view_represented_office_visit_information",
+      "type": "reviews"
+    }
+  ],
+  "summary": {
+    "properties": 53,
+    "critic_reviews": 63,
+    "critic_rejects": 0,
+    "critic_repairs": 9
+  }
+}

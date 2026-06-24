@@ -1,0 +1,1 @@
+permit (principal, action == Action::"closeApplication", resource) when { resource.user == principal && resource.isActive };

@@ -1,0 +1,54 @@
+entity User in [Student, Faculty, TeachingAssistant, FacultyFamily];
+
+entity Student;
+
+entity Faculty;
+
+entity TeachingAssistant;
+
+entity FacultyFamily;
+
+entity Grade;
+
+entity InternalGrade in [Grade];
+
+entity ExternalGrade in [Grade] {
+    responsibleFaculty: User,
+};
+
+entity Course;
+
+action assignGrade appliesTo {
+    principal: [User],
+    resource: [Grade],
+};
+
+action assignInternalGrade appliesTo {
+    principal: [User],
+    resource: [InternalGrade],
+};
+
+action assignExternalGrade appliesTo {
+    principal: [User],
+    resource: [ExternalGrade],
+};
+
+action viewInternalGrade appliesTo {
+    principal: [User],
+    resource: [InternalGrade],
+};
+
+action viewExternalGrade appliesTo {
+    principal: [User],
+    resource: [ExternalGrade],
+};
+
+action receiveExternalGrade appliesTo {
+    principal: [User],
+    resource: [ExternalGrade],
+};
+
+action enrollInCourse appliesTo {
+    principal: [User],
+    resource: [Course],
+};

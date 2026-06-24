@@ -18,10 +18,11 @@ from types import SimpleNamespace
 
 import pytest
 
-from autocedar.atoms import PropertyAtom
+from autocedar.atoms import ActionAtom, AttributeAtom, EntityAtom, PropertyAtom
 from autocedar.corpus import AtomDecision
 from autocedar.grounding import CEDAR_PATH, CVC5_PATH
-from autocedar.pipeline import author
+from autocedar.pipeline import _schema_gap_from_decision, author
+from autocedar.property_critic import PropertyCritique
 
 _HAVE_SOLVERS = (
     os.path.isfile(CEDAR_PATH)
@@ -112,11 +113,90 @@ def _synthesize_stub(scenario_dir: Path) -> Path:
     return candidate
 
 
+def test_schema_gap_classifier_does_not_treat_property_boundary_repair_as_schema_gap() -> None:
+    decision = AtomDecision(
+        atom_name="registrar_close_registration_process",
+        action="reject",
+        reason=(
+            "Stage 2 decomposition critic repair: the property is too broad. "
+            "The schema exposes resource.semester.isCurrent and resource.isClosed, "
+            "so revise the property to require current semester and not already closed."
+        ),
+        edit_delta={
+            "critic_decision": "repair",
+            "critic_tags": ["semantic-boundary", "current-semester"],
+        },
+    )
+
+    assert _schema_gap_from_decision(decision) is None
+
+
+def test_schema_gap_classifier_respects_explicit_not_schema_gap_negation() -> None:
+    decision = AtomDecision(
+        atom_name="patient_can_undesignate_lhcp_for_self",
+        action="reject",
+        reason=(
+            "Stage 2 decomposition critic repair: The schema exposes the "
+            "self-patient boundary. However, the proposed floor permits a "
+            "patient to undesignate any LHCP for themselves without requiring "
+            "that the LHCP is currently designated as that patient's DLHCP. "
+            "The property should use the existing patient-specific designation "
+            "relationship exposed by `Patient.designatedProviders`. This is a "
+            "property repair, not a schema gap."
+        ),
+        edit_delta={
+            "critic_decision": "repair",
+            "critic_tags": [
+                "missing-existing-dlhcp-designation-boundary",
+                "relationship-boundary-present",
+                "too-broad-floor",
+            ],
+        },
+    )
+
+    assert _schema_gap_from_decision(decision) is None
+
+
+def test_schema_gap_classifier_uses_schema_to_reject_duplicate_lifecycle_gap() -> None:
+    schema_text = textwrap.dedent("""\
+        entity Semester {
+            isCurrent: Bool,
+            isUpcoming: Bool,
+        };
+
+        entity RegistrationProcess {
+            semester: Semester,
+            isClosed: Bool,
+        };
+
+        entity CourseOffering {
+            semester: Semester,
+            registrationProcess: RegistrationProcess,
+        };
+    """)
+    decision = AtomDecision(
+        atom_name="professor_select_eligible_no_conflict_upcoming_floor",
+        action="reject",
+        reason=(
+            "Stage 2 decomposition critic repair: schema gap: the atom omits "
+            "the lifecycle cutoff that professors cannot change course offerings "
+            "after registration for the current semester has been closed. The "
+            "property should represent this closed-registration cutoff."
+        ),
+        edit_delta={
+            "critic_decision": "repair",
+            "critic_tags": ["schema-gap", "registration-closed", "current-semester"],
+        },
+    )
+
+    assert _schema_gap_from_decision(decision, schema_text=schema_text) is None
+
+
 class _RecordingReviewer:
     def __init__(self) -> None:
         self.events: list[tuple[str, object]] = []
 
-    def begin_stage(self, label: str, total: int) -> None:
+    def begin_stage(self, label: str, total: int | None) -> None:
         self.events.append(("begin", (label, total)))
 
     def end_stage(self, label: str, approved: int, rejected: int) -> None:
@@ -130,6 +210,30 @@ class _RecordingReviewer:
 
     def __call__(self, atom: object) -> AtomDecision:
         return _approve(atom)
+
+
+class _QueuedPropertyProposer:
+    def __init__(self, *atoms: PropertyAtom) -> None:
+        self._atoms = list(atoms)
+        self.calls: list[tuple[list[str], list[str]]] = []
+
+    def __call__(
+        self,
+        spec_text: str,
+        schema_path_arg: str,
+        prior_atoms: list[PropertyAtom],
+        prior_decisions: list[AtomDecision],
+    ) -> PropertyAtom | None:
+        _ = spec_text, schema_path_arg
+        self.calls.append(
+            (
+                [atom.name for atom in prior_atoms],
+                [decision.atom_name for decision in prior_decisions],
+            ),
+        )
+        if not self._atoms:
+            return None
+        return self._atoms.pop(0)
 
 
 # ---------------------------------------------------------------------------
@@ -146,14 +250,13 @@ def test_author_runs_end_to_end_with_stubs(
     spec_path, schema_path = workspace
     output_dir = tmp_path / "out"
 
-    def propose_property_atoms(spec_text: str, schema_path_arg: str) -> list[PropertyAtom]:
-        return [_owner_only_ceiling(), _owner_must_floor()]
+    property_proposer = _QueuedPropertyProposer(_owner_only_ceiling(), _owner_must_floor())
 
     result = author(
         spec_path=spec_path,
         output_dir=output_dir,
         session_id="t1",
-        propose_property_atoms=propose_property_atoms,
+        propose_property_atom=property_proposer,
         review_atom=_approve,
         synthesize=_synthesize_stub,
         schema_path_override=str(schema_path),
@@ -175,7 +278,9 @@ def test_author_runs_end_to_end_with_stubs(
         "stage1_5/amendments.json",
         "stage1_75/unsat_core.json",
         "stage2/proposed_atoms.json",
+        "stage2/critic_reviews.json",
         "stage2/decisions.json",
+        "stage2/intent_graph.json",
         "stage2/attribution_decisions.json",
         "stage2/symbolic_verification_logs.json",
         "stage2/adversarial_examples.json",
@@ -191,6 +296,12 @@ def test_author_runs_end_to_end_with_stubs(
     for rel in expected:
         assert (session_dir / rel).exists(), f"missing artifact {rel}"
 
+    graph = json.loads((session_dir / "stage2" / "intent_graph.json").read_text())
+    node_ids = {node["id"] for node in graph["nodes"]}
+    assert "property:owner_only_read" in node_ids
+    assert "action:read" in node_ids
+    assert graph["summary"]["properties"] == 2
+
 
 def test_author_emits_review_stage_and_overview_hooks(
     tmp_path: Path, workspace: tuple[Path, Path],
@@ -202,16 +313,219 @@ def test_author_emits_review_stage_and_overview_hooks(
         spec_path=spec_path,
         output_dir=tmp_path / "out",
         session_id="hooks",
-        propose_property_atoms=lambda spec_text, schema_path_arg: [],
+        propose_property_atom=_QueuedPropertyProposer(),
         review_atom=reviewer,
         synthesize=_synthesize_stub,
         schema_path_override=str(schema_path),
     )
 
     assert ("schema", MINIMAL_SCHEMA) in reviewer.events
-    assert ("begin", ("Property intent review", 0)) in reviewer.events
+    assert ("begin", ("Property intent review", None)) in reviewer.events
     assert ("end", ("Property intent review", 0, 0)) in reviewer.events
     assert ("properties", 0) in reviewer.events
+
+
+def test_stage2_proposes_one_property_after_each_review(
+    tmp_path: Path,
+    workspace: tuple[Path, Path],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    spec_path, schema_path = workspace
+
+    def fake_symbolic_verify(
+        atom: PropertyAtom,
+        schema_path_arg: str,
+        prior_atoms: list[PropertyAtom] | None = None,
+    ) -> None:
+        _ = schema_path_arg, prior_atoms
+        atom.symbolic_verified = True
+        atom.symbolic_verification_log = [f"checked {atom.name}"]
+
+    monkeypatch.setattr("autocedar.pipeline.symbolic_verify_atom", fake_symbolic_verify)
+    monkeypatch.setattr(
+        "autocedar.pipeline.symbolic_consistency_check",
+        lambda *args, **kwargs: SimpleNamespace(
+            unsat=False,
+            core=[],
+            detail="",
+            tool_error=False,
+        ),
+    )
+
+    proposer = _QueuedPropertyProposer(_owner_only_ceiling(), _owner_must_floor())
+
+    author(
+        spec_path=spec_path,
+        output_dir=tmp_path / "out",
+        session_id="one-at-a-time",
+        propose_property_atom=proposer,
+        review_atom=_approve,
+        synthesize=_synthesize_stub,
+        schema_path_override=str(schema_path),
+    )
+
+    assert proposer.calls == [
+        ([], []),
+        (["owner_only_read"], ["owner_only_read"]),
+        (["owner_only_read", "owner_must_read"], ["owner_only_read", "owner_must_read"]),
+    ]
+
+
+def test_author_stops_when_no_schema_atoms_are_approved(tmp_path: Path) -> None:
+    spec_path = tmp_path / "policy_spec.md"
+    spec_path.write_text("Owners can read documents.")
+
+    result = author(
+        spec_path=spec_path,
+        output_dir=tmp_path / "out",
+        session_id="empty-schema",
+        propose_schema_atoms=lambda spec_text: [],
+        propose_property_atom=_QueuedPropertyProposer(),
+        review_atom=_approve,
+        synthesize=_synthesize_stub,
+    )
+
+    assert result.final_user_approved is False
+    assert result.candidate_path == Path("")
+    assert "no approved schema atoms" in result.notes[0]
+    validation = json.loads(
+        (tmp_path / "out" / "empty-schema" / "stage1" / "schema_validation.json").read_text(),
+    )
+    assert validation[0]["validator_error"] == "no approved schema atoms"
+
+
+@requires_solvers
+def test_author_validates_and_fixes_composed_schema_before_stage2(tmp_path: Path) -> None:
+    spec_path = tmp_path / "policy_spec.md"
+    spec_path.write_text("Users can read documents.")
+
+    atoms = [
+        EntityAtom(
+            name="User",
+            rationale="principal",
+            plain_english_summary="A user.",
+            source_excerpt="Users",
+        ),
+        ActionAtom(
+            name="read",
+            rationale="read action",
+            plain_english_summary="Read a document.",
+            source_excerpt="read documents",
+            principal_types=["User"],
+            resource_types=["Document"],
+        ),
+    ]
+    fixed_schema = textwrap.dedent("""\
+        entity User;
+
+        entity Document;
+
+        action read appliesTo {
+            principal: [User],
+            resource: [Document],
+        };
+    """)
+    schema_seen_by_stage2: list[str] = []
+
+    result = author(
+        spec_path=spec_path,
+        output_dir=tmp_path / "out",
+        session_id="schema-fix",
+        propose_schema_atoms=lambda spec_text: atoms,
+        fix_schema=lambda schema_text, cedar_error, spec_text: fixed_schema,
+        propose_property_atom=lambda spec_text, schema_path_arg, prior_atoms, prior_decisions: (
+            schema_seen_by_stage2.append(Path(schema_path_arg).read_text()) or None
+        ),
+        review_atom=_approve,
+        synthesize=_synthesize_stub,
+    )
+
+    assert result.final_user_approved is True
+    assert schema_seen_by_stage2 == [fixed_schema]
+    validation = json.loads(
+        (tmp_path / "out" / "schema-fix" / "stage1" / "schema_validation.json").read_text(),
+    )
+    assert len(validation) == 2
+    assert validation[0]["validator_passed"] is False
+    assert validation[0]["llm_was_called"] is True
+    assert validation[1]["validator_passed"] is True
+
+
+@requires_solvers
+def test_author_repairs_rejected_schema_atom_before_composition(tmp_path: Path) -> None:
+    spec_path = tmp_path / "policy_spec.md"
+    spec_path.write_text("Users can read documents.")
+
+    bad_entity = EntityAtom(
+        name="Person",
+        rationale="wrong principal name",
+        plain_english_summary="A person.",
+        source_excerpt="Users",
+    )
+    fixed_entity = EntityAtom(
+        name="User",
+        rationale="principal",
+        plain_english_summary="A user.",
+        source_excerpt="Users",
+    )
+    document = EntityAtom(
+        name="Document",
+        rationale="resource",
+        plain_english_summary="A document.",
+        source_excerpt="documents",
+    )
+    action = ActionAtom(
+        name="read",
+        rationale="read action",
+        plain_english_summary="Read a document.",
+        source_excerpt="read documents",
+        principal_types=["User"],
+        resource_types=["Document"],
+    )
+    reviewed: list[str] = []
+    repairs: list[tuple[str, str]] = []
+
+    def reviewer(atom: object) -> AtomDecision:
+        reviewed.append(getattr(atom, "name", "?"))
+        if getattr(atom, "name", "") == "Person":
+            return AtomDecision(
+                atom_name="Person",
+                action="reject",
+                reason="principal entity should be named User",
+            )
+        return _approve(atom)
+
+    def repair_schema_atom(
+        spec_text: str,
+        rejected_atom: object,
+        reason: str,
+        prior_atoms: list[object],
+    ) -> object:
+        _ = spec_text, prior_atoms
+        repairs.append((getattr(rejected_atom, "name", "?"), reason))
+        return fixed_entity
+
+    result = author(
+        spec_path=spec_path,
+        output_dir=tmp_path / "out",
+        session_id="schema-atom-repair",
+        propose_schema_atoms=lambda spec_text: [bad_entity, document, action],
+        repair_schema_atom=repair_schema_atom,
+        propose_property_atom=_QueuedPropertyProposer(),
+        review_atom=reviewer,
+        synthesize=_synthesize_stub,
+    )
+
+    assert result.final_user_approved is True
+    assert reviewed == ["Person", "User", "Document", "read"]
+    assert repairs == [("Person", "principal entity should be named User")]
+    assert "entity User;" in result.schema_text
+    assert "entity Person;" not in result.schema_text
+    decisions = json.loads(
+        (tmp_path / "out" / "schema-atom-repair" / "stage1" / "decisions.json").read_text(),
+    )
+    assert decisions[0]["atom_name"] == "User"
+    assert decisions[0]["edit_delta"]["replaced_after_reject"] is True
 
 
 def test_author_rechecks_edited_property_atom(
@@ -251,7 +565,7 @@ def test_author_rechecks_edited_property_atom(
         spec_path=spec_path,
         output_dir=tmp_path / "out",
         session_id="edited-prop",
-        propose_property_atoms=lambda spec_text, schema_path_arg: [_owner_only_ceiling()],
+        propose_property_atom=_QueuedPropertyProposer(_owner_only_ceiling()),
         review_atom=review_with_edit,
         synthesize=_synthesize_stub,
         schema_path_override=str(schema_path),
@@ -315,7 +629,7 @@ def test_author_repairs_rejected_property_atom(
         spec_path=spec_path,
         output_dir=tmp_path / "out",
         session_id="repaired-prop",
-        propose_property_atoms=lambda spec_text, schema_path_arg: [_owner_only_ceiling()],
+        propose_property_atom=_QueuedPropertyProposer(_owner_only_ceiling()),
         repair_property_atom=repair_property_atom,
         review_atom=review_then_approve,
         synthesize=_synthesize_stub,
@@ -334,6 +648,1316 @@ def test_author_repairs_rejected_property_atom(
     assert decisions[0]["edit_delta"]["reject_history"][0]["atom_name"] == "owner_only_read"
 
 
+def test_author_skips_later_property_duplicate_after_repair(
+    tmp_path: Path,
+    workspace: tuple[Path, Path],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    spec_path, schema_path = workspace
+    reviewed: list[str] = []
+
+    def fake_symbolic_verify(
+        atom: PropertyAtom,
+        schema_path_arg: str,
+        prior_atoms: list[PropertyAtom] | None = None,
+    ) -> None:
+        _ = schema_path_arg, prior_atoms
+        atom.symbolic_verified = True
+        atom.symbolic_verification_log = [f"checked {atom.name}"]
+
+    monkeypatch.setattr("autocedar.pipeline.symbolic_verify_atom", fake_symbolic_verify)
+
+    weak_ceiling = _owner_only_ceiling()
+    strong_ceiling = replace(
+        weak_ceiling,
+        reference_cedar=(
+            'permit (principal is User, action == Action::"read", resource is Resource)\n'
+            "when { principal == resource.owner && principal.isAdmin };\n"
+        ),
+        plain_english_summary="Only admin owners can read.",
+    )
+    bad_floor = _owner_must_floor()
+
+    def review_then_approve(atom: object) -> AtomDecision:
+        reviewed.append(getattr(atom, "name", "?"))
+        if getattr(atom, "name", "?") == "owner_must_read":
+            return AtomDecision(
+                atom_name="owner_must_read",
+                action="reject",
+                reason="must be a stricter ceiling instead",
+            )
+        return _approve(atom)
+
+    def repair_property_atom(
+        spec_text: str,
+        schema_path_arg: str,
+        rejected_atom: PropertyAtom,
+        reason: str,
+        prior_atoms: list[PropertyAtom],
+    ) -> PropertyAtom:
+        _ = spec_text, schema_path_arg, rejected_atom, reason, prior_atoms
+        return strong_ceiling
+
+    author(
+        spec_path=spec_path,
+        output_dir=tmp_path / "out",
+        session_id="duplicate-after-repair",
+        propose_property_atom=_QueuedPropertyProposer(bad_floor, weak_ceiling),
+        repair_property_atom=repair_property_atom,
+        review_atom=review_then_approve,
+        synthesize=_synthesize_stub,
+        schema_path_override=str(schema_path),
+    )
+
+    assert reviewed == ["owner_must_read", "owner_only_read"]
+    decisions = json.loads(
+        (tmp_path / "out" / "duplicate-after-repair" / "stage2" / "decisions.json").read_text(),
+    )
+    assert [decision["action"] for decision in decisions] == ["approve", "reject"]
+    assert decisions[1]["reason"].startswith("Duplicate property atom name")
+    ref = (
+        tmp_path
+        / "out"
+        / "duplicate-after-repair"
+        / "stage2"
+        / "final_plan"
+        / "references"
+        / "owner_only_read.cedar"
+    ).read_text()
+    assert "principal.isAdmin" in ref
+
+
+def test_author_preserves_floor_direction_for_missing_condition_repair(
+    tmp_path: Path,
+    workspace: tuple[Path, Path],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    spec_path, schema_path = workspace
+
+    def fake_symbolic_verify(
+        atom: PropertyAtom,
+        schema_path_arg: str,
+        prior_atoms: list[PropertyAtom] | None = None,
+    ) -> None:
+        _ = schema_path_arg, prior_atoms
+        atom.symbolic_verified = True
+        atom.symbolic_verification_log = [f"checked {atom.name}"]
+
+    monkeypatch.setattr("autocedar.pipeline.symbolic_verify_atom", fake_symbolic_verify)
+
+    bad_floor = _owner_must_floor()
+    model_returned_ceiling = replace(
+        _owner_only_ceiling(),
+        name="owner_read_repaired_ceiling",
+        reference_cedar=(
+            'permit (principal is User, action == Action::"read", resource is Resource)\n'
+            "when { principal == resource.owner && principal.isAdmin };\n"
+        ),
+    )
+    reviewed: list[tuple[str, str]] = []
+
+    def review_then_approve(atom: object) -> AtomDecision:
+        reviewed.append((getattr(atom, "name", "?"), getattr(atom, "constraint_type", "")))
+        if len(reviewed) == 1:
+            return AtomDecision(
+                atom_name=getattr(atom, "name", "?"),
+                action="reject",
+                reason="missing admin condition",
+            )
+        return _approve(atom)
+
+    author(
+        spec_path=spec_path,
+        output_dir=tmp_path / "out",
+        session_id="preserve-floor-repair",
+        propose_property_atom=_QueuedPropertyProposer(bad_floor),
+        repair_property_atom=lambda *args: model_returned_ceiling,
+        review_atom=review_then_approve,
+        synthesize=_synthesize_stub,
+        schema_path_override=str(schema_path),
+    )
+
+    assert reviewed == [
+        ("owner_must_read", "floor"),
+        ("owner_read_repaired_floor", "floor"),
+    ]
+    plan_py = (
+        tmp_path
+        / "out"
+        / "preserve-floor-repair"
+        / "stage2"
+        / "final_plan"
+        / "verification_plan.py"
+    ).read_text()
+    assert '"type": "floor"' in plan_py
+    assert "owner_read_repaired_floor" in plan_py
+
+
+def test_author_allows_explicit_property_direction_change(
+    tmp_path: Path,
+    workspace: tuple[Path, Path],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    spec_path, schema_path = workspace
+
+    def fake_symbolic_verify(
+        atom: PropertyAtom,
+        schema_path_arg: str,
+        prior_atoms: list[PropertyAtom] | None = None,
+    ) -> None:
+        _ = schema_path_arg, prior_atoms
+        atom.symbolic_verified = True
+        atom.symbolic_verification_log = [f"checked {atom.name}"]
+
+    monkeypatch.setattr("autocedar.pipeline.symbolic_verify_atom", fake_symbolic_verify)
+
+    bad_floor = _owner_must_floor()
+    ceiling = replace(_owner_only_ceiling(), name="owner_repaired_ceiling")
+    reviewed: list[tuple[str, str]] = []
+
+    def review_then_approve(atom: object) -> AtomDecision:
+        reviewed.append((getattr(atom, "name", "?"), getattr(atom, "constraint_type", "")))
+        if len(reviewed) == 1:
+            return AtomDecision(
+                atom_name=getattr(atom, "name", "?"),
+                action="reject",
+                reason="wrong direction; this should be a ceiling instead",
+            )
+        return _approve(atom)
+
+    author(
+        spec_path=spec_path,
+        output_dir=tmp_path / "out",
+        session_id="allow-direction-change",
+        propose_property_atom=_QueuedPropertyProposer(bad_floor),
+        repair_property_atom=lambda *args: ceiling,
+        review_atom=review_then_approve,
+        synthesize=_synthesize_stub,
+        schema_path_override=str(schema_path),
+    )
+
+    assert reviewed == [
+        ("owner_must_read", "floor"),
+        ("owner_repaired_ceiling", "ceiling"),
+    ]
+
+
+def test_property_critic_rejects_before_hitl(
+    tmp_path: Path,
+    workspace: tuple[Path, Path],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    spec_path, schema_path = workspace
+    reviewed: list[str] = []
+
+    monkeypatch.setattr(
+        "autocedar.pipeline.symbolic_consistency_check",
+        lambda *args, **kwargs: SimpleNamespace(
+            unsat=False,
+            core=[],
+            detail="",
+            tool_error=False,
+        ),
+    )
+
+    def reviewer(atom: object) -> AtomDecision:
+        reviewed.append(getattr(atom, "name", "?"))
+        return _approve(atom)
+
+    author(
+        spec_path=spec_path,
+        output_dir=tmp_path / "out",
+        session_id="critic-reject",
+        propose_property_atom=_QueuedPropertyProposer(_owner_only_ceiling()),
+        critique_property_atom=lambda *args: PropertyCritique(
+            decision="reject",
+            reason="schema-implied restatement",
+            tags=["schema-implied"],
+        ),
+        review_atom=reviewer,
+        synthesize=_synthesize_stub,
+        schema_path_override=str(schema_path),
+    )
+
+    assert reviewed == []
+    session_dir = tmp_path / "out" / "critic-reject"
+    critic_reviews = json.loads((session_dir / "stage2" / "critic_reviews.json").read_text())
+    assert critic_reviews == [
+        {
+            "atom_name": "owner_only_read",
+            "decision": "reject",
+            "reason": "schema-implied restatement",
+            "tags": ["schema-implied"],
+        },
+    ]
+    decisions = json.loads((session_dir / "stage2" / "decisions.json").read_text())
+    assert decisions[0]["action"] == "reject"
+    assert decisions[0]["edit_delta"]["critic_decision"] == "reject"
+    assert not (session_dir / "stage1_5" / "schema_gaps.json").exists()
+
+
+def test_hitl_schema_gap_rejection_repairs_schema_and_continues(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    spec_path = tmp_path / "policy_spec.md"
+    spec_path.write_text("Students can register for current course offerings.")
+
+    def fake_symbolic_verify(
+        atom: PropertyAtom,
+        schema_path_arg: str,
+        prior_atoms: list[PropertyAtom] | None = None,
+    ) -> None:
+        _ = schema_path_arg, prior_atoms
+        atom.symbolic_verified = True
+        atom.symbolic_verification_log = [f"checked {atom.name}"]
+
+    user = EntityAtom(
+        name="Student",
+        rationale="student principal",
+        plain_english_summary="A student.",
+        source_excerpt="Students",
+    )
+    offering = EntityAtom(
+        name="CourseOffering",
+        rationale="course offering resource",
+        plain_english_summary="A course offering.",
+        source_excerpt="course offerings",
+    )
+    register = ActionAtom(
+        name="register",
+        rationale="registration action",
+        plain_english_summary="Register for an offering.",
+        source_excerpt="register",
+        principal_types=["Student"],
+        resource_types=["CourseOffering"],
+    )
+    is_current = AttributeAtom(
+        name="course_offering_is_current",
+        rationale="current semester marker",
+        plain_english_summary="Marks a course offering as current.",
+        source_excerpt="current course offerings",
+        on_entity="CourseOffering",
+        field_name="isCurrent",
+        cedar_type="Bool",
+    )
+    weak_property = PropertyAtom(
+        name="student_register_floor_weak",
+        rationale="registration floor without current-semester boundary",
+        plain_english_summary="Students can register for course offerings.",
+        source_excerpt="Students can register for current course offerings.",
+        constraint_type="floor",
+        action="register",
+        principal_types=["Student"],
+        resource_types=["CourseOffering"],
+        reference_cedar='permit (principal, action == Action::"register", resource);',
+    )
+    repaired_property = replace(
+        weak_property,
+        name="student_register_current_floor",
+        plain_english_summary="Students can register for current course offerings.",
+        reference_cedar=(
+            'permit (principal, action == Action::"register", resource) '
+            "when { resource.isCurrent };"
+        ),
+    )
+    schema_calls = 0
+    schema_seen_by_property: list[str] = []
+    properties = [weak_property, repaired_property]
+    synth_called = False
+
+    def schema_proposer(text: str) -> list[object]:
+        nonlocal schema_calls
+        schema_calls += 1
+        if schema_calls == 1:
+            return [user, offering, register]
+        assert "<schema_gap_repair>" in text
+        return [is_current]
+
+    def property_proposer(
+        text: str,
+        schema_path_arg: str,
+        prior_atoms: list[PropertyAtom],
+        prior_decisions: list[AtomDecision],
+    ) -> PropertyAtom | None:
+        _ = text, prior_atoms, prior_decisions
+        schema_seen_by_property.append(Path(schema_path_arg).read_text())
+        if not properties:
+            return None
+        return properties.pop(0)
+
+    def reviewer(atom: object) -> AtomDecision:
+        if not isinstance(atom, PropertyAtom):
+            return _approve(atom)
+        if atom.name == "student_register_floor_weak":
+            return AtomDecision(
+                atom_name=atom.name,
+                action="reject",
+                reason="schema needs a current-semester field before this property is acceptable",
+            )
+        return _approve(atom)
+
+    def fake_compose_and_validate(draft, schema_path_arg, llm=None, spec_text="", max_attempts=3):
+        from autocedar.schema_atomizer import FixAttempt, compose_schema
+
+        _ = llm, spec_text, max_attempts
+        schema_text = compose_schema(draft)
+        schema_path_arg.write_text(schema_text)
+        return SimpleNamespace(
+            schema_text=schema_text,
+            schema_path=schema_path_arg,
+            succeeded=True,
+            attempts=[
+                FixAttempt(
+                    attempt_number=1,
+                    schema_text=schema_text,
+                    validator_passed=True,
+                ),
+            ],
+        )
+
+    def synthesize(scenario_dir: Path) -> Path:
+        nonlocal synth_called
+        synth_called = True
+        return _synthesize_stub(scenario_dir)
+
+    monkeypatch.setattr("autocedar.pipeline.symbolic_verify_atom", fake_symbolic_verify)
+    monkeypatch.setattr("autocedar.pipeline.compose_and_validate", fake_compose_and_validate)
+    monkeypatch.setattr(
+        "autocedar.pipeline.symbolic_consistency_check",
+        lambda *args, **kwargs: SimpleNamespace(
+            unsat=False,
+            core=[],
+            detail="",
+            tool_error=False,
+        ),
+    )
+
+    result = author(
+        spec_path=spec_path,
+        output_dir=tmp_path / "out",
+        session_id="schema-gap-repair",
+        propose_schema_atoms=schema_proposer,
+        propose_property_atom=property_proposer,
+        review_atom=reviewer,
+        synthesize=synthesize,
+    )
+
+    assert result.final_user_approved is True
+    assert result.candidate_path.exists()
+    assert synth_called is True
+    assert schema_calls == 2
+    assert "isCurrent: Bool" not in schema_seen_by_property[0]
+    assert "isCurrent: Bool" in schema_seen_by_property[1]
+    assert "isCurrent: Bool" in result.schema_text
+
+    session_dir = tmp_path / "out" / "schema-gap-repair"
+    gaps = json.loads((session_dir / "stage1_5" / "schema_gaps.json").read_text())
+    assert gaps[0]["atom_name"] == "student_register_floor_weak"
+    repairs = json.loads((session_dir / "stage1_5" / "schema_gap_repairs.json").read_text())
+    assert repairs[0]["approved_atoms"][0]["field_name"] == "isCurrent"
+    assert (session_dir / "stage2" / "final_plan" / "verification_plan.py").exists()
+    assert (session_dir / "stage3" / "final_candidate.cedar").exists()
+
+
+def test_schema_gap_repair_patches_supplied_schema_without_llm_rewrite(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    spec_path = tmp_path / "policy_spec.md"
+    spec_path.write_text("Students can register for current course offerings.")
+    schema_path = tmp_path / "schema.cedarschema"
+    schema_path.write_text(textwrap.dedent("""\
+        entity Student;
+
+        entity CourseOffering;
+
+        action register appliesTo {
+            principal: [Student],
+            resource: [CourseOffering],
+        };
+    """))
+
+    weak_property = PropertyAtom(
+        name="student_register_floor_weak",
+        rationale="registration floor without current-semester boundary",
+        plain_english_summary="Students can register for course offerings.",
+        source_excerpt="Students can register for current course offerings.",
+        constraint_type="floor",
+        action="register",
+        principal_types=["Student"],
+        resource_types=["CourseOffering"],
+        reference_cedar='permit (principal, action == Action::"register", resource);',
+    )
+    repaired_property = replace(
+        weak_property,
+        name="student_register_current_floor",
+        reference_cedar=(
+            'permit (principal, action == Action::"register", resource) '
+            "when { resource.isCurrent };"
+        ),
+    )
+    is_current = AttributeAtom(
+        name="course_offering_is_current",
+        rationale="current semester marker",
+        plain_english_summary="Marks a course offering as current.",
+        source_excerpt="current course offerings",
+        on_entity="CourseOffering",
+        field_name="isCurrent",
+        cedar_type="Bool",
+    )
+    properties = [weak_property, repaired_property]
+    schemas_seen: list[str] = []
+
+    def fake_symbolic_verify(
+        atom: PropertyAtom,
+        schema_path_arg: str,
+        prior_atoms: list[PropertyAtom] | None = None,
+    ) -> None:
+        _ = schema_path_arg, prior_atoms
+        atom.symbolic_verified = True
+        atom.symbolic_verification_log = [f"checked {atom.name}"]
+
+    def property_proposer(
+        text: str,
+        schema_path_arg: str,
+        prior_atoms: list[PropertyAtom],
+        prior_decisions: list[AtomDecision],
+    ) -> PropertyAtom | None:
+        _ = text, prior_atoms, prior_decisions
+        schemas_seen.append(Path(schema_path_arg).read_text())
+        if not properties:
+            return None
+        return properties.pop(0)
+
+    def reviewer(atom: object) -> AtomDecision:
+        if not isinstance(atom, PropertyAtom):
+            return _approve(atom)
+        if atom.name == "student_register_floor_weak":
+            return AtomDecision(
+                atom_name=atom.name,
+                action="reject",
+                reason="schema needs a current-semester field before this property is acceptable",
+            )
+        return _approve(atom)
+
+    def fail_schema_rewrite(schema_text: str, cedar_error: str, text: str) -> str:
+        _ = schema_text, cedar_error, text
+        raise AssertionError("supplied-schema repair must not ask the LLM to rewrite schema text")
+
+    monkeypatch.setattr("autocedar.pipeline.symbolic_verify_atom", fake_symbolic_verify)
+    monkeypatch.setattr("autocedar.pipeline.cedar_validate_schema", lambda path: (True, ""))
+    monkeypatch.setattr(
+        "autocedar.pipeline.symbolic_consistency_check",
+        lambda *args, **kwargs: SimpleNamespace(
+            unsat=False,
+            core=[],
+            detail="",
+            tool_error=False,
+        ),
+    )
+
+    result = author(
+        spec_path=spec_path,
+        output_dir=tmp_path / "out",
+        session_id="schema-override-repair",
+        propose_schema_atoms=lambda text: [is_current],
+        fix_schema=fail_schema_rewrite,
+        propose_property_atom=property_proposer,
+        review_atom=reviewer,
+        synthesize=_synthesize_stub,
+        schema_path_override=str(schema_path),
+    )
+
+    assert result.final_user_approved is True
+    assert "isCurrent: Bool" not in schemas_seen[0]
+    assert "isCurrent: Bool" in schemas_seen[1]
+    repairs = json.loads(
+        (tmp_path / "out" / "schema-override-repair" / "stage1_5" / "schema_gap_repairs.json")
+        .read_text(),
+    )
+    assert repairs[0]["schema_validation"][0]["llm_was_called"] is False
+
+
+def test_schema_gap_repairs_log_all_repair_records(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    spec_path = tmp_path / "policy_spec.md"
+    spec_path.write_text("Students can register for current and upcoming course offerings.")
+
+    student = EntityAtom(
+        name="Student",
+        rationale="student principal",
+        plain_english_summary="A student.",
+        source_excerpt="Students",
+    )
+    offering = EntityAtom(
+        name="CourseOffering",
+        rationale="course offering",
+        plain_english_summary="A course offering.",
+        source_excerpt="course offerings",
+    )
+    register = ActionAtom(
+        name="register",
+        rationale="register action",
+        plain_english_summary="Register.",
+        source_excerpt="register",
+        principal_types=["Student"],
+        resource_types=["CourseOffering"],
+    )
+    current_attr = AttributeAtom(
+        name="course_offering_is_current",
+        rationale="current marker",
+        plain_english_summary="Current marker.",
+        source_excerpt="current",
+        on_entity="CourseOffering",
+        field_name="isCurrent",
+        cedar_type="Bool",
+    )
+    upcoming_attr = AttributeAtom(
+        name="course_offering_is_upcoming",
+        rationale="upcoming marker",
+        plain_english_summary="Upcoming marker.",
+        source_excerpt="upcoming",
+        on_entity="CourseOffering",
+        field_name="isUpcoming",
+        cedar_type="Bool",
+    )
+    weak_current = PropertyAtom(
+        name="weak_current",
+        rationale="missing current field",
+        plain_english_summary="Current registration.",
+        source_excerpt="current offerings",
+        constraint_type="floor",
+        action="register",
+        principal_types=["Student"],
+        resource_types=["CourseOffering"],
+        reference_cedar='permit (principal, action == Action::"register", resource);',
+    )
+    current_ok = replace(
+        weak_current,
+        name="current_ok",
+        reference_cedar='permit (principal, action == Action::"register", resource) when { resource.isCurrent };',
+    )
+    weak_upcoming = replace(weak_current, name="weak_upcoming", source_excerpt="upcoming offerings")
+    upcoming_ok = replace(
+        weak_current,
+        name="upcoming_ok",
+        reference_cedar='permit (principal, action == Action::"register", resource) when { resource.isUpcoming };',
+    )
+    property_queue = [weak_current, current_ok, weak_upcoming, upcoming_ok]
+    schema_calls = 0
+
+    def schema_proposer(text: str) -> list[object]:
+        nonlocal schema_calls
+        schema_calls += 1
+        if schema_calls == 1:
+            return [student, offering, register]
+        if schema_calls == 2:
+            return [current_attr]
+        return [upcoming_attr]
+
+    def property_proposer(
+        text: str,
+        schema_path_arg: str,
+        prior_atoms: list[PropertyAtom],
+        prior_decisions: list[AtomDecision],
+    ) -> PropertyAtom | None:
+        _ = text, schema_path_arg, prior_atoms, prior_decisions
+        if not property_queue:
+            return None
+        return property_queue.pop(0)
+
+    def reviewer(atom: object) -> AtomDecision:
+        if not isinstance(atom, PropertyAtom):
+            return _approve(atom)
+        if atom.name == "weak_current":
+            return AtomDecision(atom_name=atom.name, action="reject", reason="schema needs current marker")
+        if atom.name == "weak_upcoming":
+            return AtomDecision(atom_name=atom.name, action="reject", reason="schema needs upcoming marker")
+        return _approve(atom)
+
+    def fake_compose_and_validate(draft, schema_path_arg, llm=None, spec_text="", max_attempts=3):
+        from autocedar.schema_atomizer import FixAttempt, compose_schema
+
+        _ = llm, spec_text, max_attempts
+        schema_text = compose_schema(draft)
+        schema_path_arg.write_text(schema_text)
+        return SimpleNamespace(
+            schema_text=schema_text,
+            schema_path=schema_path_arg,
+            succeeded=True,
+            attempts=[FixAttempt(attempt_number=1, schema_text=schema_text, validator_passed=True)],
+        )
+
+    monkeypatch.setattr("autocedar.pipeline.compose_and_validate", fake_compose_and_validate)
+    monkeypatch.setattr(
+        "autocedar.pipeline.symbolic_verify_atom",
+        lambda atom, schema_path_arg, prior_atoms=None: setattr(atom, "symbolic_verified", True),
+    )
+    monkeypatch.setattr(
+        "autocedar.pipeline.symbolic_consistency_check",
+        lambda *args, **kwargs: SimpleNamespace(
+            unsat=False,
+            core=[],
+            detail="",
+            tool_error=False,
+        ),
+    )
+
+    result = author(
+        spec_path=spec_path,
+        output_dir=tmp_path / "out",
+        session_id="schema-repair-log-all",
+        propose_schema_atoms=schema_proposer,
+        propose_property_atom=property_proposer,
+        review_atom=reviewer,
+        synthesize=_synthesize_stub,
+    )
+
+    assert result.final_user_approved is True
+    repairs = json.loads(
+        (tmp_path / "out" / "schema-repair-log-all" / "stage1_5" / "schema_gap_repairs.json")
+        .read_text(),
+    )
+    assert [record["gap"]["atom_name"] for record in repairs] == ["weak_current", "weak_upcoming"]
+    assert [record["approved_atoms"][0]["field_name"] for record in repairs] == [
+        "isCurrent",
+        "isUpcoming",
+    ]
+
+
+def test_semantic_boundary_proxy_triggers_schema_gap_before_hitl(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    spec_path = tmp_path / "policy_spec.md"
+    spec_path.write_text(
+        "Professors can select eligible course offerings for the upcoming semester.",
+    )
+    schema_path = tmp_path / "schema.cedarschema"
+    schema_path.write_text(textwrap.dedent("""\
+        entity Professor;
+
+        entity Semester {
+            isCompleted: Bool,
+        };
+
+        entity CourseOffering {
+            semester: Semester,
+            eligibleProfessors: Set<Professor>,
+        };
+
+        action selectCourseOfferingToTeach appliesTo {
+            principal: [Professor],
+            resource: [CourseOffering],
+        };
+    """))
+
+    proxy_property = PropertyAtom(
+        name="professor_select_upcoming_proxy",
+        rationale="uses not completed as a proxy for upcoming",
+        plain_english_summary="A professor can select an upcoming-semester offering.",
+        source_excerpt="course offerings ... for the upcoming semester",
+        constraint_type="floor",
+        action="selectCourseOfferingToTeach",
+        principal_types=["Professor"],
+        resource_types=["CourseOffering"],
+        reference_cedar=(
+            'permit (principal is Professor, action == Action::"selectCourseOfferingToTeach", '
+            "resource is CourseOffering) when { principal in resource.eligibleProfessors "
+            "&& !resource.semester.isCompleted };"
+        ),
+    )
+    repaired_property = replace(
+        proxy_property,
+        name="professor_select_upcoming_explicit",
+        reference_cedar=(
+            'permit (principal is Professor, action == Action::"selectCourseOfferingToTeach", '
+            "resource is CourseOffering) when { principal in resource.eligibleProfessors "
+            "&& resource.semester.isUpcoming };"
+        ),
+    )
+    is_upcoming = AttributeAtom(
+        name="semester_is_upcoming",
+        rationale="upcoming marker",
+        plain_english_summary="Marks upcoming semesters.",
+        source_excerpt="upcoming semester",
+        on_entity="Semester",
+        field_name="isUpcoming",
+        cedar_type="Bool",
+    )
+    properties = [proxy_property, repaired_property]
+    reviewed_properties: list[str] = []
+
+    def property_proposer(
+        text: str,
+        schema_path_arg: str,
+        prior_atoms: list[PropertyAtom],
+        prior_decisions: list[AtomDecision],
+    ) -> PropertyAtom | None:
+        _ = text, schema_path_arg, prior_atoms, prior_decisions
+        if not properties:
+            return None
+        return properties.pop(0)
+
+    def reviewer(atom: object) -> AtomDecision:
+        if isinstance(atom, PropertyAtom):
+            reviewed_properties.append(atom.name)
+        return _approve(atom)
+
+    monkeypatch.setattr(
+        "autocedar.pipeline.symbolic_verify_atom",
+        lambda atom, schema_path_arg, prior_atoms=None: setattr(atom, "symbolic_verified", True),
+    )
+    monkeypatch.setattr("autocedar.pipeline.cedar_validate_schema", lambda path: (True, ""))
+    monkeypatch.setattr(
+        "autocedar.pipeline.symbolic_consistency_check",
+        lambda *args, **kwargs: SimpleNamespace(
+            unsat=False,
+            core=[],
+            detail="",
+            tool_error=False,
+        ),
+    )
+
+    result = author(
+        spec_path=spec_path,
+        output_dir=tmp_path / "out",
+        session_id="semantic-boundary-schema-gap",
+        propose_schema_atoms=lambda text: [is_upcoming],
+        propose_property_atom=property_proposer,
+        review_atom=reviewer,
+        synthesize=_synthesize_stub,
+        schema_path_override=str(schema_path),
+    )
+
+    assert result.final_user_approved is True
+    assert reviewed_properties == ["professor_select_upcoming_explicit"]
+    assert "isUpcoming: Bool" in result.schema_text
+
+    session_dir = tmp_path / "out" / "semantic-boundary-schema-gap"
+    gaps = json.loads((session_dir / "stage1_5" / "schema_gaps.json").read_text())
+    assert gaps[0]["atom_name"] == "professor_select_upcoming_proxy"
+    assert "upcoming-semester" in gaps[0]["reason"]
+    repairs = json.loads((session_dir / "stage1_5" / "schema_gap_repairs.json").read_text())
+    assert repairs[0]["approved_atoms"][0]["field_name"] == "isUpcoming"
+
+
+def test_semantic_boundary_proxy_repairs_property_when_schema_has_hook(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    spec_path = tmp_path / "policy_spec.md"
+    spec_path.write_text(
+        "Professors can select eligible course offerings for the upcoming semester.",
+    )
+    schema_path = tmp_path / "schema.cedarschema"
+    schema_path.write_text(textwrap.dedent("""\
+        entity Professor;
+
+        entity Semester {
+            isCompleted: Bool,
+            isUpcoming: Bool,
+        };
+
+        entity CourseOffering {
+            semester: Semester,
+            eligibleProfessors: Set<Professor>,
+        };
+
+        action selectCourseOfferingToTeach appliesTo {
+            principal: [Professor],
+            resource: [CourseOffering],
+        };
+    """))
+
+    proxy_property = PropertyAtom(
+        name="professor_select_upcoming_proxy",
+        rationale="uses not completed as a proxy for upcoming",
+        plain_english_summary="A professor can select an upcoming-semester offering.",
+        source_excerpt="course offerings ... for the upcoming semester",
+        constraint_type="floor",
+        action="selectCourseOfferingToTeach",
+        principal_types=["Professor"],
+        resource_types=["CourseOffering"],
+        reference_cedar=(
+            'permit (principal is Professor, action == Action::"selectCourseOfferingToTeach", '
+            "resource is CourseOffering) when { principal in resource.eligibleProfessors "
+            "&& !resource.semester.isCompleted };"
+        ),
+    )
+    repaired_property = replace(
+        proxy_property,
+        name="professor_select_upcoming_explicit",
+        reference_cedar=(
+            'permit (principal is Professor, action == Action::"selectCourseOfferingToTeach", '
+            "resource is CourseOffering) when { principal in resource.eligibleProfessors "
+            "&& resource.semester.isUpcoming };"
+        ),
+    )
+    repaired: list[str] = []
+    reviewed_properties: list[str] = []
+
+    def repair_property_atom(
+        spec_text: str,
+        schema_path_arg: str,
+        rejected_atom: PropertyAtom,
+        reason: str,
+        prior_atoms: list[PropertyAtom],
+    ) -> PropertyAtom:
+        _ = spec_text, schema_path_arg, reason, prior_atoms
+        repaired.append(rejected_atom.name)
+        return repaired_property
+
+    def reviewer(atom: object) -> AtomDecision:
+        if isinstance(atom, PropertyAtom):
+            reviewed_properties.append(atom.name)
+        return _approve(atom)
+
+    monkeypatch.setattr(
+        "autocedar.pipeline.symbolic_verify_atom",
+        lambda atom, schema_path_arg, prior_atoms=None: setattr(atom, "symbolic_verified", True),
+    )
+    monkeypatch.setattr("autocedar.pipeline.cedar_validate_schema", lambda path: (True, ""))
+    monkeypatch.setattr(
+        "autocedar.pipeline.symbolic_consistency_check",
+        lambda *args, **kwargs: SimpleNamespace(
+            unsat=False,
+            core=[],
+            detail="",
+            tool_error=False,
+        ),
+    )
+
+    result = author(
+        spec_path=spec_path,
+        output_dir=tmp_path / "out",
+        session_id="semantic-boundary-property-repair",
+        propose_schema_atoms=lambda text: [],
+        propose_property_atom=_QueuedPropertyProposer(proxy_property),
+        repair_property_atom=repair_property_atom,
+        review_atom=reviewer,
+        synthesize=_synthesize_stub,
+        schema_path_override=str(schema_path),
+    )
+
+    assert result.final_user_approved is True
+    assert repaired == ["professor_select_upcoming_proxy"]
+    assert reviewed_properties == ["professor_select_upcoming_explicit"]
+    assert result.plan.properties[0].reference_cedar == repaired_property.reference_cedar
+
+
+def test_rejecting_consistency_failure_can_repair_prior_property(
+    tmp_path: Path,
+    workspace: tuple[Path, Path],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    spec_path, schema_path = workspace
+    broad_floor = PropertyAtom(
+        name="owner_read_floor",
+        rationale="owner floor without admin boundary",
+        plain_english_summary="Owners can read.",
+        source_excerpt="Owners can read their own resources.",
+        constraint_type="floor",
+        action="read",
+        principal_types=["User"],
+        resource_types=["Resource"],
+        reference_cedar=(
+            'permit (principal is User, action == Action::"read", resource is Resource)\n'
+            "when { principal == resource.owner };\n"
+        ),
+    )
+    strict_ceiling = PropertyAtom(
+        name="owner_admin_read_ceiling",
+        rationale="only admin owners can read",
+        plain_english_summary="Only admin owners can read.",
+        source_excerpt="Only admin owners can read their own resources.",
+        constraint_type="ceiling",
+        action="read",
+        principal_types=["User"],
+        resource_types=["Resource"],
+        reference_cedar=(
+            'permit (principal is User, action == Action::"read", resource is Resource)\n'
+            "when { principal == resource.owner && principal.isAdmin };\n"
+        ),
+    )
+    repaired_floor = replace(
+        broad_floor,
+        reference_cedar=(
+            'permit (principal is User, action == Action::"read", resource is Resource)\n'
+            "when { principal == resource.owner && principal.isAdmin };\n"
+        ),
+    )
+    reviewed: list[str] = []
+    repaired: list[str] = []
+
+    def fake_symbolic_verify(
+        atom: PropertyAtom,
+        schema_path_arg: str,
+        prior_atoms: list[PropertyAtom] | None = None,
+    ) -> None:
+        _ = schema_path_arg
+        prior_atoms = prior_atoms or []
+        atom.symbolic_verified = True
+        if atom.name == strict_ceiling.name and any(
+            prior.name == broad_floor.name and "isAdmin" not in prior.reference_cedar
+            for prior in prior_atoms
+        ):
+            atom.symbolic_verified = False
+            atom.symbolic_verification_log = [
+                "Consistency check failed against `owner_read_floor`: "
+                "floor owner_read_floor not contained in ceiling owner_admin_read_ceiling",
+            ]
+        else:
+            atom.symbolic_verification_log = [f"checked {atom.name}"]
+
+    def reviewer(atom: object) -> AtomDecision:
+        name = getattr(atom, "name", "?")
+        reviewed.append(name)
+        if name == strict_ceiling.name and len([n for n in reviewed if n == strict_ceiling.name]) == 1:
+            return AtomDecision(
+                atom_name=name,
+                action="reject",
+                reason="prior floor too broad; repair the floor to include the admin boundary",
+            )
+        return _approve(atom)
+
+    def repair_property_atom(
+        spec_text: str,
+        schema_path_arg: str,
+        rejected_atom: PropertyAtom,
+        reason: str,
+        prior_atoms: list[PropertyAtom],
+    ) -> PropertyAtom:
+        _ = spec_text, schema_path_arg, reason, prior_atoms
+        repaired.append(rejected_atom.name)
+        assert rejected_atom.name == broad_floor.name
+        return repaired_floor
+
+    monkeypatch.setattr("autocedar.pipeline.symbolic_verify_atom", fake_symbolic_verify)
+    monkeypatch.setattr(
+        "autocedar.pipeline.symbolic_consistency_check",
+        lambda *args, **kwargs: SimpleNamespace(
+            unsat=False,
+            core=[],
+            detail="",
+            tool_error=False,
+        ),
+    )
+
+    result = author(
+        spec_path=spec_path,
+        output_dir=tmp_path / "out",
+        session_id="repair-prior-property",
+        propose_property_atom=_QueuedPropertyProposer(broad_floor, strict_ceiling),
+        repair_property_atom=repair_property_atom,
+        review_atom=reviewer,
+        synthesize=_synthesize_stub,
+        schema_path_override=str(schema_path),
+    )
+
+    assert result.final_user_approved is True
+    assert repaired == [broad_floor.name]
+    assert reviewed == [
+        broad_floor.name,
+        strict_ceiling.name,
+        broad_floor.name,
+        strict_ceiling.name,
+    ]
+    assert result.plan.properties[0].reference_cedar == repaired_floor.reference_cedar
+    decisions = json.loads(
+        (tmp_path / "out" / "repair-prior-property" / "stage2" / "decisions.json")
+        .read_text(),
+    )
+    assert decisions[1]["edit_delta"]["repaired_prior_for_consistency_conflict"][
+        "prior_atom"
+    ] == broad_floor.name
+
+
+def test_schema_gap_repair_budget_stops_before_synthesis(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    spec_path = tmp_path / "policy_spec.md"
+    spec_path.write_text("Students can register for current and upcoming offerings.")
+
+    student = EntityAtom(
+        name="Student",
+        rationale="student principal",
+        plain_english_summary="A student.",
+        source_excerpt="Students",
+    )
+    offering = EntityAtom(
+        name="CourseOffering",
+        rationale="course offering resource",
+        plain_english_summary="A course offering.",
+        source_excerpt="course offerings",
+    )
+    register = ActionAtom(
+        name="register",
+        rationale="registration action",
+        plain_english_summary="Register.",
+        source_excerpt="register",
+        principal_types=["Student"],
+        resource_types=["CourseOffering"],
+    )
+    current_attr = AttributeAtom(
+        name="course_offering_is_current",
+        rationale="current marker",
+        plain_english_summary="Current marker.",
+        source_excerpt="current",
+        on_entity="CourseOffering",
+        field_name="isCurrent",
+        cedar_type="Bool",
+    )
+    weak_current = PropertyAtom(
+        name="weak_current",
+        rationale="first gap",
+        plain_english_summary="Weak current property.",
+        source_excerpt="current offerings",
+        constraint_type="floor",
+        action="register",
+        principal_types=["Student"],
+        resource_types=["CourseOffering"],
+        reference_cedar='permit (principal, action == Action::"register", resource);',
+    )
+    approved_after_first_repair = replace(
+        weak_current,
+        name="current_ok",
+        reference_cedar='permit (principal, action == Action::"register", resource) when { resource.isCurrent };',
+    )
+    weak_upcoming = replace(weak_current, name="weak_upcoming", source_excerpt="upcoming offerings")
+    properties = [weak_current, approved_after_first_repair, weak_upcoming]
+    schema_calls = 0
+
+    def schema_proposer(text: str) -> list[object]:
+        nonlocal schema_calls
+        schema_calls += 1
+        if schema_calls == 1:
+            return [student, offering, register]
+        return [current_attr]
+
+    def property_proposer(
+        text: str,
+        schema_path_arg: str,
+        prior_atoms: list[PropertyAtom],
+        prior_decisions: list[AtomDecision],
+    ) -> PropertyAtom | None:
+        _ = text, schema_path_arg, prior_atoms, prior_decisions
+        if not properties:
+            return None
+        return properties.pop(0)
+
+    def reviewer(atom: object) -> AtomDecision:
+        if not isinstance(atom, PropertyAtom):
+            return _approve(atom)
+        if atom.name == "weak_current":
+            return AtomDecision(atom_name=atom.name, action="reject", reason="schema needs current marker")
+        if atom.name == "weak_upcoming":
+            return AtomDecision(atom_name=atom.name, action="reject", reason="schema needs upcoming marker")
+        return _approve(atom)
+
+    def fake_compose_and_validate(draft, schema_path_arg, llm=None, spec_text="", max_attempts=3):
+        from autocedar.schema_atomizer import FixAttempt, compose_schema
+
+        _ = llm, spec_text, max_attempts
+        schema_text = compose_schema(draft)
+        schema_path_arg.write_text(schema_text)
+        return SimpleNamespace(
+            schema_text=schema_text,
+            schema_path=schema_path_arg,
+            succeeded=True,
+            attempts=[FixAttempt(attempt_number=1, schema_text=schema_text, validator_passed=True)],
+        )
+
+    def fail_synthesize(scenario_dir: Path) -> Path:
+        _ = scenario_dir
+        raise AssertionError("schema repair budget stop must happen before Stage 3")
+
+    monkeypatch.setattr("autocedar.pipeline.MAX_SCHEMA_GAP_REPAIRS", 1)
+    monkeypatch.setattr("autocedar.pipeline.compose_and_validate", fake_compose_and_validate)
+    monkeypatch.setattr(
+        "autocedar.pipeline.symbolic_verify_atom",
+        lambda atom, schema_path_arg, prior_atoms=None: setattr(atom, "symbolic_verified", True),
+    )
+
+    result = author(
+        spec_path=spec_path,
+        output_dir=tmp_path / "out",
+        session_id="schema-budget",
+        propose_schema_atoms=schema_proposer,
+        propose_property_atom=property_proposer,
+        review_atom=reviewer,
+        synthesize=fail_synthesize,
+    )
+
+    assert result.final_user_approved is False
+    assert "repair budget" in result.notes[0]
+    assert not (tmp_path / "out" / "schema-budget" / "stage3" / "final_candidate.cedar").exists()
+
+
+def test_hitl_schema_gap_rejection_stops_when_repair_is_unavailable(
+    tmp_path: Path,
+    workspace: tuple[Path, Path],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    spec_path, schema_path = workspace
+
+    def fake_symbolic_verify(
+        atom: PropertyAtom,
+        schema_path_arg: str,
+        prior_atoms: list[PropertyAtom] | None = None,
+    ) -> None:
+        _ = schema_path_arg, prior_atoms
+        atom.symbolic_verified = True
+        atom.symbolic_verification_log = [f"checked {atom.name}"]
+
+    def reviewer(atom: object) -> AtomDecision:
+        return AtomDecision(
+            atom_name=getattr(atom, "name", "?"),
+            action="reject",
+            reason=(
+                "schema needs a current/previous/upcoming marker before this "
+                "property is acceptable"
+            ),
+        )
+
+    def fail_consistency(*args: object, **kwargs: object) -> object:
+        raise AssertionError("schema-gap HITL rejection must stop before consistency checks")
+
+    def fail_synthesize(scenario_dir: Path) -> Path:
+        _ = scenario_dir
+        raise AssertionError("schema-gap HITL rejection must stop before Stage 3")
+
+    monkeypatch.setattr("autocedar.pipeline.symbolic_verify_atom", fake_symbolic_verify)
+    monkeypatch.setattr("autocedar.pipeline.symbolic_consistency_check", fail_consistency)
+
+    result = author(
+        spec_path=spec_path,
+        output_dir=tmp_path / "out",
+        session_id="schema-gap-stop",
+        propose_property_atom=_QueuedPropertyProposer(_owner_only_ceiling()),
+        review_atom=reviewer,
+        synthesize=fail_synthesize,
+        schema_path_override=str(schema_path),
+    )
+
+    assert result.final_user_approved is False
+    assert result.candidate_path == Path("")
+    assert "could not produce an approved schema repair" in result.notes[0]
+
+    session_dir = tmp_path / "out" / "schema-gap-stop"
+    gaps = json.loads((session_dir / "stage1_5" / "schema_gaps.json").read_text())
+    assert gaps == [
+        {
+            "atom_name": "owner_only_read",
+            "stage": "stage2_property_review",
+            "reason": (
+                "schema needs a current/previous/upcoming marker before this "
+                "property is acceptable"
+            ),
+            "critic_tags": [],
+            "required_action": "repair_schema_before_synthesis",
+        },
+    ]
+    assert not (session_dir / "stage1_75" / "unsat_core.json").exists()
+    assert not (session_dir / "stage2" / "final_plan" / "verification_plan.py").exists()
+    assert not (session_dir / "stage3" / "final_candidate.cedar").exists()
+
+
+def test_property_critic_repairs_before_hitl(
+    tmp_path: Path,
+    workspace: tuple[Path, Path],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    spec_path, schema_path = workspace
+    reviewed: list[str] = []
+
+    def fake_symbolic_verify(
+        atom: PropertyAtom,
+        schema_path_arg: str,
+        prior_atoms: list[PropertyAtom] | None = None,
+    ) -> None:
+        _ = schema_path_arg, prior_atoms
+        atom.symbolic_verified = True
+        atom.symbolic_verification_log = [f"checked {atom.name}"]
+
+    monkeypatch.setattr("autocedar.pipeline.symbolic_verify_atom", fake_symbolic_verify)
+    monkeypatch.setattr(
+        "autocedar.pipeline.symbolic_consistency_check",
+        lambda *args, **kwargs: SimpleNamespace(
+            unsat=False,
+            core=[],
+            detail="",
+            tool_error=False,
+        ),
+    )
+
+    repaired_atom = replace(
+        _owner_must_floor(),
+        name="owner_must_read_repaired",
+        plain_english_summary="Owner must read after critic repair.",
+    )
+    seen_by_critic: list[str] = []
+
+    def critic(
+        spec_text: str,
+        schema_path_arg: str,
+        atom: PropertyAtom,
+        prior_atoms: list[PropertyAtom],
+        prior_decisions: list[AtomDecision],
+    ) -> PropertyCritique:
+        _ = spec_text, schema_path_arg, prior_atoms, prior_decisions
+        seen_by_critic.append(atom.name)
+        if atom.name == "owner_only_read":
+            return PropertyCritique(
+                decision="repair",
+                reason="wrong direction; should be a floor",
+                tags=["wrong-direction"],
+            )
+        return PropertyCritique(decision="accept", reason="repaired", tags=["repaired"])
+
+    def repair(
+        spec_text: str,
+        schema_path_arg: str,
+        rejected_atom: PropertyAtom,
+        reason: str,
+        prior_atoms: list[PropertyAtom],
+    ) -> PropertyAtom:
+        _ = spec_text, schema_path_arg, rejected_atom, reason, prior_atoms
+        return repaired_atom
+
+    def reviewer(atom: object) -> AtomDecision:
+        reviewed.append(getattr(atom, "name", "?"))
+        return _approve(atom)
+
+    result = author(
+        spec_path=spec_path,
+        output_dir=tmp_path / "out",
+        session_id="critic-repair",
+        propose_property_atom=_QueuedPropertyProposer(_owner_only_ceiling()),
+        critique_property_atom=critic,
+        repair_property_atom=repair,
+        review_atom=reviewer,
+        synthesize=_synthesize_stub,
+        schema_path_override=str(schema_path),
+    )
+
+    assert result.plan.properties == [repaired_atom]
+    assert seen_by_critic == ["owner_only_read", "owner_must_read_repaired"]
+    assert reviewed == ["owner_must_read_repaired"]
+    critic_reviews = json.loads(
+        (tmp_path / "out" / "critic-repair" / "stage2" / "critic_reviews.json").read_text(),
+    )
+    assert [review["decision"] for review in critic_reviews] == ["repair", "accept"]
+    decisions = json.loads(
+        (tmp_path / "out" / "critic-repair" / "stage2" / "decisions.json").read_text(),
+    )
+    assert [decision["action"] for decision in decisions] == ["reject", "approve"]
+
+
 # ---------------------------------------------------------------------------
 # Acceptance criterion 9 — corpus logging shape.
 # ---------------------------------------------------------------------------
@@ -347,14 +1971,13 @@ def test_pipeline_logs_intent_and_symbolic_separately(
     spec_path, schema_path = workspace
     output_dir = tmp_path / "out"
 
-    def propose_property_atoms(spec_text: str, schema_path_arg: str) -> list[PropertyAtom]:
-        return [_owner_only_ceiling()]
+    property_proposer = _QueuedPropertyProposer(_owner_only_ceiling())
 
     author(
         spec_path=spec_path,
         output_dir=output_dir,
         session_id="t2",
-        propose_property_atoms=propose_property_atoms,
+        propose_property_atom=property_proposer,
         review_atom=_approve,
         synthesize=_synthesize_stub,
         schema_path_override=str(schema_path),
@@ -382,14 +2005,13 @@ def test_pipeline_logs_prose_excerpt_attribution_per_atom(
     spec_path, schema_path = workspace
     output_dir = tmp_path / "out"
 
-    def propose_property_atoms(spec_text: str, schema_path_arg: str) -> list[PropertyAtom]:
-        return [_owner_only_ceiling(), _owner_must_floor()]
+    property_proposer = _QueuedPropertyProposer(_owner_only_ceiling(), _owner_must_floor())
 
     author(
         spec_path=spec_path,
         output_dir=output_dir,
         session_id="t3",
-        propose_property_atoms=propose_property_atoms,
+        propose_property_atom=property_proposer,
         review_atom=_approve,
         synthesize=_synthesize_stub,
         schema_path_override=str(schema_path),
@@ -415,14 +2037,13 @@ def test_pipeline_logs_stage3_critic_score_distinct_from_verifier(
     spec_path, schema_path = workspace
     output_dir = tmp_path / "out"
 
-    def propose_property_atoms(spec_text: str, schema_path_arg: str) -> list[PropertyAtom]:
-        return [_owner_only_ceiling()]
+    property_proposer = _QueuedPropertyProposer(_owner_only_ceiling())
 
     author(
         spec_path=spec_path,
         output_dir=output_dir,
         session_id="t4",
-        propose_property_atoms=propose_property_atoms,
+        propose_property_atom=property_proposer,
         review_atom=_approve,
         synthesize=_synthesize_stub,
         schema_path_override=str(schema_path),
@@ -460,14 +2081,13 @@ def test_pipeline_returns_unsat_when_atoms_are_jointly_inconsistent(
         ),
     )
 
-    def propose_property_atoms(spec_text: str, schema_path_arg: str) -> list[PropertyAtom]:
-        return [_owner_only_ceiling(), bad_floor]
+    property_proposer = _QueuedPropertyProposer(_owner_only_ceiling(), bad_floor)
 
     result = author(
         spec_path=spec_path,
         output_dir=output_dir,
         session_id="t5",
-        propose_property_atoms=propose_property_atoms,
+        propose_property_atom=property_proposer,
         review_atom=_approve,
         synthesize=_synthesize_stub,
         schema_path_override=str(schema_path),

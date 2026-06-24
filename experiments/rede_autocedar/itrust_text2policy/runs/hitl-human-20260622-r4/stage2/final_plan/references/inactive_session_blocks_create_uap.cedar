@@ -1,0 +1,1 @@
+permit (principal is Lhcp, action == Action::"createUap", resource is Uap) when { !(!context.session.isActive) };

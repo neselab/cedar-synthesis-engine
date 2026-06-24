@@ -1,0 +1,1 @@
+permit (principal, action == Action::"editCredential", resource) when { context.session.isActive && !(resource.user is Patient && (context.credentialField == "password" || context.credentialField == "securityQuestion")) };

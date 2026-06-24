@@ -1,0 +1,212 @@
+[
+  {
+    "atom_name": "hcp_can_create_patient",
+    "span_text": "An HCP can create a patient and enter the patient as a new user of the system.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "hcp_cannot_view_patient_credentials",
+    "span_text": "The HCP must not enter, edit, or view the patient's security question or password.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "hcp_cannot_view_patient_password_or_security_question",
+    "span_text": "The HCP does not have the ability to view the patient's security question or password.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "hcp_forbidden_view_patient_sensitive_credential_components",
+    "span_text": "The HCP does not have the ability to view the patient's security question or password.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "hcp_forbidden_view_patient_password_or_security_question",
+    "span_text": "The HCP does not have the ability to view the patient's security question or password.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "administrator_can_create_lhcp",
+    "span_text": "An administrator can create LHCPs, emergency responders, and public health agents.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "administrator_can_create_emergency_responder",
+    "span_text": "An administrator can create LHCPs, emergency responders, and public health agents.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "administrator_can_create_public_health_agent",
+    "span_text": "An administrator can create LHCPs, emergency responders, and public health agents.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "lhcp_can_create_uap",
+    "span_text": "A LHCP can create UAP users.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "hcp_can_edit_patient",
+    "span_text": "The HCP can edit patient data according to the data format.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "hcp_can_edit_valid_non_mid_patient_data",
+    "span_text": "The HCP can edit patient data according to the data format, but the patient's MID must not be editable.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "patient_mid_not_editable",
+    "span_text": "The HCP can edit patient data according to the data format, but the patient's MID must not be editable.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "hcp_mid_edit_forbidden",
+    "span_text": "The HCP can edit patient data according to the data format, but the patient's MID must not be editable.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "hcp_mid_edit_prohibition_target",
+    "span_text": "The HCP can edit patient data according to the data format, but the patient's MID must not be editable.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "hcp_edit_patient_limited_to_valid_non_mid_data",
+    "span_text": "The HCP can edit patient data according to the data format, but the patient's MID must not be editable.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "user_can_login_with_own_credentials",
+    "span_text": "Any user can enter their MID and password to gain role-based entry into iTrust.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "user_can_login_with_verified_own_credentials",
+    "span_text": "Any user can enter their MID and password to gain role-based entry into iTrust.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "login_limited_to_verified_own_credentials",
+    "span_text": "Any user can enter their MID and password to gain role-based entry into iTrust.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "user_can_request_own_password_change",
+    "span_text": "Any user can request a password change.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "password_change_limited_to_own_credential",
+    "span_text": "Any user can request a password change.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "administrator_can_assign_lhcp_to_hospital",
+    "span_text": "The administrator can assign an LHCP to multiple hospitals and choose the hospitals.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "user_can_logout_own_session",
+    "span_text": "An authenticated session ends when the user logs out or closes the application.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "user_can_logout_active_own_session",
+    "span_text": "An authenticated session ends when the user logs out or closes the application. Electronic sessions must terminate after the configured inactivity period; after the inactivity limit is exceeded, all authorization is disabled.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "logout_limited_to_active_own_session",
+    "span_text": "An authenticated session ends when the user logs out or closes the application. Electronic sessions must terminate after the configured inactivity period; after the inactivity limit is exceeded, all authorization is disabled.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "user_can_close_application_active_own_session",
+    "span_text": "An authenticated session ends when the user logs out or closes the application. Electronic sessions must terminate after the configured inactivity period; after the inactivity limit is exceeded, all authorization is disabled.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "close_application_limited_to_active_own_session",
+    "span_text": "An authenticated session ends when the user logs out or closes the application. Electronic sessions must terminate after the configured inactivity period; after the inactivity limit is exceeded, all authorization is disabled.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "administrator_can_set_inactivity_period_length",
+    "span_text": "The administrator can set the inactivity period length.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "patient_can_view_own_provider_history",
+    "span_text": "A patient can view all LHCPs the patient has ever had an office visit with and all LHCPs the patient has designated.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "provider_history_limited_to_own_patient",
+    "span_text": "A patient can view all LHCPs the patient has ever had an office visit with and all LHCPs the patient has designated.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "patient_can_add_provider_to_own_list",
+    "span_text": "A patient can add a LHCP/HCP to their provider list by searching by name, specialty, and optionally zip code.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "patient_can_add_matching_provider_to_own_list",
+    "span_text": "A patient can add a LHCP/HCP to their provider list by searching by name, specialty, and optionally zip code.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "add_provider_limited_to_matching_own_list",
+    "span_text": "A patient can add a LHCP/HCP to their provider list by searching by name, specialty, and optionally zip code.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "patient_can_designate_lhcp_for_self",
+    "span_text": "A patient can designate any LHCP as a DLHCP for that patient.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "designate_dlhcp_limited_to_self",
+    "span_text": "A patient can designate any LHCP as a DLHCP for that patient.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "patient_can_undesignate_lhcp_for_self",
+    "span_text": "A patient can designate any LHCP as a DLHCP for that patient and can undesignate any LHCP as a DLHCP for that patient.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  }
+]

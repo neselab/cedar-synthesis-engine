@@ -1,0 +1,428 @@
+[
+  {
+    "atom_name": "patient_view_own_access_log_floor",
+    "span_text": "A patient can view their own access log; sentence 197: The patient views their access log for themself or a represented person.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "patient_view_access_log_own_ceiling",
+    "span_text": "A patient can view their own access log; sentence 197: The patient views their access log for themself or a represented person.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "personal_representative_view_represented_access_log_floor",
+    "span_text": "A patient can view their own access log, or the access log for a person for whom they are a personal representative.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "personal_representative_view_represented_access_log_ceiling",
+    "span_text": "A patient can view their own access log, or the access log for a person for whom they are a personal representative.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "hcp_no_patient_credential_view_disjointness",
+    "span_text": "The HCP must not enter, edit, or view the patient's security question or password; sentence 76: The HCP does not have the ability to enter, edit, or view the patient's security question or password.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "hcp_no_patient_password_or_security_question_view_disjointness",
+    "span_text": "The HCP must not enter, edit, or view the patient's security question or password; sentence 76: The HCP does not have the ability to enter, edit, or view the patient's security question or password.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "hcp_patient_sensitive_credential_view_forbidden_disjointness",
+    "span_text": "The HCP must not enter, edit, or view the patient's security question or password; sentence 76: The HCP does not have the ability to enter, edit, or view the patient's security question or password.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "hcp_patient_sensitive_credential_view_forbidden_target_only_disjointness",
+    "span_text": "The HCP must not enter, edit, or view the patient's security question or password; sentence 76: The HCP does not have the ability to enter, edit, or view the patient's security question or password.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "deactivated_patient_login_forbidden_disjointness",
+    "span_text": "A deactivated patient cannot be modified or log into the system, and can only be reactivated by an administrator.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "inactive_patient_login_forbidden_slice_disjointness",
+    "span_text": "A deactivated patient cannot be modified or log into the system, and can only be reactivated by an administrator.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "inactive_patient_login_forbidden_slice_only_disjointness",
+    "span_text": "A deactivated patient cannot be modified or log into the system, and can only be reactivated by an administrator.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "patient_view_own_medical_record_floor",
+    "span_text": "A patient or personal representative can view medical records ... for their own records and for patients they represent.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "patient_view_own_medical_record_ceiling",
+    "span_text": "A patient or personal representative can view medical records ... for their own records and for patients they represent.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "personal_representative_view_represented_medical_record_floor",
+    "span_text": "A patient or personal representative can view medical records ... for their own records and for patients they represent.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "personal_representative_view_represented_medical_record_ceiling",
+    "span_text": "A patient or personal representative can view medical records ... for their own records and for patients they represent.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "lhcp_view_patient_allowed_diagnostic_information_floor",
+    "span_text": "Approved diagnostic information is diagnostic information that a patient allows a designated or other licensed health-care professional to view.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "lhcp_view_patient_allowed_diagnostic_information_ceiling",
+    "span_text": "Approved diagnostic information is diagnostic information that a patient allows a designated or other licensed health-care professional to view.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "patient_view_own_personal_health_information_floor",
+    "span_text": "A patient or personal representative can view medical records, family history, personal health information, immunizations, and office-visit information for their own records and for patients they represent.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "patient_view_own_personal_health_information_ceiling",
+    "span_text": "A patient or personal representative can view ... personal health information ... for their own records and for patients they represent.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "personal_representative_view_represented_personal_health_information_floor",
+    "span_text": "A patient or personal representative can view medical records, family history, personal health information, immunizations, and office-visit information for their own records and for patients they represent.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "personal_representative_view_represented_personal_health_information_ceiling",
+    "span_text": "A patient or personal representative can view ... personal health information ... for their own records and for patients they represent.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "patient_view_own_family_history_floor",
+    "span_text": "A patient or personal representative can view medical records, family history, personal health information, immunizations, and office-visit information for their own records and for patients they represent.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "patient_view_own_family_history_ceiling",
+    "span_text": "A patient or personal representative can view medical records, family history, personal health information, immunizations, and office-visit information for their own records and for patients they represent.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "patient_view_own_immunization_floor",
+    "span_text": "A patient or personal representative can view medical records, family history, personal health information, immunizations, and office-visit information for their own records and for patients they represent.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "patient_view_own_immunization_ceiling",
+    "span_text": "A patient or personal representative can view medical records, family history, personal health information, immunizations, and office-visit information for their own records and for patients they represent.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "personal_representative_view_represented_family_history_floor",
+    "span_text": "A patient or personal representative can view medical records, family history, personal health information, immunizations, and office-visit information for their own records and for patients they represent.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "personal_representative_view_represented_family_history_ceiling",
+    "span_text": "A patient or personal representative can view medical records, family history, personal health information, immunizations, and office-visit information for their own records and for patients they represent.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "personal_representative_view_represented_immunization_floor",
+    "span_text": "A patient or personal representative can view medical records, family history, personal health information, immunizations, and office-visit information for their own records and for patients they represent.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "personal_representative_view_represented_immunization_ceiling",
+    "span_text": "A patient or personal representative can view medical records, family history, personal health information, immunizations, and office-visit information for their own records and for patients they represent.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "patient_view_own_office_visit_floor",
+    "span_text": "A patient or personal representative can view medical records, family history, personal health information, immunizations, and office-visit information for their own records and for patients they represent.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "patient_view_own_office_visit_ceiling",
+    "span_text": "A patient or personal representative can view ... office-visit information for their own records and for patients they represent.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "personal_representative_view_represented_office_visit_floor",
+    "span_text": "A patient or personal representative can view ... office-visit information for their own records and for patients they represent.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "personal_representative_view_represented_office_visit_ceiling",
+    "span_text": "A patient or personal representative can view ... office-visit information for their own records and for patients they represent.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "patient_take_own_untaken_office_visit_survey_floor",
+    "span_text": "A patient or personal representative may take an office-visit satisfaction survey only before one has already been taken.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "patient_take_own_untaken_office_visit_survey_ceiling",
+    "span_text": "A patient or personal representative may take an office-visit satisfaction survey only before one has already been taken; after the survey has been taken, they cannot take or view the previously submitted survey through that path.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "personal_representative_take_represented_untaken_office_visit_survey_floor",
+    "span_text": "A patient or personal representative can view ... office-visit information for their own records and for patients they represent. If a patient or personal representative has not taken an office-visit satisfaction survey, they may take the survey; after the survey has been taken, they cannot take or view the previously submitted survey through that path.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "personal_representative_take_represented_untaken_office_visit_survey_ceiling",
+    "span_text": "A patient or personal representative may take an office-visit satisfaction survey only before one has already been taken; after the survey has been taken, they cannot take or view the previously submitted survey through that path.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "deactivated_patient_edit_forbidden_disjointness",
+    "span_text": "A deactivated patient cannot be modified or log into the system and can only be reactivated by an administrator.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "inactive_patient_edit_forbidden_slice",
+    "span_text": "A deactivated patient cannot be modified or log into the system and can only be reactivated by an administrator.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "inactive_patient_edit_forbidden_slice_only",
+    "span_text": "A deactivated patient cannot be modified or log into the system and can only be reactivated by an administrator.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "hcp_create_patient_floor",
+    "span_text": "An HCP can create or disable a selected patient. Sentence 68: An HCP is able to create a patient or disable a selected patient.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "hcp_create_patient_ceiling",
+    "span_text": "An HCP can create or disable a selected patient. Sentence 68: An HCP is able to create a patient or disable a selected patient.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "hcp_disable_patient_floor",
+    "span_text": "An HCP can create or disable a selected patient. Sentence 68: An HCP is able to create a patient or disable a selected patient.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "hcp_disable_patient_ceiling",
+    "span_text": "An HCP can create or disable a selected patient. Sentence 68: An HCP is able to create a patient or disable a selected patient.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "administrator_reactivate_inactive_patient_floor",
+    "span_text": "A deactivated patient ... can only be reactivated by an administrator.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "administrator_reactivate_inactive_patient_ceiling",
+    "span_text": "A deactivated patient cannot be modified or log into the system and can only be reactivated by an administrator.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "administrator_create_lhcp_floor",
+    "span_text": "An administrator can create LHCPs, emergency responders, lab technicians, and public health agents. Sentence 103: An admin creates LHCP, ER, lab technician, and public health agent users.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "administrator_create_lhcp_ceiling",
+    "span_text": "An administrator can create LHCPs, emergency responders, lab technicians, and public health agents. Sentence 103: An admin creates LHCP, ER, lab technician, and public health agent users.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "administrator_create_emergency_responder_floor",
+    "span_text": "An administrator can create LHCPs, emergency responders, lab technicians, and public health agents. Sentence 103: An admin creates LHCP, ER, lab technician, and public health agent users.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "administrator_create_emergency_responder_ceiling",
+    "span_text": "An administrator can create LHCPs, emergency responders, lab technicians, and public health agents. Sentence 103: An admin creates LHCP, ER, lab technician, and public health agent users.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "administrator_create_lab_technician_floor",
+    "span_text": "An administrator can create LHCPs, emergency responders, lab technicians, and public health agents. Sentence 103: An admin creates LHCP, ER, lab technician, and public health agent users.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "administrator_create_lab_technician_ceiling",
+    "span_text": "An administrator can create LHCPs, emergency responders, lab technicians, and public health agents. Sentence 103: An admin creates LHCP, ER, laboratory technician, and public health agent users.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "administrator_create_public_health_agent_floor",
+    "span_text": "An administrator can create LHCPs, emergency responders, lab technicians, and public health agents. Sentence 103: An admin creates LHCP, ER, lab technician, and public health agent users.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "administrator_create_public_health_agent_ceiling",
+    "span_text": "An administrator can create LHCPs, emergency responders, lab technicians, and public health agents. Sentence 103: An admin creates LHCP, ER, lab technician, and public health agent users.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "lhcp_create_uap_floor",
+    "span_text": "A LHCP can create UAP users. Sentence 104: A LHCP creates a UAP.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "lhcp_create_uap_ceiling",
+    "span_text": "A LHCP can create UAP users. Sentence 104: A LHCP creates a UAP.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "administrator_assign_lhcp_credentials_floor",
+    "span_text": "An administrator can assign medical identification numbers and passwords to LHCPs. Sentence 29: The administrator assigns medical identification numbers and passwords to LHCPs.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "administrator_assign_lhcp_credentials_ceiling",
+    "span_text": "An administrator can assign medical identification numbers and passwords to LHCPs. Sentence 29: The administrator assigns medical identification numbers and passwords to LHCPs.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "administrator_assign_hospital_floor",
+    "span_text": "An administrator can assign an LHCP to multiple hospitals, choosing only hospitals from the hospital list.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "administrator_assign_listed_hospital_floor",
+    "span_text": "An administrator can assign an LHCP to multiple hospitals, choosing only hospitals from the hospital list.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "administrator_assign_listed_hospital_ceiling",
+    "span_text": "An administrator can assign an LHCP to multiple hospitals, choosing only hospitals from the hospital list.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "patient_view_own_lhcps_floor",
+    "span_text": "A patient can view all LHCPs the patient has ever had an office visit with and all LHCPs the patient has designated. Sentence 178: The patient can view all LHCPs ever visited and those designated.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "patient_view_own_lhcps_ceiling",
+    "span_text": "A patient can view all LHCPs the patient has ever had an office visit with and all LHCPs the patient has designated. Sentence 178: The patient can view all LHCPs ever visited and those designated.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "patient_add_lhcp_to_own_provider_list_floor",
+    "span_text": "A patient can add a LHCP to the patient provider list.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "patient_add_lhcp_to_own_provider_list_ceiling",
+    "span_text": "A patient can add a LHCP to the patient provider list.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "patient_designate_lhcp_for_self_floor",
+    "span_text": "A patient can designate or undesignate any LHCP as a DLHCP for that patient. Sentence 183: The patient can designate or undesignate any LHCP as a DLHCP.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "patient_designate_lhcp_for_self_ceiling",
+    "span_text": "A patient can designate or undesignate any LHCP as a DLHCP for that patient.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "patient_undesignate_lhcp_for_self_floor",
+    "span_text": "A patient can designate or undesignate any LHCP as a DLHCP for that patient. Sentence 183: The patient can designate or undesignate any LHCP as a DLHCP.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "patient_undesignate_lhcp_for_self_ceiling",
+    "span_text": "A patient can designate or undesignate any LHCP as a DLHCP for that patient.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "hcp_edit_selected_patient_personal_health_information_floor",
+    "span_text": "An HCP can enter and edit a patient's personal health records. Sentence 231: An HCP can enter or edit personal health information for a selected patient.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "hcp_edit_active_selected_patient_personal_health_information_floor",
+    "span_text": "An HCP can enter and edit a patient's personal health records. Sentence 231: An HCP can enter or edit personal health information for a selected patient. Also: A deactivated patient cannot be modified.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  }
+]

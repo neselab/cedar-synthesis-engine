@@ -1,0 +1,1 @@
+permit (principal, action == Action::"viewAccessLog", resource) when { context.session.isActive && resource.patient == principal && context.beginDate <= resource.accessTimestamp && resource.accessTimestamp <= context.endDate };

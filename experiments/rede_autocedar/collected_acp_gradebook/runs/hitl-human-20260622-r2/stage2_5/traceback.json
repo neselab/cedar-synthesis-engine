@@ -1,0 +1,163 @@
+[
+  {
+    "atom_name": "students_receive_external_grades_floor",
+    "clauses": [
+      "permit (\n    principal,\n    action == Action::\"receiveExternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is ExternalGrade &&\n    principal in Student::\"Student\"\n};",
+      "permit (\n    principal,\n    action == Action::\"receiveExternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is ExternalGrade &&\n    principal in FacultyFamily::\"FacultyFamily\"\n};",
+      "forbid (\n    principal,\n    action == Action::\"receiveExternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is ExternalGrade &&\n    principal in Faculty::\"Faculty\" &&\n    !(principal in Student::\"Student\") &&\n    !(principal in TeachingAssistant::\"TeachingAssistant\") &&\n    !(principal in FacultyFamily::\"FacultyFamily\")\n};"
+    ],
+    "flags": [
+      "multi-clause-interaction"
+    ]
+  },
+  {
+    "atom_name": "students_not_assign_external_grades_disjointness",
+    "clauses": [
+      "permit (\n    principal,\n    action == Action::\"assignExternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is ExternalGrade &&\n    principal in Faculty::\"Faculty\"\n};",
+      "forbid (\n    principal,\n    action == Action::\"assignExternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is ExternalGrade &&\n    principal in Student::\"Student\"\n};",
+      "forbid (\n    principal,\n    action == Action::\"assignExternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is ExternalGrade &&\n    principal in TeachingAssistant::\"TeachingAssistant\"\n};",
+      "forbid (\n    principal,\n    action == Action::\"assignExternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is ExternalGrade &&\n    principal in FacultyFamily::\"FacultyFamily\"\n};"
+    ],
+    "flags": [
+      "multi-clause-interaction"
+    ]
+  },
+  {
+    "atom_name": "faculty_assign_internal_grades_floor",
+    "clauses": [
+      "permit (\n    principal,\n    action == Action::\"assignInternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is InternalGrade &&\n    principal in Faculty::\"Faculty\"\n};",
+      "permit (\n    principal,\n    action == Action::\"assignInternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is InternalGrade &&\n    principal in TeachingAssistant::\"TeachingAssistant\"\n};",
+      "forbid (\n    principal,\n    action == Action::\"assignInternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is InternalGrade &&\n    principal in Student::\"Student\"\n};"
+    ],
+    "flags": [
+      "multi-clause-interaction"
+    ]
+  },
+  {
+    "atom_name": "faculty_only_non_conflicting_assign_external_grades_floor",
+    "clauses": [
+      "permit (\n    principal,\n    action == Action::\"assignExternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is ExternalGrade &&\n    principal in Faculty::\"Faculty\"\n};",
+      "forbid (\n    principal,\n    action == Action::\"assignExternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is ExternalGrade &&\n    principal in Student::\"Student\"\n};",
+      "forbid (\n    principal,\n    action == Action::\"assignExternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is ExternalGrade &&\n    principal in TeachingAssistant::\"TeachingAssistant\"\n};",
+      "forbid (\n    principal,\n    action == Action::\"assignExternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is ExternalGrade &&\n    principal in FacultyFamily::\"FacultyFamily\"\n};"
+    ],
+    "flags": [
+      "multi-clause-interaction"
+    ]
+  },
+  {
+    "atom_name": "teaching_assistants_not_assign_external_grades_disjointness",
+    "clauses": [
+      "permit (\n    principal,\n    action == Action::\"assignExternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is ExternalGrade &&\n    principal in Faculty::\"Faculty\"\n};",
+      "forbid (\n    principal,\n    action == Action::\"assignExternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is ExternalGrade &&\n    principal in Student::\"Student\"\n};",
+      "forbid (\n    principal,\n    action == Action::\"assignExternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is ExternalGrade &&\n    principal in TeachingAssistant::\"TeachingAssistant\"\n};",
+      "forbid (\n    principal,\n    action == Action::\"assignExternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is ExternalGrade &&\n    principal in FacultyFamily::\"FacultyFamily\"\n};"
+    ],
+    "flags": [
+      "multi-clause-interaction"
+    ]
+  },
+  {
+    "atom_name": "faculty_family_not_assign_external_grades_disjointness",
+    "clauses": [
+      "permit (\n    principal,\n    action == Action::\"assignExternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is ExternalGrade &&\n    principal in Faculty::\"Faculty\"\n};",
+      "forbid (\n    principal,\n    action == Action::\"assignExternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is ExternalGrade &&\n    principal in Student::\"Student\"\n};",
+      "forbid (\n    principal,\n    action == Action::\"assignExternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is ExternalGrade &&\n    principal in TeachingAssistant::\"TeachingAssistant\"\n};",
+      "forbid (\n    principal,\n    action == Action::\"assignExternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is ExternalGrade &&\n    principal in FacultyFamily::\"FacultyFamily\"\n};"
+    ],
+    "flags": [
+      "multi-clause-interaction"
+    ]
+  },
+  {
+    "atom_name": "faculty_view_internal_grades_floor",
+    "clauses": [
+      "permit (\n    principal,\n    action == Action::\"viewInternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is InternalGrade &&\n    principal in Faculty::\"Faculty\"\n};",
+      "permit (\n    principal,\n    action == Action::\"viewInternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is InternalGrade &&\n    principal in TeachingAssistant::\"TeachingAssistant\"\n};"
+    ],
+    "flags": [
+      "multi-clause-interaction"
+    ]
+  },
+  {
+    "atom_name": "faculty_non_ta_view_external_grades_floor",
+    "clauses": [
+      "permit (\n    principal,\n    action == Action::\"viewExternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is ExternalGrade &&\n    principal in Faculty::\"Faculty\"\n};",
+      "forbid (\n    principal,\n    action == Action::\"viewExternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is ExternalGrade &&\n    principal in TeachingAssistant::\"TeachingAssistant\"\n};"
+    ],
+    "flags": [
+      "multi-clause-interaction"
+    ]
+  },
+  {
+    "atom_name": "teaching_assistants_not_view_external_grades_disjointness",
+    "clauses": [
+      "permit (\n    principal,\n    action == Action::\"viewExternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is ExternalGrade &&\n    principal in Faculty::\"Faculty\"\n};",
+      "forbid (\n    principal,\n    action == Action::\"viewExternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is ExternalGrade &&\n    principal in TeachingAssistant::\"TeachingAssistant\"\n};"
+    ],
+    "flags": [
+      "multi-clause-interaction"
+    ]
+  },
+  {
+    "atom_name": "teaching_assistants_view_internal_grades_floor",
+    "clauses": [
+      "permit (\n    principal,\n    action == Action::\"viewInternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is InternalGrade &&\n    principal in Faculty::\"Faculty\"\n};",
+      "permit (\n    principal,\n    action == Action::\"viewInternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is InternalGrade &&\n    principal in TeachingAssistant::\"TeachingAssistant\"\n};"
+    ],
+    "flags": [
+      "multi-clause-interaction"
+    ]
+  },
+  {
+    "atom_name": "teaching_assistants_non_student_assign_internal_grades_floor",
+    "clauses": [
+      "permit (\n    principal,\n    action == Action::\"assignInternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is InternalGrade &&\n    principal in Faculty::\"Faculty\"\n};",
+      "permit (\n    principal,\n    action == Action::\"assignInternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is InternalGrade &&\n    principal in TeachingAssistant::\"TeachingAssistant\"\n};",
+      "forbid (\n    principal,\n    action == Action::\"assignInternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is InternalGrade &&\n    principal in Student::\"Student\"\n};"
+    ],
+    "flags": [
+      "multi-clause-interaction"
+    ]
+  },
+  {
+    "atom_name": "faculty_family_receive_external_grades_floor",
+    "clauses": [
+      "permit (\n    principal,\n    action == Action::\"receiveExternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is ExternalGrade &&\n    principal in Student::\"Student\"\n};",
+      "permit (\n    principal,\n    action == Action::\"receiveExternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is ExternalGrade &&\n    principal in FacultyFamily::\"FacultyFamily\"\n};",
+      "forbid (\n    principal,\n    action == Action::\"receiveExternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is ExternalGrade &&\n    principal in Faculty::\"Faculty\" &&\n    !(principal in Student::\"Student\") &&\n    !(principal in TeachingAssistant::\"TeachingAssistant\") &&\n    !(principal in FacultyFamily::\"FacultyFamily\")\n};"
+    ],
+    "flags": [
+      "multi-clause-interaction"
+    ]
+  },
+  {
+    "atom_name": "students_not_assign_internal_grades_disjointness",
+    "clauses": [
+      "permit (\n    principal,\n    action == Action::\"assignInternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is InternalGrade &&\n    principal in Faculty::\"Faculty\"\n};",
+      "permit (\n    principal,\n    action == Action::\"assignInternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is InternalGrade &&\n    principal in TeachingAssistant::\"TeachingAssistant\"\n};",
+      "forbid (\n    principal,\n    action == Action::\"assignInternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is InternalGrade &&\n    principal in Student::\"Student\"\n};"
+    ],
+    "flags": [
+      "multi-clause-interaction"
+    ]
+  },
+  {
+    "atom_name": "external_grade_assigning_faculty_not_receive_external_grades_disjointness",
+    "clauses": [
+      "permit (\n    principal,\n    action == Action::\"receiveExternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is ExternalGrade &&\n    principal in Student::\"Student\"\n};",
+      "permit (\n    principal,\n    action == Action::\"receiveExternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is ExternalGrade &&\n    principal in FacultyFamily::\"FacultyFamily\"\n};",
+      "forbid (\n    principal,\n    action == Action::\"receiveExternalGrade\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is ExternalGrade &&\n    principal in Faculty::\"Faculty\" &&\n    !(principal in Student::\"Student\") &&\n    !(principal in TeachingAssistant::\"TeachingAssistant\") &&\n    !(principal in FacultyFamily::\"FacultyFamily\")\n};"
+    ],
+    "flags": [
+      "multi-clause-interaction"
+    ]
+  },
+  {
+    "atom_name": "non_faculty_enroll_in_courses_floor",
+    "clauses": [
+      "permit (\n    principal,\n    action == Action::\"enrollInCourse\",\n    resource\n)\nwhen {\n    principal is User &&\n    resource is Course &&\n    !(principal in Faculty::\"Faculty\")\n};"
+    ],
+    "flags": []
+  }
+]

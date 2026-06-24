@@ -1,0 +1,66 @@
+{
+  "hcp_create_patient_floor": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "deactivated_patient_not_edited_disjointness": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (syntactic disjointness sanity check ok)"
+  ],
+  "deactivated_patient_not_login_disjointness": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (syntactic disjointness sanity check ok)"
+  ],
+  "hcp_disable_active_patient_floor": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "admin_reactivate_deactivated_patient_floor": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "patient_view_own_access_log_active_session_floor": [
+    "type-correct: ok",
+    "satisfiable: FAILED (encoding is vacuous (always denies))",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "personal_representative_view_represented_access_log_active_session_floor": [
+    "type-correct: ok",
+    "satisfiable: FAILED (encoding is vacuous (always denies))",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "access_log_active_session_own_or_represented_ceiling": [
+    "type-correct: ok",
+    "satisfiable: FAILED (encoding is vacuous (always denies))",
+    "joint-consistency-with-patient_view_own_access_log_active_session_floor: ok",
+    "joint-consistency-with-personal_representative_view_represented_access_log_active_session_floor: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "patient_view_own_medical_record_active_session_floor": [
+    "type-correct: ok",
+    "satisfiable: FAILED (encoding is vacuous (always denies))",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "medical_record_active_session_own_or_represented_ceiling": [
+    "type-correct: ok",
+    "satisfiable: FAILED (encoding is vacuous (always denies))",
+    "joint-consistency-with-patient_view_own_medical_record_active_session_floor: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "personal_representative_view_represented_medical_record_active_session_floor": [
+    "type-correct: ok",
+    "satisfiable: FAILED (encoding is vacuous (always denies))",
+    "joint-consistency-with-medical_record_active_session_own_or_represented_ceiling: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "restricted_diagnostic_none_audience_lhcp_disjointness": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (syntactic disjointness sanity check ok)"
+  ]
+}

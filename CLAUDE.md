@@ -85,22 +85,19 @@ Check types in `verification_plan.py`:
 
 ## Running a scenario
 
-The harness needs `ANTHROPIC_API_KEY`. Copy `.env.example` to `.env`,
-fill it in (the file is gitignored). Then source it in-shell and run
+The harness uses Codex OAuth by default. Run `codex login` once, then run
 via `uv`:
 
 ```bash
-set -a && . ./.env && set +a
 uv run python eval_harness.py \
   --scenario cedarbench/scenarios/realworld/<name> \
   --no-review \
-  --phase1-model claude-opus-4-6 \
-  --phase2-model claude-haiku-4-5-20251001 \
+  --model gpt-5.5 \
   --max-iters 20
 ```
 
-(Note: `uv run --env-file .env` does NOT forward the key through to
-the subprocess — use shell-sourcing instead.)
+Anthropic remains supported only as an explicit opt-in via
+`AUTOCEDAR_PROVIDER=anthropic` plus `ANTHROPIC_API_KEY`.
 
 Output lands in `eval_runs/<timestamp>/`. Exit code is informational.
 

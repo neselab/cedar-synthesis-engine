@@ -1,0 +1,27 @@
+[
+  {
+    "atom_name": "hcp_no_patient_credential_view_disjointness",
+    "stage": "stage2_property_review",
+    "reason": "Stage 2 decomposition critic repair: The source boundary is field-specific: HCPs must not view a patient's password or security question. The proposed atom substitutes a broader proxy that forbids HCP viewCredential access to Patient resources generally because the schema lacks a way to distinguish which credential field is being viewed. That proxy is too broad for the source excerpt and should not be accepted as equivalent. Repair the schema/property to expose the missing field-level credential boundary, such as a credential-field selector or separate actions/resources for password and securityQuestion viewing, then state the disjointness only for those patient credential fields.",
+    "critic_tags": [
+      "missing-boundary:credential-field-selector",
+      "patient-credential-secrecy",
+      "schema-gap",
+      "too-broad-proxy"
+    ],
+    "required_action": "repair_schema_before_synthesis"
+  },
+  {
+    "atom_name": "administrator_assign_hospital_floor",
+    "stage": "stage2_property_review",
+    "reason": "Stage 2 decomposition critic repair: The administrator hospital-assignment workflow is materially useful and not already covered by the approved creation/credential atoms, but the source requirement includes a named boundary: the assigned hospital must be chosen from the hospital list. The proposed floor omits that condition and would require permission for any context.hospital of type Hospital, using the entity type as a proxy for hospital-list membership. The validated schema has no explicit HospitalList entity, list-membership attribute, or equivalent hook to represent this boundary, so the property should not be accepted until the schema/property can express the hospital-list membership constraint.",
+    "critic_tags": [
+      "administrator-hospital-assignment",
+      "missing-boundary:hospital-list-membership",
+      "omitted-source-condition",
+      "schema-gap",
+      "too-broad-floor"
+    ],
+    "required_action": "repair_schema_before_synthesis"
+  }
+]

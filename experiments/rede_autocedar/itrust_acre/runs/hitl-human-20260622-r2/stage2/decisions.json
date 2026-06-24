@@ -1,0 +1,133 @@
+[
+  {
+    "atom_name": "patient_view_own_access_log_floor",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {
+      "edits": [
+        {
+          "field": "reference_cedar",
+          "old": "permit (principal is Patient, action == Action::\"viewAccessLog\", resource is AccessLog) when { context.session.isActive && context.session.user == principal && resource.patient == principal && context.patient == resource.patient };",
+          "new": "permit (principal, action == Action::\"viewAccessLog\", resource) when { context.session.isActive && context.session.user == principal && context.patient == principal && resource.patient == principal };"
+        }
+      ]
+    },
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "access_log_subject_scope_ceiling",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {
+      "edits": [
+        {
+          "field": "reference_cedar",
+          "old": "permit (principal, action == Action::\"viewAccessLog\", resource) when { context.session.isActive && context.session.user == principal && context.patient == resource.patient && ((principal is Patient && resource.patient == principal) || (principal is PersonalRepresentative && principal.representedPatients.contains(resource.patient))) };",
+          "new": "permit (principal, action == Action::\"viewAccessLog\", resource) when { context.session.isActive && context.patient == resource.patient && ((principal == resource.patient) || (principal is PersonalRepresentative && principal.representedPatients.contains(resource.patient))) };"
+        }
+      ]
+    },
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "personal_representative_view_represented_access_log_floor",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {
+      "edits": [
+        {
+          "field": "reference_cedar",
+          "old": "permit (principal, action == Action::\"viewAccessLog\", resource) when { context.session.isActive && context.session.user == principal && context.patient == resource.patient && principal.representedPatients.contains(resource.patient) };",
+          "new": "permit (principal, action == Action::\"viewAccessLog\", resource) when { context.session.isActive && context.patient == resource.patient && principal is PersonalRepresentative && principal.representedPatients.contains(resource.patient) };"
+        }
+      ]
+    },
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "hcp_patient_credential_view_disjointness",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "deactivated_patient_edit_disjointness",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "patient_view_own_medical_record_floor",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {
+      "edits": [
+        {
+          "field": "reference_cedar",
+          "old": "permit (principal, action == Action::\"viewMedicalRecord\", resource) when { context.session.isActive && context.session.user == principal && context.patient == principal && resource.patient == principal };",
+          "new": "permit (principal, action == Action::\"viewMedicalRecord\", resource) when { context.session.isActive && context.patient == principal && resource.patient == principal };"
+        }
+      ]
+    },
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "patient_representative_medical_record_subject_scope_ceiling",
+    "action": "reject",
+    "reason": "Stage 2 decomposition critic repair: The medical-record subject-scope ceiling is materially useful and not redundant, but the proposed policy says access is during the requester\u2019s active session while the Cedar condition only checks that some session is active. Since the schema exposes context.session.user, revise the atom to include the session ownership/authentication boundary, e.g. context.session.user == principal, along with the existing own-or-represented patient boundary.",
+    "edit_delta": {
+      "critic_decision": "repair",
+      "critic_tags": [
+        "missing-authentication-boundary",
+        "session-ownership",
+        "repair-reference-cedar"
+      ]
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "medical_record_subject_scope_session_ceiling",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {
+      "edits": [
+        {
+          "field": "reference_cedar",
+          "old": "permit (principal, action == Action::\"viewMedicalRecord\", resource) when { context.session.isActive && context.session.user == principal && context.patient == resource.patient && ((principal == resource.patient) || (principal is PersonalRepresentative && principal.representedPatients.contains(resource.patient))) };",
+          "new": "permit (principal, action == Action::\"viewMedicalRecord\", resource) when { context.session.isActive && context.patient == resource.patient && ((principal == resource.patient) || (principal is PersonalRepresentative && principal.representedPatients.contains(resource.patient))) };"
+        },
+        {
+          "field": "plain_english_summary",
+          "old": "Patients and personal representatives should be permitted to view a medical record only during their own active session and only when the record belongs to the requester or to a patient represented by the requester.",
+          "new": "Patients and personal representatives may view a medical record only during an active session and only when the record belongs to the requester or to a patient represented by the requester."
+        }
+      ]
+    },
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "personal_representative_view_represented_medical_record_floor",
+    "action": "reject",
+    "reason": "Stage 2 decomposition critic repair: The represented-patient medical-record floor is materially useful and not implied by the existing ceiling, but it omits the authentication/session-ownership boundary exposed by the schema. Revise the floor to require the personal representative's own active session, e.g. include context.session.user == principal along with context.session.isActive, context.patient == resource.patient, and principal.representedPatients.contains(resource.patient).",
+    "edit_delta": {
+      "critic_decision": "repair",
+      "critic_tags": [
+        "missing-authentication-boundary",
+        "session-ownership",
+        "repair-reference-cedar"
+      ]
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": false
+  }
+]

@@ -1,0 +1,14 @@
+[
+  {
+    "atom_name": "external_grades_assigned_only_by_faculty_ceiling",
+    "stage": "stage2_property_review",
+    "reason": "Stage 2 decomposition critic repair: The proposed ceiling turns the source's faculty external-grade responsibility/permission wording into an exclusive 'only faculty may assign external grades' rule. That exclusivity is not stated tightly enough by the cited excerpts: existing approved disjointness atoms already cover the named forbidden assigners (students, teaching assistants, and Faculty Family receive/assign conflict), while 'faculty take final responsibility for external grades' is a distinct responsibility/lifecycle boundary rather than a Cedar assignExternalGrade-only ceiling. The validated schema has no action or relationship hook for taking final responsibility for external grades, so using non-faculty assignExternalGrade denial as a proxy should not be accepted.",
+    "critic_tags": [
+      "missing-boundary:faculty-final-responsibility-for-external-grades",
+      "proxy-boundary",
+      "schema-gap",
+      "unsupported-exclusivity"
+    ],
+    "required_action": "repair_schema_before_synthesis"
+  }
+]

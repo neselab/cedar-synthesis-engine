@@ -352,12 +352,24 @@ def _check_joint_consistency(
     out: list[SymbolicCheck] = []
     if atom.constraint_type == "liveness":
         return out
+    if atom.constraint_type == "disjointness":
+        # Disjointness atoms are sugar: during plan compilation they patch
+        # same-action floors with ``!(disjoint_target_body)``. Checking the raw
+        # disjointness ceiling against raw prior floors reports a false
+        # inconsistency for exactly the cases the patch is meant to repair.
+        # Stage 1.75 runs the patched plan-level consistency check.
+        return out
 
     new_role = _ceiling_or_floor(atom)
     if new_role is None:
         return out
 
     for prior in prior_atoms:
+        if prior.constraint_type == "disjointness":
+            # Symmetric case: a later floor will be patched by the prior
+            # disjointness during compile-down, so raw pairwise comparison is
+            # intentionally deferred to Stage 1.75.
+            continue
         if prior.action != atom.action:
             continue
         prior_role = _ceiling_or_floor(prior)

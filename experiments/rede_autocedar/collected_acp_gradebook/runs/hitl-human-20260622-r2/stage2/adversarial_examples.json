@@ -1,0 +1,83 @@
+{
+  "students_receive_external_grades_floor": [],
+  "students_not_assign_external_grades_disjointness": [
+    {
+      "description": "A user who is a Student attempts to assign an external grade. Even if another role or broad policy would allow assignment, this student-membership case should be excluded.",
+      "request_dict": {},
+      "decision_under_chosen": "deny",
+      "decisions_under_alternatives": {},
+      "diagnostic_for": [
+        "student external-grade assignment prohibition"
+      ]
+    }
+  ],
+  "faculty_assign_internal_grades_floor": [],
+  "faculty_only_non_conflicting_assign_external_grades_floor": [
+    {
+      "description": "A user who is both Faculty and TeachingAssistant requests to assign an external grade. A faculty-only floor would require permitting this, conflicting with the source statement that teaching assistants must not assign external grades.",
+      "request_dict": {},
+      "decision_under_chosen": "deny",
+      "decisions_under_alternatives": {},
+      "diagnostic_for": [
+        "faculty_only_non_conflicting_assign_external_grades_floor",
+        "teaching_assistants_not_assign_external_grades"
+      ]
+    },
+    {
+      "description": "A user who is both Faculty and Student requests to assign an external grade. A broad faculty-only floor would require permitting this, conflicting with the approved student external-grade assignment prohibition.",
+      "request_dict": {},
+      "decision_under_chosen": "deny",
+      "decisions_under_alternatives": {},
+      "diagnostic_for": [
+        "faculty_only_non_conflicting_assign_external_grades_floor",
+        "students_not_assign_external_grades_disjointness"
+      ]
+    }
+  ],
+  "teaching_assistants_not_assign_external_grades_disjointness": [
+    {
+      "description": "A user who is both Faculty and TeachingAssistant attempts to assign an external grade; the TA prohibition should exclude this request even though faculty may assign external grades in non-conflicting cases.",
+      "request_dict": {},
+      "decision_under_chosen": "deny",
+      "decisions_under_alternatives": {},
+      "diagnostic_for": [
+        "role-overlap",
+        "teaching-assistant-external-grade-prohibition"
+      ]
+    }
+  ],
+  "faculty_family_not_assign_external_grades_disjointness": [],
+  "faculty_view_internal_grades_floor": [],
+  "faculty_non_ta_view_external_grades_floor": [],
+  "teaching_assistants_not_view_external_grades_disjointness": [],
+  "teaching_assistants_view_internal_grades_floor": [],
+  "teaching_assistants_non_student_assign_internal_grades_floor": [
+    {
+      "description": "A user who is both TeachingAssistant and Student attempts to assign an internal grade. A broad TA floor would require permitting this request, conflicting with the source statement that students must not assign grades.",
+      "request_dict": {},
+      "decision_under_chosen": "deny",
+      "decisions_under_alternatives": {},
+      "diagnostic_for": [
+        "role-overlap",
+        "student-no-assign-grades-boundary",
+        "teaching-assistant-internal-grade-assignment-floor"
+      ]
+    }
+  ],
+  "faculty_family_receive_external_grades_floor": [],
+  "students_not_assign_internal_grades_disjointness": [
+    {
+      "description": "A user who is both a Student and a TeachingAssistant attempts to assign an internal grade. The TA floor permits only non-student TAs, and this disjointness ensures the student no-assign-grades rule is not bypassed through role overlap.",
+      "request_dict": {},
+      "decision_under_chosen": "deny",
+      "decisions_under_alternatives": {},
+      "diagnostic_for": [
+        "role-overlap",
+        "student-grade-assignment-prohibition",
+        "assignInternalGrade"
+      ]
+    }
+  ],
+  "external_grade_assigning_faculty_not_receive_external_grades_disjointness": [],
+  "non_faculty_enroll_in_courses_floor": []
+}

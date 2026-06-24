@@ -1,0 +1,14 @@
+{
+  "idiomatic": 4,
+  "minimal": 4,
+  "attribute_prefer": 4,
+  "maintainable": 4,
+  "composite_mean": 4,
+  "composite_min": 4,
+  "rationales": {
+    "idiomatic": "static offline score",
+    "minimal": "static offline score",
+    "attribute_prefer": "static offline score",
+    "maintainable": "static offline score"
+  }
+}

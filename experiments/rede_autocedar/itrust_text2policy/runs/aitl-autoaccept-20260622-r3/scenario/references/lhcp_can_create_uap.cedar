@@ -1,0 +1,1 @@
+permit (principal, action == Action::"createUAP", resource) when { principal is LHCP && resource is UAP };

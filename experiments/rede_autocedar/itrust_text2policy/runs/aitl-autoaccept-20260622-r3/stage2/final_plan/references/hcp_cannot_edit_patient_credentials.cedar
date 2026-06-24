@@ -1,0 +1,1 @@
+permit (principal, action == Action::"editPatientCredential", resource) when { principal is HCP && resource is Patient && !(context.credentialField == "password" || context.credentialField == "securityQuestion") };

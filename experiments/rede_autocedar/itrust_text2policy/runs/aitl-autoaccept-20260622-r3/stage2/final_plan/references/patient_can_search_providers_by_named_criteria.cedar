@@ -1,0 +1,1 @@
+permit (principal, action == Action::"searchProviders", resource) when { principal is Patient && resource is ProviderSearch && resource.name != "" && resource.specialty != "" && (!(resource has zipCode) || (resource has zipCode && resource.zipCode != "")) };

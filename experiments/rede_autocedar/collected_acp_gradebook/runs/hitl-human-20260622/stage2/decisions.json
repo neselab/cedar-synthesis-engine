@@ -1,0 +1,120 @@
+[
+  {
+    "atom_name": "students_receive_external_grades",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "students_must_not_assign_external_grades",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "faculty_assign_internal_grades",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "faculty_assign_external_grades",
+    "action": "reject",
+    "reason": "Stage 2 decomposition critic repair: The faculty external-grade assignment floor is materially useful, but the proposed non-student scope only partially accounts for the named role-combination boundary: no user should be able to both receive and assign external grades. The spec also says FacultyFamily members can receive external grades, so a faculty member who is also FacultyFamily should not be forced by this floor to assign external grades. Repair the floor to avoid all source-named receive-role overlaps, at least Student and FacultyFamily, or otherwise coordinate it with the receive/assign disjointness property.",
+    "edit_delta": {
+      "critic_decision": "repair",
+      "critic_tags": [
+        "missing-boundary",
+        "role-overlap-conflict",
+        "receive-assign-disjointness"
+      ]
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "faculty_non_receivers_assign_external_grades",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "external_grade_receivers_must_not_assign",
+    "action": "reject",
+    "reason": "Stage 2 decomposition critic repair: The source requirement is a global receive/assign separation-of-duty rule: no user should be able to both receive and assign ExternalGrade through any role combination. This atom usefully adds FacultyFamily beyond the already-approved student assignment ban, but its forbidden slice is only the source-named receiver roles and partially duplicates the approved Student ceiling. Because the property format already has a disjoint_with hook for receiveExternalGrade, the atom should be repaired to express the action-level disjointness between receiveExternalGrade and assignExternalGrade over ExternalGrade users/resources, or otherwise make a narrowly scoped FacultyFamily-only ceiling separate from the global disjointness. Do not treat the complement permit as an affirmative grant.",
+    "edit_delta": {
+      "critic_decision": "repair",
+      "critic_tags": [
+        "missing-boundary",
+        "role-overlap-conflict",
+        "receive-assign-disjointness",
+        "partial-duplicate"
+      ]
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "external_grade_receiver_roles_must_not_assign_external_grades",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {
+      "reject_history": [
+        {
+          "atom_name": "external_grade_receive_assign_action_disjointness",
+          "reason": "Concept required, but encoding is vacuous. Repair as non-vacuous separation: external-grade receiver roles such as Student and FacultyFamily must not assign ExternalGrade."
+        }
+      ],
+      "replaced_after_reject": true
+    },
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "faculty_view_internal_grades",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "faculty_view_external_grades",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "teaching_assistants_assign_internal_grades",
+    "action": "reject",
+    "reason": "Stage 2 decomposition critic repair: The TA internal-grade assignment floor is materially useful and not implied by the existing faculty floor, but as written it grants all TeachingAssistant users assignment permission without addressing the source-named conflict boundary that students must not assign grades. Because users can have combinations of roles, a user who is both Student and TeachingAssistant would be forced by this floor to assign internal grades despite the student assignment prohibition. Repair by scoping the floor to teaching assistants outside the Student role, or otherwise explicitly resolving the TA/student assignment conflict.",
+    "edit_delta": {
+      "critic_decision": "repair",
+      "critic_tags": [
+        "missing-boundary",
+        "role-overlap-conflict",
+        "student-assignment-ban"
+      ]
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "non_student_teaching_assistants_assign_internal_grades",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  }
+]

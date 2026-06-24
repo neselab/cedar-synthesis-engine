@@ -23,6 +23,7 @@ from autocedar.atoms import (
 )
 from autocedar.grounding import CEDAR_PATH
 from autocedar.schema_atomizer import (
+    apply_schema_atoms_to_text,
     cedar_validate_schema,
     compose_and_validate,
     compose_schema,
@@ -128,6 +129,112 @@ def test_route_attribute_silently_drops_when_owner_missing() -> None:
     )
     route_atom_into_draft(orphan, draft)
     assert "Missing" not in draft.entities
+
+
+def test_apply_schema_atoms_to_text_adds_attribute_to_bare_entity() -> None:
+    schema = "entity Semester;\n"
+    repaired = apply_schema_atoms_to_text(
+        schema,
+        [
+            AttributeAtom(
+                name="Semester__isCurrent",
+                rationale="current marker",
+                plain_english_summary="Current semester marker.",
+                source_excerpt="current semester",
+                on_entity="Semester",
+                field_name="isCurrent",
+                cedar_type="Bool",
+            ),
+        ],
+    )
+
+    assert repaired == "entity Semester {\n    isCurrent: Bool,\n};\n"
+
+
+def test_apply_schema_atoms_to_text_adds_attribute_to_existing_entity() -> None:
+    schema = textwrap.dedent("""\
+        entity Semester {
+            name: String,
+        };
+    """)
+    repaired = apply_schema_atoms_to_text(
+        schema,
+        [
+            AttributeAtom(
+                name="Semester__isUpcoming",
+                rationale="upcoming marker",
+                plain_english_summary="Upcoming semester marker.",
+                source_excerpt="upcoming semester",
+                on_entity="Semester",
+                field_name="isUpcoming",
+                cedar_type="Bool",
+            ),
+        ],
+    )
+
+    assert repaired is not None
+    assert "name: String" in repaired
+    assert "isUpcoming: Bool" in repaired
+
+
+def test_apply_schema_atoms_to_text_adds_context_to_existing_action() -> None:
+    schema = textwrap.dedent("""\
+        entity User;
+
+        entity Document;
+
+        action read appliesTo {
+            principal: [User],
+            resource: [Document],
+        };
+    """)
+    repaired = apply_schema_atoms_to_text(
+        schema,
+        [
+            ActionAtom(
+                name="read",
+                rationale="read action context repair",
+                plain_english_summary="Read action.",
+                source_excerpt="from campus LAN",
+                principal_types=["User"],
+                resource_types=["Document"],
+                context_attributes={
+                    "isCampusLan": AttributeAtom(
+                        name="read__isCampusLan",
+                        rationale="network boundary",
+                        plain_english_summary="Campus LAN request marker.",
+                        source_excerpt="campus LAN",
+                        on_entity="",
+                        field_name="isCampusLan",
+                        cedar_type="Bool",
+                    ),
+                },
+            ),
+        ],
+    )
+
+    assert repaired is not None
+    assert "context: {" in repaired
+    assert "isCampusLan: Bool" in repaired
+
+
+def test_apply_schema_atoms_to_text_returns_none_for_missing_owner() -> None:
+    repaired = apply_schema_atoms_to_text(
+        "entity User;\n",
+        [
+            AttributeAtom(
+                name="Semester__isCurrent",
+                rationale="current marker",
+                plain_english_summary="Current semester marker.",
+                source_excerpt="current semester",
+                on_entity="Semester",
+                field_name="isCurrent",
+                cedar_type="Bool",
+            ),
+        ],
+    )
+
+    assert repaired is None
 
 
 # ---------------------------------------------------------------------------

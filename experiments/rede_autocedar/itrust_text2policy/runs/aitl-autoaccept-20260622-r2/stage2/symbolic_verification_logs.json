@@ -1,0 +1,125 @@
+{
+  "hcp_can_create_patient": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "administrator_can_create_lhcp": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "administrator_can_create_emergency_responder": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "administrator_can_create_public_health_agent": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "lhcp_can_create_uap": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "hcp_can_edit_valid_non_mid_patient_data": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "hcp_edit_patient_limited_to_valid_non_mid_data": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "joint-consistency-with-hcp_can_edit_valid_non_mid_patient_data: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "user_can_login_with_verified_own_credentials": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "login_limited_to_verified_own_credentials": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "joint-consistency-with-user_can_login_with_verified_own_credentials: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "user_can_request_own_password_change": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "password_change_limited_to_own_credential": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "joint-consistency-with-user_can_request_own_password_change: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "administrator_can_assign_lhcp_to_hospital": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "user_can_logout_active_own_session": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "logout_limited_to_active_own_session": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "joint-consistency-with-user_can_logout_active_own_session: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "user_can_close_application_active_own_session": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "close_application_limited_to_active_own_session": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "joint-consistency-with-user_can_close_application_active_own_session: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "administrator_can_set_inactivity_period_length": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "patient_can_view_own_provider_history": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "provider_history_limited_to_own_patient": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "joint-consistency-with-patient_can_view_own_provider_history: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "patient_can_add_matching_provider_to_own_list": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "add_provider_limited_to_matching_own_list": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "joint-consistency-with-patient_can_add_matching_provider_to_own_list: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "patient_can_designate_lhcp_for_self": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "designate_dlhcp_limited_to_self": [
+    "type-correct: ok",
+    "satisfiable: ok",
+    "joint-consistency-with-patient_can_designate_lhcp_for_self: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ]
+}

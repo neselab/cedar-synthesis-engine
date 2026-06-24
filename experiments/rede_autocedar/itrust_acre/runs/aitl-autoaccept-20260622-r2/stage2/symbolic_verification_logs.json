@@ -1,0 +1,340 @@
+{
+  "patient_view_own_access_log_floor": [
+    "type-correct: ok",
+    "satisfiable: FAILED (encoding is vacuous (always denies))",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "patient_view_access_log_own_ceiling": [
+    "type-correct: ok",
+    "satisfiable: FAILED (encoding is vacuous (always denies))",
+    "joint-consistency-with-patient_view_own_access_log_floor: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "personal_representative_view_represented_access_log_floor": [
+    "type-correct: ok",
+    "satisfiable: FAILED (encoding is vacuous (always denies))",
+    "joint-consistency-with-patient_view_access_log_own_ceiling: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "personal_representative_view_represented_access_log_ceiling": [
+    "type-correct: ok",
+    "satisfiable: FAILED (encoding is vacuous (always denies))",
+    "joint-consistency-with-patient_view_own_access_log_floor: ok",
+    "joint-consistency-with-personal_representative_view_represented_access_log_floor: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "patient_view_own_medical_record_floor": [
+    "type-correct: ok",
+    "satisfiable: FAILED (encoding is vacuous (always denies))",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "patient_view_own_medical_record_ceiling": [
+    "type-correct: ok",
+    "satisfiable: FAILED (encoding is vacuous (always denies))",
+    "joint-consistency-with-patient_view_own_medical_record_floor: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "personal_representative_view_represented_medical_record_floor": [
+    "type-correct: ok",
+    "satisfiable: FAILED (encoding is vacuous (always denies))",
+    "joint-consistency-with-patient_view_own_medical_record_ceiling: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "personal_representative_view_represented_medical_record_ceiling": [
+    "type-correct: ok",
+    "satisfiable: FAILED (encoding is vacuous (always denies))",
+    "joint-consistency-with-patient_view_own_medical_record_floor: ok",
+    "joint-consistency-with-personal_representative_view_represented_medical_record_floor: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "lhcp_view_patient_allowed_diagnostic_information_floor": [
+    "type-correct: ok",
+    "satisfiable: FAILED (encoding is vacuous (always denies))",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "lhcp_view_patient_allowed_diagnostic_information_ceiling": [
+    "type-correct: ok",
+    "satisfiable: FAILED (encoding is vacuous (always denies))",
+    "joint-consistency-with-lhcp_view_patient_allowed_diagnostic_information_floor: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "patient_view_own_personal_health_information_floor": [
+    "type-correct: ok",
+    "satisfiable: FAILED (encoding is vacuous (always denies))",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "patient_view_own_personal_health_information_ceiling": [
+    "type-correct: ok",
+    "satisfiable: FAILED (encoding is vacuous (always denies))",
+    "joint-consistency-with-patient_view_own_personal_health_information_floor: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "personal_representative_view_represented_personal_health_information_floor": [
+    "type-correct: ok",
+    "satisfiable: FAILED (encoding is vacuous (always denies))",
+    "joint-consistency-with-patient_view_own_personal_health_information_ceiling: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "personal_representative_view_represented_personal_health_information_ceiling": [
+    "type-correct: ok",
+    "satisfiable: FAILED (encoding is vacuous (always denies))",
+    "joint-consistency-with-patient_view_own_personal_health_information_floor: ok",
+    "joint-consistency-with-personal_representative_view_represented_personal_health_information_floor: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "patient_view_own_family_history_floor": [
+    "type-correct: ok",
+    "satisfiable: FAILED (encoding is vacuous (always denies))",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "patient_view_own_family_history_ceiling": [
+    "type-correct: ok",
+    "satisfiable: FAILED (encoding is vacuous (always denies))",
+    "joint-consistency-with-patient_view_own_family_history_floor: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "patient_view_own_immunization_floor": [
+    "type-correct: ok",
+    "satisfiable: FAILED (encoding is vacuous (always denies))",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "patient_view_own_immunization_ceiling": [
+    "type-correct: ok",
+    "satisfiable: FAILED (encoding is vacuous (always denies))",
+    "joint-consistency-with-patient_view_own_immunization_floor: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "personal_representative_view_represented_family_history_floor": [
+    "type-correct: ok",
+    "satisfiable: FAILED (encoding is vacuous (always denies))",
+    "joint-consistency-with-patient_view_own_family_history_ceiling: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "personal_representative_view_represented_family_history_ceiling": [
+    "type-correct: ok",
+    "satisfiable: FAILED (encoding is vacuous (always denies))",
+    "joint-consistency-with-patient_view_own_family_history_floor: ok",
+    "joint-consistency-with-personal_representative_view_represented_family_history_floor: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "personal_representative_view_represented_immunization_floor": [
+    "type-correct: ok",
+    "satisfiable: FAILED (encoding is vacuous (always denies))",
+    "joint-consistency-with-patient_view_own_immunization_ceiling: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "personal_representative_view_represented_immunization_ceiling": [
+    "type-correct: ok",
+    "satisfiable: FAILED (encoding is vacuous (always denies))",
+    "joint-consistency-with-patient_view_own_immunization_floor: ok",
+    "joint-consistency-with-personal_representative_view_represented_immunization_floor: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "patient_view_own_office_visit_floor": [
+    "type-correct: ok",
+    "satisfiable: FAILED (encoding is vacuous (always denies))",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "patient_view_own_office_visit_ceiling": [
+    "type-correct: ok",
+    "satisfiable: FAILED (encoding is vacuous (always denies))",
+    "joint-consistency-with-patient_view_own_office_visit_floor: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "personal_representative_view_represented_office_visit_floor": [
+    "type-correct: ok",
+    "satisfiable: FAILED (encoding is vacuous (always denies))",
+    "joint-consistency-with-patient_view_own_office_visit_ceiling: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "personal_representative_view_represented_office_visit_ceiling": [
+    "type-correct: ok",
+    "satisfiable: FAILED (encoding is vacuous (always denies))",
+    "joint-consistency-with-patient_view_own_office_visit_floor: ok",
+    "joint-consistency-with-personal_representative_view_represented_office_visit_floor: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "patient_take_own_untaken_office_visit_survey_floor": [
+    "type-correct: ok",
+    "satisfiable: FAILED (encoding is vacuous (always denies))",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "patient_take_own_untaken_office_visit_survey_ceiling": [
+    "type-correct: ok",
+    "satisfiable: FAILED (encoding is vacuous (always denies))",
+    "joint-consistency-with-patient_take_own_untaken_office_visit_survey_floor: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "personal_representative_take_represented_untaken_office_visit_survey_floor": [
+    "type-correct: ok",
+    "satisfiable: FAILED (encoding is vacuous (always denies))",
+    "joint-consistency-with-patient_take_own_untaken_office_visit_survey_ceiling: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "personal_representative_take_represented_untaken_office_visit_survey_ceiling": [
+    "type-correct: ok",
+    "satisfiable: FAILED (encoding is vacuous (always denies))",
+    "joint-consistency-with-patient_take_own_untaken_office_visit_survey_floor: ok",
+    "joint-consistency-with-personal_representative_take_represented_untaken_office_visit_survey_floor: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "hcp_create_patient_floor": [
+    "type-correct: ok",
+    "satisfiable: FAILED (encoding is vacuous (always denies))",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "hcp_create_patient_ceiling": [
+    "type-correct: ok",
+    "satisfiable: FAILED (encoding is vacuous (always denies))",
+    "joint-consistency-with-hcp_create_patient_floor: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "hcp_disable_patient_floor": [
+    "type-correct: ok",
+    "satisfiable: FAILED (encoding is vacuous (always denies))",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "hcp_disable_patient_ceiling": [
+    "type-correct: ok",
+    "satisfiable: FAILED (encoding is vacuous (always denies))",
+    "joint-consistency-with-hcp_disable_patient_floor: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "administrator_reactivate_inactive_patient_floor": [
+    "type-correct: ok",
+    "satisfiable: FAILED (encoding is vacuous (always denies))",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "administrator_reactivate_inactive_patient_ceiling": [
+    "type-correct: ok",
+    "satisfiable: FAILED (encoding is vacuous (always denies))",
+    "joint-consistency-with-administrator_reactivate_inactive_patient_floor: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "administrator_create_lhcp_floor": [
+    "type-correct: ok",
+    "satisfiable: FAILED (encoding is vacuous (always denies))",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "administrator_create_lhcp_ceiling": [
+    "type-correct: ok",
+    "satisfiable: FAILED (encoding is vacuous (always denies))",
+    "joint-consistency-with-administrator_create_lhcp_floor: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "administrator_create_emergency_responder_floor": [
+    "type-correct: ok",
+    "satisfiable: FAILED (encoding is vacuous (always denies))",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "administrator_create_emergency_responder_ceiling": [
+    "type-correct: ok",
+    "satisfiable: FAILED (encoding is vacuous (always denies))",
+    "joint-consistency-with-administrator_create_emergency_responder_floor: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "administrator_create_lab_technician_floor": [
+    "type-correct: ok",
+    "satisfiable: FAILED (encoding is vacuous (always denies))",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "administrator_create_lab_technician_ceiling": [
+    "type-correct: ok",
+    "satisfiable: FAILED (encoding is vacuous (always denies))",
+    "joint-consistency-with-administrator_create_lab_technician_floor: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "administrator_create_public_health_agent_floor": [
+    "type-correct: ok",
+    "satisfiable: FAILED (encoding is vacuous (always denies))",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "administrator_create_public_health_agent_ceiling": [
+    "type-correct: ok",
+    "satisfiable: FAILED (encoding is vacuous (always denies))",
+    "joint-consistency-with-administrator_create_public_health_agent_floor: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "lhcp_create_uap_floor": [
+    "type-correct: ok",
+    "satisfiable: FAILED (encoding is vacuous (always denies))",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "lhcp_create_uap_ceiling": [
+    "type-correct: ok",
+    "satisfiable: FAILED (encoding is vacuous (always denies))",
+    "joint-consistency-with-lhcp_create_uap_floor: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "administrator_assign_lhcp_credentials_floor": [
+    "type-correct: ok",
+    "satisfiable: FAILED (encoding is vacuous (always denies))",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "administrator_assign_lhcp_credentials_ceiling": [
+    "type-correct: ok",
+    "satisfiable: FAILED (encoding is vacuous (always denies))",
+    "joint-consistency-with-administrator_assign_lhcp_credentials_floor: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "administrator_assign_listed_hospital_floor": [
+    "type-correct: ok",
+    "satisfiable: FAILED (encoding is vacuous (always denies))",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "administrator_assign_listed_hospital_ceiling": [
+    "type-correct: ok",
+    "satisfiable: FAILED (encoding is vacuous (always denies))",
+    "joint-consistency-with-administrator_assign_listed_hospital_floor: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "patient_view_own_lhcps_floor": [
+    "type-correct: ok",
+    "satisfiable: FAILED (encoding is vacuous (always denies))",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "patient_view_own_lhcps_ceiling": [
+    "type-correct: ok",
+    "satisfiable: FAILED (encoding is vacuous (always denies))",
+    "joint-consistency-with-patient_view_own_lhcps_floor: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "patient_add_lhcp_to_own_provider_list_floor": [
+    "type-correct: ok",
+    "satisfiable: FAILED (encoding is vacuous (always denies))",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "patient_add_lhcp_to_own_provider_list_ceiling": [
+    "type-correct: ok",
+    "satisfiable: FAILED (encoding is vacuous (always denies))",
+    "joint-consistency-with-patient_add_lhcp_to_own_provider_list_floor: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "patient_designate_lhcp_for_self_floor": [
+    "type-correct: ok",
+    "satisfiable: FAILED (encoding is vacuous (always denies))",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "patient_designate_lhcp_for_self_ceiling": [
+    "type-correct: ok",
+    "satisfiable: FAILED (encoding is vacuous (always denies))",
+    "joint-consistency-with-patient_designate_lhcp_for_self_floor: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "patient_undesignate_lhcp_for_self_floor": [
+    "type-correct: ok",
+    "satisfiable: FAILED (encoding is vacuous (always denies))",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "patient_undesignate_lhcp_for_self_ceiling": [
+    "type-correct: ok",
+    "satisfiable: FAILED (encoding is vacuous (always denies))",
+    "joint-consistency-with-patient_undesignate_lhcp_for_self_floor: ok",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "hcp_edit_active_selected_patient_personal_health_information_floor": [
+    "type-correct: ok",
+    "satisfiable: FAILED (encoding is vacuous (always denies))",
+    "sugar-universal: ok (not applicable to primitives)"
+  ]
+}

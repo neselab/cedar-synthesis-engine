@@ -1,0 +1,26 @@
+[
+  {
+    "atom_name": "patient_view_own_access_log_floor",
+    "span_text": "A patient can view their own access log; 'The patient views their access log for themself or a represented person.'",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "patient_view_access_log_own_only_ceiling",
+    "span_text": "A patient can view their own access log; 'The patient views their access log for themself or a represented person.'",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "personal_representative_view_represented_access_log_floor",
+    "span_text": "A patient can view their own access log, or the access log for a person for whom they are a personal representative.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  },
+  {
+    "atom_name": "personal_representative_view_represented_access_log_floor",
+    "span_text": "A patient can view their own access log, or the access log for a person for whom they are a personal representative.",
+    "alternatives_considered": [],
+    "user_objected_to_attribution": false
+  }
+]

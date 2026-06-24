@@ -1,0 +1,41 @@
+[
+  {
+    "atom_name": "patient_view_own_access_log_floor",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "patient_view_access_log_own_only_ceiling",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "access_log_own_or_represented_floor",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {
+      "edits": [
+        {
+          "field": "constraint_type",
+          "old": "floor",
+          "new": "ceiling"
+        }
+      ],
+      "reject_history": [
+        {
+          "atom_name": "personal_representative_view_represented_access_log_floor",
+          "reason": "prior access-log ceiling is too narrow; source allows both own-patient and represented-patient access, so repair the prior ceiling to cover patient-own OR personal-representative-represented cases, then keep this representative floor."
+        }
+      ],
+      "replaced_after_reject": true
+    },
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  }
+]

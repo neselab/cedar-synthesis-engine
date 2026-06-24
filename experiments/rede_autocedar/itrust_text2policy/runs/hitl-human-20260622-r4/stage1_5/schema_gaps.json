@@ -1,0 +1,38 @@
+[
+  {
+    "atom_name": "user_can_login_with_own_credentials",
+    "stage": "stage2_property_review",
+    "reason": "Stage 2 decomposition critic repair: The login floor is materially useful, but it replaces the source authentication boundary with a proxy. The requirement is that the user enters their MID and password to gain role-based entry; the schema exposes only a Credential owner and hasPassword flag, not request-entered MID/password values or a password/MID verification result. Requiring context.credential.user == principal and hasPassword does not represent successful authentication with the entered MID and password.",
+    "critic_tags": [
+      "missing-authentication-boundary",
+      "missing-entered-mid",
+      "missing-password-verification",
+      "schema-gap"
+    ],
+    "required_action": "repair_schema_before_synthesis"
+  },
+  {
+    "atom_name": "patient_can_view_own_prior_and_designated_lhcps",
+    "stage": "stage2_property_review",
+    "reason": "Stage 2 decomposition critic repair: The source grant is not merely generic access to the patient's ProviderList; it is specifically to view LHCPs the patient has ever had an office visit with and LHCPs the patient has designated. The proposed floor correctly includes the own-patient boundary and active-session boundary, but it accepts ProviderList as a proxy even though the schema does not expose an office-visit history relationship and does not connect ProviderList to ProviderDesignation/isDesignated membership. Repair is needed to make the prior-office-visit and designated-LHCP boundaries explicit; if those cannot be represented with the current schema, this is a schema gap rather than an acceptable proxy.",
+    "critic_tags": [
+      "missing-designated-lhcp-membership-boundary",
+      "missing-prior-office-visit-lhcp-boundary",
+      "proxy-resource-not-equivalent",
+      "schema-gap"
+    ],
+    "required_action": "repair_schema_before_synthesis"
+  },
+  {
+    "atom_name": "add_provider_only_own_list_active_session",
+    "stage": "stage2_property_review",
+    "reason": "Stage 2 decomposition critic repair: The add-provider safety bound is materially useful, but this proposed ceiling accepts a proxy for the source workflow. The source scopes the add operation not only to the patient's own provider list and an active session, but also to adding a provider found by search by provider name, specialty, and optionally zip code. Prior review already identified the unresolved search/name matching boundary; a ceiling that omits it would allow policies to add arbitrary providers as long as the list is owned by the patient. Because the current schema does not provide a reliable provider-name/search-match hook for Hcp/Lhcp, repair is needed rather than accepting the own-list proxy.",
+    "critic_tags": [
+      "missing-provider-name-match-boundary",
+      "missing-search-filter-boundary",
+      "proxy-resource-not-equivalent",
+      "schema-gap"
+    ],
+    "required_action": "repair_schema_before_synthesis"
+  }
+]

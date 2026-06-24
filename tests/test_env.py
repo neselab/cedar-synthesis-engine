@@ -19,6 +19,7 @@ from autocedar.env import (
 def test_load_dotenv_finds_parent_env_file(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     monkeypatch.delenv("AUTOCEDAR_CHAT_MODEL", raising=False)
+    monkeypatch.setenv("AUTOCEDAR_CONFIG_DIR", str(tmp_path / "config"))
     (tmp_path / ".env").write_text(
         'ANTHROPIC_API_KEY="test-key"\nAUTOCEDAR_CHAT_MODEL=claude-test\n',
     )

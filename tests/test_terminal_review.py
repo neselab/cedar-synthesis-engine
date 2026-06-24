@@ -379,6 +379,46 @@ def test_edit_action_principal_types_parses_csv() -> None:
     assert action.principal_types == ["User", "ApiKey", "Bot"]
 
 
+def test_edit_action_context_attribute_adds_request_context() -> None:
+    captured = _CaptureOutput()
+    scripted = _ScriptedInput([
+        "E",
+        "context.onCampusLan=Bool",
+        "A",
+    ])
+    reviewed = interactive_review_loop(
+        [_action()],
+        input_fn=scripted,
+        output_fn=captured,
+    )
+
+    action = reviewed[0].atom
+    assert isinstance(action, ActionAtom)
+    assert action.context_attributes["onCampusLan"].cedar_type == "Bool"
+    assert action.context_attributes["onCampusLan"].optional is False
+    edits = reviewed[0].decision.edit_delta.get("edits", [])
+    assert edits[0]["field"] == "context.onCampusLan"
+
+
+def test_edit_action_optional_context_attribute() -> None:
+    captured = _CaptureOutput()
+    scripted = _ScriptedInput([
+        "E",
+        "context.strongAuth?=Bool",
+        "A",
+    ])
+    reviewed = interactive_review_loop(
+        [_action()],
+        input_fn=scripted,
+        output_fn=captured,
+    )
+
+    action = reviewed[0].atom
+    assert isinstance(action, ActionAtom)
+    assert action.context_attributes["strongAuth"].cedar_type == "Bool"
+    assert action.context_attributes["strongAuth"].optional is True
+
+
 def test_property_atom_approval_preserves_symbolic_verified() -> None:
     captured = _CaptureOutput()
     scripted = _ScriptedInput(["A"])
@@ -392,6 +432,28 @@ def test_property_atom_approval_preserves_symbolic_verified() -> None:
     assert reviewed[0].decision.action == "approve"
     assert reviewed[0].decision.symbolic_verified is True
     assert "Property 1 of 1" in captured.text
+
+
+def test_failed_property_atom_approval_requires_second_confirmation() -> None:
+    atom = _property()
+    atom.symbolic_verified = False
+    atom.symbolic_verification_log = [
+        "type-correct: ok",
+        "satisfiable: FAILED (encoding is vacuous (always denies))",
+    ]
+    captured = _CaptureOutput()
+    scripted = _ScriptedInput(["A", "A"])
+
+    reviewed = interactive_review_loop(
+        [atom],
+        input_fn=scripted,
+        output_fn=captured,
+    )
+
+    assert reviewed[0].decision.action == "approve"
+    assert reviewed[0].decision.symbolic_verified is False
+    assert "press A again to force approval" in captured.text
+    assert captured.text.count("Property 1 of 1") == 2
 
 
 def test_edit_property_action_field() -> None:

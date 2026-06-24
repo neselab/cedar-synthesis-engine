@@ -4,22 +4,32 @@ NL Translation Layer for the Cedar Synthesis Engine.
 Provides LLM-powered translation between Cedar policies and natural language,
 enabling security administrators to review and modify reference policies
 without reading Cedar syntax.
-
-Requires: ANTHROPIC_API_KEY environment variable.
 """
 import os
+from typing import Any
 
 from anthropic import Anthropic
 
-MODEL = os.environ.get("CEDAR_TRANSLATE_MODEL", "claude-sonnet-4-20250514")
+from autocedar.codex_auth import CodexAuthClient, is_codex_provider
+from autocedar.llm import default_model_for_provider, default_provider
+
+MODEL = os.environ.get("CEDAR_TRANSLATE_MODEL") or default_model_for_provider()
 
 _client = None
 
 
-def _get_client() -> Anthropic:
+def _get_client() -> Any:
     global _client
     if _client is None:
-        _client = Anthropic()
+        provider = default_provider()
+        if is_codex_provider(provider):
+            _client = CodexAuthClient()
+        elif provider == "anthropic":
+            _client = Anthropic()
+        else:
+            raise ValueError(
+                f"Unsupported AUTOCEDAR_PROVIDER={provider!r}; expected 'codex' or 'anthropic'.",
+            )
     return _client
 
 

@@ -1,0 +1,159 @@
+[
+  {
+    "name": "Role",
+    "rationale": "Role is an enumerated entity type used to represent the RBAC roles mentioned in the gradebook slice.",
+    "plain_english_summary": "A role is a label such as student, TA, faculty member, or faculty-family member assigned to a user.",
+    "source_excerpt": "students, teaching assistants,\nfaculty, and related faculty-family roles",
+    "members_of": [],
+    "attributes": {},
+    "enum_values": [
+      "Student",
+      "TeachingAssistant",
+      "Faculty",
+      "FacultyFamily"
+    ]
+  },
+  {
+    "name": "User",
+    "rationale": "User is the principal type whose role membership determines gradebook permissions and disjointness constraints.",
+    "plain_english_summary": "A user is a person using the gradebook system.",
+    "source_excerpt": "No user should be able to both receive and assign external grades through any\ncombination of roles.",
+    "members_of": [],
+    "attributes": {},
+    "enum_values": null
+  },
+  {
+    "name": "User__roles",
+    "rationale": "The roles set records the combinations of roles that drive RBAC authorization decisions.",
+    "plain_english_summary": "This lists all roles the user has, such as student, TA, faculty, or faculty family.",
+    "source_excerpt": "combination of roles",
+    "on_entity": "User",
+    "field_name": "roles",
+    "cedar_type": "Set<Role>",
+    "optional": false,
+    "alternatives_considered": [
+      "Model Student, TeachingAssistant, Faculty, and FacultyFamily as separate principal entity types, but role combinations need to be represented on the same user."
+    ]
+  },
+  {
+    "name": "InternalGrade",
+    "rationale": "InternalGrade is a protected grade resource with permissions distinct from external grades.",
+    "plain_english_summary": "An internal grade is a grade record used inside the gradebook process.",
+    "source_excerpt": "InternalGrades",
+    "members_of": [],
+    "attributes": {},
+    "enum_values": null
+  },
+  {
+    "name": "ExternalGrade",
+    "rationale": "ExternalGrade is a protected grade resource subject to receive, assign, view, and disjointness requirements.",
+    "plain_english_summary": "An external grade is a grade record that can be received by some users and assigned or viewed by faculty.",
+    "source_excerpt": "ExternalGrades",
+    "members_of": [],
+    "attributes": {},
+    "enum_values": null
+  },
+  {
+    "name": "Course",
+    "rationale": "Course is the resource type needed for enrollment actions.",
+    "plain_english_summary": "A course is something a non-faculty subject may enroll in.",
+    "source_excerpt": "courses",
+    "members_of": [],
+    "attributes": {},
+    "enum_values": null
+  },
+  {
+    "name": "assignInternalGrade",
+    "rationale": "This action models assigning internal grades, which is explicitly permitted for faculty and teaching assistants.",
+    "plain_english_summary": "A user assigns an internal grade.",
+    "source_excerpt": "Teaching assistants can view and assign internal grades",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "InternalGrade"
+    ],
+    "context_attributes": {},
+    "parent_groups": [
+      "assignGrade"
+    ]
+  },
+  {
+    "name": "assignExternalGrade",
+    "rationale": "This action models assigning external grades, which is allowed for faculty and forbidden for students and teaching assistants.",
+    "plain_english_summary": "A user assigns an external grade.",
+    "source_excerpt": "Faculty members can assign internal grades and external grades.",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "ExternalGrade"
+    ],
+    "context_attributes": {},
+    "parent_groups": [
+      "assignGrade"
+    ]
+  },
+  {
+    "name": "viewInternalGrade",
+    "rationale": "This action models viewing internal grades, which is explicitly available to faculty and teaching assistants.",
+    "plain_english_summary": "A user views an internal grade.",
+    "source_excerpt": "Teaching assistants can view and assign internal grades",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "InternalGrade"
+    ],
+    "context_attributes": {},
+    "parent_groups": [
+      "viewGrade"
+    ]
+  },
+  {
+    "name": "viewExternalGrade",
+    "rationale": "This action models viewing external grades, which is explicitly available to faculty and forbidden for teaching assistants.",
+    "plain_english_summary": "A user views an external grade.",
+    "source_excerpt": "Faculty members can view internal grades and external grades.",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "ExternalGrade"
+    ],
+    "context_attributes": {},
+    "parent_groups": [
+      "viewGrade"
+    ]
+  },
+  {
+    "name": "receiveExternalGrade",
+    "rationale": "This action models receiving external grades, which is allowed for students and faculty-family members and disjoint from assigning external grades.",
+    "plain_english_summary": "A user receives an external grade.",
+    "source_excerpt": "Students receive external grades",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "ExternalGrade"
+    ],
+    "context_attributes": {},
+    "parent_groups": [
+      "receiveGrade"
+    ]
+  },
+  {
+    "name": "enrollInCourse",
+    "rationale": "This action models course enrollment, which is permitted when the subject is not a faculty member.",
+    "plain_english_summary": "A user enrolls in a course.",
+    "source_excerpt": "If a subject is not a faculty member, that subject may enroll in courses.",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "Course"
+    ],
+    "context_attributes": {},
+    "parent_groups": []
+  }
+]

@@ -144,6 +144,7 @@ def test_cvc5_check_uses_actionable_fix_when_missing(
 def test_doctor_treats_placeholder_api_key_as_missing(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    monkeypatch.setenv("AUTOCEDAR_PROVIDER", "anthropic")
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-...")
 
     check = doctor._llm_check()

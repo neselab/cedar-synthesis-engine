@@ -1,0 +1,13 @@
+[
+  {
+    "atom_name": "create_patient_requires_active_own_session",
+    "stage": "stage2_property_review",
+    "reason": "Stage 2 decomposition critic repair: The same-action ceiling is useful and not redundant with the approved floor, but it collapses the inactivity-limit requirement into the proxy field context.session.isActive. The source boundary is specifically that authorization is disabled after the configured inactivity period is exceeded. The schema exposes lastActivityAt and inactivityPeriodSeconds on Session, but createPatient context has no current request time or equivalent hook needed to express timeout expiration directly. Repair should either add a schema/context hook for current time or otherwise model the timeout-expired lifecycle boundary explicitly, rather than accepting isActive alone as equivalent.",
+    "critic_tags": [
+      "missing-boundary:inactivity-limit-exceeded",
+      "not-duplicate",
+      "schema-gap"
+    ],
+    "required_action": "repair_schema_before_synthesis"
+  }
+]

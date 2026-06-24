@@ -1,0 +1,1 @@
+permit (principal, action == Action::"viewImmunizations", resource) when { context.session.isActive && resource.patient == principal && resource.hasImmunizations };

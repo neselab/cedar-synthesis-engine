@@ -1,0 +1,1 @@
+permit (principal, action == Action::"viewFamilyHistory", resource) when { context.session.isActive && context.session.user == principal && context.patient == principal && resource.patient == principal };

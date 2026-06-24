@@ -1,0 +1,93 @@
+[
+  {
+    "atom_name": "patient_view_own_access_log_floor",
+    "decision": "accept",
+    "reason": "The atom captures a materially useful floor from the source requirement: a Patient may view an AccessLog whose patient is themself. It is not merely restating schema applicability, since it adds the patient-specific ownership boundary and active own-session authentication boundary. No approved atom duplicates or subsumes it, and the relevant boundaries are expressible in the schema.",
+    "tags": [
+      "floor",
+      "patient-specific",
+      "access-log",
+      "ownership-boundary",
+      "authenticated-session"
+    ]
+  },
+  {
+    "atom_name": "access_log_subject_scope_ceiling",
+    "decision": "accept",
+    "reason": "The atom adds a materially useful subject-scope ceiling for viewAccessLog that is not implied by the approved patient-own floor or by schema principal/resource types. It uses the schema-exposed ownership and representation hooks, requires an active session belonging to the requester, and matches the source boundary limiting access logs to the patient themself or a patient they represent.",
+    "tags": [
+      "ownership-boundary",
+      "representation-boundary",
+      "session-boundary"
+    ]
+  },
+  {
+    "atom_name": "personal_representative_view_represented_access_log_floor",
+    "decision": "accept",
+    "reason": "This is a materially useful positive floor for the second half of the access-log requirement and is not implied by the already-approved patient-own-log floor or by the subject-scope ceiling. It uses the schema's patient-specific representation boundary via principal.representedPatients.contains(resource.patient), ties the request to the represented patient's log with context.patient == resource.patient, and requires the representative's active session.",
+    "tags": []
+  },
+  {
+    "atom_name": "hcp_patient_credential_view_disjointness",
+    "decision": "accept",
+    "reason": "The atom captures a distinct, explicit credential-secrecy boundary from the source: HCPs must not view a patient account's password or security question. For a disjointness atom, the disjoint_target_body correctly names the forbidden slice using schema-supported hooks: HCP principal, Patient resource, and context.credentialField for password/securityQuestion. It is not redundant with the approved access-log atoms and does not rely on a schema proxy.",
+    "tags": [
+      "credential-secrecy",
+      "disjointness",
+      "patient-account-boundary"
+    ]
+  },
+  {
+    "atom_name": "deactivated_patient_edit_disjointness",
+    "decision": "accept",
+    "reason": "The atom captures a real lifecycle boundary from the source requirement: inactive/deactivated Patient resources must be outside the permitted editPatient slice. The schema exposes Patient.isActive, and the disjoint_target_body correctly names the forbidden slice for this action as !resource.isActive. It is not redundant with the approved access-log or credential-secrecy atoms.",
+    "tags": [
+      "lifecycle-boundary",
+      "deactivated-patient",
+      "disjointness"
+    ]
+  },
+  {
+    "atom_name": "patient_view_own_medical_record_floor",
+    "decision": "accept",
+    "reason": "The atom captures a materially useful positive permission not covered by the approved access-log or safety atoms. It is tightly scoped to the patient viewing only their own MedicalRecord, with active-session and session-user boundaries, and it uses the schema's patient ownership hook rather than relying only on principal/resource types. The personal-representative branch of the same source requirement can be covered by a separate atom and does not make this patient-own-record floor incomplete.",
+    "tags": []
+  },
+  {
+    "atom_name": "patient_representative_medical_record_subject_scope_ceiling",
+    "decision": "repair",
+    "reason": "The medical-record subject-scope ceiling is materially useful and not redundant, but the proposed policy says access is during the requester\u2019s active session while the Cedar condition only checks that some session is active. Since the schema exposes context.session.user, revise the atom to include the session ownership/authentication boundary, e.g. context.session.user == principal, along with the existing own-or-represented patient boundary.",
+    "tags": [
+      "missing-authentication-boundary",
+      "session-ownership",
+      "repair-reference-cedar"
+    ]
+  },
+  {
+    "atom_name": "medical_record_subject_scope_session_ceiling",
+    "decision": "accept",
+    "reason": "The atom is materially useful and tightly scoped to the patient/personal-representative medical-record requirement. It repairs the prior missing session-ownership boundary using the schema\u2019s context.session.user hook, and it captures the own-or-represented patient boundary without duplicating an approved stricter atom.",
+    "tags": [
+      "useful-ceiling",
+      "patient-specific-boundary",
+      "personal-representative-boundary",
+      "session-ownership"
+    ]
+  },
+  {
+    "atom_name": "personal_representative_view_represented_medical_record_floor",
+    "decision": "repair",
+    "reason": "The represented-patient medical-record floor is materially useful and not implied by the existing ceiling, but it omits the authentication/session-ownership boundary exposed by the schema. Revise the floor to require the personal representative's own active session, e.g. include context.session.user == principal along with context.session.isActive, context.patient == resource.patient, and principal.representedPatients.contains(resource.patient).",
+    "tags": [
+      "missing-authentication-boundary",
+      "session-ownership",
+      "repair-reference-cedar"
+    ]
+  },
+  {
+    "atom_name": "personal_representative_view_represented_medical_record_own_session_floor",
+    "decision": "accept",
+    "reason": "The atom is materially useful and not implied by the approved medical-record ceiling: it adds a positive floor for personal representatives viewing represented patients' medical records. It repairs the prior rejected proposal by including the schema-exposed session ownership/authentication boundary (`context.session.user == principal`) along with active session, record subject matching, and patient-specific representation. The source excerpt supports this represented-patient workflow and the atom is tightly scoped to `viewMedicalRecord` for `PersonalRepresentative` over `MedicalRecord`.",
+    "tags": []
+  }
+]

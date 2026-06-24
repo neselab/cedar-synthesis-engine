@@ -1,0 +1,1 @@
+permit (principal, action == Action::"viewMedicalRecord", resource) when { principal is PersonalRepresentative && context.session.isActive && context has representedPatient && context.representedPatient == resource.patient && principal.representedPatients.contains(context.representedPatient) };

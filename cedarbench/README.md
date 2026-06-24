@@ -102,14 +102,14 @@ taxonomy, and per-scenario results. Summary of domains covered:
 # From the repository root
 python3 eval_harness.py \
     --scenario cedarbench/scenarios/<scenario_name> \
-    --phase2-model claude-haiku-4-5-20251001 \
+    --model gpt-5.5 \
     --no-review --max-iters 20 \
     --run-id my_run
 
 # Run all 121 scenarios in sequence
 python3 eval_harness.py \
     --all \
-    --phase2-model claude-haiku-4-5-20251001 \
+    --model gpt-5.5 \
     --no-review --max-iters 20 \
     --run-id full_benchmark
 ```
