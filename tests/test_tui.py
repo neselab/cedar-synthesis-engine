@@ -862,6 +862,74 @@ def test_tui_registers_latest_authoring_artifacts(tmp_path: Path) -> None:
     assert app.latest_policy_path == candidate
 
 
+def test_tui_records_authoring_validation_status_from_eval_log(tmp_path: Path) -> None:
+    app = AutoCedarApp()
+    session = tmp_path / "session"
+    schema = session / "stage1" / "final_schema.cedarschema"
+    candidate = session / "harness_runs" / "scenario" / "candidate.cedar"
+    eval_log = session / "harness_runs" / "scenario" / "eval_log.json"
+    schema.parent.mkdir(parents=True)
+    candidate.parent.mkdir(parents=True)
+    schema.write_text("entity User;")
+    candidate.write_text("permit(principal, action, resource);")
+    eval_log.write_text(
+        '{"converged": true, "iterations": 1, "final_loss": 0, "checks_total": 6, "error": ""}',
+    )
+    app._update_status = lambda: None  # type: ignore[method-assign]
+
+    app._register_authoring_artifacts(session, candidate, schema_override=None)
+    app._record_authoring_result(True)
+    state = app._agent_state()
+
+    assert app.latest_candidate_validated is True
+    assert app.latest_synthesis_converged is True
+    assert app.latest_synthesis_iterations == 1
+    assert app.latest_synthesis_loss == 0
+    assert "passed all 6 recorded checks" in app.latest_status_summary
+    assert state.latest_authoring_complete is True
+    assert state.latest_candidate_validated is True
+    assert state.latest_policy_exists is True
+    assert state.latest_schema_exists is True
+
+
+def test_tui_planner_receives_pre_planning_workflow_state(tmp_path: Path) -> None:
+    async def run() -> None:
+        app = AutoCedarApp()
+        policy = tmp_path / "candidate.cedar"
+        schema = tmp_path / "schema.cedarschema"
+        policy.write_text("permit(principal, action, resource);")
+        schema.write_text("entity User;")
+        planner = FakePlanner(AgentAction(kind="export_artifacts"))
+        app.agent_planner_factory = lambda: planner
+        async with app.run_test() as pilot:
+            app.latest_session_dir = tmp_path
+            app.latest_policy_path = policy
+            app.latest_schema_path = schema
+            app.latest_authoring_complete = True
+            app.latest_authoring_approved = True
+            app.latest_candidate_validated = True
+            app.latest_synthesis_converged = True
+            app.latest_synthesis_iterations = 1
+            app.latest_synthesis_loss = 0
+            app.latest_status_summary = "Candidate passed all recorded checks in 1 iteration(s)."
+            app._export_artifacts = lambda path=None: None  # type: ignore[method-assign]
+
+            app._submit_command_text("can you export it")
+            await pilot.pause()
+
+            assert planner.calls
+            _, state = planner.calls[0]
+            assert state.active_task == "idle"
+            assert state.busy is False
+            assert state.latest_authoring_complete is True
+            assert state.latest_candidate_validated is True
+            assert state.latest_policy_exists is True
+            assert state.latest_schema_exists is True
+            await pilot.exit(None)
+
+    asyncio.run(run())
+
+
 def test_tui_artifact_slash_commands_dispatch_to_latest_paths(tmp_path: Path) -> None:
     app = AutoCedarApp()
     schema = tmp_path / "schema.cedarschema"
@@ -908,6 +976,13 @@ def test_tui_export_artifacts_writes_stable_files(tmp_path: Path) -> None:
     app.latest_session_dir = tmp_path / "run"
     app.latest_schema_path = schema
     app.latest_policy_path = policy
+    app.latest_authoring_complete = True
+    app.latest_authoring_approved = True
+    app.latest_candidate_validated = True
+    app.latest_synthesis_converged = True
+    app.latest_synthesis_iterations = 1
+    app.latest_synthesis_loss = 0
+    app.latest_status_summary = "Candidate passed all 2 recorded checks in 1 iteration(s)."
     app.copyable_transcript = ["you > author this", "autocedar > Authoring complete."]
     app._write = lambda content: None  # type: ignore[method-assign]
 
@@ -923,6 +998,8 @@ def test_tui_export_artifacts_writes_stable_files(tmp_path: Path) -> None:
     assert f"session={tmp_path / 'run'}" in index
     assert f"schema={schema}" in index
     assert f"policy={policy}" in index
+    assert "candidate_validated=True" in index
+    assert "status=Candidate passed all 2 recorded checks" in index
 
 
 def test_tui_copy_last_and_transcript_use_plain_text(

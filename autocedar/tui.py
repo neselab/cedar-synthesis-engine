@@ -5,6 +5,7 @@ from __future__ import annotations
 import contextlib
 import datetime
 import io
+import json
 import os
 import re
 import shlex
@@ -517,6 +518,13 @@ class AutoCedarApp(App[None]):
         self.latest_session_dir: Path | None = None
         self.latest_schema_path: Path | None = None
         self.latest_policy_path: Path | None = None
+        self.latest_authoring_complete = False
+        self.latest_authoring_approved: bool | None = None
+        self.latest_candidate_validated: bool | None = None
+        self.latest_synthesis_converged: bool | None = None
+        self.latest_synthesis_iterations: int | None = None
+        self.latest_synthesis_loss: int | None = None
+        self.latest_status_summary = ""
         self.copyable_transcript: list[str] = []
         self.last_assistant_text = ""
         self.activity_message = ""
@@ -882,22 +890,23 @@ class AutoCedarApp(App[None]):
         if self.busy:
             self._handle_busy_input(raw)
             return
+        state = self._agent_state()
         self.busy = True
         self.active_task = "model planning"
         self.query_one(Input).placeholder = "AutoCedar is thinking..."
         self._update_status()
         self._start_activity("model planning")
         self.run_worker(
-            lambda: self._plan_and_execute_agent(raw),
+            lambda: self._plan_and_execute_agent(raw, state),
             thread=True,
             exclusive=False,
             exit_on_error=False,
         )
 
-    def _plan_and_execute_agent(self, raw: str) -> None:
+    def _plan_and_execute_agent(self, raw: str, state: AgentState) -> None:
         try:
             planner = self._make_agent_planner()
-            action = planner.plan(raw, self._agent_state())
+            action = planner.plan(raw, state)
         except Exception as exc:
             self.call_from_thread(self._finish_agent_planning, None, exc)
             return
@@ -956,6 +965,15 @@ class AutoCedarApp(App[None]):
             latest_session_dir=str(self.latest_session_dir) if self.latest_session_dir else None,
             latest_schema_path=str(self.latest_schema_path) if self.latest_schema_path else None,
             latest_policy_path=str(self.latest_policy_path) if self.latest_policy_path else None,
+            latest_schema_exists=bool(self.latest_schema_path and self.latest_schema_path.exists()),
+            latest_policy_exists=bool(self.latest_policy_path and self.latest_policy_path.exists()),
+            latest_authoring_complete=self.latest_authoring_complete,
+            latest_authoring_approved=self.latest_authoring_approved,
+            latest_candidate_validated=self.latest_candidate_validated,
+            latest_synthesis_converged=self.latest_synthesis_converged,
+            latest_synthesis_iterations=self.latest_synthesis_iterations,
+            latest_synthesis_loss=self.latest_synthesis_loss,
+            latest_status_summary=self.latest_status_summary,
             provider=self.llm_provider,
             model=self.llm_model,
             effort=self.llm_effort,
@@ -1572,6 +1590,8 @@ class AutoCedarApp(App[None]):
         for label, path in rows:
             value = str(path) if path else "(not available)"
             lines.append(f"[bold {AMBER}]{label}[/]: {escape(value)}")
+        if self.latest_status_summary:
+            lines.extend(["", f"[bold {AMBER}]status[/]: {escape(self.latest_status_summary)}"])
         lines.extend([
             "",
             f"[dim {MUTED}]Use /schema, /policy, /export, /copy schema path, or /copy policy path.[/]",
@@ -1690,6 +1710,13 @@ class AutoCedarApp(App[None]):
                 f"session={self.latest_session_dir or ''}",
                 f"schema={self.latest_schema_path or ''}",
                 f"policy={self.latest_policy_path or ''}",
+                f"authoring_complete={self.latest_authoring_complete}",
+                f"approved={self.latest_authoring_approved}",
+                f"candidate_validated={self.latest_candidate_validated}",
+                f"synthesis_converged={self.latest_synthesis_converged}",
+                f"synthesis_iterations={self.latest_synthesis_iterations or ''}",
+                f"synthesis_loss={self.latest_synthesis_loss if self.latest_synthesis_loss is not None else ''}",
+                f"status={self.latest_status_summary}",
                 f"export={target_dir.resolve()}",
             ])
             + "\n",
@@ -1996,6 +2023,10 @@ class AutoCedarApp(App[None]):
                 result.candidate_path,
                 schema_override=options.schema,
             )
+            self.call_from_thread(
+                self._record_authoring_result,
+                result.final_user_approved,
+            )
             lines = [
                 f"[bold {GREEN}]Authoring complete.[/]",
                 f"[bold {AMBER}]session[/]:   {escape(str(result.session_dir))}",
@@ -2054,6 +2085,17 @@ class AutoCedarApp(App[None]):
         else:
             scenario_candidate = session_dir / "scenario" / "candidate.cedar"
             self.latest_policy_path = scenario_candidate if scenario_candidate.exists() else None
+
+    def _record_authoring_result(self, final_user_approved: bool) -> None:
+        self.latest_authoring_complete = True
+        self.latest_authoring_approved = final_user_approved
+        summary = _read_latest_synthesis_summary(self.latest_session_dir, self.latest_policy_path)
+        self.latest_candidate_validated = summary["validated"]
+        self.latest_synthesis_converged = summary["converged"]
+        self.latest_synthesis_iterations = summary["iterations"]
+        self.latest_synthesis_loss = summary["loss"]
+        self.latest_status_summary = summary["summary"]
+        self._update_status()
 
     def _verify_workspace(self, workspace: Path) -> None:
         try:
@@ -2239,6 +2281,10 @@ class AutoCedarApp(App[None]):
         review_color = CORAL if self.pending_review is not None else MUTED
         action_color = AMBER if self.pending_action is not None else MUTED
         key_color = TEAL if key_state == "set" else CORAL
+        result_state = self.latest_status_summary or "none"
+        if len(result_state) > 72:
+            result_state = result_state[:69] + "..."
+        result_color = GREEN if self.latest_candidate_validated else MUTED
         text = (
             f"[bold {COPPER}]Session[/]\n\n"
             f"[dim {MUTED}]current task[/]\n[bold {CREAM}]{escape(self.active_task)}[/]\n\n"
@@ -2250,8 +2296,9 @@ class AutoCedarApp(App[None]):
             f"[dim {MUTED}]pending yes/no[/]\n[bold {action_color}]{action_state}[/]\n\n"
             f"[dim {MUTED}]draft capture[/]\n[bold {drafting_color}]{drafting_state}[/]\n\n"
             f"[dim {MUTED}]draft lines[/]\n[bold {CREAM}]{draft_state}[/]\n\n"
+            f"[dim {MUTED}]latest result[/]\n[bold {result_color}]{escape(result_state)}[/]\n\n"
             f"[dim {MUTED}]Ask what any label means.[/]"
-        )
+            )
         self.query_one("#status_text", Static).update(text)
 
     def _state_snapshot(self, *, for_model: bool = False) -> str:
@@ -2854,6 +2901,76 @@ def _copy_to_clipboard(text: str) -> ClipboardResult:
         False,
         "No supported clipboard command was available, so the text is shown here for manual selection.",
     )
+
+
+def _read_latest_synthesis_summary(
+    session_dir: Path | None,
+    policy_path: Path | None,
+) -> dict[str, Any]:
+    if session_dir is None:
+        return {
+            "validated": None,
+            "converged": None,
+            "iterations": None,
+            "loss": None,
+            "summary": "No authoring session is registered.",
+        }
+    log_candidates = [
+        session_dir / "harness_runs" / "scenario" / "eval_log.json",
+        session_dir / "scenario" / "eval_log.json",
+    ]
+    log_path = next((path for path in log_candidates if path.exists()), None)
+    policy_exists = bool(policy_path and policy_path.exists())
+    if log_path is None:
+        return {
+            "validated": None,
+            "converged": None,
+            "iterations": None,
+            "loss": None,
+            "summary": (
+                "Policy file exists, but no Stage 3 eval_log.json was found."
+                if policy_exists
+                else "No generated policy file or Stage 3 eval_log.json is registered."
+            ),
+        }
+    try:
+        data = json.loads(log_path.read_text())
+    except Exception as exc:
+        return {
+            "validated": None,
+            "converged": None,
+            "iterations": None,
+            "loss": None,
+            "summary": f"Could not read Stage 3 eval log: {exc}",
+        }
+    converged = bool(data.get("converged"))
+    iterations = data.get("iterations")
+    loss = data.get("final_loss")
+    checks_total = data.get("checks_total")
+    error = str(data.get("error") or "").strip()
+    validated = bool(policy_exists and converged and loss == 0)
+    if validated:
+        summary = (
+            f"Candidate passed all {checks_total} recorded checks"
+            if checks_total is not None
+            else "Candidate passed all recorded checks"
+        )
+        if iterations is not None:
+            summary += f" in {iterations} iteration(s)"
+        summary += "."
+    elif error:
+        summary = f"Stage 3 did not validate the candidate: {error}"
+    elif loss is not None:
+        summary = f"Stage 3 finished with loss={loss}; candidate is not fully validated."
+    else:
+        summary = "Stage 3 eval log exists, but validation status is unclear."
+    return {
+        "validated": validated,
+        "converged": converged,
+        "iterations": iterations if isinstance(iterations, int) else None,
+        "loss": loss if isinstance(loss, int) else None,
+        "summary": summary,
+    }
 
 
 def _redact_sensitive_input(raw: str) -> str:

@@ -65,6 +65,15 @@ class AgentState:
     latest_session_dir: str | None = None
     latest_schema_path: str | None = None
     latest_policy_path: str | None = None
+    latest_schema_exists: bool = False
+    latest_policy_exists: bool = False
+    latest_authoring_complete: bool = False
+    latest_authoring_approved: bool | None = None
+    latest_candidate_validated: bool | None = None
+    latest_synthesis_converged: bool | None = None
+    latest_synthesis_iterations: int | None = None
+    latest_synthesis_loss: int | None = None
+    latest_status_summary: str = ""
     provider: str = "codex"
     model: str = ""
     effort: str = "high"
@@ -165,6 +174,11 @@ Critical rules:
   users ask to inspect, export, copy, or retrieve generated artifacts or paths.
 - Use show_models when users ask what models are available, and set_provider
   when they ask to switch between Anthropic and Codex.
+- Use the current state fields to answer workflow-status questions. If
+  latest_authoring_complete is true and latest_candidate_validated is true,
+  you may say the generated candidate passed the recorded verification checks.
+  If latest_policy_exists/latest_schema_exists are true, you may say those files
+  exist and can be shown, copied, or exported.
 - Keep authoring context clean: chat history is not policy input unless the user
   explicitly appends requirements to the draft.
 """
