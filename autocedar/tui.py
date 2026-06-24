@@ -85,6 +85,7 @@ COMMANDS = {
     "draft",
     "effort",
     "exit",
+    "export",
     "help",
     "model",
     "models",
@@ -117,6 +118,7 @@ SLASH_COMMAND_DESCRIPTIONS = {
     "/schema": "show latest or provided Cedar schema",
     "/policy": "show latest or provided Cedar policy",
     "/copy": "copy text or artifact paths",
+    "/export": "export latest schema, policy, and transcript to a folder",
     "/save": "save the current draft",
     "/clear": "clear transcript or draft",
     "/new": "clear the current draft",
@@ -171,6 +173,7 @@ Slash shortcuts are also available:
   [#f0c678]/schema[/] [PATH]         show latest or provided Cedar schema
   [#f0c678]/policy[/] [PATH]         show latest or provided Cedar policy
   [#f0c678]/copy[/] last|transcript|session|schema|policy|draft [path] copy text or artifact path
+  [#f0c678]/export[/] [DIR]          write schema, policy, transcript, and session path to a folder
   [#f0c678]/save[/] [PATH]           save the current draft
   [#f0c678]/new[/]                   clear the draft
   [#f0c678]/clear[/] [draft|transcript] clear transcript, or clear the draft explicitly
@@ -228,6 +231,7 @@ COMMAND_RAIL = """\
 [#f0c678]/artifacts[/]
 [#f0c678]/schema[/]
 [#f0c678]/policy[/]
+[#f0c678]/export[/]
 [#f0c678]/copy[/] session
 [#f0c678]/copy[/] last
 [#f0c678]/copy[/] transcript
@@ -1068,6 +1072,8 @@ class AutoCedarApp(App[None]):
                 target=args[0],
                 mode=args[1] if len(args) > 1 else None,
             )
+        if command == "export":
+            return AgentAction(kind="export_artifacts", path=str(args[0]) if args else None)
         if command == "save":
             return AgentAction(kind="save_draft", path=str(args[0]) if args else None)
         if command in {"quit", "exit"}:
@@ -1186,6 +1192,8 @@ class AutoCedarApp(App[None]):
                 self._show_artifacts()
             elif action.kind == "show_models":
                 self._show_models()
+            elif action.kind == "export_artifacts":
+                self._export_artifacts(Path(action.path) if action.path else None)
             elif action.kind == "copy":
                 args = [action.target or ""]
                 if action.mode:
@@ -1566,7 +1574,7 @@ class AutoCedarApp(App[None]):
             lines.append(f"[bold {AMBER}]{label}[/]: {escape(value)}")
         lines.extend([
             "",
-            f"[dim {MUTED}]Use /schema, /policy, /copy session, /copy schema path, or /copy policy path.[/]",
+            f"[dim {MUTED}]Use /schema, /policy, /export, /copy schema path, or /copy policy path.[/]",
         ])
         self._write(
             Panel(
@@ -1650,6 +1658,61 @@ class AutoCedarApp(App[None]):
             self._copy_text(candidate.read_text(), label=str(candidate))
             return
         self._copy_text(" ".join(args), label="text")
+
+    def _export_artifacts(self, export_dir: Path | None = None) -> None:
+        target_dir = export_dir or Path("autocedar-export")
+        target_dir.mkdir(parents=True, exist_ok=True)
+
+        copied: list[tuple[str, Path]] = []
+        missing: list[str] = []
+
+        def copy_artifact(label: str, source: Path | None, filename: str) -> None:
+            if source is None:
+                missing.append(label)
+                return
+            if not source.exists():
+                missing.append(f"{label} ({source})")
+                return
+            destination = target_dir / filename
+            shutil.copyfile(source, destination)
+            copied.append((label, destination))
+
+        copy_artifact("schema", self.latest_schema_path, "schema.cedarschema")
+        copy_artifact("policy", self.latest_policy_path, "policy_store.cedar")
+
+        transcript_path = target_dir / "transcript.txt"
+        transcript_path.write_text("\n".join(self.copyable_transcript).strip() + "\n")
+        copied.append(("transcript", transcript_path))
+
+        artifacts_path = target_dir / "artifacts.txt"
+        artifacts_path.write_text(
+            "\n".join([
+                f"session={self.latest_session_dir or ''}",
+                f"schema={self.latest_schema_path or ''}",
+                f"policy={self.latest_policy_path or ''}",
+                f"export={target_dir.resolve()}",
+            ])
+            + "\n",
+        )
+        copied.append(("artifact index", artifacts_path))
+
+        lines = [f"[bold {GREEN}]Exported artifacts to:[/] {escape(str(target_dir.resolve()))}", ""]
+        for label, path in copied:
+            lines.append(f"[bold {AMBER}]{escape(label)}[/]: {escape(str(path))}")
+        if missing:
+            lines.extend(["", f"[dim {MUTED}]Missing: {escape(', '.join(missing))}[/]"])
+        lines.extend([
+            "",
+            f"[dim {MUTED}]Open these files directly from your terminal/editor, or copy the folder path with /copy path {escape(str(target_dir.resolve()))}.[/]",
+        ])
+        self._write(
+            Panel(
+                "\n".join(lines),
+                title=f"[bold {COPPER}]Export complete[/]",
+                border_style=TEAL,
+                padding=(1, 2),
+            ),
+        )
 
     def _copy_text(self, text: str, *, label: str) -> None:
         if not text:
@@ -1935,15 +1998,36 @@ class AutoCedarApp(App[None]):
             )
             lines = [
                 f"[bold {GREEN}]Authoring complete.[/]",
-                f"session:   {result.session_dir}",
-                f"approved:  {result.final_user_approved}",
+                f"[bold {AMBER}]session[/]:   {escape(str(result.session_dir))}",
+                f"[bold {AMBER}]schema[/]:    {escape(str(self.latest_schema_path or '(not available)'))}",
+                f"[bold {AMBER}]policy[/]:    {escape(str(self.latest_policy_path or '(not available)'))}",
+                f"[bold {AMBER}]approved[/]:  {result.final_user_approved}",
             ]
-            if result.candidate_path:
-                lines.append(f"candidate: {result.candidate_path}")
             if result.notes:
-                lines.append("notes:")
-                lines.extend(f"  - {note}" for note in result.notes)
-            self.call_from_thread(self._write, "\n".join(lines))
+                lines.append("")
+                lines.append("[bold]notes:[/]")
+                lines.extend(f"  - {escape(note)}" for note in result.notes)
+            lines.extend([
+                "",
+                "[bold]Useful commands:[/]",
+                "  /schema              show generated schema",
+                "  /policy              show generated policy",
+                "  /artifacts           show all result paths",
+                "  /export              write schema/policy/transcript to ./autocedar-export",
+                "  /copy schema path    copy schema path",
+                "  /copy policy path    copy policy path",
+                "  /copy schema         copy schema text when clipboard is available",
+                "  /copy policy         copy policy text when clipboard is available",
+            ])
+            self.call_from_thread(
+                self._write,
+                Panel(
+                    "\n".join(lines),
+                    title=f"[bold {COPPER}]Authoring result[/]",
+                    border_style=GREEN,
+                    padding=(1, 2),
+                ),
+            )
         except Exception as exc:
             self.call_from_thread(
                 self._write,

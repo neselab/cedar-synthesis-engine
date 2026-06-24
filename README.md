@@ -852,6 +852,7 @@ Slash shortcuts are available for repeatable control:
 | `/copy session` | Copy the latest authoring session path to the system clipboard when supported. |
 | `/copy schema [path]` | Copy the latest schema text, or use `/copy schema path` to copy its path. |
 | `/copy policy [path]` | Copy the latest policy text, or use `/copy policy path` to copy its path. |
+| `/export [DIR]` | Write the latest schema, policy, transcript, and artifact index to a normal folder, defaulting to `autocedar-export/`. |
 | `/save [PATH]` | Save the draft, defaulting to `autocedar-spec.md`. |
 | `/new` | Clear the draft and leave drafting mode. |
 | `/author [SPEC] --out DIR [--schema PATH] [--model MODEL] [--effort high]` | Run HITL authoring from a spec file, or from the current draft when no spec is supplied. |
@@ -935,7 +936,7 @@ Authoring writes session artifacts under the `--out` directory, usually
 | --- | --- |
 | Chat says auth is not configured | Default path: run `codex login`, then `autocedar doctor`. Explicit Anthropic path: run `autocedar apikey`, use `/apikey` in the TUI, or export `ANTHROPIC_API_KEY`. |
 | API key works in shell but not TUI | This applies only after `/provider anthropic`. Run `autocedar doctor` to confirm what AutoCedar sees. Shell env wins first; otherwise the saved AutoCedar user config key wins over a stale project `.env` key. |
-| Cannot select/copy from the TUI | Textual full-screen apps can intercept mouse selection. Use `/copy last`, `/copy transcript`, `/copy session`, `/copy schema path`, `/copy policy path`, `/copy schema`, or `/copy policy`. Some terminals also allow mouse selection while holding Shift. If your terminal/container has no clipboard command, AutoCedar shows a copy fallback panel for manual selection. |
+| Cannot select/copy from the TUI | Textual full-screen apps can intercept mouse selection. Use `/export` for the most reliable path: it writes `schema.cedarschema`, `policy_store.cedar`, `transcript.txt`, and `artifacts.txt` to `autocedar-export/`. Clipboard shortcuts are also available with `/copy last`, `/copy transcript`, `/copy session`, `/copy schema path`, `/copy policy path`, `/copy schema`, or `/copy policy`. Some terminals allow mouse selection while holding Shift. |
 | Verification says Cedar is missing | Set `CEDAR=/path/to/cedar` or install the Cedar CLI. |
 | Verification says CVC5 is missing | Install CVC5, confirm `cvc5 --version` works, then set `CVC5=$(command -v cvc5)` in `.env` if needed. |
 | `cedar symcc` is unknown or says it was built without `analyze` | Reinstall Cedar with `cargo install cedar-policy-cli --locked --version 4.10.0 --features analyze --force`, then confirm `cedar symcc --help \| grep principal-type` prints a line. |

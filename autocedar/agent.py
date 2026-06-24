@@ -34,6 +34,7 @@ AgentActionKind = Literal[
     "show_policy",
     "show_artifacts",
     "show_models",
+    "export_artifacts",
     "copy",
     "show_settings",
     "set_provider",
@@ -160,8 +161,8 @@ Critical rules:
 - If the user asks to author the current draft, choose author_current_draft.
 - If the user asks what to do next and a draft exists, respond concisely that
   they can author the current draft or save it first.
-- Use show_schema, show_policy, show_artifacts, or copy when users ask to inspect
-  generated artifacts or paths.
+- Use show_schema, show_policy, show_artifacts, export_artifacts, or copy when
+  users ask to inspect, export, copy, or retrieve generated artifacts or paths.
 - Use show_models when users ask what models are available, and set_provider
   when they ask to switch between Anthropic and Codex.
 - Keep authoring context clean: chat history is not policy input unless the user

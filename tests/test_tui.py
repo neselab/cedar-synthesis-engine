@@ -95,10 +95,12 @@ def test_setup_and_doctor_are_discoverable_in_tui_help() -> None:
     assert "doctor" in COMMANDS
     assert "provider" in COMMANDS
     assert "models" in COMMANDS
+    assert "export" in COMMANDS
     assert "/setup" in HELP_TEXT
     assert "/doctor" in HELP_TEXT
     assert "/provider" in HELP_TEXT
     assert "/models" in HELP_TEXT
+    assert "/export" in HELP_TEXT
 
 
 def test_tui_reviewer_property_counter_resets_after_schema_stage() -> None:
@@ -893,6 +895,34 @@ def test_tui_copy_session_uses_clipboard_helper(
 
     assert copied == [str(tmp_path / "session")]
     assert any("Copied session path" in message for message in messages)
+
+
+def test_tui_export_artifacts_writes_stable_files(tmp_path: Path) -> None:
+    app = AutoCedarApp()
+    schema = tmp_path / "run" / "stage1" / "final_schema.cedarschema"
+    policy = tmp_path / "run" / "stage3" / "final_candidate.cedar"
+    schema.parent.mkdir(parents=True)
+    policy.parent.mkdir(parents=True)
+    schema.write_text("entity User;\n")
+    policy.write_text("permit(principal, action, resource);\n")
+    app.latest_session_dir = tmp_path / "run"
+    app.latest_schema_path = schema
+    app.latest_policy_path = policy
+    app.copyable_transcript = ["you > author this", "autocedar > Authoring complete."]
+    app._write = lambda content: None  # type: ignore[method-assign]
+
+    export_dir = tmp_path / "exported"
+    app._handle_command_input(f"/export {export_dir}")
+
+    assert (export_dir / "schema.cedarschema").read_text() == "entity User;\n"
+    assert (export_dir / "policy_store.cedar").read_text() == (
+        "permit(principal, action, resource);\n"
+    )
+    assert "author this" in (export_dir / "transcript.txt").read_text()
+    index = (export_dir / "artifacts.txt").read_text()
+    assert f"session={tmp_path / 'run'}" in index
+    assert f"schema={schema}" in index
+    assert f"policy={policy}" in index
 
 
 def test_tui_copy_last_and_transcript_use_plain_text(
