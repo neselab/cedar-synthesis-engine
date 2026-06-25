@@ -21,6 +21,7 @@ def test_doctor_reports_ready_toolchain(
 
     monkeypatch.setattr(doctor, "CEDAR_PATH", str(cedar))
     monkeypatch.setattr(doctor, "CVC5_PATH", str(cvc5))
+    monkeypatch.setenv("AUTOCEDAR_PROVIDER", "anthropic")
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
 
     def fake_run_text(cmd: list[str], timeout: int = 10) -> doctor._RunResult:

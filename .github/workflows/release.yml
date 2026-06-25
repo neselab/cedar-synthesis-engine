@@ -22,8 +22,19 @@ jobs:
 
       - uses: astral-sh/setup-uv@v5
 
+      - uses: dtolnay/rust-toolchain@stable
+
       - name: Install dependencies
         run: uv sync --group dev
+
+      - name: Install verifier toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends cvc5
+          uv run autocedar setup --yes --skip-cvc5
+          ~/.cargo/bin/cedar --version
+          cvc5 --version
+          ~/.cargo/bin/cedar symcc --help | grep -- --principal-type
 
       - name: Run tests
         run: uv run pytest
