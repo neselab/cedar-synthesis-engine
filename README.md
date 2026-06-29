@@ -271,20 +271,26 @@ human review when it proposes schema/property atoms.
 ```mermaid
 graph LR
     A["User in autocedar TUI<br/>or autocedar author"] --> B["Policy spec<br/>plain English"]
-    B --> C{"Schema supplied?"}
-    C -- "No" --> D["Stage 1<br/>LLM proposes schema atoms"]
+    B --> B0["Stage 0<br/>source DAG + local context packets"]
+    B0 --> C{"Schema supplied?"}
+    C -- "No" --> D["Stage 1<br/>LLM proposes schema atoms from bounded source packets"]
     D --> E["HITL review<br/>approve / reject / edit / question"]
     E --> F["Composed Cedar schema"]
     C -- "Yes" --> G["Use supplied schema<br/>skip Stage 1"]
-    F --> H["Stage 2<br/>LLM proposes property atoms"]
+    F --> H["Stage 2<br/>LLM proposes one property slice at a time"]
     G --> H
     H --> I["Symbolic checks<br/>cedar symcc + CVC5"]
     I --> J["HITL review<br/>approve / reject / edit / question"]
-    J --> K["Compiled harness<br/>verification_plan.py + references/*.cedar"]
-    K --> L["Stage 3 synthesis<br/>v1 CEGIS harness"]
+    J --> R{"Rejected?"}
+    R -- "No" --> K["Approved target updated"]
+    R -- "Yes" --> RP["Model-planned repair<br/>current property / prior property / schema / skip / clarify"]
+    RP --> H
+    K --> IC["Incremental candidate check<br/>against approved atoms so far"]
+    IC --> H
+    K --> L["Final Stage 3 synthesis<br/>v1 CEGIS harness"]
     L --> M["candidate.cedar"]
     M --> N{"All checks pass?"}
-    N -- "No, counterexamples" --> L
+    N -- "No, verifier feedback" --> L
     N -- "Yes" --> O["Verified policy"]
 ```
 
@@ -297,6 +303,7 @@ graph LR
 | `autocedar/cli.py` | Console entry point for `autocedar`, plus scriptable `author`, `verify`, and `synthesize` subcommands. |
 | `autocedar/pipeline.py` | End-to-end authoring pipeline: schema atoms, property atoms, review, harness compile, Stage 3 synthesis hook. |
 | `autocedar/llm.py` | Provider-backed structured LLM calls for schema/property atomization and repair. |
+| `autocedar/source_doc.py` | Source-DAG and context-packet layer. It splits prose into source nodes, selects local context, tracks coverage, and writes source provenance. |
 | `autocedar/schema_atomizer.py` | Stage 1 schema atom proposal, composition, and schema validation helpers. |
 | `autocedar/property_atomizer.py` | Stage 2 property atom proposal from prose plus validated schema. |
 | `autocedar/ui/terminal.py` | HITL review loop for schema and property atoms. |
@@ -406,13 +413,35 @@ atom before you approve it. If you edit a property atom, symbolic checks are
 rerun after approval so stale verification results are not reused.
 
 After the schema is established, AutoCedar proposes Stage 2 property atoms one
-at a time from the spec plus schema. Each proposal is symbolically checked and
-sent through HITL review before AutoCedar asks the model for the next property.
-The approved atoms become the formal verification harness:
+at a time from a bounded source packet plus the current schema and approved
+target. It does not ask the model to reprocess the whole spec for every
+decision. Each source packet records the current source node, nearby clauses,
+related definitions, approved atoms, and prior review history.
+
+Each property proposal is symbolically checked and sent through HITL review
+before AutoCedar asks the model for the next property. The approved atoms become
+the formal verification harness:
 
 - `verification_plan.py` — check descriptors such as `implies`,
   `always-denies-liveness`, and `never-errors`
 - `references/*.cedar` — reviewed ceiling/floor reference policies
+
+If you reject a property atom, AutoCedar now asks the model for a structured
+repair plan instead of guessing from keywords in your rejection text. The model
+must choose one of these actions:
+
+| Repair action | Meaning |
+| --- | --- |
+| `repair_current_property` | The proposed atom is the right intent slice, but its Cedar, direction, or scope needs repair. |
+| `repair_prior_property` | The new atom is valid, but an earlier approved property is too narrow, too broad, or should be merged/revised. |
+| `repair_schema` | The current schema cannot express the accepted intent, so AutoCedar proposes and reviews schema-repair atoms before continuing. |
+| `reject_current` | The atom is not wanted intent and should be skipped. |
+| `ask_user_clarification` | The source packet and review reason are not enough to decide safely. |
+
+After each approved property atom, AutoCedar compiles the approved target so far
+and runs an incremental candidate check. This is an early diagnostic pass: it
+does not replace final Stage 3 synthesis, but it surfaces candidate/schema/atom
+conflicts while the intent target is still being built.
 
 ### Step 5: Synthesize and verify
 
@@ -925,12 +954,21 @@ Authoring writes session artifacts under the `--out` directory, usually
 
 | File | Meaning |
 | --- | --- |
-| `schema.cedarschema` | Composed or supplied Cedar schema. |
-| `policy_spec.md` | Saved prose requirements. |
-| `verification_plan.py` | Compiled checks from approved property atoms. |
-| `references/*.cedar` | Human-reviewed floor/ceiling reference policies. |
-| `candidate.cedar` | Synthesized candidate policy produced by Stage 3. |
-| `corpus.jsonl` | Attribution, review decisions, symbolic logs, and iteration records. |
+| `stage0/source_index.json` | Source nodes, line ranges, headings, and paragraph/list structure extracted from the input spec. |
+| `stage0/context_packets/*.json` | Bounded schema/property context packets shown to the model for each atom proposal. |
+| `stage0/intent_dag.json` | Source DAG plus links from source nodes to schema atoms, property atoms, and schema gaps. |
+| `stage0/coverage_ledger.json` | Which source nodes are covered, still open, or marked non-authorization intent. |
+| `stage1/final_schema.cedarschema` | Composed or supplied Cedar schema. |
+| `stage1_5/schema_gaps.json` | Schema gaps selected by the structured repair planner during property review. |
+| `stage1_5/schema_gap_repairs.json` | Schema atoms proposed/reviewed to repair those gaps. |
+| `stage2/proposed_atoms.json` | Property atoms proposed during Stage 2. |
+| `stage2/decisions.json` | HITL decisions, including rejected-property repair history. |
+| `stage2/repair_plans.json` | Structured model repair plans for rejected property atoms. |
+| `stage2/incremental_candidates.json` | Candidate-check results after each approved property atom. |
+| `stage2/final_plan/verification_plan.py` | Compiled checks from approved property atoms. |
+| `stage2/final_plan/references/*.cedar` | Human-reviewed floor/ceiling/disjointness reference policies. |
+| `stage3/final_candidate.cedar` | Final synthesized candidate policy produced by Stage 3. |
+| `harness_runs/scenario/candidate.cedar` | Final harness candidate and eval log from the packaged CEGIS run. |
 
 ### Troubleshooting
 
