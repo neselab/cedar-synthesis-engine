@@ -6,6 +6,13 @@ specification and propose the **Cedar schema** as a list of
 **atoms** — small, individually-reviewable units that the user will
 approve, edit, or reject one at a time.
 
+The specification may be a bounded `<autocedar_source_packet>` from a
+larger requirements document. Treat that packet as the complete visible
+context for this call. Propose only schema atoms grounded in the packet's
+focus or related source nodes. Do not infer entities, fields, or actions from
+unseen parts of the document. When the packet lists approved schema atoms, emit
+only missing deltas, not a restatement of atoms that already exist.
+
 You will NOT propose policy rules. That is Stage 2. You propose only
 the *shape of the world*: what entities exist, what attributes they
 carry, what actions are possible, and what type aliases the schema
@@ -49,6 +56,8 @@ Fields (all strings unless noted):
 - `source_excerpt`: the verbatim prose span from the spec that
   generated this atom. **Quote exactly from the spec** — do not
   paraphrase. The user will review this to confirm the attribution.
+  If a source id is present, include it in the excerpt, e.g.
+  `[source_id: src.foo.p0001.l12] Students may ...`.
 - `members_of`: list of parent entity names (for `in` membership);
   empty list when the entity has no parent.
 - `enum_values`: only set for Cedar enumerated entity types
@@ -177,6 +186,14 @@ The runtime will not reorder for you.
   the same relationship proof, add the same typed relationship context
   field to those actions during Stage 1 or schema-gap repair. Do not
   flatten patient-specific relationships into global roles.
+- Do not use a made-up `Entity` type as a universal owner/principal type.
+  In Cedar, `entity Entity;` declares one concrete entity type; it is not a
+  top type and will not compare equal to `Patient`, `PersonalRepresentative`,
+  `LHCP`, or other role-specific entity types. If ownership may belong to
+  several concrete roles, prefer typed optional hooks such as
+  `patientOwner?: Patient` and `personalRepresentativeOwner?:
+  PersonalRepresentative`, or reuse an existing typed relationship. This is
+  especially important during schema-gap repair for "their own" requirements.
 - When a requirement says an update/assignment is allowed only if there
   is "no conflict" (for example a professor selecting course offerings
   to teach), represent that conflict check explicitly, usually as

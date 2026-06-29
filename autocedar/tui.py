@@ -2112,22 +2112,6 @@ class AutoCedarApp(App[None]):
                     prior_atoms,
                 )
 
-            def property_critic(
-                text: str,
-                schema_path: str,
-                atom: Any,
-                prior_atoms: list[Any],
-                prior_decisions: list[Any],
-            ) -> Any:
-                self.call_from_thread(self._start_activity, "property decomposition review")
-                return llm.critique_property_atom(
-                    text,
-                    Path(schema_path).read_text(),
-                    atom,
-                    prior_atoms=prior_atoms,
-                    prior_decisions=prior_decisions,
-                )
-
             reviewer = TuiAtomReviewer(self)
 
             def review_atom(atom: Any) -> Any:
@@ -2165,7 +2149,6 @@ class AutoCedarApp(App[None]):
                 propose_property_atom=property_proposer,
                 repair_schema_atom=schema_repairer,
                 fix_schema=schema_fixer,
-                critique_property_atom=property_critic,
                 repair_property_atom=property_repairer,
                 synthesize=synthesize_with_status,
                 schema_path_override=str(options.schema) if options.schema else None,

@@ -1,10 +1,9 @@
 """Small Stage 2 dependency graph artifacts.
 
 The graph is intentionally lightweight: it is not another planner. It records
-the property atoms that survived decomposition review, the actions/types they
-touch, and the critic decisions that shaped the plan. This gives experimenters
-an auditable "blueprint" layer analogous to LEAP's proof-plan structure without
-changing the Cedar synthesis backend.
+the approved property atoms, the actions/types they touch, and explicit links
+between those formal intent units. This gives experimenters an auditable
+"blueprint" layer without changing the Cedar synthesis backend.
 """
 
 from __future__ import annotations
@@ -16,7 +15,6 @@ from autocedar.atoms import PropertyAtom
 
 def build_property_intent_graph(
     properties: list[PropertyAtom],
-    critic_reviews: list[dict[str, Any]],
 ) -> dict[str, Any]:
     """Return a compact graph of Stage 2 properties and dependencies."""
 
@@ -64,33 +62,11 @@ def build_property_intent_graph(
             add_node(disjoint_id, "property_ref", name=atom.disjoint_with)
             edges.append({"source": atom_id, "target": disjoint_id, "type": "disjoint_with"})
 
-    for index, review in enumerate(critic_reviews, start=1):
-        atom_name = str(review.get("atom_name", "unknown"))
-        review_id = f"critic:{index}:{atom_name}"
-        add_node(
-            review_id,
-            "critic_review",
-            atom_name=atom_name,
-            decision=review.get("decision", ""),
-            reason=review.get("reason", ""),
-            tags=review.get("tags", []),
-        )
-        edges.append(
-            {
-                "source": review_id,
-                "target": f"property:{atom_name}",
-                "type": "reviews",
-            },
-        )
-
     return {
         "schema_version": 1,
         "nodes": list(nodes.values()),
         "edges": edges,
         "summary": {
             "properties": len(properties),
-            "critic_reviews": len(critic_reviews),
-            "critic_rejects": sum(1 for r in critic_reviews if r.get("decision") == "reject"),
-            "critic_repairs": sum(1 for r in critic_reviews if r.get("decision") == "repair"),
         },
     }

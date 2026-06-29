@@ -30,7 +30,6 @@ from autocedar.llm import (
     DEFAULT_MODEL,
     LLMClient,
     PropertyAtomsResponse,
-    PropertyCritiqueResponse,
     SchemaAtomsResponse,
     SchemaFixResponse,
     _LLMActionAtom,
@@ -578,10 +577,10 @@ def test_property_coverage_instruction_audits_scoped_floors_before_stopping() ->
         plain_english_summary="Some other safety condition.",
         source_excerpt="cannot...",
         constraint_type="ceiling",
-        action="recordGrade",
+        action="selectCourseOfferingToTeach",
         principal_types=["Professor"],
         resource_types=["CourseOffering"],
-        reference_cedar='permit (principal, action == Action::"recordGrade", resource);',
+        reference_cedar='permit (principal, action == Action::"selectCourseOfferingToTeach", resource);',
     )
 
     instruction = _property_coverage_instruction([floor, ceiling])
@@ -592,6 +591,35 @@ def test_property_coverage_instruction_audits_scoped_floors_before_stopping() ->
     assert "upcoming/not-completed semester boundaries" in instruction
     assert "A same-action ceiling for only part of the floor body is not enough" in instruction
     assert "no same-action ceiling/disjointness" in instruction
+    assert "bounded allowed slices" in instruction
+    assert "team membership" in instruction
+    assert "same-action ceiling/disjointness contains that same boundary" in instruction
+    assert "union of approved slices" in instruction
+
+
+def test_property_coverage_instruction_does_not_treat_positive_grants_as_floor_only() -> None:
+    floor = PropertyAtom(
+        name="doctor_read_care_team_floor",
+        rationale="doctor care-team read workflow",
+        plain_english_summary="Doctors can read records for patients on their care team.",
+        source_excerpt="Doctors can read records for patients on their care team.",
+        constraint_type="floor",
+        action="readRecord",
+        principal_types=["Doctor"],
+        resource_types=["Record"],
+        reference_cedar=(
+            'permit (principal is Doctor, action == Action::"readRecord", resource is Record) '
+            "when { resource.careTeam.contains(principal) };"
+        ),
+    )
+
+    instruction = _property_coverage_instruction([floor])
+
+    assert "Approved floors exist without any same-action ceiling/disjointness" in instruction
+    assert "doctor_read_care_team_floor" in instruction
+    assert "bounded-grant ceiling/safety side" in instruction
+    assert "union of the approved allowed slices" in instruction
+    assert "do not emit a narrow ceiling" in instruction
 
 
 def test_propose_property_atom_returns_none_for_completion() -> None:
@@ -620,77 +648,6 @@ def test_codex_property_proposal_uses_low_effort() -> None:
     )
 
     assert fake.messages.last_kwargs["output_config"]["effort"] == "low"
-
-
-def test_property_critic_includes_schema_history_and_proposed_atom() -> None:
-    fake = _FakeAnthropic(
-        _make_response(
-            PropertyCritiqueResponse(
-                decision="repair",
-                reason="missing owner boundary",
-                tags=["too-broad"],
-            ),
-        ),
-    )
-    client = LLMClient(client=fake, provider="codex", model="gpt-5.5", effort="high")
-    prior = PropertyAtom(
-        name="owner_must_read",
-        rationale="floor",
-        plain_english_summary="Owners must be allowed to read.",
-        source_excerpt="Owners can read.",
-        constraint_type="floor",
-        action="read",
-        principal_types=["User"],
-        resource_types=["Resource"],
-        reference_cedar='permit (principal, action == Action::"read", resource);',
-    )
-    proposed = PropertyAtom(
-        name="read_too_broad",
-        rationale="missing owner boundary",
-        plain_english_summary="Users may read resources.",
-        source_excerpt="Owners can read.",
-        constraint_type="floor",
-        action="read",
-        principal_types=["User"],
-        resource_types=["Resource"],
-        reference_cedar='permit (principal, action == Action::"read", resource);',
-    )
-    prior_decision = SimpleNamespace(
-        atom_name="schema_implied_read",
-        action="reject",
-        reason="schema-implied",
-        edit_delta={},
-    )
-
-    critique = client.critique_property_atom(
-        "Owners can read their own resources.",
-        "entity User;",
-        proposed,
-        prior_atoms=[prior],
-        prior_decisions=[prior_decision],
-    )
-
-    assert critique.decision == "repair"
-    assert critique.reason == "missing owner boundary"
-    assert critique.tags == ["too-broad"]
-
-    kwargs = fake.messages.last_kwargs
-    assert kwargs["output_format"] is PropertyCritiqueResponse
-    assert kwargs["output_config"]["effort"] == "low"
-    system_text = "\n".join(block["text"] for block in kwargs["system"])
-    user_turn = kwargs["messages"][0]["content"]
-    assert "Stage 2 decomposition critic" in system_text
-    assert "schema-implied" in system_text
-    assert "too broad" in system_text
-    assert "schema-gap" in system_text
-    assert "safe-complement permit" in system_text
-    assert "disjoint_target_body" in system_text
-    assert "not a claim that the complement must be permitted" in user_turn
-    assert "not schema-expressible" in user_turn
-    assert "```cedarschema\nentity User;\n```" in user_turn
-    assert "owner_must_read" in user_turn
-    assert "schema_implied_read" in user_turn
-    assert "read_too_broad" in user_turn
 
 
 def test_disjointness_translation_canonicalizes_forbid_reference() -> None:
@@ -800,6 +757,14 @@ def test_property_atomization_prompt_covers_closed_periods_and_negated_has_trap(
     assert "eligible && noConflict && upcoming && notCompleted" in system_text
     assert "Ceilings are not optional when the prose names necessary conditions" in system_text
     assert "Before returning an empty `atoms` list" in system_text
+    assert "Positive conditional permissions are usually bounded grants" in system_text
+    assert "Doctors can read records for patients on their care team" in normalized_system_text
+    assert "floor-only" in system_text
+    assert "reviewer should eventually see both sides of the grant" in system_text
+    assert "Primitive same-action ceilings compose as intersections" in system_text
+    assert "union of all approved slices" in system_text
+    assert "floor-only only" in system_text
+    assert "if it only gives a sufficient condition, use a floor" not in system_text
 
 
 def test_property_atomization_prompt_requires_action_context_conditions() -> None:

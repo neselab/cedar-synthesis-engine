@@ -109,6 +109,8 @@ class Session:
         self.base = Path(base_dir) / session_id
         self.base.mkdir(parents=True, exist_ok=True)
         (self.base / "input").mkdir(exist_ok=True)
+        (self.base / "stage0").mkdir(exist_ok=True)
+        (self.base / "stage0" / "context_packets").mkdir(exist_ok=True)
         (self.base / "stage1").mkdir(exist_ok=True)
         (self.base / "stage1_5").mkdir(exist_ok=True)
         (self.base / "stage1_75").mkdir(exist_ok=True)
@@ -127,6 +129,48 @@ class Session:
     def write_input_spec(self, spec_text: str, filename: str = "policy_spec.md") -> None:
         (self.base / "input" / filename).write_text(spec_text)
         self._event("input.spec_written", {"filename": filename, "size": len(spec_text)})
+
+    # -----------------------------------------------------------------
+    # Stage 0 — source map / intent DAG substrate.
+    # -----------------------------------------------------------------
+
+    def write_stage0_source_index(self, source_index: dict[str, Any]) -> None:
+        path = self.base / "stage0" / "source_index.json"
+        path.write_text(json.dumps(source_index, indent=2))
+        summary = source_index.get("summary", {})
+        self._event("stage0.source_index", summary if isinstance(summary, dict) else {})
+
+    def write_stage0_intent_dag(self, intent_dag: dict[str, Any]) -> None:
+        path = self.base / "stage0" / "intent_dag.json"
+        path.write_text(json.dumps(intent_dag, indent=2))
+        summary = intent_dag.get("summary", {})
+        self._event("stage0.intent_dag", summary if isinstance(summary, dict) else {})
+
+    def write_stage0_context_packet(self, packet_id: str, packet: dict[str, Any]) -> None:
+        safe_id = "".join(ch if ch.isalnum() or ch in {"-", "_", "."} else "_" for ch in packet_id)
+        path = self.base / "stage0" / "context_packets" / f"{safe_id}.json"
+        path.write_text(json.dumps(packet, indent=2))
+        self._event(
+            "stage0.context_packet",
+            {
+                "packet_id": packet_id,
+                "kind": packet.get("kind", ""),
+                "focus_node_ids": packet.get("focus_node_ids", []),
+            },
+        )
+
+    def write_stage0_coverage_ledger(self, coverage: dict[str, Any]) -> None:
+        path = self.base / "stage0" / "coverage_ledger.json"
+        path.write_text(json.dumps(coverage, indent=2))
+        self._event(
+            "stage0.coverage_ledger",
+            {
+                "open_property_nodes": len(coverage.get("open_property_node_ids", [])),
+                "completed_property_nodes": len(
+                    coverage.get("completed_property_node_ids", []),
+                ),
+            },
+        )
 
     # -----------------------------------------------------------------
     # Stage 1.
@@ -198,11 +242,6 @@ class Session:
         path.write_text(json.dumps([to_dict(d) for d in decisions], indent=2))
         self._event("stage2.decisions_logged", {"count": len(decisions)})
 
-    def write_stage2_critic_reviews(self, reviews: list[dict[str, Any]]) -> None:
-        path = self.base / "stage2" / "critic_reviews.json"
-        path.write_text(json.dumps(reviews, indent=2))
-        self._event("stage2.critic_reviews", {"count": len(reviews)})
-
     def write_stage2_intent_graph(self, graph: dict[str, Any]) -> None:
         path = self.base / "stage2" / "intent_graph.json"
         path.write_text(json.dumps(graph, indent=2))
@@ -225,6 +264,18 @@ class Session:
             "stage2.adversarial_examples",
             {"atom_count": len(examples_per_atom)},
         )
+
+    def write_stage2_repair_plans(self, plans: list[dict[str, Any]]) -> None:
+        path = self.base / "stage2" / "repair_plans.json"
+        path.write_text(json.dumps(plans, indent=2))
+        self._event("stage2.repair_plans", {"count": len(plans)})
+
+    def write_stage2_incremental_candidates(
+        self, candidates: list[dict[str, Any]],
+    ) -> None:
+        path = self.base / "stage2" / "incremental_candidates.json"
+        path.write_text(json.dumps(candidates, indent=2))
+        self._event("stage2.incremental_candidates", {"count": len(candidates)})
 
     def write_stage2_final_plan(
         self, plan_py_text: str, references: dict[str, str],

@@ -169,6 +169,15 @@ def _build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Approve atoms without interactive review, for scripted runs.",
     )
+    author_p.add_argument(
+        "--max-schema-gap-repairs",
+        type=int,
+        default=None,
+        help=(
+            "Optional maximum Stage 2 schema-repair loops before stopping "
+            "(default: no cap)."
+        ),
+    )
     author_p.set_defaults(func=_cmd_author)
 
     verify_p = sub.add_parser(
@@ -345,13 +354,31 @@ def _cmd_author(args: argparse.Namespace) -> int:
             prior_atoms,
         )
 
-    def property_critic(text: str, schema_path: str, atom, prior_atoms, prior_decisions):
-        return llm.critique_property_atom(
-            text,
-            Path(schema_path).read_text(),
-            atom,
+    def property_repair_planner(
+        text: str,
+        schema_path: str,
+        current_atom,
+        decision,
+        prior_atoms,
+        schema_text: str,
+        symbolic_log,
+    ):
+        response = llm.plan_property_rejection(
+            current_atom=current_atom,
+            user_reason=decision.reason,
+            spec_text=text,
+            schema_text=schema_text,
             prior_atoms=prior_atoms,
-            prior_decisions=prior_decisions,
+            symbolic_log=symbolic_log,
+        )
+        from autocedar.pipeline import PropertyRepairPlan
+
+        return PropertyRepairPlan(
+            action=response.action,
+            target_atom=response.target_atom,
+            reason=response.reason,
+            repair_instruction=response.repair_instruction,
+            schema_gap_summary=response.schema_gap_summary,
         )
 
     def reviewer(atom):
@@ -373,7 +400,7 @@ def _cmd_author(args: argparse.Namespace) -> int:
         propose_property_atom=property_proposer,
         repair_schema_atom=schema_repairer,
         fix_schema=schema_fixer,
-        critique_property_atom=property_critic,
+        plan_property_repair=property_repair_planner,
         repair_property_atom=property_repairer,
         synthesize=make_harness_synthesizer(
             phase1_model=args.model,
@@ -381,6 +408,7 @@ def _cmd_author(args: argparse.Namespace) -> int:
             no_review=True,
         ),
         schema_path_override=args.schema,
+        max_schema_gap_repairs=getattr(args, "max_schema_gap_repairs", None),
     )
 
     print(f"session:   {result.session_dir}")

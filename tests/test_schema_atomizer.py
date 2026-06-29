@@ -131,6 +131,28 @@ def test_route_attribute_silently_drops_when_owner_missing() -> None:
     assert "Missing" not in draft.entities
 
 
+def test_route_attribute_rejects_entity_as_pseudo_top_type() -> None:
+    draft = SchemaDraft()
+    demographic = EntityAtom(
+        name="DemographicInformation",
+        rationale="...",
+        plain_english_summary="...",
+        source_excerpt="...",
+    )
+    owner = AttributeAtom(
+        name="DemographicInformation__owner",
+        rationale="...",
+        plain_english_summary="...",
+        source_excerpt="own demographic information",
+        on_entity="DemographicInformation",
+        field_name="owner",
+        cedar_type="Entity",
+    )
+    route_atom_into_draft(demographic, draft)
+    route_atom_into_draft(owner, draft)
+    assert "owner" not in draft.entities["DemographicInformation"].attributes
+
+
 def test_apply_schema_atoms_to_text_adds_attribute_to_bare_entity() -> None:
     schema = "entity Semester;\n"
     repaired = apply_schema_atoms_to_text(
@@ -230,6 +252,25 @@ def test_apply_schema_atoms_to_text_returns_none_for_missing_owner() -> None:
                 on_entity="Semester",
                 field_name="isCurrent",
                 cedar_type="Bool",
+            ),
+        ],
+    )
+
+    assert repaired is None
+
+
+def test_apply_schema_atoms_to_text_rejects_entity_as_pseudo_top_type() -> None:
+    repaired = apply_schema_atoms_to_text(
+        "entity DemographicInformation;\n",
+        [
+            AttributeAtom(
+                name="DemographicInformation__owner",
+                rationale="owner marker",
+                plain_english_summary="Owner marker.",
+                source_excerpt="their own demographic information",
+                on_entity="DemographicInformation",
+                field_name="owner",
+                cedar_type="Entity",
             ),
         ],
     )

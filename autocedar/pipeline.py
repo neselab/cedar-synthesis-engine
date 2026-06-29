@@ -13,11 +13,10 @@ from __future__ import annotations
 
 import datetime
 import os
-import re
 import shutil
 from dataclasses import dataclass, field, replace
 from pathlib import Path
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Literal, Optional
 
 from autocedar.atoms import (
     ActionAtom,
@@ -47,15 +46,23 @@ from autocedar.plan_verification import (
     symbolic_consistency_check,
 )
 from autocedar.property_elicitor import compile_plan, compile_plan_for_consistency
-from autocedar.property_critic import PropertyCritique, accept_property_atom
 from autocedar.intent_graph import build_property_intent_graph
 from autocedar.schema_atomizer import (
     apply_schema_atoms_to_text,
     cedar_validate_schema,
     compose_and_validate,
 )
+from autocedar.source_doc import (
+    attach_source_ids,
+    approved_target_spec,
+    build_coverage_ledger,
+    build_schema_packets,
+    build_source_intent_dag,
+    compile_source_document,
+    select_property_packet,
+    source_ids_from_text,
+)
 
-MAX_SCHEMA_GAP_REPAIRS = 6
 DEFAULT_MAX_PROPERTY_PROPOSALS = 128
 
 
@@ -76,11 +83,27 @@ PropertyProposer = Callable[
 # Stage 2 repair: propose one replacement after the user rejects a property atom.
 PropertyRepairer = Callable[[str, str, PropertyAtom, str, list[PropertyAtom]], Optional[PropertyAtom]]
 
-# Stage 2 decomposition critic: accept, request repair, or reject a proposed atom
-# before it reaches HITL review.
-PropertyCritic = Callable[
-    [str, str, PropertyAtom, list[PropertyAtom], list[AtomDecision]],
-    PropertyCritique,
+
+@dataclass
+class PropertyRepairPlan:
+    """Structured control decision for a rejected Stage 2 property atom."""
+
+    action: Literal[
+        "repair_current_property",
+        "repair_prior_property",
+        "repair_schema",
+        "reject_current",
+        "ask_user_clarification",
+    ]
+    reason: str
+    target_atom: str | None = None
+    repair_instruction: str = ""
+    schema_gap_summary: str = ""
+
+
+PropertyRepairPlanner = Callable[
+    [str, str, PropertyAtom, AtomDecision, list[PropertyAtom], str, list[str]],
+    PropertyRepairPlan,
 ]
 
 # Stage 1 repair: propose one replacement after the user rejects a schema atom.
@@ -114,18 +137,6 @@ def _stub_property_proposer(
     return None
 
 
-def _stub_property_critic(
-    spec_text: str,
-    schema_path: str,
-    atom: PropertyAtom,
-    prior_atoms: list[PropertyAtom],
-    prior_decisions: list[AtomDecision],
-) -> PropertyCritique:
-    """Default critic: no-op so tests/callers can opt in deliberately."""
-    _ = spec_text, schema_path, atom, prior_atoms, prior_decisions
-    return accept_property_atom()
-
-
 def _stub_auto_approve(atom: Any) -> AtomDecision:
     """Test helper: auto-approve with intent acknowledgement."""
     return AtomDecision(
@@ -133,6 +144,30 @@ def _stub_auto_approve(atom: Any) -> AtomDecision:
         action="approve",
         intent_acknowledged_by_user=True,
         symbolic_verified=getattr(atom, "symbolic_verified", False),
+    )
+
+
+def _default_property_repair_plan(
+    spec_text: str,
+    schema_path: str,
+    current_atom: PropertyAtom,
+    decision: AtomDecision,
+    prior_atoms: list[PropertyAtom],
+    schema_text: str,
+    symbolic_log: list[str],
+) -> PropertyRepairPlan:
+    """Fallback for tests that do not inject an LLM planner.
+
+    The real CLI always supplies an LLM-backed planner. This fallback does not
+    classify natural-language intent; it preserves the historical unit-test
+    contract that a rejected atom is repaired as the current atom.
+    """
+
+    _ = spec_text, schema_path, current_atom, prior_atoms, schema_text, symbolic_log
+    return PropertyRepairPlan(
+        action="repair_current_property",
+        reason=decision.reason or "Rejected during HITL property review",
+        repair_instruction=decision.reason or "Repair the current property atom.",
     )
 
 
@@ -163,6 +198,93 @@ class AuthorResult:
     notes: list[str] = field(default_factory=list)
 
 
+def _write_stage0_artifacts(
+    session: Session,
+    source_doc: Any,
+    schema_context_packets: list[Any],
+    property_context_packets: list[Any],
+    completed_property_node_ids: set[str],
+    schema_atoms: list[Any] | None = None,
+    property_atoms: list[PropertyAtom] | None = None,
+    schema_gaps: list[dict[str, Any]] | None = None,
+) -> None:
+    """Persist the source-grounded intent DAG and coverage ledger."""
+    session.write_stage0_intent_dag(
+        build_source_intent_dag(
+            source_doc,
+            schema_packets=schema_context_packets,
+            property_packets=property_context_packets,
+            schema_atoms=schema_atoms or [],
+            property_atoms=property_atoms or [],
+            schema_gaps=schema_gaps or [],
+        ),
+    )
+    session.write_stage0_coverage_ledger(
+        build_coverage_ledger(
+            source_doc,
+            completed_property_node_ids=completed_property_node_ids,
+            schema_packets=schema_context_packets,
+            property_packets=property_context_packets,
+        ),
+    )
+
+
+def _run_incremental_candidate_check(
+    *,
+    session: Session,
+    records: list[dict[str, Any]],
+    synthesize: Synthesizer,
+    spec_path: Path,
+    schema_text: str,
+    plan: VerificationPlanDraft,
+    approved_schema_atoms: list[Stage1AtomT],
+    score_candidate: Callable[[str], CriticScore],
+) -> None:
+    """Try an incremental candidate after each approved property update.
+
+    Approved atoms remain the source of truth. This check is only an early
+    diagnostic pass so verifier/synthesis failures surface while Stage 2 is
+    still collecting intent.
+    """
+    if not plan.properties:
+        return
+    record: dict[str, Any] = {
+        "approved_property_count": len(plan.properties),
+        "passed": False,
+        "candidate_path": "",
+        "error": "",
+    }
+    try:
+        compiled = compile_plan(plan)
+        incremental_dir = session.base / "stage2" / "incremental" / f"after_{len(plan.properties):04d}"
+        incremental_dir.mkdir(parents=True, exist_ok=True)
+        stage_spec_text = approved_target_spec(
+            original_spec_name=spec_path.name,
+            schema_atoms=approved_schema_atoms,
+            property_atoms=plan.properties,
+        )
+        scenario_dir = _materialize_scenario_dir(
+            session_dir=incremental_dir,
+            spec_text=stage_spec_text,
+            schema_text=schema_text,
+            plan_py=compiled.verification_plan_py,
+            references=compiled.references,
+        )
+        candidate_path = synthesize(scenario_dir)
+        candidate_text = candidate_path.read_text()
+        record.update(
+            {
+                "passed": True,
+                "candidate_path": str(candidate_path),
+                "critic_score": _critic_score_to_dict(score_candidate(candidate_text)),
+            },
+        )
+    except Exception as exc:  # diagnostic only; final synthesis still owns convergence.
+        record["error"] = str(exc)
+    records.append(record)
+    session.write_stage2_incremental_candidates(records)
+
+
 # ---------------------------------------------------------------------------
 # Top-level pipeline.
 # ---------------------------------------------------------------------------
@@ -176,7 +298,7 @@ def author(
     repair_schema_atom: SchemaAtomRepairer | None = None,
     fix_schema: SchemaFixer | None = None,
     propose_property_atom: PropertyProposer | None = None,
-    critique_property_atom: PropertyCritic | None = None,
+    plan_property_repair: PropertyRepairPlanner | None = None,
     repair_property_atom: PropertyRepairer | None = None,
     review_atom: AtomReviewer | None = None,
     synthesize: Synthesizer | None = None,
@@ -185,6 +307,7 @@ def author(
     ),
     schema_path_override: Optional[str] = None,
     max_property_proposals: int = DEFAULT_MAX_PROPERTY_PROPOSALS,
+    max_schema_gap_repairs: int | None = None,
 ) -> AuthorResult:
     """End-to-end Stage-1-through-2.5 pipeline.
 
@@ -208,9 +331,22 @@ def author(
     schema_gaps: list[dict[str, Any]] = []
     schema_gap_repairs: list[dict[str, Any]] = []
     schema_gap_repair_count = 0
+    schema_gap_repair_limit = max_schema_gap_repairs
 
     spec_text = spec_path.read_text()
     session.write_input_spec(spec_text, filename=spec_path.name)
+    source_doc = compile_source_document(spec_text)
+    session.write_stage0_source_index(source_doc.to_index())
+    schema_context_packets = []
+    property_context_packets = []
+    completed_property_node_ids: set[str] = set()
+    _write_stage0_artifacts(
+        session,
+        source_doc,
+        schema_context_packets,
+        property_context_packets,
+        completed_property_node_ids,
+    )
 
     if review_atom is None:
         raise ValueError("author() requires a review_atom callback for HITL review")
@@ -218,7 +354,7 @@ def author(
         raise ValueError("author() requires a propose_property_atom callback")
     if synthesize is None:
         raise ValueError("author() requires a Stage 3 synthesize callback")
-    critique_property_atom = critique_property_atom or _stub_property_critic
+    plan_property_repair = plan_property_repair or _default_property_repair_plan
 
     # ──── Stage 1: schema atomization ────
     if schema_path_override:
@@ -244,6 +380,13 @@ def author(
         session.write_stage1_decisions([])
         if not schema_ok:
             session.write_stage1_final_schema(schema_text)
+            _write_stage0_artifacts(
+                session,
+                source_doc,
+                schema_context_packets,
+                property_context_packets,
+                completed_property_node_ids,
+            )
             session.flush_transcript()
             return AuthorResult(
                 session_id=session_id,
@@ -259,77 +402,99 @@ def author(
             raise ValueError(
                 "author() requires propose_schema_atoms when no schema_path_override is supplied",
             )
-        schema_atoms = propose_schema_atoms(spec_text)
-        session.write_stage1_proposed_atoms(schema_atoms)
-        attributions = [
-            AttributionDecision(
-                atom_name=a.name,
-                span_text=a.source_excerpt,
-            )
-            for a in schema_atoms
-        ]
-        session.write_stage1_attribution_decisions(attributions)
-
-        _notify_review_stage(review_atom, "Schema atom review", len(schema_atoms))
+        schema_atoms: list[Stage1AtomT] = []
+        attributions: list[AttributionDecision] = []
         decisions: list[AtomDecision] = []
+        schema_context_packets = build_schema_packets(source_doc)
+        _notify_review_stage(review_atom, "Schema atom review", None)
         draft = SchemaDraft()
-        for atom in schema_atoms:
-            if atom.name in approved_schema_names:
-                decisions.append(_duplicate_decision(atom.name, "schema"))
-                continue
-            current_atom = atom
-            rejection_history: list[dict[str, str]] = []
-            repairs_attempted = 0
-            while True:
-                reviewed_atom, decision = _normalize_review_result(
-                    current_atom,
-                    review_atom(current_atom),
+        for packet in schema_context_packets:
+            packet.approved_schema_atoms = [atom.name for atom in approved_schema_atoms]
+            session.write_stage0_context_packet(packet.id, packet.to_dict())
+            packet_text = packet.to_prompt_text()
+            proposed_atoms = [
+                attach_source_ids(atom, packet.node_ids())
+                for atom in propose_schema_atoms(packet_text)
+            ]
+            for atom in proposed_atoms:
+                schema_atoms.append(atom)
+                attributions.append(
+                    AttributionDecision(
+                        atom_name=atom.name,
+                        span_text=atom.source_excerpt,
+                        alternatives_considered=packet.node_ids(),
+                    ),
                 )
-                if (
-                    decision.action == "reject"
-                    and repair_schema_atom is not None
-                    and repairs_attempted < 2
-                ):
-                    reason = decision.reason or "Rejected during HITL schema review"
-                    replacement = repair_schema_atom(
-                        spec_text,
-                        reviewed_atom,
-                        reason,
-                        approved_schema_atoms,
+                session.write_stage1_proposed_atoms(schema_atoms)
+                session.write_stage1_attribution_decisions(attributions)
+                if atom.name in approved_schema_names:
+                    decisions.append(_duplicate_decision(atom.name, "schema"))
+                    session.write_stage1_decisions(decisions)
+                    continue
+                current_atom = atom
+                rejection_history: list[dict[str, str]] = []
+                repairs_attempted = 0
+                while True:
+                    reviewed_atom, decision = _normalize_review_result(
+                        current_atom,
+                        review_atom(current_atom),
                     )
-                    rejection_history.append(
-                        {
-                            "atom_name": reviewed_atom.name,
-                            "reason": reason,
-                        },
-                    )
-                    repairs_attempted += 1
-                    if replacement is not None:
-                        current_atom = replacement
-                        continue
-                if rejection_history:
-                    decision.edit_delta.setdefault("reject_history", rejection_history)
-                    if decision.action == "approve":
-                        decision.edit_delta["replaced_after_reject"] = True
-                break
-            decisions.append(decision)
-            if decision.action != "approve":
-                continue
-            if reviewed_atom.name in approved_schema_names:
-                decisions[-1] = _duplicate_decision(reviewed_atom.name, "schema")
-                continue
-            _route_into_schema_draft(reviewed_atom, draft)
-            approved_schema_atoms.append(reviewed_atom)
-            approved_schema_names.add(reviewed_atom.name)
+                    if (
+                        decision.action == "reject"
+                        and repair_schema_atom is not None
+                        and repairs_attempted < 2
+                    ):
+                        reason = decision.reason or "Rejected during HITL schema review"
+                        replacement = repair_schema_atom(
+                            packet_text,
+                            reviewed_atom,
+                            reason,
+                            approved_schema_atoms,
+                        )
+                        rejection_history.append(
+                            {
+                                "atom_name": reviewed_atom.name,
+                                "reason": reason,
+                            },
+                        )
+                        repairs_attempted += 1
+                        if replacement is not None:
+                            replacement = attach_source_ids(replacement, packet.node_ids())
+                            current_atom = replacement
+                            continue
+                    if rejection_history:
+                        decision.edit_delta.setdefault("reject_history", rejection_history)
+                        if decision.action == "approve":
+                            decision.edit_delta["replaced_after_reject"] = True
+                    break
+                decisions.append(decision)
+                session.write_stage1_decisions(decisions)
+                if decision.action != "approve":
+                    continue
+                if reviewed_atom.name in approved_schema_names:
+                    decisions[-1] = _duplicate_decision(reviewed_atom.name, "schema")
+                    session.write_stage1_decisions(decisions)
+                    continue
+                _route_into_schema_draft(reviewed_atom, draft)
+                approved_schema_atoms.append(reviewed_atom)
+                approved_schema_names.add(reviewed_atom.name)
+        if not schema_atoms:
+            session.write_stage1_proposed_atoms(schema_atoms)
+            session.write_stage1_attribution_decisions(attributions)
         session.write_stage1_decisions(decisions)
         _notify_review_stage_complete(review_atom, "Schema atom review", decisions)
         schema_path = session.base / "stage1" / "final_schema.cedarschema"
         if draft.entities or draft.actions or draft.type_aliases:
+            schema_fix_context = approved_target_spec(
+                original_spec_name=spec_path.name,
+                schema_atoms=approved_schema_atoms,
+                property_atoms=[],
+            )
             validation = compose_and_validate(
                 draft,
                 schema_path,
                 llm=_SchemaFixAdapter(fix_schema) if fix_schema is not None else None,
-                spec_text=spec_text,
+                spec_text=schema_fix_context,
             )
             schema_text = validation.schema_text
             session.write_stage1_schema_validation([
@@ -345,6 +510,13 @@ def author(
             ])
             if not validation.succeeded:
                 session.write_stage1_final_schema(schema_text)
+                _write_stage0_artifacts(
+                    session,
+                    source_doc,
+                    schema_context_packets,
+                    property_context_packets,
+                    completed_property_node_ids,
+                )
                 session.flush_transcript()
                 last_error = validation.attempts[-1].validator_error if validation.attempts else ""
                 return AuthorResult(
@@ -370,6 +542,13 @@ def author(
                 },
             ])
             session.write_stage1_final_schema(schema_text)
+            _write_stage0_artifacts(
+                session,
+                source_doc,
+                schema_context_packets,
+                property_context_packets,
+                completed_property_node_ids,
+            )
             session.flush_transcript()
             return AuthorResult(
                 session_id=session_id,
@@ -390,20 +569,59 @@ def author(
     prop_atoms: list[PropertyAtom] = []
     attributions2: list[AttributionDecision] = []
     decisions2: list[AtomDecision] = []
-    critic_reviews: list[dict[str, Any]] = []
     plan = VerificationPlanDraft(properties=[])
     verification_logs: dict[str, list[str]] = {}
+    repair_plans: list[dict[str, Any]] = []
+    incremental_candidates: list[dict[str, Any]] = []
     approved_property_names: set[str] = set()
+    property_frontier_nodes = source_doc.authorization_nodes()
+    active_property_node = None
+    property_frontier_exhausted = False
     _notify_review_stage(review_atom, "Property intent review", None)
     for _ in range(max_property_proposals):
+        if active_property_node is None:
+            active_property_node = next(
+                (
+                    node
+                    for node in property_frontier_nodes
+                    if node.id not in completed_property_node_ids
+                ),
+                None,
+            )
+            if active_property_node is None:
+                property_frontier_exhausted = True
+                break
+        active_packet = select_property_packet(
+            source_doc,
+            active_property_node,
+            approved_schema_atoms=approved_schema_atoms,
+            approved_property_atoms=plan.properties,
+            prior_decisions=decisions2,
+        )
+        active_packet.id = f"{active_packet.id}.step{len(property_context_packets) + 1:04d}"
+        property_context_packets.append(active_packet)
+        session.write_stage0_context_packet(active_packet.id, active_packet.to_dict())
+        active_spec_text = active_packet.to_prompt_text()
         atom = propose_property_atom(
-            spec_text,
+            active_spec_text,
             str(schema_path),
             plan.properties,
             decisions2,
         )
+        if atom is not None:
+            atom = attach_source_ids(atom, active_packet.node_ids())
         if atom is None:
-            break
+            completed_property_node_ids.add(active_property_node.id)
+            session.write_stage0_coverage_ledger(
+                build_coverage_ledger(
+                    source_doc,
+                    completed_property_node_ids=completed_property_node_ids,
+                    schema_packets=schema_context_packets,
+                    property_packets=property_context_packets,
+                ),
+            )
+            active_property_node = None
+            continue
         prop_atoms.append(atom)
         attributions2.append(
             AttributionDecision(atom_name=atom.name, span_text=atom.source_excerpt),
@@ -412,157 +630,15 @@ def author(
         session.write_stage2_attribution_decisions(attributions2)
         if atom.name in approved_property_names:
             decisions2.append(_duplicate_decision(atom.name, "property"))
-            break
-        current_atom = atom
-        critic_repairs_attempted = 0
-        while True:
-            deterministic_critique = _semantic_boundary_critique(current_atom, schema_text)
-            critique = deterministic_critique or critique_property_atom(
-                spec_text,
-                str(schema_path),
-                current_atom,
-                plan.properties,
-                decisions2,
-            )
-            critic_reviews.append(
-                {
-                    "atom_name": current_atom.name,
-                    "decision": critique.decision,
-                    "reason": critique.reason,
-                    "tags": list(critique.tags),
-                },
-            )
-            session.write_stage2_critic_reviews(critic_reviews)
-            if critique.accepted:
-                break
-            decisions2.append(
-                AtomDecision(
-                    atom_name=current_atom.name,
-                    action="reject",
-                    reason=f"Stage 2 decomposition critic {critique.decision}: {critique.reason}",
-                    edit_delta={
-                        "critic_decision": critique.decision,
-                        "critic_tags": list(critique.tags),
-                    },
-                    symbolic_verified=getattr(current_atom, "symbolic_verified", False),
-                ),
-            )
-            session.write_stage2_decisions(decisions2)
-            critic_schema_gap = _schema_gap_from_decision(decisions2[-1], schema_text=schema_text)
-            if critic_schema_gap is not None:
-                schema_gaps.append(critic_schema_gap)
-                session.write_stage1_5_schema_gaps(schema_gaps)
-                if schema_gap_repair_count >= MAX_SCHEMA_GAP_REPAIRS:
-                    session.write_stage2_critic_reviews(critic_reviews)
-                    session.write_stage2_intent_graph(
-                        build_property_intent_graph(plan.properties, critic_reviews),
-                    )
-                    session.write_stage2_symbolic_verification_logs(verification_logs)
-                    session.write_stage2_adversarial_examples(
-                        {
-                            a.name: [_example_to_dict(e) for e in a.examples_adversarial]
-                            for a in plan.properties
-                        },
-                    )
-                    _notify_review_stage_complete(review_atom, "Property intent review", decisions2)
-                    _notify_property_plan_ready(review_atom, plan.properties)
-                    session.flush_transcript()
-                    return AuthorResult(
-                        session_id=session_id,
-                        session_dir=session.base,
-                        candidate_path=Path(""),
-                        plan=plan,
-                        schema_text=schema_text,
-                        final_user_approved=False,
-                        notes=[
-                            "Stage 2 found more schema gaps than the repair budget "
-                            f"({MAX_SCHEMA_GAP_REPAIRS}); stopped before synthesis.",
-                        ],
-                    )
-                repaired = _repair_schema_gap_and_validate(
-                    spec_text=spec_text,
-                    schema_text=schema_text,
-                    schema_path=schema_path,
-                    gap=critic_schema_gap,
-                    session=session,
-                    review_atom=review_atom,
-                    propose_schema_atoms=propose_schema_atoms,
-                    fix_schema=fix_schema,
-                    draft=draft,
-                    approved_schema_atoms=approved_schema_atoms,
-                    approved_schema_names=approved_schema_names,
-                    repair_records=schema_gap_repairs,
-                )
-                if repaired is None:
-                    session.write_stage2_critic_reviews(critic_reviews)
-                    session.write_stage2_intent_graph(
-                        build_property_intent_graph(plan.properties, critic_reviews),
-                    )
-                    session.write_stage2_symbolic_verification_logs(verification_logs)
-                    session.write_stage2_adversarial_examples(
-                        {
-                            a.name: [_example_to_dict(e) for e in a.examples_adversarial]
-                            for a in plan.properties
-                        },
-                    )
-                    _notify_review_stage_complete(review_atom, "Property intent review", decisions2)
-                    _notify_property_plan_ready(review_atom, plan.properties)
-                    session.flush_transcript()
-                    return AuthorResult(
-                        session_id=session_id,
-                        session_dir=session.base,
-                        candidate_path=Path(""),
-                        plan=plan,
-                        schema_text=schema_text,
-                        final_user_approved=False,
-                        notes=[
-                            "Stage 2 found a schema gap but could not produce an approved "
-                            f"schema repair for `{critic_schema_gap['atom_name']}`: "
-                            f"{critic_schema_gap['reason']}",
-                        ],
-                    )
-                schema_text = repaired
-                schema_gap_repair_count += 1
-                _notify_schema_ready(review_atom, schema_text)
-                current_atom = None
-                break
-            if (
-                critique.wants_repair
-                and repair_property_atom is not None
-                and critic_repairs_attempted < 2
-            ):
-                replacement = repair_property_atom(
-                    spec_text,
-                    str(schema_path),
-                    current_atom,
-                    critique.reason,
-                    plan.properties,
-                )
-                critic_repairs_attempted += 1
-                if replacement is not None:
-                    replacement = _align_repaired_property_atom(
-                        rejected_atom=current_atom,
-                        replacement=replacement,
-                        reason=critique.reason,
-                    )
-                    prop_atoms.append(replacement)
-                    attributions2.append(
-                        AttributionDecision(
-                            atom_name=replacement.name,
-                            span_text=replacement.source_excerpt,
-                        ),
-                    )
-                    session.write_stage2_proposed_atoms(prop_atoms)
-                    session.write_stage2_attribution_decisions(attributions2)
-                    current_atom = replacement
-                    continue
-            current_atom = None
-            break
-        if current_atom is None:
+            completed_property_node_ids.add(active_property_node.id)
+            active_property_node = None
             continue
+        current_atom = atom
         rejection_history: list[dict[str, str]] = []
         repairs_attempted = 0
         prior_repairs_attempted: set[str] = set()
+        unrepaired_prior_conflict: str | None = None
+        pending_schema_gap: dict[str, Any] | None = None
         while True:
             symbolic_verify_atom(current_atom, str(schema_path), prior_atoms=plan.properties)
             verification_logs[current_atom.name] = list(current_atom.symbolic_verification_log)
@@ -570,43 +646,138 @@ def author(
                 current_atom,
                 review_atom(current_atom),
             )
-            if (
-                decision.action == "reject"
-                and repair_property_atom is not None
-                and repairs_attempted < 2
-            ):
+            if decision.action == "reject" and repairs_attempted < 2:
                 reason = decision.reason or "Rejected during HITL property review"
-                prior_repaired = _repair_conflicting_prior_property(
-                    spec_text=spec_text,
-                    schema_path=schema_path,
-                    current_atom=current_atom,
-                    reason=reason,
-                    plan=plan,
-                    approved_property_names=approved_property_names,
-                    prior_repairs_attempted=prior_repairs_attempted,
-                    repair_property_atom=repair_property_atom,
-                    review_atom=review_atom,
-                    decisions=decisions2,
-                    session=session,
-                    verification_logs=verification_logs,
+                repair_plan = plan_property_repair(
+                    active_spec_text,
+                    str(schema_path),
+                    current_atom,
+                    decision,
+                    plan.properties,
+                    schema_text,
+                    list(current_atom.symbolic_verification_log),
                 )
-                if prior_repaired:
+                repair_plans.append(
+                    {
+                        "atom_name": current_atom.name,
+                        "reviewer_reason": reason,
+                        "action": repair_plan.action,
+                        "target_atom": repair_plan.target_atom,
+                        "reason": repair_plan.reason,
+                        "repair_instruction": repair_plan.repair_instruction,
+                        "schema_gap_summary": repair_plan.schema_gap_summary,
+                        "symbolic_log": list(current_atom.symbolic_verification_log),
+                    },
+                )
+                session.write_stage2_repair_plans(repair_plans)
+                if repair_plan.action == "repair_prior_property":
+                    if repair_property_atom is None:
+                        unrepaired_prior_conflict = (
+                            "Property repair planner selected prior-property repair, "
+                            "but no property repair callback is configured."
+                        )
+                        rejection_history.append(
+                            {
+                                "atom_name": reviewed_atom.name,
+                                "reason": reason,
+                                "action": "prior_property_repair_unavailable",
+                            },
+                        )
+                        decision.edit_delta.setdefault("reject_history", rejection_history)
+                        break
+                    prior_repaired = _repair_named_prior_property(
+                        spec_text=active_spec_text,
+                        schema_path=schema_path,
+                        current_atom=current_atom,
+                        repair_plan=repair_plan,
+                        plan=plan,
+                        approved_property_names=approved_property_names,
+                        prior_repairs_attempted=prior_repairs_attempted,
+                        repair_property_atom=repair_property_atom,
+                        review_atom=review_atom,
+                        decisions=decisions2,
+                        session=session,
+                        verification_logs=verification_logs,
+                    )
+                    if prior_repaired:
+                        rejection_history.append(
+                            {
+                                "atom_name": reviewed_atom.name,
+                                "reason": reason,
+                                "action": "repaired_conflicting_prior_property",
+                            },
+                        )
+                        continue
+                    unrepaired_prior_conflict = repair_plan.reason
                     rejection_history.append(
                         {
                             "atom_name": reviewed_atom.name,
                             "reason": reason,
-                            "action": "repaired_conflicting_prior_property",
+                            "action": "prior_property_repair_failed",
                         },
                     )
-                    continue
+                    decision.edit_delta.setdefault("reject_history", rejection_history)
+                    break
+                if repair_plan.action == "repair_schema":
+                    pending_schema_gap = {
+                        "atom_name": decision.atom_name,
+                        "stage": "stage2_property_review",
+                        "reason": repair_plan.schema_gap_summary
+                        or repair_plan.repair_instruction
+                        or repair_plan.reason,
+                        "tags": [],
+                        "required_action": "repair_schema_before_synthesis",
+                        "repair_plan": {
+                            "action": repair_plan.action,
+                            "reason": repair_plan.reason,
+                            "repair_instruction": repair_plan.repair_instruction,
+                        },
+                    }
+                    rejection_history.append(
+                        {
+                            "atom_name": reviewed_atom.name,
+                            "reason": reason,
+                            "action": "repair_schema",
+                        },
+                    )
+                    decision.edit_delta.setdefault("reject_history", rejection_history)
+                    break
+                if repair_plan.action in {"reject_current", "ask_user_clarification"}:
+                    rejection_history.append(
+                        {
+                            "atom_name": reviewed_atom.name,
+                            "reason": repair_plan.reason,
+                            "action": repair_plan.action,
+                        },
+                    )
+                    decision.edit_delta.setdefault("reject_history", rejection_history)
+                    break
+                if repair_plan.action != "repair_current_property":
+                    unrepaired_prior_conflict = (
+                        "Unknown property repair action from planner: "
+                        f"{repair_plan.action}"
+                    )
+                    decision.edit_delta.setdefault("reject_history", rejection_history)
+                    break
+                if repair_property_atom is None:
+                    rejection_history.append(
+                        {
+                            "atom_name": reviewed_atom.name,
+                            "reason": reason,
+                            "action": "current_property_repair_unavailable",
+                        },
+                    )
+                    decision.edit_delta.setdefault("reject_history", rejection_history)
+                    break
                 replacement = repair_property_atom(
-                    spec_text,
+                    active_spec_text,
                     str(schema_path),
                     reviewed_atom,
-                    reason,
+                    repair_plan.repair_instruction or reason,
                     plan.properties,
                 )
                 if replacement is not None:
+                    replacement = attach_source_ids(replacement, active_packet.node_ids())
                     replacement = _align_repaired_property_atom(
                         rejected_atom=reviewed_atom,
                         replacement=replacement,
@@ -646,16 +817,65 @@ def author(
             reviewed_atom.intent_acknowledged_by_user = True
             plan.properties.append(reviewed_atom)
             approved_property_names.add(reviewed_atom.name)
+            _run_incremental_candidate_check(
+                session=session,
+                records=incremental_candidates,
+                synthesize=synthesize,
+                spec_path=spec_path,
+                schema_text=schema_text,
+                plan=plan,
+                approved_schema_atoms=approved_schema_atoms,
+                score_candidate=score_candidate,
+            )
         decisions2.append(decision)
         session.write_stage2_decisions(decisions2)
-        schema_gap = _schema_gap_from_decision(decision, schema_text=schema_text)
+        if unrepaired_prior_conflict is not None:
+            session.write_stage2_intent_graph(
+                build_property_intent_graph(plan.properties),
+            )
+            session.write_stage2_symbolic_verification_logs(verification_logs)
+            session.write_stage2_adversarial_examples(
+                {
+                    a.name: [_example_to_dict(e) for e in a.examples_adversarial]
+                    for a in plan.properties
+                },
+            )
+            _notify_review_stage_complete(review_atom, "Property intent review", decisions2)
+            _notify_property_plan_ready(review_atom, plan.properties)
+            _write_stage0_artifacts(
+                session,
+                source_doc,
+                schema_context_packets,
+                property_context_packets,
+                completed_property_node_ids,
+                schema_atoms=approved_schema_atoms,
+                property_atoms=plan.properties,
+                schema_gaps=schema_gaps,
+            )
+            session.flush_transcript()
+            return AuthorResult(
+                session_id=session_id,
+                session_dir=session.base,
+                candidate_path=Path(""),
+                plan=plan,
+                schema_text=schema_text,
+                final_user_approved=False,
+                notes=[
+                    "Stage 2 stopped before synthesis because HITL requested "
+                    "repair of a conflicting prior property, but no approved "
+                    f"prior-property repair was produced: {unrepaired_prior_conflict}",
+                ],
+            )
+        schema_gap = pending_schema_gap
         if schema_gap is not None:
             schema_gaps.append(schema_gap)
             session.write_stage1_5_schema_gaps(schema_gaps)
-            if schema_gap_repair_count >= MAX_SCHEMA_GAP_REPAIRS:
-                session.write_stage2_critic_reviews(critic_reviews)
+            if (
+                schema_gap_repair_limit is not None
+                and schema_gap_repair_count >= schema_gap_repair_limit
+            ):
                 session.write_stage2_intent_graph(
-                    build_property_intent_graph(plan.properties, critic_reviews),
+                    build_property_intent_graph(plan.properties),
                 )
                 session.write_stage2_symbolic_verification_logs(verification_logs)
                 session.write_stage2_adversarial_examples(
@@ -666,6 +886,16 @@ def author(
                 )
                 _notify_review_stage_complete(review_atom, "Property intent review", decisions2)
                 _notify_property_plan_ready(review_atom, plan.properties)
+                _write_stage0_artifacts(
+                    session,
+                    source_doc,
+                    schema_context_packets,
+                    property_context_packets,
+                    completed_property_node_ids,
+                    schema_atoms=approved_schema_atoms,
+                    property_atoms=plan.properties,
+                    schema_gaps=schema_gaps,
+                )
                 session.flush_transcript()
                 return AuthorResult(
                     session_id=session_id,
@@ -676,11 +906,11 @@ def author(
                     final_user_approved=False,
                     notes=[
                         "Stage 2 found more schema gaps than the repair budget "
-                        f"({MAX_SCHEMA_GAP_REPAIRS}); stopped before synthesis.",
+                        f"({schema_gap_repair_limit}); stopped before synthesis.",
                     ],
-                )
+            )
             repaired = _repair_schema_gap_and_validate(
-                spec_text=spec_text,
+                spec_text=active_spec_text,
                 schema_text=schema_text,
                 schema_path=schema_path,
                 gap=schema_gap,
@@ -694,9 +924,8 @@ def author(
                 repair_records=schema_gap_repairs,
             )
             if repaired is None:
-                session.write_stage2_critic_reviews(critic_reviews)
                 session.write_stage2_intent_graph(
-                    build_property_intent_graph(plan.properties, critic_reviews),
+                    build_property_intent_graph(plan.properties),
                 )
                 session.write_stage2_symbolic_verification_logs(verification_logs)
                 session.write_stage2_adversarial_examples(
@@ -707,6 +936,16 @@ def author(
                 )
                 _notify_review_stage_complete(review_atom, "Property intent review", decisions2)
                 _notify_property_plan_ready(review_atom, plan.properties)
+                _write_stage0_artifacts(
+                    session,
+                    source_doc,
+                    schema_context_packets,
+                    property_context_packets,
+                    completed_property_node_ids,
+                    schema_atoms=approved_schema_atoms,
+                    property_atoms=plan.properties,
+                    schema_gaps=schema_gaps,
+                )
                 session.flush_transcript()
                 return AuthorResult(
                     session_id=session_id,
@@ -725,7 +964,7 @@ def author(
             schema_gap_repair_count += 1
             _notify_schema_ready(review_atom, schema_text)
             continue
-    else:
+    if not property_frontier_exhausted:
         decisions2.append(
             AtomDecision(
                 atom_name="stage2_property_elicitation_limit",
@@ -746,17 +985,45 @@ def author(
     if not prop_atoms:
         session.write_stage2_proposed_atoms(prop_atoms)
         session.write_stage2_attribution_decisions(attributions2)
-    session.write_stage2_critic_reviews(critic_reviews)
     session.write_stage2_decisions(decisions2)
     _notify_review_stage_complete(review_atom, "Property intent review", decisions2)
     _notify_property_plan_ready(review_atom, plan.properties)
     session.write_stage2_intent_graph(
-        build_property_intent_graph(plan.properties, critic_reviews),
+        build_property_intent_graph(plan.properties),
     )
     session.write_stage2_symbolic_verification_logs(verification_logs)
     session.write_stage2_adversarial_examples(
         {a.name: [_example_to_dict(e) for e in a.examples_adversarial] for a in plan.properties},
     )
+    if not property_frontier_exhausted:
+        _write_stage0_artifacts(
+            session,
+            source_doc,
+            schema_context_packets,
+            property_context_packets,
+            completed_property_node_ids,
+            schema_atoms=approved_schema_atoms,
+            property_atoms=plan.properties,
+            schema_gaps=schema_gaps,
+        )
+        session.flush_transcript()
+        open_nodes = [
+            node.id
+            for node in property_frontier_nodes
+            if node.id not in completed_property_node_ids
+        ]
+        return AuthorResult(
+            session_id=session_id,
+            session_dir=session.base,
+            candidate_path=Path(""),
+            plan=plan,
+            schema_text=schema_text,
+            final_user_approved=False,
+            notes=[
+                "Stage 2 stopped before covering the full source DAG; "
+                f"{len(open_nodes)} authorization source node(s) remain open.",
+            ],
+        )
 
     # ──── Stage 1.75: pre-synthesis unsat detection ────
     consistency_plan = compile_plan_for_consistency(plan)
@@ -767,6 +1034,16 @@ def author(
         detail=consistency.detail,
     )
     if consistency.tool_error:
+        _write_stage0_artifacts(
+            session,
+            source_doc,
+            schema_context_packets,
+            property_context_packets,
+            completed_property_node_ids,
+            schema_atoms=approved_schema_atoms,
+            property_atoms=plan.properties,
+            schema_gaps=schema_gaps,
+        )
         session.flush_transcript()
         return AuthorResult(
             session_id=session_id,
@@ -778,6 +1055,16 @@ def author(
             notes=[f"Stage 1.75 verifier setup failed: {consistency.detail}"],
         )
     if consistency.unsat:
+        _write_stage0_artifacts(
+            session,
+            source_doc,
+            schema_context_packets,
+            property_context_packets,
+            completed_property_node_ids,
+            schema_atoms=approved_schema_atoms,
+            property_atoms=plan.properties,
+            schema_gaps=schema_gaps,
+        )
         session.flush_transcript()
         return AuthorResult(
             session_id=session_id,
@@ -794,9 +1081,14 @@ def author(
     session.write_stage2_final_plan(compiled.verification_plan_py, compiled.references)
 
     # Materialize a complete scenario directory for Stage 3.
+    stage3_spec_text = approved_target_spec(
+        original_spec_name=spec_path.name,
+        schema_atoms=approved_schema_atoms,
+        property_atoms=plan.properties,
+    )
     scenario_dir = _materialize_scenario_dir(
         session_dir=session.base,
-        spec_text=spec_text,
+        spec_text=stage3_spec_text,
         schema_text=schema_text,
         plan_py=compiled.verification_plan_py,
         references=compiled.references,
@@ -819,6 +1111,16 @@ def author(
     session.write_stage2_5_traceback(traceback)
     session.write_stage2_5_final_decision(approved=True)
 
+    _write_stage0_artifacts(
+        session,
+        source_doc,
+        schema_context_packets,
+        property_context_packets,
+        completed_property_node_ids,
+        schema_atoms=approved_schema_atoms,
+        property_atoms=plan.properties,
+        schema_gaps=schema_gaps,
+    )
     session.flush_transcript()
 
     return AuthorResult(
@@ -834,351 +1136,12 @@ def author(
 # Helpers.
 # ---------------------------------------------------------------------------
 
-_SCHEMA_GAP_TAGS = {"schema-gap", "schema_gap", "schema-repair", "schema_repair"}
-
-_SEMANTIC_BOUNDARY_RULES: tuple[dict[str, Any], ...] = (
-    {
-        "label": "current-semester",
-        "triggers": (
-            "current semester",
-            "current course offering",
-            "current course offerings",
-        ),
-        "schema_tokens": ("iscurrent", "currentsemester", "current_semester", "current"),
-        "reference_tokens": ("iscurrent", "currentsemester", "current_semester", "current"),
-        "proxy_examples": ("open registration", "add/drop period", "not completed"),
-    },
-    {
-        "label": "upcoming-semester",
-        "triggers": (
-            "upcoming semester",
-            "upcoming course offering",
-            "upcoming course offerings",
-        ),
-        "schema_tokens": ("isupcoming", "upcomingsemester", "upcoming_semester", "upcoming"),
-        "reference_tokens": ("isupcoming", "upcomingsemester", "upcoming_semester", "upcoming"),
-        "proxy_examples": ("not completed", "open registration", "not closed"),
-    },
-    {
-        "label": "completed-semester",
-        "triggers": (
-            "previously completed semester",
-            "completed semester",
-            "previous semester",
-            "previously completed",
-        ),
-        "schema_tokens": (
-            "iscompleted",
-            "ispreviouslycompleted",
-            "completedsemester",
-            "previoussemester",
-            "completed",
-        ),
-        "reference_tokens": (
-            "iscompleted",
-            "ispreviouslycompleted",
-            "completedsemester",
-            "previoussemester",
-            "completed",
-        ),
-        "proxy_examples": ("not current", "not upcoming"),
-    },
-    {
-        "label": "add-drop-period",
-        "triggers": (
-            "add/drop",
-            "add or drop",
-            "add-drop",
-            "beginning of the semester",
-            "beginning of each semester",
-            "beginning-of-semester",
-        ),
-        "schema_tokens": ("isadddropperiod", "adddrop", "add_drop", "registrationwindow"),
-        "reference_tokens": ("isadddropperiod", "adddrop", "add_drop", "registrationwindow"),
-        "proxy_examples": ("registration not closed", "open registration"),
-    },
-    {
-        "label": "no-conflict",
-        "triggers": ("no conflict", "if there is no conflict", "without conflict"),
-        "schema_tokens": ("conflict", "hasscheduleconflict", "noconflict"),
-        "reference_tokens": ("conflict", "hasscheduleconflict", "noconflict"),
-        "proxy_examples": ("eligible", "assigned"),
-    },
-    {
-        "label": "extra-security",
-        "triggers": (
-            "extra security",
-            "sensitive information",
-            "prevent unauthorized access",
-        ),
-        "schema_tokens": ("extrasecurity", "strongauth", "mfa", "authentication", "security"),
-        "reference_tokens": ("extrasecurity", "strongauth", "mfa", "authentication", "security"),
-        "proxy_examples": ("principal type", "resource type"),
-    },
-    {
-        "label": "campus-lan",
-        "triggers": (
-            "campus lan",
-            "personal computers attached to the campus lan",
-        ),
-        "schema_tokens": ("campuslan", "fromcampus", "iscampus", "network"),
-        "reference_tokens": ("campuslan", "fromcampus", "iscampus", "network"),
-        "proxy_examples": ("student role", "professor role"),
-    },
-)
-
-
-def _semantic_boundary_critique(
-    atom: PropertyAtom,
-    schema_text: str,
-) -> PropertyCritique | None:
-    """Catch semantic-boundary proxying before HITL property review.
-
-    Frontier models often try to keep going with whatever schema they have.
-    That is useful in chat, but dangerous in policy synthesis: a correlated
-    proxy such as "not completed" is not the same intent atom as "upcoming
-    semester." This guard makes the invariant executable. If the atom's own
-    source/summary names a distinct boundary and the schema lacks an explicit
-    hook, Stage 2 must repair schema first. If the schema has the hook but the
-    reference omits it, Stage 2 must repair the property before HITL.
-    """
-    source_text = _semantic_normalize(
-        " ".join(
-            [
-                atom.source_excerpt,
-                atom.plain_english_summary,
-                atom.rationale,
-            ],
-        ),
-    )
-    schema_norm = _semantic_normalize(schema_text)
-    reference_norm = _semantic_normalize(atom.reference_cedar)
-
-    for rule in _SEMANTIC_BOUNDARY_RULES:
-        if not _semantic_contains_any(source_text, rule["triggers"]):
-            continue
-        schema_has_boundary = _semantic_contains_any(schema_norm, rule["schema_tokens"])
-        reference_has_boundary = _semantic_contains_any(reference_norm, rule["reference_tokens"])
-        if not schema_has_boundary:
-            proxies = ", ".join(rule["proxy_examples"])
-            return PropertyCritique(
-                decision="repair",
-                reason=(
-                    f"schema gap: source requires an explicit {rule['label']} "
-                    "boundary, but the current schema has no explicit hook for "
-                    f"that concept. Do not approximate it with proxies such as "
-                    f"{proxies}; repair the schema first."
-                ),
-                tags=["schema-gap", "semantic-boundary", rule["label"]],
-            )
-        if not reference_has_boundary and atom.constraint_type != "liveness":
-            return PropertyCritique(
-                decision="repair",
-                reason=(
-                    f"property omits the explicit {rule['label']} boundary "
-                    "even though the schema exposes it; repair the atom to use "
-                    "that schema hook instead of relying on a proxy."
-                ),
-                tags=["semantic-boundary", rule["label"]],
-            )
-    return None
-
-
-def _semantic_normalize(text: str) -> str:
-    return re.sub(r"[^a-z0-9/]+", "", text.lower())
-
-
-def _semantic_contains_any(haystack: str, needles: tuple[str, ...]) -> bool:
-    return any(_semantic_normalize(needle) in haystack for needle in needles)
-
-_SCHEMA_GAP_PHRASES = (
-    "schema gap",
-    "schema cannot",
-    "schema can't",
-    "not schema-expressible",
-    "not expressible in the schema",
-    "not expressible with the schema",
-    "schema has no",
-    "schema lacks",
-    "schema needs",
-    "needs schema",
-    "requires schema",
-    "missing schema",
-    "missing from schema",
-    "add to schema",
-    "add this to schema",
-    "add this field to schema",
-    "add a field",
-    "field in schema",
-    "missing current semester",
-    "missing current-semester",
-    "current_semester",
-    "current-semester boundary",
-    "current semester boundary",
-    "completed/previous-semester",
-    "missing completed semester",
-    "missing previous semester",
-    "beginning-of-semester",
-    "registration period field",
-    "registration window field",
-)
-
-_NON_SCHEMA_GAP_PHRASES = (
-    "not a schema gap",
-    "not schema gap",
-    "not a schema-gap",
-    "property repair, not a schema gap",
-    "property repair rather than a schema gap",
-    "schema-implied",
-    "schema implied",
-    "schema shape",
-    "principal/resource typing",
-    "principal typing",
-    "resource typing",
-    "type check",
-    "type-check",
-)
-
-
-def _schema_gap_from_decision(
-    decision: AtomDecision,
-    *,
-    schema_text: str | None = None,
-) -> dict[str, Any] | None:
-    """Return a durable schema-repair record for explicit schema-gap rejections.
-
-    The HITL contract is semantic: if the reviewer says the current schema cannot
-    express a requirement, continuing to Stage 3 would synthesize against a known
-    incomplete intent surface. We only classify explicit schema expressivity
-    failures here; ordinary unwanted atoms remain normal rejections.
-    """
-    if decision.action != "reject":
-        return None
-
-    reason = (decision.reason or "").strip()
-    reason_lower = reason.lower()
-    if any(phrase in reason_lower for phrase in _NON_SCHEMA_GAP_PHRASES):
-        return None
-
-    raw_tags = decision.edit_delta.get("critic_tags", [])
-    tags = {
-        str(tag).strip().lower()
-        for tag in raw_tags
-        if str(tag).strip()
-    } if isinstance(raw_tags, list) else set()
-
-    has_schema_gap_tag = bool(tags & _SCHEMA_GAP_TAGS)
-    has_schema_gap_phrase = any(phrase in reason_lower for phrase in _SCHEMA_GAP_PHRASES)
-    if not (has_schema_gap_tag or has_schema_gap_phrase):
-        return None
-    if schema_text is not None and _schema_already_exposes_reported_boundary(
-        reason_lower,
-        tags,
-        schema_text,
-    ):
-        return None
-
-    return {
-        "atom_name": decision.atom_name,
-        "stage": "stage2_property_review",
-        "reason": reason,
-        "critic_tags": sorted(tags),
-        "required_action": "repair_schema_before_synthesis",
-    }
-
-
-def _schema_already_exposes_reported_boundary(
-    reason_lower: str,
-    tags: set[str],
-    schema_text: str,
-) -> bool:
-    """Reject false-positive schema gaps when the schema has the named hook.
-
-    The LLM critic can correctly spot a missing property condition but
-    over-label it as a schema gap. If the schema already exposes the relevant
-    field/process, the right move is property repair, not adding a duplicate
-    schema relation.
-    """
-    reported = _semantic_normalize(" ".join([reason_lower, *sorted(tags)]))
-    schema_norm = _semantic_normalize(schema_text)
-
-    tagged_boundaries = {
-        "current-semester": (("iscurrent",),),
-        "upcoming-semester": (("isupcoming",),),
-        "completed-semester": (("iscompleted",), ("ispreviouslycompleted",)),
-        "add-drop-period": (("isadddropperiod",), ("adddrop",)),
-        "registration-closed": (("registrationprocess", "isclosed"),),
-        "extra-security": (("hasextrasecurity",), ("strongauth",), ("mfa",), ("security",)),
-        "campus-lan": (("iscampuslan",), ("fromcampus",), ("network",)),
-        "no-conflict": (("hasscheduleconflict",), ("conflict",)),
-    }
-    matching_boundary_tags = [tag for tag in tags if tag in tagged_boundaries]
-    if matching_boundary_tags:
-        return all(
-            any(
-                all(token in schema_norm for token in schema_tokens)
-                for schema_tokens in tagged_boundaries[tag]
-            )
-            for tag in matching_boundary_tags
-        )
-
-    exposed_boundaries = (
-        (("currentsemester", "current"), (("iscurrent",),)),
-        (("upcomingsemester", "upcoming"), (("isupcoming",),)),
-        (
-            ("completedsemester", "completed", "previoussemester"),
-            (("iscompleted",), ("ispreviouslycompleted",)),
-        ),
-        (
-            ("adddropperiod", "adddrop", "beginningofsemester"),
-            (("isadddropperiod",), ("adddrop",)),
-        ),
-        (
-            ("registrationclosed", "registrationisclosed", "registrationclosure", "isclosed"),
-            (("registrationprocess", "isclosed"),),
-        ),
-        (
-            ("extrasecurity", "sensitiveinformation"),
-            (("hasextrasecurity",), ("strongauth",), ("mfa",), ("security",)),
-        ),
-        (("campuslan", "campusnetwork"), (("iscampuslan",), ("fromcampus",), ("network",))),
-        (("noconflict", "scheduleconflict", "conflict"), (("hasscheduleconflict",), ("conflict",))),
-    )
-    for reported_tokens, schema_alternatives in exposed_boundaries:
-        if (
-            any(token in reported for token in reported_tokens)
-            and any(
-                all(token in schema_norm for token in schema_tokens)
-                for schema_tokens in schema_alternatives
-            )
-        ):
-            return True
-    return False
-
-
-_PRIOR_REPAIR_PHRASES = (
-    "prior",
-    "previous",
-    "earlier",
-    "already approved",
-    "approved floor",
-    "approved ceiling",
-    "floor too broad",
-    "ceiling too broad",
-    "too-broad floor",
-    "too broad floor",
-    "fix the floor",
-    "repair the floor",
-    "repair prior",
-)
-
-
-def _repair_conflicting_prior_property(
+def _repair_named_prior_property(
     *,
     spec_text: str,
     schema_path: Path,
     current_atom: PropertyAtom,
-    reason: str,
+    repair_plan: PropertyRepairPlan,
     plan: VerificationPlanDraft,
     approved_property_names: set[str],
     prior_repairs_attempted: set[str],
@@ -1188,84 +1151,69 @@ def _repair_conflicting_prior_property(
     session: Session,
     verification_logs: dict[str, list[str]],
 ) -> bool:
-    """Repair an approved prior property when HITL identifies it as the issue.
-
-    Sometimes a later atom is correct but exposes that an earlier approved atom
-    was too broad. For example, a registration ceiling may include an add/drop
-    boundary that the earlier registration floor accidentally omitted. In that
-    case repairing the current ceiling would weaken intent; the right operation
-    is to surface a replacement for the conflicting prior atom and re-check the
-    current atom after approval.
-    """
-    reason_lower = reason.lower()
-    if not any(phrase in reason_lower for phrase in _PRIOR_REPAIR_PHRASES):
+    """Repair the exact prior property selected by the repair planner."""
+    prior_name = (repair_plan.target_atom or "").strip()
+    if not prior_name:
         return False
-
-    for prior_name in _conflicting_prior_atom_names(current_atom.symbolic_verification_log):
-        if prior_name in prior_repairs_attempted:
-            continue
-        prior_index = next(
-            (i for i, atom in enumerate(plan.properties) if atom.name == prior_name),
-            None,
-        )
-        if prior_index is None:
-            continue
-        prior_repairs_attempted.add(prior_name)
-        prior_atom = plan.properties[prior_index]
-        other_atoms = [
-            atom
-            for i, atom in enumerate(plan.properties)
-            if i != prior_index
-        ]
-        replacement = repair_property_atom(
-            spec_text,
-            str(schema_path),
-            prior_atom,
-            reason,
-            other_atoms,
-        )
-        if replacement is None:
-            continue
-        replacement = _align_repaired_property_atom(
-            rejected_atom=prior_atom,
-            replacement=replacement,
-            reason=reason,
-        )
-        symbolic_verify_atom(replacement, str(schema_path), prior_atoms=other_atoms)
-        verification_logs[replacement.name] = list(replacement.symbolic_verification_log)
-        reviewed_replacement, repair_decision = _normalize_review_result(
-            replacement,
-            review_atom(replacement),
-        )
-        repair_decision.edit_delta.setdefault(
-            "repaired_prior_for_consistency_conflict",
-            {
-                "prior_atom": prior_atom.name,
-                "current_atom": current_atom.name,
-                "reason": reason,
-            },
-        )
-        repair_decision.symbolic_verified = getattr(
-            reviewed_replacement,
-            "symbolic_verified",
-            False,
-        )
-        decisions.append(repair_decision)
-        session.write_stage2_decisions(decisions)
-        if repair_decision.action != "approve" or not isinstance(reviewed_replacement, PropertyAtom):
-            continue
-        reviewed_replacement.intent_acknowledged_by_user = True
-        plan.properties[prior_index] = reviewed_replacement
-        approved_property_names.discard(prior_atom.name)
-        approved_property_names.add(reviewed_replacement.name)
-        return True
-    return False
-
-
-def _conflicting_prior_atom_names(logs: list[str]) -> list[str]:
-    text = "\n".join(logs)
-    names = re.findall(r"Consistency check failed against `([^`]+)`", text)
-    return list(dict.fromkeys(names))
+    if prior_name in prior_repairs_attempted:
+        return False
+    prior_index = next(
+        (i for i, atom in enumerate(plan.properties) if atom.name == prior_name),
+        None,
+    )
+    if prior_index is None:
+        return False
+    prior_repairs_attempted.add(prior_name)
+    prior_atom = plan.properties[prior_index]
+    other_atoms = [
+        atom
+        for i, atom in enumerate(plan.properties)
+        if i != prior_index
+    ]
+    replacement = repair_property_atom(
+        spec_text,
+        str(schema_path),
+        prior_atom,
+        repair_plan.repair_instruction or repair_plan.reason,
+        other_atoms,
+    )
+    if replacement is None:
+        return False
+    replacement = attach_source_ids(replacement, source_ids_from_text(spec_text))
+    replacement = _align_repaired_property_atom(
+        rejected_atom=prior_atom,
+        replacement=replacement,
+        reason=repair_plan.repair_instruction or repair_plan.reason,
+    )
+    symbolic_verify_atom(replacement, str(schema_path), prior_atoms=other_atoms)
+    verification_logs[replacement.name] = list(replacement.symbolic_verification_log)
+    reviewed_replacement, repair_decision = _normalize_review_result(
+        replacement,
+        review_atom(replacement),
+    )
+    repair_decision.edit_delta.setdefault(
+        "repaired_prior_for_consistency_conflict",
+        {
+            "prior_atom": prior_atom.name,
+            "current_atom": current_atom.name,
+            "reason": repair_plan.reason,
+            "repair_instruction": repair_plan.repair_instruction,
+        },
+    )
+    repair_decision.symbolic_verified = getattr(
+        reviewed_replacement,
+        "symbolic_verified",
+        False,
+    )
+    decisions.append(repair_decision)
+    session.write_stage2_decisions(decisions)
+    if repair_decision.action != "approve" or not isinstance(reviewed_replacement, PropertyAtom):
+        return False
+    reviewed_replacement.intent_acknowledged_by_user = True
+    plan.properties[prior_index] = reviewed_replacement
+    approved_property_names.discard(prior_atom.name)
+    approved_property_names.add(reviewed_replacement.name)
+    return True
 
 
 def _repair_schema_gap_and_validate(
@@ -1295,7 +1243,10 @@ def _repair_schema_gap_and_validate(
         return None
 
     repair_spec = _schema_gap_repair_spec(spec_text, schema_text, gap)
-    proposed_atoms = propose_schema_atoms(repair_spec)
+    proposed_atoms = [
+        attach_source_ids(atom, source_ids_from_text(repair_spec))
+        for atom in propose_schema_atoms(repair_spec)
+    ]
     repair_record: dict[str, Any] = {
         "gap": gap,
         "proposed_atoms": [to_dict(atom) for atom in proposed_atoms],
@@ -1525,57 +1476,10 @@ def _align_repaired_property_atom(
     replacement: PropertyAtom,
     reason: str,
 ) -> PropertyAtom:
-    """Preserve primitive proof direction unless the human asked to change it.
+    """Return the repairer-selected replacement without hidden intent rewrites."""
 
-    A rejected floor with missing conditions still means "repair this required
-    permission." If the model turns that into a ceiling, Stage 3 can lose the
-    positive obligation. Preserve floor/ceiling direction by default; explicit
-    user language like "should be a ceiling" or "wrong direction" can still
-    request a real constraint-type change.
-    """
-
-    primitive_directions = {"floor", "ceiling"}
-    if (
-        rejected_atom.constraint_type not in primitive_directions
-        or replacement.constraint_type not in primitive_directions
-        or rejected_atom.constraint_type == replacement.constraint_type
-        or _reason_requests_constraint_change(reason)
-    ):
-        return replacement
-    return replace(
-        replacement,
-        constraint_type=rejected_atom.constraint_type,
-        name=_rename_constraint_suffix(replacement.name, rejected_atom.constraint_type),
-    )
-
-
-def _reason_requests_constraint_change(reason: str) -> bool:
-    normalized = reason.lower()
-    phrases = (
-        "should be a floor",
-        "should be floor",
-        "make it a floor",
-        "use a floor",
-        "not a ceiling",
-        "should be a ceiling",
-        "should be ceiling",
-        "make it a ceiling",
-        "use a ceiling",
-        "not a floor",
-        "wrong direction",
-        "change direction",
-        "instead",
-    )
-    return any(phrase in normalized for phrase in phrases)
-
-
-def _rename_constraint_suffix(name: str, constraint_type: str) -> str:
-    if constraint_type not in {"floor", "ceiling"}:
-        return name
-    other = "ceiling" if constraint_type == "floor" else "floor"
-    if name.endswith(f"_{other}"):
-        return name[: -(len(other) + 1)] + f"_{constraint_type}"
-    return name
+    _ = rejected_atom, reason
+    return replacement
 
 
 def _notify_review_stage(review_atom: AtomReviewer, label: str, total: int | None) -> None:

@@ -41,7 +41,6 @@ from autocedar.atoms import (
     TypeAliasAtom,
 )
 from autocedar.codex_auth import DEFAULT_CODEX_MODEL, CodexAuthClient, is_codex_provider
-from autocedar.property_critic import PropertyCritique
 
 
 # ---------------------------------------------------------------------------
@@ -207,12 +206,20 @@ class PropertyAtomsResponse(BaseModel):
     atoms: list[_LLMPropertyAtom]
 
 
-class PropertyCritiqueResponse(BaseModel):
-    """Top-level structured response for the Stage 2 decomposition critic."""
+class PropertyRejectionPlanResponse(BaseModel):
+    """Structured repair action for a rejected property atom."""
 
-    decision: Literal["accept", "repair", "reject"]
+    action: Literal[
+        "repair_current_property",
+        "repair_prior_property",
+        "repair_schema",
+        "reject_current",
+        "ask_user_clarification",
+    ]
+    target_atom: Optional[str] = None
     reason: str
-    tags: list[str] = Field(default_factory=list)
+    repair_instruction: str = ""
+    schema_gap_summary: str = ""
 
 
 # Translated atom types (returned by ``LLMClient.propose_schema_atoms``).
@@ -556,91 +563,57 @@ class LLMClient:
             return None
         return _translate_property_atom(atoms[0])
 
-    def critique_property_atom(
+    def plan_property_rejection(
         self,
+        *,
+        current_atom: PropertyAtom,
+        user_reason: str,
         spec_text: str,
         schema_text: str,
-        proposed_atom: PropertyAtom,
-        *,
-        prior_atoms: list[PropertyAtom] | None = None,
-        prior_decisions: list[Any] | None = None,
-    ) -> PropertyCritique:
-        """Review a proposed Stage 2 atom as a decomposition/search step.
-
-        This is the LEAP-style planning filter for AutoCedar. It does not
-        replace Cedar/SymCC or HITL review; it only asks whether this atom is a
-        useful, materially distinct, well-scoped unit worth showing to the
-        human and sending through symbolic grounding.
-        """
+        prior_atoms: list[PropertyAtom],
+        symbolic_log: list[str],
+    ) -> PropertyRejectionPlanResponse:
+        """Classify a HITL property rejection into a structured repair action."""
         from autocedar.atoms import to_dict as _atom_to_dict
 
-        prior_atoms = prior_atoms or []
-        prior_decisions = prior_decisions or []
-        prior_json = [_summarize_property_atom(atom) for atom in prior_atoms]
-        decision_json = [_summarize_atom_decision(decision) for decision in prior_decisions]
-        proposed_json = _atom_to_dict(proposed_atom)
+        prior_json = [_atom_to_dict(atom) for atom in prior_atoms]
+        current_json = _atom_to_dict(current_atom)
+        user_turn = (
+            "A reviewer rejected the current Stage 2 property atom. Decide what "
+            "AutoCedar should do next. Do not infer from keywords; reason about "
+            "the source packet, current atom, prior approved atoms, verifier log, "
+            "and reviewer explanation.\n\n"
+            "Allowed actions:\n"
+            "- repair_current_property: current atom captures real intent but its "
+            "encoding/direction/scope needs repair.\n"
+            "- repair_prior_property: current atom is valid, but one named prior "
+            "approved property must be revised, widened, narrowed, or merged.\n"
+            "- repair_schema: the current schema cannot express the required intent.\n"
+            "- reject_current: current atom is not wanted intent and should be skipped.\n"
+            "- ask_user_clarification: the intent cannot be resolved from the packet.\n\n"
+            "If action is repair_prior_property, set target_atom to the exact "
+            "name of the prior atom to repair. If action is repair_schema, fill "
+            "schema_gap_summary with the missing schema concept. Always provide "
+            "a concrete repair_instruction.\n\n"
+            "Current property atom:\n"
+            f"```json\n{json.dumps(current_json, indent=2)}\n```\n\n"
+            "Reviewer reason:\n"
+            f"{user_reason}\n\n"
+            "Symbolic verifier log for current atom:\n"
+            f"```json\n{json.dumps(symbolic_log, indent=2)}\n```\n\n"
+            "Prior approved property atoms:\n"
+            f"```json\n{json.dumps(prior_json, indent=2)}\n```\n\n"
+            "Validated Cedar schema:\n"
+            f"```cedarschema\n{schema_text}\n```"
+        )
         response = self._call_parse(
-            system_prompt=(
-                "You are AutoCedar's Stage 2 decomposition critic. Review one "
-                "proposed property atom before it is shown to a human. Your job "
-                "is to prune weak proof-plan steps, like LEAP's blueprint "
-                "reviewer: reject atoms that are redundant, schema-implied, "
-                "duplicates of approved or rejected atoms, too broad for their "
-                "source excerpt, or missing named lifecycle/ownership/network/"
-                "authentication/conflict boundaries. Return `accept` only when "
-                "the atom is materially useful and tightly scoped. Return "
-                "`repair` when the same source requirement is useful but the "
-                "atom should be revised before HITL. Return `reject` when it "
-                "should be skipped entirely. If a source boundary is real but "
-                "the validated schema has no field/action/context hook that can "
-                "represent it, do not accept a correlated proxy as equivalent. "
-                "Return `repair` with a `schema-gap` tag and name the missing "
-                "boundary so the pipeline can repair the schema before HITL "
-                "property review. For `disjointness` atoms, do not interpret "
-                "a `reference_cedar` safe-complement permit as an affirmative "
-                "permission grant. AutoCedar represents disjointness as an "
-                "implies/ceiling check plus `disjoint_target_body`, and later "
-                "patches same-action floors with the negated target body. "
-                "Judge whether `disjoint_target_body` names the forbidden "
-                "slice correctly; request repair only if that target is wrong, "
-                "missing, or unsupported by the schema. Do not perform symbolic "
-                "proof checking here; Cedar/SymCC will do that later."
-            ),
+            system_prompt=_load_prompt("property_atomization.md"),
             spec_text=spec_text,
-            user_turn=(
-                "Validated Cedar schema:\n\n"
-                f"```cedarschema\n{schema_text}\n```\n\n"
-                "Already-approved property atoms:\n\n"
-                f"```json\n{json.dumps(prior_json, indent=2)}\n```\n\n"
-                "Prior review decisions and rejected proposals:\n\n"
-                f"```json\n{json.dumps(decision_json, indent=2)}\n```\n\n"
-                "Proposed property atom to critique:\n\n"
-                f"```json\n{json.dumps(proposed_json, indent=2)}\n```\n\n"
-                "Critique this proposed atom as a Stage 2 decomposition step. "
-                "If it is only restating the schema's principal/resource type, "
-                "or is already implied by a stricter approved atom, reject it. "
-                "If its floor or ceiling omits a condition named in the source "
-                "requirement, request repair and name the missing boundary. "
-                "When that boundary is not schema-expressible, return `repair` "
-                "with a `schema-gap` tag rather than accepting a proxy. If the "
-                "schema already exposes the relevant lifecycle/process hook "
-                "(for example a resource has `registrationProcess` and that "
-                "process has `isClosed`), request property repair using that "
-                "hook; do not label it a schema gap or ask for a duplicate "
-                "parallel field. If the atom is `disjointness`, focus on "
-                "`disjoint_target_body` as the forbidden slice. A complement "
-                "permit in `reference_cedar` is the verifier encoding for a "
-                "ceiling, not a claim that the complement must be permitted."
-            ),
-            output_format=PropertyCritiqueResponse,
+            user_turn=user_turn,
+            output_format=PropertyRejectionPlanResponse,
             effort_override=_stage2_effort(self._provider, self._effort),
         )
-        parsed = response.parsed_output
-        return PropertyCritique(
-            decision=parsed.decision,
-            reason=parsed.reason,
-            tags=list(parsed.tags),
-        )
+        return response.parsed_output
 
     # ------------------------------------------------------------------
     # Stage 1 fix: ask the LLM to fix a cedar-validate failure.
@@ -910,33 +883,67 @@ def _property_coverage_instruction(prior_atoms: list[PropertyAtom]) -> str:
     counts: dict[str, int] = {}
     for atom in prior_atoms:
         counts[atom.constraint_type] = counts.get(atom.constraint_type, 0) + 1
+    floor_atoms = [atom for atom in prior_atoms if atom.constraint_type == "floor"]
+    safety_actions = {
+        atom.action
+        for atom in prior_atoms
+        if atom.constraint_type in {"ceiling", "disjointness", "rate_limit"}
+    }
+    unbounded_floor_atoms = [
+        atom for atom in floor_atoms if atom.action and atom.action not in safety_actions
+    ]
     if counts.get("floor", 0) == 0:
         return (
             "No approved floor atoms exist yet. If the spec contains any positive "
             "permission language such as 'can', 'may', 'must be able', 'allows', "
             "or a use-case success path, propose one missing floor atom now before "
-            "adding more ceilings or disjointness atoms."
+            "adding more ceilings or disjointness atoms. That floor is only the "
+            "first side of a bounded grant; after it is approved, Stage 2 should "
+            "surface the matching ceiling/safety side unless the source clearly "
+            "says the grant is only an example."
+        )
+    if unbounded_floor_atoms:
+        names = ", ".join(atom.name for atom in unbounded_floor_atoms[:5])
+        return (
+            "Approved floors exist without any same-action ceiling/disjointness "
+            f"yet: {names}. Prefer the missing bounded-grant ceiling/safety side "
+            "next. The ceiling should keep the action inside the union of the "
+            "approved allowed slices for that action/resource shape; do not emit "
+            "a narrow ceiling that would exclude another approved same-action "
+            "floor. Propose another floor first only if the source has an "
+            "uncovered positive slice that must be included in that same union."
         )
     if counts.get("floor", 0) < counts.get("ceiling", 0) + counts.get("disjointness", 0):
         return (
             "Safety atoms currently outnumber floors. Prefer the next missing "
             "floor for an explicit allowed workflow unless every positive "
-            "permission path in the spec already has a floor."
+            "permission path in the spec already has a floor. This does not "
+            "make conditional positive grants floor-only: once a floor exists "
+            "for an intended allowed slice, the plan still needs a same-action "
+            "ceiling/disjointness that keeps that grant inside the approved "
+            "slice unless the source text clearly says it is only an example."
         )
     return (
         "Continue with the most important missing property. Before returning an "
-        "empty atoms list, audit existing floors for necessary conditions such "
-        "as own/assigned resource, LAN, strong authentication, current/open "
-        "periods, upcoming/not-completed semester boundaries, add/drop windows, "
-        "eligible course, no conflict, registered student, or completed semester. "
-        "If any floor has such a boundary but no same-action ceiling/disjointness "
-        "contains that same boundary, propose the missing stricter safety atom "
-        "next. A same-action ceiling for only part of the floor body is not "
-        "enough; each named lifecycle, ownership, network, authentication, "
-        "eligibility, conflict, assignment, or completion boundary must be "
-        "covered. Otherwise propose a floor for an uncovered positive workflow, "
-        "a ceiling/disjointness for an uncovered safety boundary, or empty only "
-        "when both sides are covered."
+        "empty atoms list, audit existing floors as bounded allowed slices. A "
+        "positive conditional grant like a role acting on a related resource "
+        "usually needs both the floor and a same-action ceiling/disjointness "
+        "covering the same approved slice, unless the source text clearly says "
+        "the condition is only an example or non-exhaustive. For multi-slice "
+        "actions, the ceiling must be a union of approved slices, not a narrow "
+        "local ceiling that would exclude sibling floors. Check each floor body "
+        "for role/resource relationship, ownership, team membership, assigned "
+        "resource, LAN, strong authentication, current/open periods, "
+        "upcoming/not-completed semester boundaries, add/drop windows, eligible "
+        "course, no conflict, registered student, completed semester, or other "
+        "source-named limits. If any floor has such a boundary but no "
+        "same-action ceiling/disjointness contains that same boundary, propose "
+        "the missing stricter safety atom next. A same-action ceiling for only "
+        "part of the floor body is not enough; each named relationship, "
+        "lifecycle, ownership, network, authentication, eligibility, conflict, "
+        "assignment, or completion boundary must be covered. Otherwise propose "
+        "a floor for an uncovered positive workflow, a ceiling/disjointness for "
+        "an uncovered safety boundary, or empty only when both sides are covered."
     )
 
 

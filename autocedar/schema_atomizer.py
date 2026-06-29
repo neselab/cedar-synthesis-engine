@@ -38,6 +38,34 @@ def _render_attribute(attr: AttributeAtom, indent: str = "    ") -> str:
     return f"{indent}{attr.field_name}{optional_marker}: {attr.cedar_type},"
 
 
+def _uses_pseudo_top_entity_type(atom: Stage1Atom) -> bool:
+    """Reject the common mistake of using ``Entity`` as a universal type.
+
+    Cedar has no built-in top entity type named ``Entity``. Declaring
+    ``entity Entity;`` creates one concrete entity type, so attributes typed as
+    ``Entity`` will not compare equal to role-specific principals such as
+    ``Patient`` or ``PersonalRepresentative``. AutoCedar should ask for typed
+    hooks instead of smuggling this fake top type into generated schemas.
+    """
+
+    def has_entity_type(type_text: str) -> bool:
+        return bool(re.search(r"(^|[<,\s])Entity([>,\s]|$)", type_text))
+
+    if isinstance(atom, AttributeAtom):
+        return has_entity_type(atom.cedar_type)
+    if isinstance(atom, EntityAtom):
+        if atom.name == "Entity":
+            return True
+        return any(has_entity_type(attr.cedar_type) for attr in atom.attributes.values())
+    if isinstance(atom, ActionAtom):
+        if "Entity" in atom.principal_types or "Entity" in atom.resource_types:
+            return True
+        return any(has_entity_type(attr.cedar_type) for attr in atom.context_attributes.values())
+    if isinstance(atom, TypeAliasAtom):
+        return atom.name == "Entity" or has_entity_type(atom.cedar_type)
+    return False
+
+
 def _render_entity(entity: EntityAtom) -> str:
     """Emit an ``entity X { ... };`` block.
 
@@ -127,6 +155,8 @@ def apply_schema_atoms_to_text(
 
 
 def _apply_one_schema_atom_to_text(schema_text: str, atom: Stage1Atom) -> str | None:
+    if _uses_pseudo_top_entity_type(atom):
+        return None
     if isinstance(atom, AttributeAtom):
         return _add_entity_attribute(schema_text, atom)
     if isinstance(atom, EntityAtom):
@@ -325,6 +355,8 @@ def route_atom_into_draft(atom: Stage1Atom, draft: SchemaDraft) -> None:
     silently. The corpus log captures the decision separately so the user
     can detect this case during review.
     """
+    if _uses_pseudo_top_entity_type(atom):
+        return
     if isinstance(atom, EntityAtom):
         draft.entities[atom.name] = atom
     elif isinstance(atom, ActionAtom):

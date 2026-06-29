@@ -24,6 +24,8 @@ def test_session_creates_full_directory_layout(tmp_path: Path) -> None:
     s = Session("test-session", tmp_path)
     expected_subdirs = [
         "input",
+        "stage0",
+        "stage0/context_packets",
         "stage1",
         "stage1_5",
         "stage1_75",
