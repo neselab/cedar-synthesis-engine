@@ -180,6 +180,43 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     author_p.set_defaults(func=_cmd_author)
 
+    resume_p = sub.add_parser(
+        "resume",
+        help="Resume an incomplete AutoCedar authoring session from its logs.",
+    )
+    resume_p.add_argument("session", help="Prior session directory to resume.")
+    resume_p.add_argument("--out", required=True, help="Directory for the resumed session output.")
+    resume_p.add_argument("--session-id", default=None, help="Stable resumed session id.")
+    resume_p.add_argument(
+        "--model",
+        default=default_model_for_provider(),
+        help=(
+            "Model for continued atomization and Stage 3 synthesis "
+            f"(default: {default_model_for_provider()})."
+        ),
+    )
+    resume_p.add_argument(
+        "--effort",
+        choices=["low", "medium", "high", "max"],
+        default=os.environ.get("AUTOCEDAR_EFFORT", DEFAULT_EFFORT),
+        help=f"Adaptive thinking effort for continued authoring (default: {DEFAULT_EFFORT}).",
+    )
+    resume_p.add_argument(
+        "--auto-approve",
+        action="store_true",
+        help="Approve newly proposed atoms without interactive review, for plumbing tests only.",
+    )
+    resume_p.add_argument(
+        "--max-schema-gap-repairs",
+        type=int,
+        default=None,
+        help=(
+            "Optional maximum Stage 2 schema-repair loops before stopping "
+            "(default: no cap)."
+        ),
+    )
+    resume_p.set_defaults(func=_cmd_resume)
+
     verify_p = sub.add_parser(
         "verify",
         help="Verify an existing scenario/workspace candidate with cedar symcc.",
@@ -408,6 +445,117 @@ def _cmd_author(args: argparse.Namespace) -> int:
             no_review=True,
         ),
         schema_path_override=args.schema,
+        max_schema_gap_repairs=getattr(args, "max_schema_gap_repairs", None),
+    )
+
+    print(f"session:   {result.session_dir}")
+    if result.candidate_path:
+        print(f"candidate: {result.candidate_path}")
+    print(f"approved:  {result.final_user_approved}")
+    if result.notes:
+        print("notes:")
+        for note in result.notes:
+            print(f"  - {note}")
+    return 0 if result.final_user_approved else 1
+
+
+def _cmd_resume(args: argparse.Namespace) -> int:
+    _require_api_key_for_llm_command()
+    session_dir = Path(args.session)
+    if not session_dir.exists():
+        raise SystemExit(f"session not found: {session_dir}")
+    input_files = sorted((session_dir / "input").glob("*"))
+    if not input_files:
+        raise SystemExit(f"resume session has no input spec under: {session_dir / 'input'}")
+    spec_path = input_files[0]
+
+    llm = LLMClient(provider=default_provider(), model=args.model, effort=args.effort)
+    spec_text = spec_path.read_text()
+
+    def schema_proposer(text: str):
+        return propose_schema_atoms(text, llm)
+
+    def property_proposer(text: str, schema_path: str, prior_atoms, prior_decisions):
+        return propose_property_atom(text, schema_path, llm, prior_atoms, prior_decisions)
+
+    def schema_repairer(text: str, rejected_atom, reason: str, prior_atoms):
+        _ = prior_atoms
+        return llm.propose_alternative_atom(rejected_atom, reason, text)
+
+    def schema_fixer(schema_text: str, cedar_error: str, text: str) -> str:
+        return llm.fix_schema(schema_text, cedar_error, text)
+
+    def property_repairer(
+        text: str,
+        schema_path: str,
+        rejected_atom,
+        reason: str,
+        prior_atoms,
+    ):
+        schema_text = Path(schema_path).read_text()
+        return llm.propose_alternative_property_atom(
+            rejected_atom,
+            reason,
+            text,
+            schema_text,
+            prior_atoms,
+        )
+
+    def property_repair_planner(
+        text: str,
+        schema_path: str,
+        current_atom,
+        decision,
+        prior_atoms,
+        schema_text: str,
+        symbolic_log,
+    ):
+        response = llm.plan_property_rejection(
+            current_atom=current_atom,
+            user_reason=decision.reason,
+            spec_text=text,
+            schema_text=schema_text,
+            prior_atoms=prior_atoms,
+            symbolic_log=symbolic_log,
+        )
+        from autocedar.pipeline import PropertyRepairPlan
+
+        return PropertyRepairPlan(
+            action=response.action,
+            target_atom=response.target_atom,
+            reason=response.reason,
+            repair_instruction=response.repair_instruction,
+            schema_gap_summary=response.schema_gap_summary,
+        )
+
+    def reviewer(atom):
+        if args.auto_approve:
+            return auto_approve(atom)
+        reviewed = interactive_review_loop(
+            [atom],
+            llm=llm,
+            spec_text=spec_text,
+        )
+        return reviewed[0]
+
+    result = author_pipeline(
+        spec_path=spec_path,
+        output_dir=Path(args.out),
+        session_id=args.session_id,
+        review_atom=reviewer,
+        propose_schema_atoms=schema_proposer,
+        propose_property_atom=property_proposer,
+        repair_schema_atom=schema_repairer,
+        fix_schema=schema_fixer,
+        plan_property_repair=property_repair_planner,
+        repair_property_atom=property_repairer,
+        synthesize=make_harness_synthesizer(
+            phase1_model=args.model,
+            phase2_model=args.model,
+            no_review=True,
+        ),
+        resume_from=session_dir,
+        run_incremental_checks=False,
         max_schema_gap_repairs=getattr(args, "max_schema_gap_repairs", None),
     )
 

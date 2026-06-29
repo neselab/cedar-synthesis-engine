@@ -391,7 +391,7 @@ class CodexAuthClient:
     ) -> None:
         self._requester = requester or _request_json
         self._credentials = credentials
-        self._timeout = timeout
+        self._timeout = _configured_timeout(timeout)
         self.messages = _CodexMessages(self)
 
     def _credentials_for_call(self) -> CodexCredentials:
@@ -399,6 +399,17 @@ class CodexAuthClient:
             return self._credentials
         self._credentials = resolve_codex_credentials(requester=self._requester)
         return self._credentials
+
+
+def _configured_timeout(default: float) -> float:
+    raw = os.environ.get("AUTOCEDAR_CODEX_TIMEOUT_SECONDS")
+    if not raw:
+        return default
+    try:
+        value = float(raw)
+    except ValueError:
+        return default
+    return max(value, 1.0)
 
 
 class _CodexMessages:
@@ -471,7 +482,11 @@ class _CodexMessages:
                 payload,
                 self._parent._timeout,
             )
-        if status != 200 or not isinstance(response, dict):
+        if (
+            status != 200
+            or not isinstance(response, dict)
+            or response.get("error") is not None
+        ):
             raise CodexAuthError(_format_codex_response_error(status, response))
         try:
             return _extract_response_text(response), _extract_response_usage(response)
@@ -485,7 +500,11 @@ class _CodexMessages:
                 payload,
                 self._parent._timeout,
             )
-            if status != 200 or not isinstance(response, dict):
+            if (
+                status != 200
+                or not isinstance(response, dict)
+                or response.get("error") is not None
+            ):
                 raise CodexAuthError(_format_codex_response_error(status, response)) from exc
             return _extract_response_text(response), _extract_response_usage(response)
 
@@ -588,14 +607,25 @@ def _read_response_body(response: Any, *, timeout: float, expects_stream: bool =
 
 def _decode_response_body(raw: str) -> Any:
     if not raw:
-        return {}
+        return {
+            "error": {
+                "type": "empty_response",
+                "message": "Codex Responses API returned an empty response body.",
+            },
+        }
     try:
         return json.loads(raw)
     except json.JSONDecodeError:
         sse_payload = _decode_sse_response(raw)
         if sse_payload is not None:
             return sse_payload
-        raise
+        return {
+            "error": {
+                "type": "invalid_json_response",
+                "message": "Codex Responses API returned a non-JSON response body.",
+                "body_preview": raw[:500],
+            },
+        }
 
 
 def _decode_sse_response(raw: str) -> Any | None:

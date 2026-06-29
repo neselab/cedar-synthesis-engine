@@ -19,6 +19,7 @@ from types import SimpleNamespace
 import pytest
 
 from autocedar.atoms import ActionAtom, AttributeAtom, EntityAtom, PropertyAtom
+from autocedar.atoms import RequiredSchemaSupport
 from autocedar.corpus import AtomDecision
 from autocedar.grounding import CEDAR_PATH, CVC5_PATH
 from autocedar.pipeline import PropertyRepairPlan, author
@@ -91,6 +92,36 @@ def _owner_must_floor() -> PropertyAtom:
             'permit (principal is User, action == Action::"read", resource is Resource)\n'
             "when { principal == resource.owner };\n"
         ),
+    )
+
+
+def _admin_credential_read_floor_with_missing_action_support() -> PropertyAtom:
+    return PropertyAtom(
+        name="admin_read_credential_floor",
+        rationale="Administrators must be able to read credentials.",
+        plain_english_summary="Administrators must be permitted to read credentials.",
+        source_excerpt="Administrators can read credentials.",
+        constraint_type="floor",
+        action="read",
+        principal_types=["Admin"],
+        resource_types=["Credential"],
+        reference_cedar=(
+            'permit (principal is Admin, action == Action::"read", resource is Credential);'
+        ),
+        required_schema_support=[
+            RequiredSchemaSupport(
+                kind="action_principal",
+                action="read",
+                type_name="Admin",
+                reason="The floor reference uses Admin as the requester.",
+            ),
+            RequiredSchemaSupport(
+                kind="action_resource",
+                action="read",
+                type_name="Credential",
+                reason="The floor reference uses Credential as the resource.",
+            ),
+        ],
     )
 
 
@@ -1899,6 +1930,107 @@ def test_hitl_schema_gap_rejection_stops_when_repair_is_unavailable(
     assert not (session_dir / "stage1_75" / "unsat_core.json").exists()
     assert not (session_dir / "stage2" / "final_plan" / "verification_plan.py").exists()
     assert not (session_dir / "stage3" / "final_candidate.cedar").exists()
+
+
+def test_property_required_schema_support_triggers_repair_before_review(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    spec_path = tmp_path / "policy_spec.md"
+    spec_path.write_text("Administrators can read credentials.")
+    schema_path = tmp_path / "schema.cedarschema"
+    schema_path.write_text(textwrap.dedent("""\
+        entity User;
+        entity Admin;
+        entity Document;
+        entity Credential;
+
+        action read appliesTo {
+            principal: [User],
+            resource: [Document],
+        };
+    """))
+
+    monkeypatch.setattr("autocedar.pipeline.cedar_validate_schema", lambda path: (True, ""))
+    monkeypatch.setattr(
+        "autocedar.pipeline.symbolic_consistency_check",
+        lambda plan, schema: SimpleNamespace(
+            unsat=False,
+            core=[],
+            detail="",
+            tool_error=False,
+        ),
+    )
+
+    def fail_if_property_verifier_runs(*args: object, **kwargs: object) -> None:
+        _ = args, kwargs
+        raise AssertionError("property verification should wait for schema repair")
+
+    monkeypatch.setattr("autocedar.pipeline.symbolic_verify_atom", fail_if_property_verifier_runs)
+
+    proposed = _admin_credential_read_floor_with_missing_action_support()
+    proposer_calls = 0
+
+    def property_proposer(
+        spec_text: str,
+        schema_path_arg: str,
+        prior_atoms: list[PropertyAtom],
+        prior_decisions: list[AtomDecision],
+    ) -> PropertyAtom | None:
+        nonlocal proposer_calls
+        _ = spec_text, prior_atoms, prior_decisions
+        proposer_calls += 1
+        if proposer_calls == 1:
+            assert "principal: [User]" in Path(schema_path_arg).read_text()
+            return proposed
+        assert "principal: [User, Admin]" in Path(schema_path_arg).read_text()
+        assert "resource: [Document, Credential]" in Path(schema_path_arg).read_text()
+        return None
+
+    repair_specs: list[str] = []
+
+    def schema_proposer(spec_text: str) -> list[ActionAtom]:
+        repair_specs.append(spec_text)
+        return [
+            ActionAtom(
+                name="read",
+                rationale="add missing action support",
+                plain_english_summary="Allow admins to read credentials.",
+                source_excerpt="Administrators can read credentials.",
+                principal_types=["Admin"],
+                resource_types=["Credential"],
+            ),
+        ]
+
+    reviewed: list[object] = []
+
+    def reviewer(atom: object) -> AtomDecision:
+        reviewed.append(atom)
+        return _approve(atom)
+
+    result = author(
+        spec_path=spec_path,
+        output_dir=tmp_path / "out",
+        session_id="schema-support",
+        propose_schema_atoms=schema_proposer,
+        propose_property_atom=property_proposer,
+        review_atom=reviewer,
+        synthesize=_synthesize_stub,
+        schema_path_override=str(schema_path),
+    )
+
+    assert result.final_user_approved is True
+    assert proposer_calls == 2
+    assert repair_specs
+    assert "action `read` does not include principal type `Admin`" in repair_specs[0]
+    assert "action `read` does not include resource type `Credential`" in repair_specs[0]
+    assert [type(atom) for atom in reviewed] == [ActionAtom]
+    assert "principal: [User, Admin]" in result.schema_text
+    assert "resource: [Document, Credential]" in result.schema_text
+    gaps = json.loads(
+        (tmp_path / "out" / "schema-support" / "stage1_5" / "schema_gaps.json").read_text(),
+    )
+    assert gaps[0]["stage"] == "stage2_pre_review_schema_support"
 
 
 # ---------------------------------------------------------------------------

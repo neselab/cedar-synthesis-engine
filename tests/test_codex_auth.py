@@ -7,16 +7,19 @@ from pathlib import Path
 from typing import Any
 import urllib.request
 
+import pytest
 from pydantic import BaseModel
 
 from autocedar.codex_auth import (
     CODEX_OAUTH_TOKEN_URL,
     DEFAULT_CODEX_BASE_URL,
     DEFAULT_CODEX_MODEL,
+    CodexAuthError,
     CodexAuthClient,
     CodexCredentials,
     _codex_strict_schema,
     _codex_request_headers,
+    _decode_response_body,
     _decode_sse_response,
     _loads_json_object,
     _request_json,
@@ -311,6 +314,68 @@ def test_codex_parse_retries_once_after_empty_text_output() -> None:
     assert response.parsed_output == _Answer(answer="OK")
 
 
+def test_codex_parse_accepts_success_payload_with_null_error() -> None:
+    credentials = CodexCredentials(
+        access_token=_codex_jwt("acct_parse"),
+        refresh_token="refresh",
+        source="test",
+        auth_path=None,
+        base_url=DEFAULT_CODEX_BASE_URL,
+    )
+
+    def requester(method: str, url: str, headers: dict[str, str], body: Any, timeout: float):
+        _ = method, url, headers, body, timeout
+        return 200, {
+            "error": None,
+            "usage": {"input_tokens": 12, "output_tokens": 3},
+            "output": [
+                {
+                    "type": "message",
+                    "content": [{"type": "output_text", "text": '{"answer":"OK"}'}],
+                },
+            ],
+        }
+
+    client = CodexAuthClient(credentials=credentials, requester=requester)
+    response = client.messages.parse(
+        model="gpt-test",
+        system=[{"type": "text", "text": "system prompt"}],
+        messages=[{"role": "user", "content": "user turn"}],
+        output_format=_Answer,
+    )
+
+    assert response.parsed_output == _Answer(answer="OK")
+
+
+def test_codex_parse_raises_clear_error_for_error_payload_with_200_status() -> None:
+    credentials = CodexCredentials(
+        access_token=_codex_jwt("acct_parse"),
+        refresh_token="refresh",
+        source="test",
+        auth_path=None,
+        base_url=DEFAULT_CODEX_BASE_URL,
+    )
+
+    def requester(method: str, url: str, headers: dict[str, str], body: Any, timeout: float):
+        _ = method, url, headers, body, timeout
+        return 200, {
+            "error": {
+                "type": "invalid_json_response",
+                "message": "Codex Responses API returned a non-JSON response body.",
+                "body_preview": "<html>gateway timeout</html>",
+            },
+        }
+
+    client = CodexAuthClient(credentials=credentials, requester=requester)
+    with pytest.raises(CodexAuthError, match="non-JSON response body"):
+        client.messages.parse(
+            model="gpt-test",
+            system=[{"type": "text", "text": "system prompt"}],
+            messages=[{"role": "user", "content": "user turn"}],
+            output_format=_Answer,
+        )
+
+
 def test_codex_create_refreshes_once_after_unauthorized(
     monkeypatch,
     tmp_path: Path,
@@ -364,6 +429,15 @@ def test_decode_sse_response_accumulates_output_text_deltas() -> None:
     ])
 
     assert _decode_sse_response(raw)["output_text"] == "autocedar"
+
+
+def test_decode_response_body_classifies_empty_and_non_json_bodies() -> None:
+    empty = _decode_response_body("")
+    assert empty["error"]["type"] == "empty_response"
+
+    html = _decode_response_body("<html>gateway timeout</html>")
+    assert html["error"]["type"] == "invalid_json_response"
+    assert "gateway timeout" in html["error"]["body_preview"]
 
 
 def test_request_json_timeout_returns_structured_transport_error(

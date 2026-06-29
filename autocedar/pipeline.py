@@ -12,7 +12,9 @@ components are missing; they never silently produce placeholder policies.
 from __future__ import annotations
 
 import datetime
+import json
 import os
+import re
 import shutil
 from dataclasses import dataclass, field, replace
 from pathlib import Path
@@ -26,6 +28,7 @@ from autocedar.atoms import (
     SchemaDraft,
     TypeAliasAtom,
     VerificationPlanDraft,
+    from_dict,
     to_dict,
 )
 from autocedar.corpus import (
@@ -51,6 +54,10 @@ from autocedar.schema_atomizer import (
     apply_schema_atoms_to_text,
     cedar_validate_schema,
     compose_and_validate,
+)
+from autocedar.schema_support import (
+    describe_missing_schema_support,
+    missing_schema_support,
 )
 from autocedar.source_doc import (
     attach_source_ids,
@@ -198,6 +205,27 @@ class AuthorResult:
     notes: list[str] = field(default_factory=list)
 
 
+@dataclass
+class _ResumeCheckpoint:
+    """Hydrated state from an earlier incomplete authoring session."""
+
+    base: Path
+    schema_text: str
+    schema_atoms: list[Stage1AtomT]
+    stage1_attributions: list[AttributionDecision]
+    stage1_decisions: list[AtomDecision]
+    approved_schema_atoms: list[Stage1AtomT]
+    property_atoms: list[PropertyAtom]
+    stage2_attributions: list[AttributionDecision]
+    stage2_decisions: list[AtomDecision]
+    approved_property_atoms: list[PropertyAtom]
+    completed_property_node_ids: set[str]
+    schema_gaps: list[dict[str, Any]]
+    schema_gap_repairs: list[dict[str, Any]]
+    verification_logs: dict[str, list[str]]
+    reopened_source_node_ids: set[str] = field(default_factory=set)
+
+
 def _write_stage0_artifacts(
     session: Session,
     source_doc: Any,
@@ -306,6 +334,8 @@ def author(
         lambda c: score_candidate_default(c, llm=stub_llm_scorer)
     ),
     schema_path_override: Optional[str] = None,
+    resume_from: Optional[str | Path] = None,
+    run_incremental_checks: bool = True,
     max_property_proposals: int = DEFAULT_MAX_PROPERTY_PROPOSALS,
     max_schema_gap_repairs: int | None = None,
 ) -> AuthorResult:
@@ -328,8 +358,13 @@ def author(
     draft: SchemaDraft | None = None
     approved_schema_atoms: list[Stage1AtomT] = []
     approved_schema_names: set[str] = set()
-    schema_gaps: list[dict[str, Any]] = []
-    schema_gap_repairs: list[dict[str, Any]] = []
+    resume_checkpoint = _load_resume_checkpoint(Path(resume_from)) if resume_from else None
+    schema_gaps: list[dict[str, Any]] = (
+        list(resume_checkpoint.schema_gaps) if resume_checkpoint else []
+    )
+    schema_gap_repairs: list[dict[str, Any]] = (
+        list(resume_checkpoint.schema_gap_repairs) if resume_checkpoint else []
+    )
     schema_gap_repair_count = 0
     schema_gap_repair_limit = max_schema_gap_repairs
 
@@ -339,7 +374,9 @@ def author(
     session.write_stage0_source_index(source_doc.to_index())
     schema_context_packets = []
     property_context_packets = []
-    completed_property_node_ids: set[str] = set()
+    completed_property_node_ids: set[str] = (
+        set(resume_checkpoint.completed_property_node_ids) if resume_checkpoint else set()
+    )
     _write_stage0_artifacts(
         session,
         source_doc,
@@ -357,7 +394,53 @@ def author(
     plan_property_repair = plan_property_repair or _default_property_repair_plan
 
     # ──── Stage 1: schema atomization ────
-    if schema_path_override:
+    if resume_checkpoint is not None:
+        schema_text = resume_checkpoint.schema_text
+        schema_dest = session.base / "stage1" / "final_schema.cedarschema"
+        schema_dest.write_text(schema_text)
+        schema_path = schema_dest
+        schema_ok, schema_error = cedar_validate_schema(schema_dest)
+        session.write_stage1_proposed_atoms(resume_checkpoint.schema_atoms)
+        session.write_stage1_attribution_decisions(resume_checkpoint.stage1_attributions)
+        session.write_stage1_decisions(resume_checkpoint.stage1_decisions)
+        session.write_stage1_schema_validation([
+            {
+                "attempt_number": 1,
+                "schema_text": schema_text,
+                "validator_passed": schema_ok,
+                "validator_error": "" if schema_ok else schema_error,
+                "llm_was_called": False,
+                "resume_from": str(resume_checkpoint.base),
+            },
+        ])
+        approved_schema_atoms = list(resume_checkpoint.approved_schema_atoms)
+        approved_schema_names = {atom.name for atom in approved_schema_atoms}
+        draft = _draft_from_approved_schema_atoms(approved_schema_atoms)
+        session.write_stage1_5_schema_gaps(schema_gaps)
+        session.write_stage1_5_schema_gap_repairs(schema_gap_repairs)
+        if not schema_ok:
+            session.write_stage1_final_schema(schema_text)
+            _write_stage0_artifacts(
+                session,
+                source_doc,
+                schema_context_packets,
+                property_context_packets,
+                completed_property_node_ids,
+            )
+            session.flush_transcript()
+            return AuthorResult(
+                session_id=session_id,
+                session_dir=session.base,
+                candidate_path=Path(""),
+                plan=VerificationPlanDraft(properties=[]),
+                schema_text=schema_text,
+                final_user_approved=False,
+                notes=[
+                    "Resumed Stage 1 schema validation failed: "
+                    f"{schema_error}",
+                ],
+            )
+    elif schema_path_override:
         schema_text = Path(schema_path_override).read_text()
         # Persist the chosen schema in the session so later stages have
         # a stable on-disk path to point at.
@@ -566,14 +649,33 @@ def author(
     # Stage 2 is intentionally clocked by HITL review: ask for one property
     # atom, verify it, let the human approve/edit/reject it, then pass that
     # review history into the next proposal.
-    prop_atoms: list[PropertyAtom] = []
-    attributions2: list[AttributionDecision] = []
-    decisions2: list[AtomDecision] = []
-    plan = VerificationPlanDraft(properties=[])
-    verification_logs: dict[str, list[str]] = {}
+    prop_atoms: list[PropertyAtom] = (
+        list(resume_checkpoint.property_atoms) if resume_checkpoint else []
+    )
+    attributions2: list[AttributionDecision] = (
+        list(resume_checkpoint.stage2_attributions) if resume_checkpoint else []
+    )
+    decisions2: list[AtomDecision] = (
+        list(resume_checkpoint.stage2_decisions) if resume_checkpoint else []
+    )
+    plan = VerificationPlanDraft(
+        properties=list(resume_checkpoint.approved_property_atoms)
+        if resume_checkpoint
+        else [],
+    )
+    verification_logs: dict[str, list[str]] = (
+        dict(resume_checkpoint.verification_logs) if resume_checkpoint else {}
+    )
     repair_plans: list[dict[str, Any]] = []
     incremental_candidates: list[dict[str, Any]] = []
     approved_property_names: set[str] = set()
+    if resume_checkpoint is not None:
+        approved_property_names = {atom.name for atom in plan.properties}
+        session.write_stage2_proposed_atoms(prop_atoms)
+        session.write_stage2_approved_atoms(plan.properties)
+        session.write_stage2_attribution_decisions(attributions2)
+        session.write_stage2_decisions(decisions2)
+        session.write_stage2_symbolic_verification_logs(verification_logs)
     property_frontier_nodes = source_doc.authorization_nodes()
     active_property_node = None
     property_frontier_exhausted = False
@@ -621,6 +723,98 @@ def author(
                 ),
             )
             active_property_node = None
+            continue
+        support_gaps = missing_schema_support(atom.required_schema_support, schema_text)
+        if support_gaps:
+            gap_reason = (
+                "The proposed property atom depends on schema support that is "
+                "not present yet:\n"
+                f"{describe_missing_schema_support(support_gaps)}"
+            )
+            schema_gap = {
+                "atom_name": atom.name,
+                "stage": "stage2_pre_review_schema_support",
+                "reason": gap_reason,
+                "tags": ["property_required_schema_support"],
+                "required_action": "repair_schema_before_property_review",
+                "repair_plan": {
+                    "action": "repair_schema",
+                    "reason": gap_reason,
+                    "repair_instruction": gap_reason,
+                },
+                "missing_support": [to_dict(item.support) | {"detail": item.detail} for item in support_gaps],
+            }
+            schema_gaps.append(schema_gap)
+            session.write_stage1_5_schema_gaps(schema_gaps)
+            if (
+                schema_gap_repair_limit is not None
+                and schema_gap_repair_count >= schema_gap_repair_limit
+            ):
+                _write_stage0_artifacts(
+                    session,
+                    source_doc,
+                    schema_context_packets,
+                    property_context_packets,
+                    completed_property_node_ids,
+                    schema_atoms=approved_schema_atoms,
+                    property_atoms=plan.properties,
+                    schema_gaps=schema_gaps,
+                )
+                session.flush_transcript()
+                return AuthorResult(
+                    session_id=session_id,
+                    session_dir=session.base,
+                    candidate_path=Path(""),
+                    plan=plan,
+                    schema_text=schema_text,
+                    final_user_approved=False,
+                    notes=[
+                        "Stage 2 found more schema gaps than the repair budget "
+                        f"({schema_gap_repair_limit}); stopped before property review.",
+                    ],
+                )
+            repaired = _repair_schema_gap_and_validate(
+                spec_text=active_spec_text,
+                schema_text=schema_text,
+                schema_path=schema_path,
+                gap=schema_gap,
+                session=session,
+                review_atom=review_atom,
+                propose_schema_atoms=propose_schema_atoms,
+                fix_schema=fix_schema,
+                draft=draft,
+                approved_schema_atoms=approved_schema_atoms,
+                approved_schema_names=approved_schema_names,
+                repair_records=schema_gap_repairs,
+            )
+            if repaired is None:
+                _write_stage0_artifacts(
+                    session,
+                    source_doc,
+                    schema_context_packets,
+                    property_context_packets,
+                    completed_property_node_ids,
+                    schema_atoms=approved_schema_atoms,
+                    property_atoms=plan.properties,
+                    schema_gaps=schema_gaps,
+                )
+                session.flush_transcript()
+                return AuthorResult(
+                    session_id=session_id,
+                    session_dir=session.base,
+                    candidate_path=Path(""),
+                    plan=plan,
+                    schema_text=schema_text,
+                    final_user_approved=False,
+                    notes=[
+                        "Stage 2 found schema support required by a proposed "
+                        f"property atom but could not produce an approved schema repair for "
+                        f"`{atom.name}`: {gap_reason}",
+                    ],
+                )
+            schema_text = repaired
+            schema_gap_repair_count += 1
+            _notify_schema_ready(review_atom, schema_text)
             continue
         prop_atoms.append(atom)
         attributions2.append(
@@ -817,16 +1011,18 @@ def author(
             reviewed_atom.intent_acknowledged_by_user = True
             plan.properties.append(reviewed_atom)
             approved_property_names.add(reviewed_atom.name)
-            _run_incremental_candidate_check(
-                session=session,
-                records=incremental_candidates,
-                synthesize=synthesize,
-                spec_path=spec_path,
-                schema_text=schema_text,
-                plan=plan,
-                approved_schema_atoms=approved_schema_atoms,
-                score_candidate=score_candidate,
-            )
+            session.write_stage2_approved_atoms(plan.properties)
+            if run_incremental_checks:
+                _run_incremental_candidate_check(
+                    session=session,
+                    records=incremental_candidates,
+                    synthesize=synthesize,
+                    spec_path=spec_path,
+                    schema_text=schema_text,
+                    plan=plan,
+                    approved_schema_atoms=approved_schema_atoms,
+                    score_candidate=score_candidate,
+                )
         decisions2.append(decision)
         session.write_stage2_decisions(decisions2)
         if unrepaired_prior_conflict is not None:
@@ -986,6 +1182,7 @@ def author(
         session.write_stage2_proposed_atoms(prop_atoms)
         session.write_stage2_attribution_decisions(attributions2)
     session.write_stage2_decisions(decisions2)
+    session.write_stage2_approved_atoms(plan.properties)
     _notify_review_stage_complete(review_atom, "Property intent review", decisions2)
     _notify_property_plan_ready(review_atom, plan.properties)
     session.write_stage2_intent_graph(
@@ -1136,6 +1333,377 @@ def author(
 # Helpers.
 # ---------------------------------------------------------------------------
 
+def _load_resume_checkpoint(base: Path) -> _ResumeCheckpoint:
+    """Load an incomplete session so `author` can continue in-place."""
+    if not base.exists():
+        raise FileNotFoundError(f"resume session not found: {base}")
+    schema_path = base / "stage1" / "final_schema.cedarschema"
+    if not schema_path.exists():
+        raise FileNotFoundError(f"resume session has no final schema: {schema_path}")
+
+    schema_atoms = [_load_stage1_atom(item) for item in _read_json(base / "stage1" / "proposed_atoms.json", [])]
+    stage1_attributions = [
+        AttributionDecision(**item)
+        for item in _read_json(base / "stage1" / "attribution_decisions.json", [])
+    ]
+    stage1_decisions = [
+        AtomDecision(**item) for item in _read_json(base / "stage1" / "decisions.json", [])
+    ]
+    approved_schema_atoms = _approved_stage1_atoms(schema_atoms, stage1_decisions)
+    approved_schema_atoms.extend(_approved_schema_repair_atoms(base / "stage1_5" / "schema_gap_repairs.json"))
+
+    property_atoms = [
+        from_dict(PropertyAtom, item)
+        for item in _read_json(base / "stage2" / "proposed_atoms.json", [])
+    ]
+    for atom in property_atoms:
+        _canonicalize_resumed_property_atom(atom)
+    stage2_attributions = [
+        AttributionDecision(**item)
+        for item in _read_json(base / "stage2" / "attribution_decisions.json", [])
+    ]
+    raw_stage2_decisions = [
+        AtomDecision(**item) for item in _read_json(base / "stage2" / "decisions.json", [])
+    ]
+    verification_logs = _read_json(base / "stage2" / "symbolic_verification_logs.json", {})
+    coverage = _read_json(base / "stage0" / "coverage_ledger.json", {})
+    completed_node_ids = set(coverage.get("completed_property_node_ids", []))
+
+    approved_snapshot_path = base / "stage2" / "approved_atoms.json"
+    if approved_snapshot_path.exists():
+        approved_properties = [
+            from_dict(PropertyAtom, item)
+            for item in _read_json(approved_snapshot_path, [])
+        ]
+        for atom in approved_properties:
+            _canonicalize_resumed_property_atom(atom)
+            atom.intent_acknowledged_by_user = True
+            atom.symbolic_verified = True
+        stage2_decisions = raw_stage2_decisions
+        reopened_source_node_ids: set[str] = set()
+        approved_properties, stage2_decisions = _retire_superseded_resume_ceilings(
+            approved_properties,
+            stage2_decisions,
+        )
+    else:
+        approved_properties, stage2_decisions, reopened_source_node_ids = _approved_property_atoms_for_resume(
+            property_atoms,
+            raw_stage2_decisions,
+            verification_logs if isinstance(verification_logs, dict) else {},
+        )
+    completed_node_ids.difference_update(reopened_source_node_ids)
+
+    schema_text = schema_path.read_text()
+    schema_text = _amend_resumed_schema_actions_for_properties(
+        schema_text,
+        approved_properties,
+    )
+
+    return _ResumeCheckpoint(
+        base=base,
+        schema_text=schema_text,
+        schema_atoms=schema_atoms,
+        stage1_attributions=stage1_attributions,
+        stage1_decisions=stage1_decisions,
+        approved_schema_atoms=approved_schema_atoms,
+        property_atoms=property_atoms,
+        stage2_attributions=stage2_attributions,
+        stage2_decisions=stage2_decisions,
+        approved_property_atoms=approved_properties,
+        completed_property_node_ids=completed_node_ids,
+        schema_gaps=_read_json(base / "stage1_5" / "schema_gaps.json", []),
+        schema_gap_repairs=_read_json(base / "stage1_5" / "schema_gap_repairs.json", []),
+        verification_logs=verification_logs if isinstance(verification_logs, dict) else {},
+        reopened_source_node_ids=reopened_source_node_ids,
+    )
+
+
+def _read_json(path: Path, default: Any) -> Any:
+    if not path.exists():
+        return default
+    return json.loads(path.read_text())
+
+
+def _load_stage1_atom(item: dict[str, Any]) -> Stage1AtomT:
+    if "field_name" in item and "on_entity" in item:
+        return from_dict(AttributeAtom, item)
+    if "principal_types" in item or "resource_types" in item or "context_attributes" in item:
+        return from_dict(ActionAtom, item)
+    if "cedar_type" in item:
+        return from_dict(TypeAliasAtom, item)
+    return from_dict(EntityAtom, item)
+
+
+def _approved_stage1_atoms(
+    proposed_atoms: list[Stage1AtomT],
+    decisions: list[AtomDecision],
+) -> list[Stage1AtomT]:
+    by_name = {atom.name: atom for atom in proposed_atoms}
+    approved: list[Stage1AtomT] = []
+    seen: set[str] = set()
+    for decision in decisions:
+        if decision.action != "approve" or decision.atom_name in seen:
+            continue
+        atom = by_name.get(decision.atom_name)
+        if atom is not None:
+            approved.append(atom)
+            seen.add(decision.atom_name)
+    return approved
+
+
+def _approved_schema_repair_atoms(path: Path) -> list[Stage1AtomT]:
+    repairs = _read_json(path, [])
+    approved: list[Stage1AtomT] = []
+    seen: set[str] = set()
+    if not isinstance(repairs, list):
+        return approved
+    for repair in repairs:
+        for raw_atom in repair.get("approved_atoms", []) if isinstance(repair, dict) else []:
+            atom = _load_stage1_atom(raw_atom)
+            if atom.name not in seen:
+                approved.append(atom)
+                seen.add(atom.name)
+    return approved
+
+
+def _approved_property_atoms_for_resume(
+    proposed_atoms: list[PropertyAtom],
+    decisions: list[AtomDecision],
+    verification_logs: dict[str, list[str]],
+) -> tuple[list[PropertyAtom], list[AtomDecision], set[str]]:
+    """Trust approved properties unless the prior session recorded real invalidity.
+
+    Older sessions could contain user-approved atoms whose Cedar body failed
+    type checking. Resuming those as approved target constraints poisons
+    synthesis. A bare ``symbolic_verified=false`` is not enough evidence,
+    though: earlier runs often stored that value when the verifier never ran or
+    the log was not persisted. We reopen only when the recorded log shows a
+    concrete Cedar/type error. Verifier setup failures are environment problems,
+    not intent rejections.
+    """
+    by_name = {atom.name: atom for atom in proposed_atoms}
+    approved: list[PropertyAtom] = []
+    rewritten_decisions: list[AtomDecision] = []
+    reopened_source_node_ids: set[str] = set()
+    seen_approved: set[str] = set()
+
+    for decision in decisions:
+        if decision.action != "approve":
+            rewritten_decisions.append(decision)
+            continue
+        atom = by_name.get(decision.atom_name)
+        if atom is None:
+            rewritten_decisions.append(decision)
+            continue
+        if _resume_log_is_invalid_property(verification_logs.get(decision.atom_name, [])):
+            reopened_source_node_ids.update(source_ids_from_text(atom.source_excerpt))
+            rewritten_decisions.append(
+                AtomDecision(
+                    atom_name=decision.atom_name,
+                    action="reject",
+                    reason=(
+                        "resume audit: this property had been approved by intent review, "
+                        "but the recorded Cedar/type check failed, so AutoCedar must "
+                        "repair or repropose it before synthesis."
+                    ),
+                    edit_delta={"original_resume_decision": to_dict(decision)},
+                    intent_acknowledged_by_user=decision.intent_acknowledged_by_user,
+                    symbolic_verified=False,
+                ),
+            )
+            continue
+        if decision.atom_name not in seen_approved:
+            atom.intent_acknowledged_by_user = True
+            atom.symbolic_verified = True
+            approved.append(atom)
+            seen_approved.add(decision.atom_name)
+        rewritten_decisions.append(decision)
+    approved, rewritten_decisions = _retire_superseded_resume_ceilings(
+        approved,
+        rewritten_decisions,
+    )
+    return approved, rewritten_decisions, reopened_source_node_ids
+
+
+def _retire_superseded_resume_ceilings(
+    approved: list[PropertyAtom],
+    decisions: list[AtomDecision],
+) -> tuple[list[PropertyAtom], list[AtomDecision]]:
+    """Drop older same-action ceilings superseded by later provenance-union ceilings.
+
+    A repaired ceiling can intentionally widen an earlier ceiling into a union
+    after a later floor reveals missing authorized scope. Keeping both ceilings
+    makes the target the intersection and recreates the stale conflict. During
+    resume, retire an older ceiling when a later approved ceiling for the same
+    action cites a strict superset of the older ceiling's source ids.
+    """
+    retired: dict[str, str] = {}
+    for i, older in enumerate(approved):
+        if older.constraint_type != "ceiling":
+            continue
+        older_ids = set(source_ids_from_text(older.source_excerpt))
+        if not older_ids:
+            continue
+        for newer in approved[i + 1 :]:
+            if newer.constraint_type != "ceiling" or newer.action != older.action:
+                continue
+            newer_ids = set(source_ids_from_text(newer.source_excerpt))
+            if older_ids <= newer_ids and older.reference_cedar != newer.reference_cedar:
+                retired[older.name] = newer.name
+                break
+    if not retired:
+        return approved, decisions
+    filtered = [atom for atom in approved if atom.name not in retired]
+    rewritten: list[AtomDecision] = []
+    for decision in decisions:
+        if decision.action == "approve" and decision.atom_name in retired:
+            rewritten.append(
+                AtomDecision(
+                    atom_name=decision.atom_name,
+                    action="reject",
+                    reason=(
+                        "resume audit: retired because later approved ceiling "
+                        f"`{retired[decision.atom_name]}` cites a strict superset "
+                        "of this ceiling's source ids for the same action."
+                    ),
+                    edit_delta={"original_resume_decision": to_dict(decision)},
+                    intent_acknowledged_by_user=decision.intent_acknowledged_by_user,
+                    symbolic_verified=decision.symbolic_verified,
+                ),
+            )
+        else:
+            rewritten.append(decision)
+    return filtered, rewritten
+
+
+def _resume_log_is_invalid_property(log: list[str]) -> bool:
+    text = "\n".join(log).lower()
+    if not text:
+        return False
+    setup_markers = (
+        "verifier setup",
+        "cannot run `symcc`",
+        "analyze feature",
+        "solver not found",
+        "failed to start",
+        "unexpected argument",
+        "--principal-type",
+        "--cvc5-path",
+    )
+    if any(marker in text for marker in setup_markers):
+        return False
+    invalid_markers = (
+        "type-correct: failed",
+        "cedar validate",
+        "failed to parse",
+        "failed to resolve",
+        "validation failed",
+        "expected entity uid",
+        "schema/type check: failed",
+    )
+    return any(marker in text for marker in invalid_markers)
+
+
+def _canonicalize_resumed_property_atom(atom: PropertyAtom) -> None:
+    atom.reference_cedar = _canonicalize_resumed_reference_cedar(atom.reference_cedar)
+    if atom.disjoint_target_body:
+        atom.disjoint_target_body = _canonicalize_type_membership_expr(atom.disjoint_target_body)
+
+
+def _canonicalize_resumed_reference_cedar(cedar: str) -> str:
+    """Normalize stale checkpoint Cedar syntax without changing intent.
+
+    Older AutoCedar runs sometimes wrote type membership as
+    ``principal in SomeType`` / ``resource in SomeResource``. Cedar parses bare
+    identifiers after ``in`` as entity UIDs or template slots, not types. The
+    intended and reviewed form is the Cedar type test ``is``.
+    """
+    return _canonicalize_type_membership_expr(cedar)
+
+
+def _canonicalize_type_membership_expr(cedar: str) -> str:
+    if not cedar:
+        return cedar
+
+    def replace_type_test(match: re.Match[str]) -> str:
+        lhs, rhs = match.group(1), match.group(2)
+        if "::" in rhs or '"' in rhs:
+            return match.group(0)
+        return f"{lhs} is {rhs}"
+
+    return re.sub(
+        r"\b(principal|resource)\s+in\s+([A-Z][A-Za-z0-9_]*)\b",
+        replace_type_test,
+        cedar,
+    )
+
+
+def _amend_resumed_schema_actions_for_properties(
+    schema_text: str,
+    properties: list[PropertyAtom],
+) -> str:
+    """Ensure resumed schema action scopes include approved property scopes."""
+    amended = schema_text
+    for atom in properties:
+        action = atom.action.replace('Action::"', "").rstrip('"')
+        for principal_type in atom.principal_types:
+            amended = _add_type_to_action_scope(
+                amended,
+                action_name=action,
+                field_name="principal",
+                type_name=principal_type,
+            )
+        for resource_type in atom.resource_types:
+            amended = _add_type_to_action_scope(
+                amended,
+                action_name=action,
+                field_name="resource",
+                type_name=resource_type,
+            )
+    return amended
+
+
+def _add_type_to_action_scope(
+    schema_text: str,
+    *,
+    action_name: str,
+    field_name: str,
+    type_name: str,
+) -> str:
+    if not action_name or not type_name:
+        return schema_text
+    if not re.search(rf"\bentity\s+{re.escape(type_name)}\b", schema_text):
+        return schema_text
+    action_re = re.compile(
+        rf"(action\s+{re.escape(action_name)}\s+appliesTo\s*\{{)(?P<body>.*?)(\n\}};)",
+        re.DOTALL,
+    )
+    match = action_re.search(schema_text)
+    if not match:
+        return schema_text
+    body = match.group("body")
+    field_re = re.compile(
+        rf"({re.escape(field_name)}\s*:\s*\[)(?P<types>[^\]]*)(\]\s*,)",
+    )
+    field_match = field_re.search(body)
+    if not field_match:
+        return schema_text
+    existing = [part.strip() for part in field_match.group("types").split(",") if part.strip()]
+    if type_name in existing:
+        return schema_text
+    existing.append(type_name)
+    new_field = field_match.group(1) + ", ".join(existing) + field_match.group(3)
+    new_body = body[: field_match.start()] + new_field + body[field_match.end() :]
+    return schema_text[: match.start("body")] + new_body + schema_text[match.end("body") :]
+
+
+def _draft_from_approved_schema_atoms(atoms: list[Stage1AtomT]) -> SchemaDraft:
+    draft = SchemaDraft()
+    for atom in atoms:
+        _route_into_schema_draft(atom, draft)
+    return draft
+
+
 def _repair_named_prior_property(
     *,
     spec_text: str,
@@ -1213,6 +1781,7 @@ def _repair_named_prior_property(
     plan.properties[prior_index] = reviewed_replacement
     approved_property_names.discard(prior_atom.name)
     approved_property_names.add(reviewed_replacement.name)
+    session.write_stage2_approved_atoms(plan.properties)
     return True
 
 
@@ -1374,13 +1943,10 @@ def _schema_gap_repair_spec(
         "minimal and reviewable.\n\n"
         "If the rejected boundary is cross-cutting, repair the class of "
         "affected actions in one batch instead of only the rejected action. "
-        "Examples: an active authenticated-session boundary should add the "
-        "same `context.session`-style hook to all protected actions in the "
-        "current schema whose authorization depends on a live requester; a "
-        "patient-specific personal-representative or designated-provider "
-        "boundary should add the same typed relationship hook to all actions "
-        "that authorize represented-patient or designated-provider access. "
-        "Still keep each emitted atom individually reviewable.\n"
+        "For example, if the approved source text requires a common request "
+        "context or relationship field across several protected actions, emit "
+        "the minimal atoms that add that generic hook to those actions. Still "
+        "keep each emitted atom individually reviewable.\n"
         "</schema_gap_repair>\n"
     )
 

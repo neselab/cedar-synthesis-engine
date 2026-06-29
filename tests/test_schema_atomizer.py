@@ -240,6 +240,40 @@ def test_apply_schema_atoms_to_text_adds_context_to_existing_action() -> None:
     assert "isCampusLan: Bool" in repaired
 
 
+def test_apply_schema_atoms_to_text_merges_action_principal_and_resource_types() -> None:
+    schema = textwrap.dedent("""\
+        entity User;
+
+        entity Admin;
+
+        entity Document;
+
+        entity Credential;
+
+        action read appliesTo {
+            principal: [User],
+            resource: [Document],
+        };
+    """)
+    repaired = apply_schema_atoms_to_text(
+        schema,
+        [
+            ActionAtom(
+                name="read",
+                rationale="read action support repair",
+                plain_english_summary="Allow admins to read credentials.",
+                source_excerpt="Administrators can read credentials.",
+                principal_types=["Admin"],
+                resource_types=["Credential"],
+            ),
+        ],
+    )
+
+    assert repaired is not None
+    assert "principal: [User, Admin]" in repaired
+    assert "resource: [Document, Credential]" in repaired
+
+
 def test_apply_schema_atoms_to_text_returns_none_for_missing_owner() -> None:
     repaired = apply_schema_atoms_to_text(
         "entity User;\n",

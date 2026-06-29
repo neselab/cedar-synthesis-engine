@@ -1,6 +1,7 @@
 # Python-generated files
 __pycache__/
 *.py[oc]
+.DS_Store
 build/
 dist/
 wheels/
@@ -14,6 +15,9 @@ wheels/
 
 # Evaluation run outputs (per-session, large, regeneratable)
 eval_runs/
+autocedar-runs/
+autocedar-spec.md
+exports/
 
 # Worktree management
 .claude/

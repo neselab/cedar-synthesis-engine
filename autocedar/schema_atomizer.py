@@ -43,9 +43,9 @@ def _uses_pseudo_top_entity_type(atom: Stage1Atom) -> bool:
 
     Cedar has no built-in top entity type named ``Entity``. Declaring
     ``entity Entity;`` creates one concrete entity type, so attributes typed as
-    ``Entity`` will not compare equal to role-specific principals such as
-    ``Patient`` or ``PersonalRepresentative``. AutoCedar should ask for typed
-    hooks instead of smuggling this fake top type into generated schemas.
+    ``Entity`` will not compare equal to concrete principal/resource types.
+    AutoCedar should ask for typed hooks instead of smuggling this fake top type
+    into generated schemas.
     """
 
     def has_entity_type(type_text: str) -> bool:
@@ -238,8 +238,6 @@ def _entity_has_attribute(schema_text: str, entity: str, field_name: str) -> boo
 def _merge_action_atom(schema_text: str, atom: ActionAtom) -> str | None:
     if not _action_exists(schema_text, atom.name):
         return _append_block(schema_text, _render_action(atom))
-    if not atom.context_attributes:
-        return schema_text
 
     block_pattern = re.compile(
         rf"(?P<head>\baction\s+{re.escape(atom.name)}\s+appliesTo\s*\{{)"
@@ -252,12 +250,18 @@ def _merge_action_atom(schema_text: str, atom: ActionAtom) -> str | None:
         return None
 
     body = match.group("body")
+    new_body = body
+    if atom.principal_types:
+        new_body = _merge_action_type_list(new_body, "principal", atom.principal_types)
+    if atom.resource_types:
+        new_body = _merge_action_type_list(new_body, "resource", atom.resource_types)
+
     attrs_to_add = [
         attr
         for attr in atom.context_attributes.values()
-        if not _action_context_has_attribute(body, attr.field_name)
+        if not _action_context_has_attribute(new_body, attr.field_name)
     ]
-    if not attrs_to_add:
+    if not attrs_to_add and new_body == body:
         return schema_text
 
     context_pattern = re.compile(
@@ -266,21 +270,43 @@ def _merge_action_atom(schema_text: str, atom: ActionAtom) -> str | None:
         r"(?P<tail>\n\s*\},)",
         re.DOTALL,
     )
-    context_match = context_pattern.search(body)
+    context_match = context_pattern.search(new_body)
     if context_match:
         insertion = "".join("\n" + _render_attribute(attr, indent="        ") for attr in attrs_to_add)
         new_body = (
-            body[:context_match.start("tail")]
+            new_body[:context_match.start("tail")]
             + insertion
-            + body[context_match.start("tail"):]
+            + new_body[context_match.start("tail"):]
         )
-    else:
+    elif attrs_to_add:
         context_lines = ["    context: {"]
         context_lines.extend(_render_attribute(attr, indent="        ") for attr in attrs_to_add)
         context_lines.append("    },")
-        new_body = body.rstrip() + "\n" + "\n".join(context_lines)
+        new_body = new_body.rstrip() + "\n" + "\n".join(context_lines)
 
     return schema_text[:match.start("body")] + new_body + schema_text[match.end("body"):]
+
+
+def _merge_action_type_list(action_body: str, slot: str, additions: list[str]) -> str:
+    pattern = re.compile(
+        rf"(?P<head>\n\s*{re.escape(slot)}\s*:\s*\[)(?P<body>[^\]]*)(?P<tail>\],)",
+        re.DOTALL,
+    )
+    match = pattern.search(action_body)
+    clean_additions = [item for item in additions if item]
+    if not clean_additions:
+        return action_body
+    if not match:
+        insertion = f"    {slot}: [{', '.join(dict.fromkeys(clean_additions))}],\n"
+        return "\n" + insertion + action_body.lstrip("\n")
+    existing = [
+        item.strip()
+        for item in match.group("body").replace("\n", " ").split(",")
+        if item.strip()
+    ]
+    merged = list(dict.fromkeys(existing + clean_additions))
+    replacement = f"{match.group('head')}{', '.join(merged)}{match.group('tail')}"
+    return action_body[:match.start()] + replacement + action_body[match.end():]
 
 
 def _action_context_has_attribute(action_body: str, field_name: str) -> bool:

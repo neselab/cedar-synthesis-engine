@@ -230,6 +230,11 @@ class Session:
         path.write_text(json.dumps([to_dict(a) for a in atoms], indent=2))
         self._event("stage2.proposed", {"count": len(atoms)})
 
+    def write_stage2_approved_atoms(self, atoms: list[PropertyAtom]) -> None:
+        path = self.base / "stage2" / "approved_atoms.json"
+        path.write_text(json.dumps([to_dict(a) for a in atoms], indent=2))
+        self._event("stage2.approved", {"count": len(atoms)})
+
     def write_stage2_attribution_decisions(
         self, decisions: list[AttributionDecision],
     ) -> None:
