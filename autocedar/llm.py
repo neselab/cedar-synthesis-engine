@@ -38,6 +38,8 @@ from autocedar.atoms import (
     EntityAtom,
     Example,
     PropertyAtom,
+    RequiredSchemaSupport,
+    SchemaSupportKind,
     TypeAliasAtom,
 )
 from autocedar.codex_auth import DEFAULT_CODEX_MODEL, CodexAuthClient, is_codex_provider
@@ -179,6 +181,18 @@ class _LLMAlternativeEncoding(BaseModel):
     cedar_text: str
 
 
+class _LLMRequiredSchemaSupport(BaseModel):
+    """One schema hook required by a Stage 2 property atom."""
+
+    kind: SchemaSupportKind
+    name: str = ""
+    entity: str = ""
+    action: str = ""
+    field_name: str = ""
+    type_name: str = ""
+    reason: str = ""
+
+
 class _LLMPropertyAtom(BaseModel):
     """LLM-side Stage 2 property atom."""
 
@@ -191,6 +205,7 @@ class _LLMPropertyAtom(BaseModel):
     principal_types: list[str] = Field(default_factory=list)
     resource_types: list[str] = Field(default_factory=list)
     reference_cedar: str = ""
+    required_schema_support: list[_LLMRequiredSchemaSupport] = Field(default_factory=list)
     examples_adversarial: list[_LLMExample] = Field(default_factory=list)
     alternatives_considered: list[_LLMAlternativeEncoding] = Field(default_factory=list)
     rate_limit_window: Optional[str] = None
@@ -322,6 +337,18 @@ def _translate_property_atom(llm: _LLMPropertyAtom) -> PropertyAtom:
         principal_types=list(llm.principal_types),
         resource_types=list(llm.resource_types),
         reference_cedar=reference_cedar,
+        required_schema_support=[
+            RequiredSchemaSupport(
+                kind=s.kind,
+                name=s.name,
+                entity=s.entity,
+                action=s.action,
+                field_name=s.field_name,
+                type_name=s.type_name,
+                reason=s.reason,
+            )
+            for s in llm.required_schema_support
+        ],
         examples_adversarial=[
             Example(
                 description=e.description,
@@ -507,7 +534,9 @@ class LLMClient:
                 "to verify that requirement. Do not bundle multiple requirements "
                 "into one atom. Do not emit a duplicate of an approved or rejected "
                 "atom. Non-liveness atoms must include a complete `reference_cedar` "
-                "policy; liveness atoms may leave it empty."
+                "policy. Liveness atoms should include a concrete probe policy "
+                "when the requirement names a slice that must remain possible; "
+                "leave it empty only for broad legacy liveness."
             ),
             output_format=PropertyAtomsResponse,
             effort_override=_stage2_effort(self._provider, self._effort),
@@ -591,6 +620,17 @@ class LLMClient:
             "- repair_schema: the current schema cannot express the required intent.\n"
             "- reject_current: current atom is not wanted intent and should be skipped.\n"
             "- ask_user_clarification: the intent cannot be resolved from the packet.\n\n"
+            "If the symbolic log contains `identity-consistency: FAILED`, treat "
+            "it as a role/base identity-model error, not as a normal type error. "
+            "Cedar validates entity equality across entity types, but "
+            "`User::alice` is not `Patient::alice`. Choose `repair_schema` when "
+            "the schema lacks bridge fields such as `Patient.user: User` or "
+            "`LicensedHealthCareProfessional.user: User`; choose "
+            "`repair_current_property` when the bridge exists but the atom used "
+            "a direct cross-type comparison such as `principal == "
+            "resource.patient`, `principal == context.patient`, "
+            "`resource.sender == principal`, or `context.session.user == "
+            "principal`.\n\n"
             "If action is repair_prior_property, set target_atom to the exact "
             "name of the prior atom to repair. If action is repair_schema, fill "
             "schema_gap_summary with the missing schema concept. Always provide "
@@ -867,6 +907,18 @@ def _summarize_property_atom(atom: PropertyAtom) -> dict[str, Any]:
         "plain_english_summary": atom.plain_english_summary,
         "source_excerpt": atom.source_excerpt,
         "reference_cedar": atom.reference_cedar,
+        "required_schema_support": [
+            {
+                "kind": support.kind,
+                "name": support.name,
+                "entity": support.entity,
+                "action": support.action,
+                "field_name": support.field_name,
+                "type_name": support.type_name,
+                "reason": support.reason,
+            }
+            for support in atom.required_schema_support
+        ],
     }
 
 

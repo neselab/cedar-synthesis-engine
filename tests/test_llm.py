@@ -37,6 +37,7 @@ from autocedar.llm import (
     _LLMContextAttribute,
     _LLMEntityAtom,
     _LLMPropertyAtom,
+    _LLMRequiredSchemaSupport,
     _LLMTypeAliasAtom,
     _property_coverage_instruction,
     _translate_atom,
@@ -431,6 +432,14 @@ def test_propose_property_atom_returns_translated_dataclass() -> None:
                         'permit (principal is User, action == Action::"read", resource is Resource)\n'
                         "when { principal == resource.owner };"
                     ),
+                    required_schema_support=[
+                        _LLMRequiredSchemaSupport(
+                            kind="attribute",
+                            entity="Resource",
+                            field_name="owner",
+                            reason="The Cedar reference compares principal to resource.owner.",
+                        ),
+                    ],
                 ),
             ],
         ),
@@ -447,6 +456,9 @@ def test_propose_property_atom_returns_translated_dataclass() -> None:
     assert isinstance(atom, PropertyAtom)
     assert atom.constraint_type == "ceiling"
     assert atom.action == "read"
+    assert atom.required_schema_support[0].kind == "attribute"
+    assert atom.required_schema_support[0].entity == "Resource"
+    assert atom.required_schema_support[0].field_name == "owner"
 
 
 def test_propose_property_atom_includes_schema_and_one_atom_contract() -> None:

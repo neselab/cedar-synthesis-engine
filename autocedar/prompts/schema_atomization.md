@@ -186,6 +186,17 @@ The runtime will not reorder for you.
   the same relationship proof, add the same typed relationship context
   field to those actions during Stage 1 or schema-gap repair. Do not
   flatten patient-specific relationships into global roles.
+- Choose one identity model and keep it consistent. If a real-world actor can
+  appear both as a base account entity such as `User` and as a role/profile
+  entity such as `Patient`, `Doctor`, `LicensedHealthCareProfessional`, or
+  `Administrator`, do not rely on same textual IDs across entity types. Cedar
+  treats `User::"alice"` and `Patient::"alice"` as different entities. Either:
+  (1) use role-specific entities as the canonical principals for those actions,
+  or (2) add explicit bridge attributes such as `Patient.user: User` and
+  `LicensedHealthCareProfessional.user: User` and make Stage 2 compare through
+  those bridges. For account/session/message fields typed as `User`, bridge
+  role-specific principals through `.user` rather than comparing the role entity
+  directly to a `User` field.
 - Do not use a made-up `Entity` type as a universal owner/principal type.
   In Cedar, `entity Entity;` declares one concrete entity type; it is not a
   top type and will not compare equal to `Patient`, `PersonalRepresentative`,

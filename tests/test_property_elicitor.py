@@ -325,6 +325,20 @@ def test_liveness_compiles_with_no_reference_file() -> None:
     assert '"floor_path"' not in out.verification_plan_py
 
 
+def test_liveness_probe_compiles_to_overlap_check_with_reference() -> None:
+    atom = _liveness_atom()
+    atom.reference_cedar = (
+        'permit (principal is User, action == Action::"read", resource is Record) '
+        'when { resource.careTeamMembers.contains(principal) };'
+    )
+    plan = VerificationPlanDraft(properties=[atom])
+    out = compile_plan(plan)
+    assert "liveness_read" in out.references
+    assert '"type": "liveness-overlap"' in out.verification_plan_py
+    assert '"reference_path": os.path.join(REFS, "liveness_read.cedar")' in out.verification_plan_py
+    assert '"floor_path"' not in out.verification_plan_py
+
+
 def test_rate_limit_compiles_to_implies() -> None:
     plan = VerificationPlanDraft(properties=[_rate_limit_atom()])
     out = compile_plan(plan)

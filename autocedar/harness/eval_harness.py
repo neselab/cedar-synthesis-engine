@@ -34,6 +34,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import difflib
 import hashlib
 import json
 import os
@@ -1057,6 +1058,210 @@ def _format_validation_feedback(error_text: str) -> str:
     return "\n".join(parts)
 
 
+def _format_signal_diagnostics(
+    result: CheckResult,
+    check_def: dict,
+    candidate_text: str | None,
+) -> list[str]:
+    """Return targeted verifier-signal diagnostics for one failed semantic check.
+
+    This layer is deliberately evidence-oriented. It does not reinterpret the
+    natural-language intent; it compares the failing reference with the current
+    candidate around the same action and points out common repair classes that
+    are visible in Cedar itself.
+    """
+    if not candidate_text:
+        return []
+
+    reference_path = (
+        check_def.get("reference_path")
+        or check_def.get("floor_path")
+        or check_def.get("reference_file")
+    )
+    if not reference_path or not os.path.exists(reference_path):
+        return []
+
+    try:
+        with open(reference_path) as f:
+            reference_text = f.read().strip()
+    except OSError:
+        return []
+
+    actions = _cedar_action_names(reference_text)
+    candidate_blocks: list[str] = []
+    for action in actions:
+        candidate_blocks.extend(_cedar_policy_blocks_for_action(candidate_text, action))
+    if not candidate_blocks and actions:
+        candidate_blocks = _cedar_policy_blocks_for_action(candidate_text, actions[0])
+
+    lines: list[str] = ["", "  **Signal-layer diagnosis:**"]
+    lines.append(f"    - Check identity: `{result.check_name}`")
+    lines.append(f"    - Check direction: `{check_def.get('type', result.check_type)}`")
+    if check_def.get("description"):
+        lines.append(f"    - Intent description: {check_def['description']}")
+
+    classes = _classify_repair_classes(
+        result=result,
+        check_def=check_def,
+        reference_text=reference_text,
+        candidate_blocks=candidate_blocks,
+        candidate_text=candidate_text,
+    )
+    if classes:
+        lines.append("    - Likely repair class(es):")
+        for item in classes:
+            lines.append(f"      - {item}")
+
+    if candidate_blocks:
+        candidate_excerpt = "\n\n".join(candidate_blocks[:3])
+        lines.append("    - Candidate policy block(s) for same action:")
+        lines.append(_indent_fenced_cedar(_truncate_middle(candidate_excerpt, 2200), spaces=6))
+    else:
+        lines.append(
+            "    - Candidate policy block(s) for same action: none found. "
+            "For a floor failure, add a permit for this action. For a ceiling "
+            "failure, inspect any broader permit for the same action."
+        )
+
+    diff = _reference_candidate_diff(reference_text, "\n\n".join(candidate_blocks[:3]))
+    if diff:
+        lines.append("    - Candidate/reference diff around this action:")
+        lines.append(_indent_fenced_text(_truncate_middle(diff, 1800), spaces=6))
+
+    return lines
+
+
+def _cedar_action_names(text: str) -> list[str]:
+    names = re.findall(r'Action::"([^"]+)"', text)
+    return list(dict.fromkeys(names))
+
+
+def _cedar_policy_blocks_for_action(text: str, action: str) -> list[str]:
+    blocks: list[str] = []
+    pattern = re.compile(
+        r'((?:permit|forbid)\s*\([\s\S]*?Action::"'
+        + re.escape(action)
+        + r'"[\s\S]*?\};)',
+        re.MULTILINE,
+    )
+    for match in pattern.finditer(text):
+        block = match.group(1).strip()
+        if block not in blocks:
+            blocks.append(block)
+    return blocks
+
+
+def _classify_repair_classes(
+    *,
+    result: CheckResult,
+    check_def: dict,
+    reference_text: str,
+    candidate_blocks: list[str],
+    candidate_text: str,
+) -> list[str]:
+    ctype = check_def.get("type", result.check_type)
+    joined_candidate = "\n\n".join(candidate_blocks) if candidate_blocks else candidate_text
+    combined = reference_text + "\n" + joined_candidate
+    classes: list[str] = []
+
+    session_delta = _session_binding_delta(reference_text, joined_candidate)
+    if session_delta:
+        ref_bindings, cand_bindings = session_delta
+        classes.append(
+            "session-binding mismatch: the candidate and reference bind "
+            "the principal through different session fields. Compare "
+            f"reference `{', '.join(ref_bindings)}` with candidate "
+            f"`{', '.join(cand_bindings)}` and align the candidate with "
+            "the reference for this check."
+        )
+
+    if re.search(r"\bprincipal\s+in\s+[\w.]+", combined) or re.search(r"[\w.]+\s+in\s+[\w.]+", combined):
+        if ".contains(" in reference_text or ".contains(" in joined_candidate:
+            classes.append(
+                "set membership encoding drift: keep entity-set checks in one style, "
+                "prefer `setAttr.contains(entity)` for attribute sets."
+            )
+
+    if ctype == "implies":
+        classes.append(
+            "ceiling/over-permission failure: candidate allows at least one request "
+            "outside this reference. Tighten the candidate permit, or if this "
+            "reference is superseded by a later approved union ceiling, retire or "
+            "materialize the union reference before synthesis."
+        )
+        if _same_action_has_multiple_permits(joined_candidate):
+            classes.append(
+                "union ceiling check: same action has multiple candidate permit "
+                "branches. Verify every branch is represented in the ceiling, and "
+                "that mutually exclusive optional-field guards are present."
+            )
+    elif ctype == "floor":
+        classes.append(
+            "floor/under-permission failure: candidate is missing a required allow "
+            "path or has an extra guard not present in the floor reference."
+        )
+
+    return list(dict.fromkeys(classes))
+
+
+def _session_binding_delta(reference_text: str, candidate_text: str) -> tuple[list[str], list[str]] | None:
+    ref = _session_principal_bindings(reference_text)
+    cand = _session_principal_bindings(candidate_text)
+    if not ref or not cand or set(ref) == set(cand):
+        return None
+    return ref, cand
+
+
+def _session_principal_bindings(text: str) -> list[str]:
+    matches = re.findall(r"context\.session\.[A-Za-z_][A-Za-z0-9_]*\s*==\s*principal", text)
+    return list(dict.fromkeys(matches))
+
+
+def _same_action_has_multiple_permits(text: str) -> bool:
+    actions = _cedar_action_names(text)
+    for action in actions:
+        if len(_cedar_policy_blocks_for_action(text, action)) > 1:
+            return True
+    return False
+
+
+def _reference_candidate_diff(reference_text: str, candidate_text: str) -> str:
+    if not candidate_text:
+        return ""
+    diff = difflib.unified_diff(
+        reference_text.splitlines(),
+        candidate_text.splitlines(),
+        fromfile="reference",
+        tofile="candidate",
+        lineterm="",
+        n=3,
+    )
+    return "\n".join(diff)
+
+
+def _truncate_middle(text: str, limit: int) -> str:
+    if len(text) <= limit:
+        return text
+    head = max(limit // 2 - 40, 0)
+    tail = max(limit - head - 80, 0)
+    return text[:head] + f"\n... ({len(text) - limit} chars omitted) ...\n" + text[-tail:]
+
+
+def _indent_fenced_cedar(text: str, *, spaces: int) -> str:
+    return _indent_fenced(text, fence="cedar", spaces=spaces)
+
+
+def _indent_fenced_text(text: str, *, spaces: int) -> str:
+    return _indent_fenced(text, fence="", spaces=spaces)
+
+
+def _indent_fenced(text: str, *, fence: str, spaces: int) -> str:
+    indent = " " * spaces
+    label = f"```{fence}" if fence else "```"
+    body = "\n".join(indent + line for line in text.splitlines())
+    return f"{indent}{label}\n{body}\n{indent}```"
+
+
 def _format_feedback(
     vr: VerificationResult,
     checks: list[dict],
@@ -1155,6 +1360,7 @@ def _format_feedback(
                 with open(ref_path) as f:
                     parts.append(f"  Ceiling policy (your policy must not exceed this):")
                     parts.append(f"  ```cedar\n  {f.read().strip()}\n  ```")
+            parts.extend(_format_signal_diagnostics(r, check_def, candidate_text))
             if r.counterexample:
                 parts.append(f"  Counterexample from solver:\n  ```\n  {r.counterexample}\n  ```")
         elif ctype == "floor":
@@ -1165,8 +1371,9 @@ def _format_feedback(
             if floor_path and os.path.exists(floor_path):
                 with open(floor_path) as f:
                     floor_text = f.read().strip()
-                parts.append(f"  Floor policy (your policy must allow at least this):")
-                parts.append(f"  ```cedar\n  {floor_text}\n  ```")
+                    parts.append(f"  Floor policy (your policy must allow at least this):")
+                    parts.append(f"  ```cedar\n  {floor_text}\n  ```")
+            parts.extend(_format_signal_diagnostics(r, check_def, candidate_text))
             # Structural hint: detect the role-intersection trap. The floor's
             # permitted set may include users who are in multiple roles, but
             # the candidate may have a forbid rule (or a permit-rule negation)

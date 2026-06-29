@@ -137,6 +137,35 @@ class AlternativeEncoding:
     cedar_text: str  # the alternative encoding (used for symcc distinguishing)
 
 
+SchemaSupportKind = Literal[
+    "entity",
+    "action",
+    "action_principal",
+    "action_resource",
+    "attribute",
+    "context",
+]
+
+
+@dataclass
+class RequiredSchemaSupport:
+    """One schema hook a property atom depends on.
+
+    Stage 2 proposes property atoms one at a time. Before a property is
+    verified or shown for HITL review, the runtime checks these hooks against
+    the current schema. Missing hooks are routed through Stage 1 schema repair
+    instead of surfacing doomed Cedar to the reviewer.
+    """
+
+    kind: SchemaSupportKind
+    name: str = ""
+    entity: str = ""
+    action: str = ""
+    field_name: str = ""
+    type_name: str = ""
+    reason: str = ""
+
+
 @dataclass
 class PropertyAtom(AtomBase):
     """A single property atom (Stage 2 output, before sugar compilation).
@@ -160,6 +189,7 @@ class PropertyAtom(AtomBase):
     resource_types: list[str] = field(default_factory=list)
 
     reference_cedar: str = ""
+    required_schema_support: list[RequiredSchemaSupport] = field(default_factory=list)
 
     examples_adversarial: list[Example] = field(default_factory=list)
     alternatives_considered: list[AlternativeEncoding] = field(default_factory=list)
@@ -310,6 +340,7 @@ _PRIMITIVE_CLASSES = {
     TypeAliasAtom,
     Example,
     AlternativeEncoding,
+    RequiredSchemaSupport,
     PropertyAtom,
     SchemaDraft,
     VerificationPlanDraft,

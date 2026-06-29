@@ -23,6 +23,20 @@ empty when no materially distinct property remains:
       "principal_types": ["User"],
       "resource_types": ["Document"],
       "reference_cedar": "permit (...) when { ... };",
+      "required_schema_support": [
+        {
+          "kind": "action_principal",
+          "action": "read",
+          "type_name": "User",
+          "reason": "The reference policy uses User as an allowed principal for read."
+        },
+        {
+          "kind": "attribute",
+          "entity": "Document",
+          "field_name": "owner",
+          "reason": "The reference policy compares the requester to the document owner."
+        }
+      ],
       "examples_adversarial": [],
       "alternatives_considered": []
     }
@@ -39,12 +53,36 @@ Rules:
 - Include visible source ids in `source_excerpt` when the packet provides them,
   e.g. `[source_id: src.foo.p0001.l12] Students may ...`.
 - Use only entity, action, context, and attribute names present in the supplied schema.
+- Every property atom must include `required_schema_support`: the concrete
+  schema hooks needed to express and verify the property. Use these kinds:
+  `entity`, `action`, `action_principal`, `action_resource`, `attribute`, and
+  `context`. For `entity`/`action`, fill `name`; for `action_principal` and
+  `action_resource`, fill `action` and `type_name`; for `attribute`, fill
+  `entity` and `field_name`; for `context`, fill `action` and `field_name`.
+  Include all hooks used by `reference_cedar`, including action appliesTo
+  principal/resource types, entity attributes, and action context fields.
+  If a source requirement needs a hook the current schema lacks, still list
+  that required hook and explain why in `reason`; do not hide the gap by using
+  a weaker proxy. The runtime will route missing hooks to schema repair before
+  HITL property review.
 - Session ownership must be encoded using the actual session-owner fields in
   the supplied schema. Do not invent `context.session.user`. If the schema has
   typed optional session-owner hooks such as `patientUser`, `hcpUser`,
   `administratorUser`, or `personalRepresentativeUser`, use the hook matching
   the principal role and guard it with `context.session has <field>` before
   comparing it to `principal`.
+- Keep the schema's identity model consistent. Cedar entity equality is
+  type-sensitive: `User::"alice"` is not equal to `Patient::"alice"`, and
+  `User::"dr"` is not equal to `LicensedHealthCareProfessional::"dr"`. If the
+  schema uses a base account entity (`User`) plus role/profile entities
+  (`Patient`, `Doctor`, `LicensedHealthCareProfessional`, `Administrator`,
+  etc.), compare through explicit bridge fields such as `resource.patient.user
+  == principal`, `context.patient.user == principal`, or `resource.sender ==
+  principal.user`. Do not write cross-type equality such as `principal ==
+  resource.patient`, `principal == context.patient`, `resource.sender ==
+  principal`, or `context.session.user == principal` when the two sides have
+  different entity types. If the needed bridge field is missing, declare it in
+  `required_schema_support` instead of using a doomed direct comparison.
 - Propose one property atom at a time. Do not bundle multiple requirements,
   actions, or reference policies into one response. The property atom is the
   HITL review unit.
@@ -127,7 +165,14 @@ Rules:
   cover a floor scoped to `eligible && noConflict && upcoming && notCompleted`;
   propose a stricter ceiling for the missing lifecycle boundary instead of
   returning an empty atom list.
-- Use `liveness` when at least one request for an action/resource shape must be permitted; leave `reference_cedar` empty for liveness. For liveness `plain_english_summary`, use user-facing wording like "At least one <action> request should be permitted ..." and do not start with formal phrasing like "There exists ...".
+- Use `liveness` when at least one request for an action/resource shape must
+  remain possible. Prefer a concrete probe policy in `reference_cedar` that
+  describes the intended permitted slice; AutoCedar checks that the candidate
+  policy overlaps that probe without adding the probe to the candidate. Leave
+  `reference_cedar` empty only for broad legacy liveness when the source gives
+  no concrete slice. For liveness `plain_english_summary`, use user-facing
+  wording like "At least one <action> request should be permitted ..." and do
+  not start with formal phrasing like "There exists ...".
 - Do not emit duplicate liveness atoms for the same action/resource shape. If a
   floor already establishes a concrete permitted request shape, add at most one
   liveness atom for that shape only when it adds useful user-review signal.
@@ -143,7 +188,8 @@ Rules:
   atom for the `comment` action with `disjoint_target_body` like
   `resource.status == "closed"` so same-action floors are patched with
   `!(resource.status == "closed")`.
-- Each non-liveness `reference_cedar` must be a complete Cedar policy ending with `;`.
+- Each `reference_cedar`, including liveness probe policies when present, must
+  be a complete Cedar policy ending with `;`.
 - Guard optional attributes with `has` before reading them.
 - Cedar's type checker does not treat `!(x has field) || x.field == value`
   as a safe guard. When reading an optional attribute in a disjunction,

@@ -143,7 +143,7 @@ def _run_symcc(
         "--schema", schema_path,
         "--counterexample",
         subcommand,
-    ] + extra_args
+    ] + _with_plain_error_format(extra_args)
     cmd_without_cvc5 = [
         CEDAR_PATH, "symcc",
         "--principal-type", principal_type,
@@ -152,7 +152,7 @@ def _run_symcc(
         "--schema", schema_path,
         "--counterexample",
         subcommand,
-    ] + extra_args
+    ] + _with_plain_error_format(extra_args)
 
     try:
         result = _run_symcc_command(cmd_with_cvc5)
@@ -177,6 +177,12 @@ def _run_symcc_command(cmd: list[str]) -> subprocess.CompletedProcess[str]:
         text=True,
         timeout=30,
     )
+
+
+def _with_plain_error_format(extra_args: list[str]) -> list[str]:
+    if "--error-format" in extra_args or "-f" in extra_args:
+        return extra_args
+    return extra_args + ["--error-format", "plain"]
 
 
 def _subprocess_output(result: subprocess.CompletedProcess[str]) -> str:
@@ -331,6 +337,59 @@ def run_always_denies_check(
             "It must allow at least one scenario."
             if not expect_denies else output
         ),
+    )
+
+
+def run_liveness_overlap_check(
+    schema_path: str,
+    candidate_path: str,
+    probe_path: str,
+    principal_type: str,
+    action: str,
+    resource_type: str,
+    check_name: str,
+    description: str,
+) -> CheckResult:
+    """Check candidate ∩ liveness_probe is non-empty.
+
+    ``cedar symcc disjoint`` verifies there is no overlap. For liveness, that
+    VERIFIED result is a failure; a formal counterexample means at least one
+    request is allowed by both candidate and probe, which is exactly the
+    desired witness.
+    """
+    disjoint, output = _run_symcc(
+        schema_path,
+        principal_type,
+        action,
+        resource_type,
+        "disjoint",
+        ["--policies1", candidate_path, "--policies2", probe_path],
+    )
+    if _is_symcc_tool_error(output):
+        return CheckResult(
+            check_name=check_name,
+            check_type="liveness-overlap",
+            description=description,
+            passed=False,
+            counterexample=output,
+        )
+    if disjoint:
+        return CheckResult(
+            check_name=check_name,
+            check_type="liveness-overlap",
+            description=description,
+            passed=False,
+            counterexample=(
+                "LIVENESS VIOLATION: candidate policy is disjoint from the "
+                "required liveness probe, so no approved request slice remains possible."
+            ),
+        )
+    return CheckResult(
+        check_name=check_name,
+        check_type="liveness-overlap",
+        description=description,
+        passed=True,
+        counterexample="",
     )
 
 

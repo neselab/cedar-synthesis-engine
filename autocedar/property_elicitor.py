@@ -184,7 +184,9 @@ def compile_plan(plan: VerificationPlanDraft) -> CompiledPlan:
         # 1. Compile to a primitive type for the harness contract.
         primitive_type = _resolve_primitive_type(atom)
 
-        # 2. Build the plan entry (no reference text for liveness).
+        # 2. Build the plan entry. Liveness atoms may either use the legacy
+        #    broad non-empty-action check (no reference) or a probe policy
+        #    whose overlap with the candidate must be non-empty.
         entry: dict = {
             "name": atom.name,
             "description": atom.plain_english_summary,
@@ -197,7 +199,13 @@ def compile_plan(plan: VerificationPlanDraft) -> CompiledPlan:
         # 3. Compute the reference text (with §8.8 patches if applicable)
         #    and emit it under references/<name>.cedar.
         if primitive_type == "always-denies-liveness":
-            # Liveness has no reference file in the v1 harness contract.
+            if atom.reference_cedar.strip():
+                references[atom.name] = atom.reference_cedar
+                entry["type"] = "liveness-overlap"
+                entry["reference_path"] = f'os.path.join(REFS, "{atom.name}.cedar")'
+                plan_entries.append(entry)
+                continue
+            # Legacy liveness has no reference file in the v1 harness contract.
             plan_entries.append(entry)
             continue
 

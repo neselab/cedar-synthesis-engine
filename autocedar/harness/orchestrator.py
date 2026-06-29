@@ -21,6 +21,7 @@ from autocedar.harness.solver_wrapper import (
     run_syntax_check,
     run_implies_check,
     run_always_denies_check,
+    run_liveness_overlap_check,
     run_never_errors_check,
 )
 
@@ -106,6 +107,17 @@ def run_verification(workspace: str) -> VerificationResult:
                 check_name=check["name"],
                 description=check["description"],
                 expect_denies=False,  # Liveness: we want NOT always-denies
+            )
+        elif ctype == "liveness-overlap":
+            result = run_liveness_overlap_check(
+                schema_path=schema_path,
+                candidate_path=candidate_path,
+                probe_path=check["reference_path"],
+                principal_type=check["principal_type"],
+                action=check["action"],
+                resource_type=check["resource_type"],
+                check_name=check["name"],
+                description=check["description"],
             )
         elif ctype == "never-errors":
             result = run_never_errors_check(

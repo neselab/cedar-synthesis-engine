@@ -8,6 +8,8 @@ The symbolic checks per atom are:
 3. Type correctness — ``cedar validate`` against the composed schema.
 4. Sugar-specific universal claims — structural sanity checks for
    sugar atoms such as disjointness and rate limits.
+5. Identity consistency — schema-valid entity equality does not compare
+   parallel account/role identities as if they were the same Cedar entity.
 
 Per §1.4, these earn the **formal-consistency** badge. They do NOT
 prove the encoding is a faithful translation of the prose; that is
@@ -32,13 +34,14 @@ import subprocess
 import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Callable, Optional
+from typing import Callable, Literal, Optional
 
 from autocedar.atoms import (
     AlternativeEncoding,
     Example,
     PropertyAtom,
 )
+from autocedar.identity_model import find_identity_issues, format_identity_issues
 
 CEDAR_PATH = os.environ.get("CEDAR", os.path.expanduser("~/.cargo/bin/cedar"))
 CVC5_PATH = (
@@ -59,6 +62,46 @@ class SymbolicCheck:
     name: str  # "satisfiable" | "joint-consistency-with-<atom>" | "type-correct" | "sugar-universal"
     passed: bool
     detail: str = ""
+
+
+SymccOutcome = Literal["verified", "counterexample", "setup_error", "timeout", "unknown"]
+
+
+@dataclass
+class SymccSignal:
+    """Structured SymCC signal for verifier-guided feedback.
+
+    Older code consumed ``(passed, output)`` pairs. This object keeps that
+    compatibility while preserving the richer information needed by repair
+    prompts and review UI: the exact command shape, formal outcome, setup/tool
+    classification, and compact policy excerpts.
+    """
+
+    subcommand: str
+    command: list[str]
+    passed: bool
+    outcome: SymccOutcome
+    raw_output: str
+    tool_error: bool = False
+    counterexample: str = ""
+    candidate_excerpt: str = ""
+    reference_excerpt: str = ""
+
+    def compact_detail(self, limit: int = 1200) -> str:
+        parts = [
+            f"symcc {self.subcommand}: {self.outcome}",
+            "command: " + " ".join(self.command),
+        ]
+        if self.candidate_excerpt:
+            parts.append("candidate/reference 1:\n" + self.candidate_excerpt.strip())
+        if self.reference_excerpt:
+            parts.append("reference/policy 2:\n" + self.reference_excerpt.strip())
+        if self.counterexample:
+            parts.append("counterexample:\n" + self.counterexample.strip())
+        elif self.raw_output:
+            parts.append("output:\n" + self.raw_output.strip())
+        detail = "\n".join(parts)
+        return detail if len(detail) <= limit else detail[: limit - 3].rstrip() + "..."
 
 
 @dataclass
@@ -134,6 +177,31 @@ def _run_symcc(
     output (which contains the counterexample for failed checks) is
     returned for downstream callers.
     """
+    signal = _run_symcc_signal(
+        schema_path=schema_path,
+        principal_type=principal_type,
+        action=action,
+        resource_type=resource_type,
+        subcommand=subcommand,
+        extra_args=extra_args,
+        timeout_s=timeout_s,
+    )
+    return signal.passed, signal.raw_output
+
+
+def _run_symcc_signal(
+    schema_path: str,
+    principal_type: str,
+    action: str,
+    resource_type: str,
+    subcommand: str,
+    extra_args: list[str],
+    timeout_s: int = 30,
+    candidate_excerpt: str = "",
+    reference_excerpt: str = "",
+) -> SymccSignal:
+    """Run ``cedar symcc`` and preserve a structured verifier signal."""
+    command_args = _with_plain_error_format(extra_args)
     cmd_with_cvc5 = [
         CEDAR_PATH,
         "symcc",
@@ -149,7 +217,7 @@ def _run_symcc(
         schema_path,
         "--counterexample",
         subcommand,
-    ] + extra_args
+    ] + command_args
     cmd_without_cvc5 = [
         CEDAR_PATH,
         "symcc",
@@ -163,20 +231,67 @@ def _run_symcc(
         schema_path,
         "--counterexample",
         subcommand,
-    ] + extra_args
+    ] + command_args
+    final_cmd = cmd_with_cvc5
     try:
         result = _run_symcc_command(cmd_with_cvc5, timeout_s)
         output = _subprocess_output(result)
         if _rejects_cvc5_path(output):
+            final_cmd = cmd_without_cvc5
             result = _run_symcc_command(cmd_without_cvc5, timeout_s)
     except subprocess.TimeoutExpired:
-        return False, "symcc timed out"
+        return SymccSignal(
+            subcommand=subcommand,
+            command=final_cmd,
+            passed=False,
+            outcome="timeout",
+            raw_output="symcc timed out",
+            tool_error=True,
+            candidate_excerpt=candidate_excerpt,
+            reference_excerpt=reference_excerpt,
+        )
     except FileNotFoundError:
-        return False, f"cedar binary not found at {CEDAR_PATH}"
+        return SymccSignal(
+            subcommand=subcommand,
+            command=final_cmd,
+            passed=False,
+            outcome="setup_error",
+            raw_output=f"cedar binary not found at {CEDAR_PATH}",
+            tool_error=True,
+            candidate_excerpt=candidate_excerpt,
+            reference_excerpt=reference_excerpt,
+        )
     output = _subprocess_output(result)
     if _is_symcc_tool_error(output, result.returncode):
-        return False, _symcc_tool_error_message(output)
-    return ("VERIFIED" in output), output
+        return SymccSignal(
+            subcommand=subcommand,
+            command=final_cmd,
+            passed=False,
+            outcome="setup_error",
+            raw_output=_symcc_tool_error_message(output),
+            tool_error=True,
+            candidate_excerpt=candidate_excerpt,
+            reference_excerpt=reference_excerpt,
+        )
+    passed = "VERIFIED" in output
+    return SymccSignal(
+        subcommand=subcommand,
+        command=final_cmd,
+        passed=passed,
+        outcome="verified" if passed else ("counterexample" if _has_symcc_formal_result(output) else "unknown"),
+        raw_output=output,
+        tool_error=False,
+        counterexample="" if passed else _summarize_counterexample(output),
+        candidate_excerpt=candidate_excerpt,
+        reference_excerpt=reference_excerpt,
+    )
+
+
+def _with_plain_error_format(extra_args: list[str]) -> list[str]:
+    """Prefer machine-stable SymCC diagnostics without changing callers."""
+    if "--error-format" in extra_args or "-f" in extra_args:
+        return extra_args
+    return extra_args + ["--error-format", "plain"]
 
 
 def _run_symcc_command(cmd: list[str], timeout_s: int) -> subprocess.CompletedProcess[str]:
@@ -298,13 +413,35 @@ def _check_type_correctness(
     return SymbolicCheck(name="type-correct", passed=ok, detail=detail)
 
 
+def _check_identity_consistency(
+    atom: PropertyAtom,
+    schema_path: str,
+) -> SymbolicCheck:
+    """Catch schema-valid cross-type principal equality."""
+
+    if atom.constraint_type == "liveness" and not atom.reference_cedar:
+        return SymbolicCheck(
+            name="identity-consistency",
+            passed=True,
+            detail="liveness atom has no reference encoding",
+        )
+    issues = find_identity_issues(atom, Path(schema_path).read_text())
+    if not issues:
+        return SymbolicCheck(name="identity-consistency", passed=True)
+    return SymbolicCheck(
+        name="identity-consistency",
+        passed=False,
+        detail=format_identity_issues(issues),
+    )
+
+
 def _check_satisfiability(
     atom: PropertyAtom,
     schema_path: str,
     workdir: Path,
 ) -> SymbolicCheck:
     """Check 1: the encoding is not vacuous (i.e. not always-denies)."""
-    if atom.constraint_type == "liveness":
+    if atom.constraint_type == "liveness" and not atom.reference_cedar:
         # Liveness atoms have no reference encoding to verify.
         return SymbolicCheck(
             name="satisfiable",
@@ -335,6 +472,115 @@ def _check_satisfiability(
             detail="encoding is vacuous (always denies)",
         )
     return SymbolicCheck(name="satisfiable", passed=True)
+
+
+def _check_never_errors(
+    atom: PropertyAtom,
+    schema_path: str,
+    workdir: Path,
+) -> SymbolicCheck:
+    """The atom reference should never raise runtime Cedar errors."""
+    if atom.constraint_type == "liveness" and not atom.reference_cedar:
+        return SymbolicCheck(
+            name="never-errors",
+            passed=True,
+            detail="liveness atom has no reference encoding",
+        )
+    principal_type, resource_type = _principal_resource(atom)
+    policy_path = workdir / f"{atom.name}_never_errors.cedar"
+    policy_path.write_text(atom.reference_cedar)
+    signal = _run_symcc_signal(
+        schema_path,
+        principal_type,
+        atom.action,
+        resource_type,
+        "never-errors",
+        ["--policies", str(policy_path)],
+        candidate_excerpt=atom.reference_cedar,
+    )
+    if signal.tool_error:
+        return SymbolicCheck(name="never-errors", passed=False, detail=signal.raw_output)
+    return SymbolicCheck(
+        name="never-errors",
+        passed=signal.passed,
+        detail="" if signal.passed else signal.compact_detail(),
+    )
+
+
+def _check_match_shape(
+    atom: PropertyAtom,
+    schema_path: str,
+    workdir: Path,
+) -> list[SymbolicCheck]:
+    """Use individual-policy match checks to flag vacuity and broadness."""
+    if atom.constraint_type == "liveness" and not atom.reference_cedar:
+        return [
+            SymbolicCheck(
+                name="match-vacuity",
+                passed=True,
+                detail="liveness atom has no reference encoding",
+            ),
+            SymbolicCheck(
+                name="match-broadness",
+                passed=True,
+                detail="liveness atom has no reference encoding",
+            ),
+        ]
+    principal_type, resource_type = _principal_resource(atom)
+    policy_path = workdir / f"{atom.name}_match_shape.cedar"
+    policy_path.write_text(atom.reference_cedar)
+
+    never_matches = _run_symcc_signal(
+        schema_path,
+        principal_type,
+        atom.action,
+        resource_type,
+        "never-matches",
+        ["--policies", str(policy_path)],
+        candidate_excerpt=atom.reference_cedar,
+    )
+    if never_matches.tool_error:
+        return [SymbolicCheck(name="match-vacuity", passed=False, detail=never_matches.raw_output)]
+    checks = [
+        SymbolicCheck(
+            name="match-vacuity",
+            passed=not never_matches.passed,
+            detail=(
+                "individual policy never matches any well-formed request"
+                if never_matches.passed
+                else "policy match condition is reachable"
+            ),
+        ),
+    ]
+
+    always_matches = _run_symcc_signal(
+        schema_path,
+        principal_type,
+        atom.action,
+        resource_type,
+        "always-matches",
+        ["--policies", str(policy_path)],
+        candidate_excerpt=atom.reference_cedar,
+    )
+    if always_matches.tool_error:
+        checks.append(SymbolicCheck(name="match-broadness", passed=False, detail=always_matches.raw_output))
+    elif always_matches.passed:
+        checks.append(
+            SymbolicCheck(
+                name="match-broadness",
+                passed=True,
+                detail="WARNING: individual policy matches every well-formed request in this typed action space",
+            ),
+        )
+    else:
+        checks.append(
+            SymbolicCheck(
+                name="match-broadness",
+                passed=True,
+                detail="not universal",
+            ),
+        )
+    return checks
 
 
 def _check_joint_consistency(
@@ -411,6 +657,61 @@ def _check_joint_consistency(
                 ),
             ),
         )
+
+    out.extend(_check_same_role_duplicates(atom, prior_atoms, schema_path, workdir))
+    return out
+
+
+def _check_same_role_duplicates(
+    atom: PropertyAtom,
+    prior_atoms: list[PropertyAtom],
+    schema_path: str,
+    workdir: Path,
+) -> list[SymbolicCheck]:
+    """Flag same-action same-role atoms with equivalent match conditions."""
+    out: list[SymbolicCheck] = []
+    role = _ceiling_or_floor(atom)
+    if role is None or atom.constraint_type == "disjointness":
+        return out
+
+    atom_path = workdir / f"{atom.name}_dup.cedar"
+    atom_path.write_text(atom.reference_cedar)
+    principal_type, resource_type = _principal_resource(atom)
+    for prior in prior_atoms:
+        if prior.action != atom.action:
+            continue
+        if prior.constraint_type == "disjointness":
+            continue
+        if _ceiling_or_floor(prior) != role:
+            continue
+        prior_path = workdir / f"{prior.name}_dup_prior.cedar"
+        prior_path.write_text(prior.reference_cedar)
+        signal = _run_symcc_signal(
+            schema_path,
+            principal_type,
+            atom.action,
+            resource_type,
+            "matches-equivalent",
+            ["--policy1", str(atom_path), "--policy2", str(prior_path)],
+            candidate_excerpt=atom.reference_cedar,
+            reference_excerpt=prior.reference_cedar,
+        )
+        if signal.tool_error:
+            out.append(
+                SymbolicCheck(
+                    name=f"duplicate-detection-with-{prior.name}",
+                    passed=False,
+                    detail=signal.raw_output,
+                ),
+            )
+        elif signal.passed:
+            out.append(
+                SymbolicCheck(
+                    name=f"duplicate-detection-with-{prior.name}",
+                    passed=True,
+                    detail="WARNING: match condition equivalent to prior same-action atom",
+                ),
+            )
     return out
 
 
@@ -440,7 +741,6 @@ def _check_sugar_universal(
     through the normal symcc paths.
     """
     if atom.constraint_type == "disjointness":
-        # Sanity check: reference encoding mentions the negated body.
         target = atom.disjoint_target_body or ""
         if target and (f"!({target})" not in atom.reference_cedar
                        and f"!{target}" not in atom.reference_cedar):
@@ -452,10 +752,40 @@ def _check_sugar_universal(
                     f"target body {target!r}"
                 ),
             )
+        principal_type, resource_type = _principal_resource(atom)
+        atom_path = workdir / f"{atom.name}_disjoint_reference.cedar"
+        target_path = workdir / f"{atom.name}_disjoint_target.cedar"
+        atom_path.write_text(atom.reference_cedar)
+        target_path.write_text(
+            f'permit (principal, action == {_action_literal(atom.action)}, resource)\n'
+            f"when {{ {target} }};\n",
+        )
+        signal = _run_symcc_signal(
+            schema_path,
+            principal_type,
+            atom.action,
+            resource_type,
+            "matches-disjoint",
+            ["--policy1", str(atom_path), "--policy2", str(target_path)],
+            candidate_excerpt=atom.reference_cedar,
+            reference_excerpt=target_path.read_text(),
+        )
+        if signal.tool_error:
+            return SymbolicCheck(
+                name="sugar-universal",
+                passed=False,
+                detail=signal.raw_output,
+            )
+        if not signal.passed:
+            return SymbolicCheck(
+                name="sugar-universal",
+                passed=False,
+                detail="disjointness reference can still match target body\n" + signal.compact_detail(),
+            )
         return SymbolicCheck(
             name="sugar-universal",
             passed=True,
-            detail="syntactic disjointness sanity check ok",
+            detail="matches-disjoint verified against target body",
         )
     if atom.constraint_type == "rate_limit":
         counter = atom.rate_limit_counter_attr or ""
@@ -505,14 +835,24 @@ def symbolic_verify_atom(
     result = SymbolicVerificationResult(atom_name=atom.name)
 
     # Check 3: type correctness.
-    if atom.constraint_type == "liveness":
+    if atom.constraint_type == "liveness" and not atom.reference_cedar:
         # Liveness has no reference body to validate.
         result.checks.append(SymbolicCheck(name="type-correct", passed=True, detail="n/a"))
     else:
         result.checks.append(_check_type_correctness(atom, schema_path, workdir))
 
+    # Check 5: schema-aware identity consistency. Cedar validation can pass
+    # even when a policy compares User::"alice" to Patient::"alice".
+    result.checks.append(_check_identity_consistency(atom, schema_path))
+
     # Check 1: satisfiability.
     result.checks.append(_check_satisfiability(atom, schema_path, workdir))
+
+    # Extra SymCC arsenal: runtime safety, individual-policy vacuity, and
+    # broadness diagnostics. These are generic verifier signals, not domain
+    # repair rules.
+    result.checks.append(_check_never_errors(atom, schema_path, workdir))
+    result.checks.extend(_check_match_shape(atom, schema_path, workdir))
 
     # Check 2: joint consistency.
     result.checks.extend(_check_joint_consistency(atom, prior_atoms, schema_path, workdir))
@@ -573,15 +913,15 @@ def find_distinguishing_request(
     chosen_path.write_text(chosen_cedar)
     alt_path.write_text(alternative.cedar_text)
 
-    # Direction 1: chosen ⊆ alt? If not, there's a request where chosen
-    # permits and alt denies.
+    # Direction 1: chosen match condition ⊆ alt match condition? If not,
+    # there's a request where chosen permits and alt denies.
     chosen_implies_alt, out_a = _run_symcc(
         schema_path,
         principal_type,
         action,
         resource_type,
-        "implies",
-        ["--policies1", str(chosen_path), "--policies2", str(alt_path)],
+        "matches-implies",
+        ["--policy1", str(chosen_path), "--policy2", str(alt_path)],
     )
     if not chosen_implies_alt:
         if _is_symcc_tool_error(out_a):
@@ -598,15 +938,15 @@ def find_distinguishing_request(
             diagnostic_for=[alternative.label],
         )
 
-    # Direction 2: alt ⊆ chosen? If not, there's a request where alt
-    # permits and chosen denies.
+    # Direction 2: alt match condition ⊆ chosen match condition? If not,
+    # there's a request where alt permits and chosen denies.
     alt_implies_chosen, out_b = _run_symcc(
         schema_path,
         principal_type,
         action,
         resource_type,
-        "implies",
-        ["--policies1", str(alt_path), "--policies2", str(chosen_path)],
+        "matches-implies",
+        ["--policy1", str(alt_path), "--policy2", str(chosen_path)],
     )
     if not alt_implies_chosen:
         if _is_symcc_tool_error(out_b):

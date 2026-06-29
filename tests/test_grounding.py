@@ -28,6 +28,7 @@ from autocedar.grounding import (
     generate_adversarial_examples,
     symbolic_verify_atom,
 )
+from autocedar.harness.solver_wrapper import run_liveness_overlap_check
 
 _HAVE_CEDAR = os.path.isfile(CEDAR_PATH) and os.access(CEDAR_PATH, os.X_OK)
 _HAVE_CVC5 = os.path.isfile(CVC5_PATH) and os.access(CVC5_PATH, os.X_OK)
@@ -179,6 +180,9 @@ def test_known_good_atom_passes_all_four_checks(
     log = atom.symbolic_verification_log
     assert any("type-correct" in line for line in log)
     assert any("satisfiable" in line for line in log)
+    assert any("never-errors" in line for line in log)
+    assert any("match-vacuity" in line for line in log)
+    assert any("match-broadness" in line for line in log)
     assert any("sugar-universal" in line for line in log)
 
 
@@ -486,6 +490,51 @@ def test_liveness_atom_skips_reference_checks(
     names = [c.name for c in result.checks]
     assert "type-correct" in names
     assert "satisfiable" in names
+
+
+@requires_solvers
+def test_liveness_overlap_probe_passes_and_fails(
+    schema_path: str,
+    workdir: Path,
+) -> None:
+    probe = workdir / "probe.cedar"
+    probe.write_text(
+        'permit (principal is User, action == Action::"read", resource is Resource)\n'
+        "when { principal == resource.owner };\n",
+    )
+    candidate = workdir / "candidate.cedar"
+    candidate.write_text(
+        'permit (principal is User, action == Action::"read", resource is Resource)\n'
+        "when { principal == resource.owner };\n",
+    )
+    result = run_liveness_overlap_check(
+        schema_path=schema_path,
+        candidate_path=str(candidate),
+        probe_path=str(probe),
+        principal_type="User",
+        action='Action::"read"',
+        resource_type="Resource",
+        check_name="owner_read_liveness",
+        description="owner read should remain possible",
+    )
+    assert result.passed is True
+
+    candidate.write_text(
+        'permit (principal is User, action == Action::"read", resource is Resource)\n'
+        "when { false };\n",
+    )
+    result = run_liveness_overlap_check(
+        schema_path=schema_path,
+        candidate_path=str(candidate),
+        probe_path=str(probe),
+        principal_type="User",
+        action='Action::"read"',
+        resource_type="Resource",
+        check_name="owner_read_liveness",
+        description="owner read should remain possible",
+    )
+    assert result.passed is False
+    assert "disjoint from the required liveness probe" in result.counterexample
 
 
 @requires_solvers
