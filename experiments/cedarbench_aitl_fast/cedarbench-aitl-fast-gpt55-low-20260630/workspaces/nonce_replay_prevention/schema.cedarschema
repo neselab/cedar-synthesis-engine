@@ -1,0 +1,20 @@
+// Nonce Replay Prevention -- single-use token authorization.
+//
+// CriticalEndpoint carries a set of currently-valid nonces. The
+// invoke request MAY include a nonce in its context (declared
+// optional with `?`); authorization requires the nonce to be
+// present AND in the endpoint's validNonces set.
+
+entity User;
+
+entity CriticalEndpoint = {
+    validNonces: Set<String>,
+};
+
+action invoke appliesTo {
+    principal: [User],
+    resource: [CriticalEndpoint],
+    context: {
+        nonce?: String,
+    },
+};

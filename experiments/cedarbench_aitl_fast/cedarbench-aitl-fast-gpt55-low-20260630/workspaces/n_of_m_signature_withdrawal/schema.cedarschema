@@ -1,0 +1,46 @@
+// N-of-M Signature Withdrawal — 3-of-5 multi-signature governance with
+// withdrawable signatures. Cedar has no .size() on sets, so the threshold
+// must be encoded by enumerating the C(5,3) = 10 possible quorum subsets
+// and checking each via .containsAll().
+
+entity Signer;
+
+entity Proposal = {
+    // Informational: threshold count. The actual gate is structural —
+    // the policy enumerates 10 subsets via containsAll.
+    requiredQuorum: Long,
+    // Informational: the five known eligible signers. The policy
+    // hard-codes Signer::"s1" .. Signer::"s5".
+    eligibleSigners: Set<Signer>,
+};
+
+// Execute the proposal. Requires that at least 3 of the 5 eligible
+// signers appear in context.activeSigners. The active set is dynamic —
+// signers may withdraw, so this set can shrink between requests.
+action executeProposal appliesTo {
+    principal: [Signer],
+    resource: [Proposal],
+    context: {
+        activeSigners: Set<Signer>,
+    },
+};
+
+// View the proposal. Any of the five eligible signers may view.
+action viewProposal appliesTo {
+    principal: [Signer],
+    resource: [Proposal],
+};
+
+// Add a signature. Any eligible signer; the off-Cedar service tracks
+// the actual signed set.
+action addSignature appliesTo {
+    principal: [Signer],
+    resource: [Proposal],
+};
+
+// Withdraw a previously-added signature. Any eligible signer; the host
+// app enforces "you can only withdraw your own".
+action withdrawSignature appliesTo {
+    principal: [Signer],
+    resource: [Proposal],
+};

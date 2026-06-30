@@ -1,0 +1,14 @@
+// Hypothetical Exception (Unspecified) — schema deliberately minimal.
+// No optional context attributes are declared, so a tempted planner
+// has no legitimate hook for inventing "exception" predicates.
+
+entity User;
+
+entity Profile = {
+    owner: User,
+};
+
+action viewProfile appliesTo {
+    principal: [User],
+    resource: [Profile],
+};

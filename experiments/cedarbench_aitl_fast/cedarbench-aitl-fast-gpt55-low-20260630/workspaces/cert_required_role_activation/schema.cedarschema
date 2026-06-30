@@ -1,0 +1,44 @@
+// Certificate-Required Role Activation — operators carry a baked-in
+// `baseRole` and may temporarily elevate to admin by presenting a
+// short-lived certificate signed by a trusted authority. Tests the
+// optional record-typed context attribute pattern with a triple
+// has-guard chain (§8.3).
+
+entity Operator = {
+    // The operator's long-lived role assignment. Expected values:
+    //   "admin" — full admin entitlement, no cert required
+    //   "user"  — basic operator, may view; needs cert to executeAdmin
+    //   "guest" — limited; cannot view or executeAdmin regardless
+    baseRole: String,
+};
+
+entity Resource;
+
+// view — open to any operator with baseRole "user" or "admin".
+// Cert is NOT consulted for view (no context.cert in this action).
+action view appliesTo {
+    principal: [Operator],
+    resource: [Resource],
+    context: {
+        now: datetime,
+    },
+};
+
+// executeAdmin — privileged. Permitted when EITHER:
+//   (a) principal.baseRole == "admin", OR
+//   (b) cert is present AND unexpired AND claimedRole == "admin"
+//       AND signer == "trusted-ca".
+// The `cert` attribute is OPTIONAL (`?`), so every field read must
+// be preceded by a `context has cert` guard.
+action executeAdmin appliesTo {
+    principal: [Operator],
+    resource: [Resource],
+    context: {
+        now: datetime,
+        cert?: {
+            validUntil: datetime,
+            claimedRole: String,
+            signer: String,
+        },
+    },
+};

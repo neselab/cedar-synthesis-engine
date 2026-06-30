@@ -1,0 +1,18 @@
+// Decoy Trivial Properties — minimal schema.
+//
+// The verification plan deliberately mixes substantive checks with a
+// number of trivially-true floors. The schema is intentionally tiny so
+// the only signal in the harness comes from the plan structure.
+
+entity User = {
+    role: String,
+};
+
+entity Resource = {
+    level: Long,
+};
+
+action access appliesTo {
+    principal: [User],
+    resource: [Resource],
+};

@@ -1,0 +1,59 @@
+// Session-level actions (login / logout / refreshToken) operate on no
+// "real" resource: there is no document, no row, no object being touched.
+// Cedar's schema language, however, REQUIRES every action to declare a
+// non-empty `resource:` list -- both `appliesTo { principal: [User], context: {} }`
+// (omitting `resource` entirely) and `resource: []` are rejected by the
+// validator.
+//
+// The canonical Cedar pattern for "this action has no real resource" is to
+// introduce a sentinel `Session` entity whose only purpose is to satisfy the
+// schema. Every login/logout/refreshToken request is paired with a Session
+// instance that carries no policy-relevant attributes; conditions in the
+// policies depend only on `principal`, never on `resource`.
+//
+// `viewProfile` is included as the contrasting case -- a normal action that
+// DOES require a real resource (Profile), to show that resourceful and
+// resource-less actions coexist in the same schema.
+
+entity User {
+    role: String,
+    sessionActive: Bool,
+};
+
+// Sentinel resource for session-level actions. No attributes -- it exists
+// only to satisfy Cedar's "every action must have a non-empty resource list"
+// requirement.
+entity Session;
+
+// Real resource type used by viewProfile.
+entity Profile {
+    owner: User,
+};
+
+// -- Session-level actions (no real resource; Session is a sentinel) --------
+
+action login appliesTo {
+    principal: [User],
+    resource: [Session],
+    context: {},
+};
+
+action logout appliesTo {
+    principal: [User],
+    resource: [Session],
+    context: {},
+};
+
+action refreshToken appliesTo {
+    principal: [User],
+    resource: [Session],
+    context: {},
+};
+
+// -- Resourceful action -----------------------------------------------------
+
+action viewProfile appliesTo {
+    principal: [User],
+    resource: [Profile],
+    context: {},
+};

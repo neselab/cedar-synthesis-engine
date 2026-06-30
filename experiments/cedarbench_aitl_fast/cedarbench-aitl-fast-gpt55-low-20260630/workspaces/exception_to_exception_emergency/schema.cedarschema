@@ -1,0 +1,42 @@
+// Exception-to-Exception Emergency — three-tier nested override chain.
+//
+// Tier 1: lockout suspends normal access.
+// Tier 2: break-glass overrides lockout for hasBreakGlass users.
+// Tier 3: security lockdown overrides break-glass; only securityClearance
+//         users retain access.
+
+entity User = {
+    role: String,
+    // Pre-provisioned authorization to invoke break-glass during a
+    // lockout. Without this, breakGlassInvoked has no effect.
+    hasBreakGlass: Bool,
+    // Pre-provisioned clearance that survives a security lockdown.
+    securityClearance: Bool,
+};
+
+entity Resource;
+
+action access appliesTo {
+    principal: [User],
+    resource: [Resource],
+    context: {
+        // Tier 1 toggle: when true, normal access is suspended.
+        lockoutActive: Bool,
+        // Tier 2 toggle: when true, break-glass-authorized users may
+        // access despite lockout.
+        breakGlassInvoked: Bool,
+        // Tier 3 toggle: when true, only clearance holders may access.
+        securityLockdownActive: Bool,
+    },
+};
+
+// Administrative override action available only to clearance holders.
+action securityOverride appliesTo {
+    principal: [User],
+    resource: [Resource],
+    context: {
+        lockoutActive: Bool,
+        breakGlassInvoked: Bool,
+        securityLockdownActive: Bool,
+    },
+};

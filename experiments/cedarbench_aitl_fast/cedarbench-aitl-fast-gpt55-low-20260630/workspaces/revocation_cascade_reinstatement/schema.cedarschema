@@ -1,0 +1,32 @@
+// Revocation Cascade & Reinstatement — parent revocation cascading to
+// derived permissions. The host application walks the grant chain that
+// led to this access request and pre-computes two boolean attestations:
+//
+//   accessAuthorized  — every link in the chain is currently active
+//                       (a valid delegation path exists from owner to
+//                       principal).
+//   revocationDetected — at least one link in the chain has been
+//                        revoked. If true, the cascade invalidates this
+//                        principal's derived permission, even if it was
+//                        previously granted.
+//
+// Cedar cannot enumerate over arbitrary set elements (no .all() / .any()
+// universal quantification on Set<...>), so the host pre-computes these
+// two attestations and supplies them in the request context. The policy
+// then composes them with ownership.
+
+entity User;
+
+entity Resource = {
+    owner: User,
+};
+
+action read appliesTo {
+    principal: [User],
+    resource: [Resource],
+    context: {
+        now: datetime,
+        accessAuthorized: Bool,
+        revocationDetected: Bool,
+    },
+};

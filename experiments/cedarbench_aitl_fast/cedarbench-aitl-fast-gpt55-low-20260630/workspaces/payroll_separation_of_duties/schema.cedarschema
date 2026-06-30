@@ -1,0 +1,49 @@
+// Payroll Separation of Duties — classic SOX pattern where the same
+// user cannot both INITIATE and APPROVE the same financial entry. The
+// underlying principle: no single actor should be able to unilaterally
+// push a payment through the system.
+
+entity User = {
+    // One of "clerk", "manager", "cfo". Only clerks can initiate,
+    // only managers or cfos can approve, only cfos can release.
+    role: String,
+};
+
+entity PayrollEntry = {
+    // The user who initiated this entry. Set at creation time and
+    // never modified. Recording the initiator is what enables the
+    // SoD check on approval.
+    initiator: User,
+    // The user who approved this entry, if it has been approved. We
+    // use an optional attribute because the entry starts without
+    // approval.
+    // NOTE: optional attributes in Cedar must be guarded with `has`
+    // before any read.
+    amount: Long,
+    status: String,  // "draft" | "pending_approval" | "approved" | "released" | "rejected"
+};
+
+action initiate appliesTo {
+    principal: [User],
+    resource: [PayrollEntry],
+};
+
+action approve appliesTo {
+    principal: [User],
+    resource: [PayrollEntry],
+};
+
+action release appliesTo {
+    principal: [User],
+    resource: [PayrollEntry],
+};
+
+action reject appliesTo {
+    principal: [User],
+    resource: [PayrollEntry],
+};
+
+action read appliesTo {
+    principal: [User],
+    resource: [PayrollEntry],
+};

@@ -1,0 +1,37 @@
+{
+  "scenario": "partial_spec_pattern_extrapolation",
+  "model": "gpt-5.5",
+  "phase1_model": "gpt-5.5",
+  "phase2_model": "gpt-5.5",
+  "converged": true,
+  "iterations": 1,
+  "max_iterations": 20,
+  "total_time_s": 9.67,
+  "phase1_time_s": 0.06,
+  "phase2_time_s": 9.6,
+  "final_loss": 0,
+  "checks_total": 16,
+  "iteration_log": [
+    {
+      "iteration": 1,
+      "loss": 0,
+      "checks_passed": 16,
+      "checks_total": 16,
+      "solver_time_s": 0.144,
+      "counterexample_count": 0,
+      "syntax_valid": true,
+      "status": "pass",
+      "input_tokens": 3064,
+      "output_tokens": 477
+    }
+  ],
+  "error": "",
+  "phase1_input_tokens": 0,
+  "phase1_output_tokens": 0,
+  "phase2_input_tokens": 3064,
+  "phase2_output_tokens": 477,
+  "total_input_tokens": 3064,
+  "total_output_tokens": 477,
+  "total_tokens": 3541,
+  "estimated_cost_usd": 0.0163
+}

@@ -1,0 +1,47 @@
+// Hotel Chain Permissions -- Cedar Schema
+
+type PermissionsMap = {
+  hotelReservations: Set<Hotel>,
+  propertyReservations: Set<Property>,
+};
+entity User {
+  viewPermissions: PermissionsMap,
+  memberPermissions: PermissionsMap,
+  hotelAdminPermissions: Set<Hotel>,
+  propertyAdminPermissions: Set<Property>,
+};
+entity Guest {
+  reservations: Set<Reservation>,
+};
+entity Property in [Hotel];
+entity Hotel in [Hotel];
+entity Reservation in [Property] {
+  guest: Guest,
+};
+
+// ACTIONS: Reservations
+action viewReservation, updateReservation, grantAccessReservation
+  appliesTo {
+    principal: User,
+    resource: Reservation,
+  };
+
+// Guest actions on Reservations
+action guestViewReservation appliesTo {
+    principal: Guest,
+    resource: Reservation,
+  };
+
+// ACTIONS: Properties (plus, CreateReservation for a Property)
+action createReservation, viewProperty, updateProperty, grantAccessProperty
+  appliesTo {
+    principal: User,
+    resource: Property,
+  };
+
+// ACTIONS: Hotels (plus, CreateProperty for a Hotel)
+action createProperty, createHotel, viewHotel, updateHotel, grantAccessHotel
+  appliesTo {
+    principal: User,
+    resource: Hotel,
+  };

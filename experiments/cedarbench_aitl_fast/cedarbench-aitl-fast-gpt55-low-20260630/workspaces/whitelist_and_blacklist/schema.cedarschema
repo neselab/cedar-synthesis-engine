@@ -1,0 +1,17 @@
+// Whitelist AND Blacklist — controlled API gateway.
+// Per-endpoint allowlist + denylist of callers, plus trusted-source flag.
+
+entity Caller;
+
+entity Endpoint = {
+    whitelistedCallers: Set<Caller>,
+    blacklistedCallers: Set<Caller>,
+};
+
+action invoke appliesTo {
+    principal: [Caller],
+    resource: [Endpoint],
+    context: {
+        trustedSource: Bool,
+    },
+};

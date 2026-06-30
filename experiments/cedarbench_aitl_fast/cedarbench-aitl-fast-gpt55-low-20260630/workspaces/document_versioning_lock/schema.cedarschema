@@ -1,0 +1,52 @@
+// Document Versioning Lock — content management system with exclusive
+// edit locks and draft-state gating for publish.
+//
+// Use case: collaborative editing platform where documents can be locked
+// to prevent concurrent modifications, and only admins can publish
+// finalized drafts.
+
+entity User = {
+    // "viewer", "editor", or "admin"
+    role: String,
+};
+
+entity Document = {
+    // Whether the document is currently locked for exclusive editing.
+    isLocked: Bool,
+    // The user who holds the lock. Always present; meaningful only when
+    // isLocked is true.
+    lockedBy: User,
+    // Whether the document is in draft state. Only drafts can be
+    // published.
+    isDraft: Bool,
+};
+
+// Any user can read any document.
+action read appliesTo {
+    principal: [User],
+    resource: [Document],
+};
+
+// Editor/admin can edit, subject to lock constraints.
+action edit appliesTo {
+    principal: [User],
+    resource: [Document],
+};
+
+// Editor/admin can lock a document for exclusive editing.
+action lock appliesTo {
+    principal: [User],
+    resource: [Document],
+};
+
+// Lock holder or admin can unlock.
+action unlock appliesTo {
+    principal: [User],
+    resource: [Document],
+};
+
+// Admin only, and document must be draft.
+action publish appliesTo {
+    principal: [User],
+    resource: [Document],
+};

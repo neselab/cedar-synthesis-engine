@@ -1,0 +1,39 @@
+// Rolling Rate Limit Window -- API gateway with rolling-window rate
+// limits supplied via context, plus cost-multiplier-adjusted budgets
+// for the bulk action.
+
+entity Client = {
+    // "free", "pro", or "enterprise"
+    tier: String,
+};
+
+entity Endpoint = {
+    // Per-call cost weight; bounded 1..100 by spec for the bulk
+    // budget arithmetic to stay within Long range.
+    costMultiplier: Long,
+};
+
+// Single-endpoint invocation. Permitted only when both the
+// per-minute and per-hour rolling-window counters are within the
+// tier ceiling and the window snapshot is fresh.
+action call appliesTo {
+    principal: [Client],
+    resource: [Endpoint],
+    context: {
+        requestsLastMinute: Long,
+        requestsLastHour: Long,
+        windowExpired: Bool,
+    },
+};
+
+// Batched invocation. Effective cost = requestsLastMinute *
+// resource.costMultiplier, bounded by tier-specific cap.
+action bulkCall appliesTo {
+    principal: [Client],
+    resource: [Endpoint],
+    context: {
+        requestsLastMinute: Long,
+        requestsLastHour: Long,
+        windowExpired: Bool,
+    },
+};

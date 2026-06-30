@@ -1,0 +1,41 @@
+// Multi-Cert Chain Validity -- PKI access control where three independent
+// certificates (user, org, CA) must all be simultaneously valid at the
+// moment of the request. Six datetime comparisons in conjunction.
+
+entity User = {
+    // The end user's client certificate validity window.
+    userCertValidFrom: datetime,
+    userCertValidUntil: datetime,
+};
+
+entity Organization = {
+    // The user's organization's certificate validity window.
+    orgCertValidFrom: datetime,
+    orgCertValidUntil: datetime,
+};
+
+entity CertAuthority = {
+    // The certificate authority's own cert validity window.
+    caCertValidFrom: datetime,
+    caCertValidUntil: datetime,
+};
+
+entity Resource = {
+    // The CA whose chain must validate for this resource.
+    requiredCa: CertAuthority,
+};
+
+// Secure access. Permitted iff all three cert validity windows
+// contain context.now.
+action accessSecure appliesTo {
+    principal: [User],
+    resource: [Resource],
+    context: {
+        // The current request time, populated by the host from a
+        // trusted clock source.
+        now: datetime,
+        // The organization the user is acting on behalf of, populated
+        // by the host from the user's session.
+        userOrg: Organization,
+    },
+};

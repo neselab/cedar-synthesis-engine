@@ -1,0 +1,16 @@
+// Five Equivalent Formulations — minimal schema for testing whether
+// the harness accepts semantically-equivalent encodings of one access
+// rule. Two attributes on principal/resource, one action.
+
+entity User = {
+    role: String,
+};
+
+entity Doc = {
+    tier: Long,  // spec invariant: always 1, 2, or 3
+};
+
+action read appliesTo {
+    principal: [User],
+    resource: [Doc],
+};

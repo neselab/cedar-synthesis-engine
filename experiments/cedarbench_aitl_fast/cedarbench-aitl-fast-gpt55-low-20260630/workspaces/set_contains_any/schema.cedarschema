@@ -1,0 +1,19 @@
+// Set ContainsAny — tag-based content access.
+// Tests .containsAny() and .containsAll() set operations.
+
+entity User = {
+    interestTags: Set<String>,
+    clearanceTags: Set<String>,
+};
+
+entity Document = {
+    topicTags: Set<String>,
+    requiredClearanceTags: Set<String>,
+    owner: User,
+};
+
+action read, write, manageTags appliesTo {
+    principal: [User],
+    resource: [Document],
+    context: {},
+};

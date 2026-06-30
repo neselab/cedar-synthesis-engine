@@ -1,0 +1,36 @@
+// Long Permit (25 AND conditions) — enterprise audit-heavy access.
+// One action, one permit, 25 conjoined gates over principal/resource/context.
+
+entity User = {
+    role: String,
+    mfaVerified: Bool,
+    clearanceLevel: Long,
+    dept: String,
+    isContractor: Bool,
+    complianceTrainingCurrent: Bool,
+    nda: Bool,
+    nonDisclosureSigned: Bool,
+    backgroundCheckPassed: Bool,
+};
+
+entity Resource = {
+    classification: String,
+    ownerDept: String,
+    requiresClearance: Long,
+    archived: Bool,
+    requiresNda: Bool,
+    complianceFlag: Bool,
+};
+
+action accessSensitive appliesTo {
+    principal: [User],
+    resource: [Resource],
+    context: {
+        now: datetime,
+        mfaTimestamp: datetime,
+        currentLocation: String,
+        vpnConnected: Bool,
+        riskScore: Long,
+        incidentMode: Bool,
+    },
+};

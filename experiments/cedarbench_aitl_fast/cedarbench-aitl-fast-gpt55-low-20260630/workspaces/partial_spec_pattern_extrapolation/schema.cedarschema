@@ -1,0 +1,27 @@
+// Partial Spec Pattern Extrapolation -- developer source-control access.
+//
+// Three roles encoded as a string field on Developer. The spec describes
+// junior_dev and senior_dev in full but describes lead_dev only as
+// "extends senior_dev with merge + manageBranches" -- the planner must
+// extrapolate the full lead_dev permission set.
+
+entity Developer = {
+    // Role string. Recognized values: "junior_dev", "senior_dev",
+    // "lead_dev". Any other value yields no permissions.
+    role: String,
+    // Project the developer is assigned to. Only meaningful for
+    // junior_dev (their read/write is restricted to this project).
+    assignedProject: String,
+};
+
+entity CodeArtifact = {
+    // The project this artifact belongs to.
+    project: String,
+};
+
+// All five actions share the same principal/resource shape and have
+// no context.
+action read, write, review, merge, manageBranches appliesTo {
+    principal: [Developer],
+    resource: [CodeArtifact],
+};

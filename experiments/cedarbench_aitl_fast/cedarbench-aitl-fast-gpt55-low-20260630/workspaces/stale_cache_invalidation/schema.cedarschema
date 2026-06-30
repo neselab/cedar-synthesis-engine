@@ -1,0 +1,46 @@
+// Stale Cache Invalidation — auth-decision caching with action-tiered
+// freshness windows. Reads tolerate a 5-minute cached decision;
+// writeCritical demands a 60-second cache; delete bypasses the cache
+// entirely and demands a 30-second-fresh MFA attestation plus admin
+// role.
+
+entity User = {
+    // One of "user" or "admin". Only admins may delete.
+    role: String,
+};
+
+entity Resource;
+
+action read appliesTo {
+    principal: [User],
+    resource: [Resource],
+    context: {
+        // Current request time. Always present.
+        now: datetime,
+        // Timestamp of the cached auth decision. Optional: present
+        // only on a cache hit.
+        authCacheTimestamp?: datetime,
+        // Timestamp of the user's last successful MFA. Optional.
+        mfaTimestamp?: datetime,
+    },
+};
+
+action writeCritical appliesTo {
+    principal: [User],
+    resource: [Resource],
+    context: {
+        now: datetime,
+        authCacheTimestamp?: datetime,
+        mfaTimestamp?: datetime,
+    },
+};
+
+action delete appliesTo {
+    principal: [User],
+    resource: [Resource],
+    context: {
+        now: datetime,
+        authCacheTimestamp?: datetime,
+        mfaTimestamp?: datetime,
+    },
+};

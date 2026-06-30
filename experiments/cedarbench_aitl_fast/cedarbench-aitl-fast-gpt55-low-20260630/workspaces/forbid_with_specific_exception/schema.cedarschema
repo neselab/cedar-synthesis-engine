@@ -1,0 +1,15 @@
+// Forbid With Specific Exception — archived documents are read-only
+// for the owner, inaccessible to everyone else, and never editable.
+
+entity User;
+
+entity Document = {
+    archived: Bool,
+    owner: User,
+};
+
+action view, edit appliesTo {
+    principal: [User],
+    resource: [Document],
+    context: {},
+};

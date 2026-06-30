@@ -1,0 +1,39 @@
+// Slack-style messaging with attribute names that flirt with Cedar
+// reserved-word space. Bare `in`/`has`/`like`/`if`/`is` are rejected
+// as identifiers in schemas; the affix variants below are accepted.
+//
+// Tests reserved-keyword constraints on attribute names:
+//   - `inGroup`  (looks like `in`)
+//   - `hasAccess` (looks like `has`)
+//   - `likedItems` (looks like `like`)
+//   - `permits`  (looks like `permit`)
+
+entity Member = {
+    inGroup: Set<String>,
+    hasAccess: Bool,
+    likedItems: Set<String>,
+    permits: Set<String>,
+};
+
+entity Channel = {
+    members: Set<Member>,
+    isPublic: Bool,
+};
+
+action read appliesTo {
+    principal: [Member],
+    resource: [Channel],
+    context: {},
+};
+
+action post appliesTo {
+    principal: [Member],
+    resource: [Channel],
+    context: {},
+};
+
+action pin appliesTo {
+    principal: [Member],
+    resource: [Channel],
+    context: {},
+};

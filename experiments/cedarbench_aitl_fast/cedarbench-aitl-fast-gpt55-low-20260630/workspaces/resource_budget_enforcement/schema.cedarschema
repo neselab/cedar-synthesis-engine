@@ -1,0 +1,16 @@
+// Resource Budget Enforcement — quota-based provisioning.
+// Tests numeric comparison for tier-derived resource limits.
+
+entity Tenant = {
+    tier: String,   // "free" | "pro" | "enterprise"
+};
+
+entity Resource;
+
+action create, read, delete, upgrade appliesTo {
+    principal: [Tenant],
+    resource: [Resource],
+    context: {
+        usageCount: Long,   // current number of resources the tenant has
+    },
+};

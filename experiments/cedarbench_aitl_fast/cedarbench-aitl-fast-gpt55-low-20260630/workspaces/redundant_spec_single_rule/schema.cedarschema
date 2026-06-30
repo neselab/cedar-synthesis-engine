@@ -1,0 +1,14 @@
+// Redundant Spec — Single Rule.
+// Minimal owner-only read scenario for testing planner deduplication.
+
+entity User;
+
+entity Document = {
+    owner: User,
+};
+
+action read appliesTo {
+    principal: [User],
+    resource: [Document],
+    context: {},
+};

@@ -1,0 +1,106 @@
+"""Auto-generated verification plan."""
+import os
+
+REFS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "references")
+
+
+def get_checks():
+    return [
+        {
+            "name": "view_safety_ceiling",
+            "description": "View is only permitted when projectStatus is Active, principal is ClinicalResearcher or PrincipalInvestigator, relevant role constraints hold, department matches (unless GlobalAuditor), and all forbids are respected",
+            "type": "implies",
+            "principal_type": "User",
+            "action": "Action::\"View\"",
+            "resource_type": "Document",
+            "reference_path": os.path.join(REFS, "ceiling_view.cedar"),
+        },
+        {
+            "name": "edit_safety_ceiling",
+            "description": "Edit is only permitted when projectStatus is Active, principal is ClinicalResearcher or PrincipalInvestigator, relevant role constraints hold, department matches (unless GlobalAuditor), hasPatientConsent is true, and all forbids are respected",
+            "type": "implies",
+            "principal_type": "User",
+            "action": "Action::\"Edit\"",
+            "resource_type": "Document",
+            "reference_path": os.path.join(REFS, "ceiling_edit.cedar"),
+        },
+        {
+            "name": "cross_dept_block_view",
+            "description": "View is denied when user department does not match document projectManagingDepartment and user is not a GlobalAuditor",
+            "type": "implies",
+            "principal_type": "User",
+            "action": "Action::\"View\"",
+            "resource_type": "Document",
+            "reference_path": os.path.join(REFS, "ceiling_view_dept.cedar"),
+        },
+        {
+            "name": "cross_dept_block_edit",
+            "description": "Edit is denied when user department does not match document projectManagingDepartment and user is not a GlobalAuditor",
+            "type": "implies",
+            "principal_type": "User",
+            "action": "Action::\"Edit\"",
+            "resource_type": "Document",
+            "reference_path": os.path.join(REFS, "ceiling_edit_dept.cedar"),
+        },
+        {
+            "name": "edit_consent_block",
+            "description": "Edit is denied when hasPatientConsent is false, regardless of role",
+            "type": "implies",
+            "principal_type": "User",
+            "action": "Action::\"Edit\"",
+            "resource_type": "Document",
+            "reference_path": os.path.join(REFS, "ceiling_edit_consent.cedar"),
+        },
+        {
+            "name": "floor_clinical_researcher_view",
+            "description": "A ClinicalResearcher with clearanceLevel > 3 in the same department MUST be able to View a non-HighlyRestricted document in an Active project",
+            "type": "floor",
+            "principal_type": "User",
+            "action": "Action::\"View\"",
+            "resource_type": "Document",
+            "floor_path": os.path.join(REFS, "floor_cr_view.cedar"),
+        },
+        {
+            "name": "floor_pi_view",
+            "description": "A PrincipalInvestigator in the same department with low risk score and compliant device MUST be able to View a document in an Active project",
+            "type": "floor",
+            "principal_type": "User",
+            "action": "Action::\"View\"",
+            "resource_type": "Document",
+            "floor_path": os.path.join(REFS, "floor_pi_view.cedar"),
+        },
+        {
+            "name": "floor_pi_edit",
+            "description": "A PrincipalInvestigator in the same department with low risk score, compliant device, and patient consent MUST be able to Edit a document in an Active project",
+            "type": "floor",
+            "principal_type": "User",
+            "action": "Action::\"Edit\"",
+            "resource_type": "Document",
+            "floor_path": os.path.join(REFS, "floor_pi_edit.cedar"),
+        },
+        {
+            "name": "floor_cr_edit",
+            "description": "A ClinicalResearcher with clearanceLevel > 3 in the same department with patient consent MUST be able to Edit a non-HighlyRestricted document in an Active project",
+            "type": "floor",
+            "principal_type": "User",
+            "action": "Action::\"Edit\"",
+            "resource_type": "Document",
+            "floor_path": os.path.join(REFS, "floor_cr_edit.cedar"),
+        },
+        {
+            "name": "liveness_view",
+            "description": "View policy is not trivially deny-all",
+            "type": "always-denies-liveness",
+            "principal_type": "User",
+            "action": "Action::\"View\"",
+            "resource_type": "Document",
+        },
+        {
+            "name": "liveness_edit",
+            "description": "Edit policy is not trivially deny-all",
+            "type": "always-denies-liveness",
+            "principal_type": "User",
+            "action": "Action::\"Edit\"",
+            "resource_type": "Document",
+        },
+    ]

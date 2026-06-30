@@ -1,0 +1,47 @@
+// Multi-Tenant SaaS — fundamental tenant-isolation pattern for SaaS
+// platforms, with a narrow global-support cross-tenant read path.
+
+entity Tenant;
+
+entity User = {
+    // The user's home tenant. Normal users can only access resources
+    // belonging to this tenant.
+    tenant: Tenant,
+    // Whether this user is on the global support team. Global support
+    // users have a narrow cross-tenant read capability that is gated on
+    // an active support session and a ticket reference.
+    isGlobalSupport: Bool,
+};
+
+// A generic tenant-owned resource. In a real SaaS, this might be
+// Documents, Projects, Invoices, etc. We use a single generic Resource
+// type to keep the scenario focused on the tenant-isolation pattern.
+entity Resource = {
+    tenant: Tenant,
+    owner: User,
+};
+
+// Standard CRUD actions on Resources.
+action readResource appliesTo {
+    principal: [User],
+    resource: [Resource],
+    context: {
+        // Whether the user is currently in an active support session.
+        // Support sessions have audit logging attached; non-session
+        // requests must not get cross-tenant access even for global
+        // support users.
+        supportSessionActive: Bool,
+        // The ticket ID the user is working on. Must be non-empty for
+        // any cross-tenant access.
+        ticketId: String,
+    },
+};
+
+action writeResource, deleteResource appliesTo {
+    principal: [User],
+    resource: [Resource],
+    context: {
+        supportSessionActive: Bool,
+        ticketId: String,
+    },
+};

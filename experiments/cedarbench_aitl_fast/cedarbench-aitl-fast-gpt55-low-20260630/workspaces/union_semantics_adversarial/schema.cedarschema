@@ -1,0 +1,19 @@
+// Union Semantics Adversarial — tests Cedar's permit-union semantics.
+// Two individually-correct permits can together permit unintended access
+// if the planner naively composes group membership and category as a
+// cross-product instead of as coupled (group, category) pairs.
+
+entity User = {
+    groupA: Bool,
+    groupB: Bool,
+};
+
+entity Resource = {
+    category: String,
+};
+
+action access appliesTo {
+    principal: [User],
+    resource: [Resource],
+    context: {},
+};

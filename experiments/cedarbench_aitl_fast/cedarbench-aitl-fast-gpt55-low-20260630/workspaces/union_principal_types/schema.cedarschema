@@ -1,0 +1,19 @@
+entity User = {
+    mfaVerified: Bool,
+};
+
+entity ApiKey = {
+    scopes: Set<String>,
+};
+
+entity ServiceAccount = {
+    serviceName: String,
+};
+
+entity Resource;
+
+action callApi appliesTo {
+    principal: [User, ApiKey, ServiceAccount],
+    resource: [Resource],
+    context: {},
+};

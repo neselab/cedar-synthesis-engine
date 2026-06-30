@@ -1,0 +1,59 @@
+// Red Herring Attributes -- adversarial schema with many decorative
+// attributes that are NOT used in the access decision. The policy must
+// ignore the noise and reference only role, mfaVerified, and owner.
+
+entity User = {
+    // RELEVANT: must be "reader" or "admin" for view access.
+    role: String,
+    // RELEVANT: must be true for view access.
+    mfaVerified: Bool,
+
+    // -- Red herrings below: present in schema, NOT used in the rule --
+
+    // Organizational department. Decorative metadata only.
+    department: String,
+    // IANA timezone string, e.g. "America/Los_Angeles". Decorative.
+    timezone: String,
+    // Preferred UI language code, e.g. "en-US". Decorative.
+    language: String,
+    // Account creation timestamp. Decorative.
+    createdAt: datetime,
+    // Last login timestamp. Decorative.
+    lastLogin: datetime,
+    // Subscription tier label, e.g. "free", "pro", "enterprise".
+    // Decorative -- does NOT gate access in this scenario.
+    accountTier: String,
+    // Referral code used at signup. Decorative.
+    referralCode: String,
+    // Whether the user opted into the newsletter. Decorative.
+    newsletterSubscribed: Bool,
+};
+
+entity Document = {
+    // RELEVANT: only the owner may view the document.
+    owner: User,
+
+    // -- Red herrings below: present in schema, NOT used in the rule --
+
+    // Document title. Decorative metadata only.
+    title: String,
+    // When the document was created. Decorative.
+    createdAt: datetime,
+    // When the document was last modified. Decorative.
+    lastModified: datetime,
+    // Cumulative view counter. Decorative.
+    viewCount: Long,
+    // Free-form category label. Decorative.
+    category: String,
+    // Cached count of tags applied. Decorative.
+    tagCount: Long,
+    // Publication timestamp. Decorative.
+    publishedDate: datetime,
+};
+
+// Single action: view. The only action in the scenario.
+action view appliesTo {
+    principal: [User],
+    resource: [Document],
+    context: {},
+};

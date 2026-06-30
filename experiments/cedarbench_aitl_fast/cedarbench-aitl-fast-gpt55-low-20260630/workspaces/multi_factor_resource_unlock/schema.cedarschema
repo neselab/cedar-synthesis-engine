@@ -1,0 +1,46 @@
+// Multi-Factor Resource Unlock — graduated factor requirements for
+// secrets vault access. Higher-sensitivity secrets demand progressively
+// more out-of-band attestations (MFA, manager approval, security review).
+
+entity User = {
+    // One of "operator", "security_officer", "admin".
+    role: String,
+};
+
+entity Secret = {
+    // 1 = low, 2 = medium, 3 = high.
+    sensitivityLevel: Long,
+};
+
+// View: any role, factors scale with sensitivity level.
+action view appliesTo {
+    principal: [User],
+    resource: [Secret],
+    context: {
+        hasMfa: Bool,
+        hasManagerApproval: Bool,
+        hasSecurityReview: Bool,
+    },
+};
+
+// Rotate: security_officer or admin only.
+action rotate appliesTo {
+    principal: [User],
+    resource: [Secret],
+    context: {
+        hasMfa: Bool,
+        hasManagerApproval: Bool,
+        hasSecurityReview: Bool,
+    },
+};
+
+// Revoke: admin only, always requires hasMfa + hasManagerApproval.
+action revoke appliesTo {
+    principal: [User],
+    resource: [Secret],
+    context: {
+        hasMfa: Bool,
+        hasManagerApproval: Bool,
+        hasSecurityReview: Bool,
+    },
+};

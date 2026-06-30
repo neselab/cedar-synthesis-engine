@@ -1,0 +1,48 @@
+// Medical Prescription Workflow — controlled-substance prescription
+// lifecycle with physician/pharmacist/patient/nurse roles.
+//
+// The key safety property: filling a controlled substance requires
+// the dispensing system to attest verification via an optional context
+// attribute (controlledSubstanceVerified).
+
+entity User = {
+    // One of "physician", "pharmacist", "patient", "nurse".
+    role: String,
+};
+
+entity Prescription = {
+    // The physician who wrote this prescription.
+    prescriber: User,
+    // The patient this prescription is for.
+    patient: User,
+    // Whether this is a controlled substance (DEA schedule II-V).
+    isControlled: Bool,
+    // Whether this prescription has already been dispensed.
+    isFilled: Bool,
+};
+
+action create appliesTo {
+    principal: [User],
+    resource: [Prescription],
+};
+
+action review appliesTo {
+    principal: [User],
+    resource: [Prescription],
+};
+
+action fill appliesTo {
+    principal: [User],
+    resource: [Prescription],
+    context: {
+        // Optional: present and true when the dispensing system has
+        // verified DEA schedule compliance for controlled substances.
+        // Must be has-guarded before read (Cedar negated-has trap).
+        controlledSubstanceVerified?: Bool,
+    },
+};
+
+action viewHistory appliesTo {
+    principal: [User],
+    resource: [Prescription],
+};

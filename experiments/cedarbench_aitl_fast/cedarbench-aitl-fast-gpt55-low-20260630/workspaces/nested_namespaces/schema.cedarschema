@@ -1,0 +1,39 @@
+// Nested Namespaces — Company::Identity and Company::Billing::Invoice.
+//
+// Exercises Cedar's multi-level namespace support and cross-namespace
+// entity type references. Entity types declared in one namespace
+// (Company::Identity) are used as field types on entities in another
+// (Company::Billing::Invoice).
+//
+// The three-level namespace `Company::Billing::Invoice` is a realistic
+// pattern for enterprise apps where a top-level org namespace contains
+// multiple product namespaces, each of which organizes a specific
+// domain of resources and actions.
+
+namespace Company::Identity {
+    entity Employee = {
+        department: String,
+        level: Long,
+    };
+
+    entity Team = {
+        manager: Employee,
+    };
+}
+
+namespace Company::Billing::Invoice {
+    entity Line = {
+        total: Long,
+        issuer: Company::Identity::Employee,
+        owningTeam: Company::Identity::Team,
+    };
+
+    // view: anyone on the team or the issuer may view a line.
+    // approve: team-lead or sufficiently senior employee may approve.
+    // void: senior managers only (irreversible action).
+    action view, approve, void appliesTo {
+        principal: [Company::Identity::Employee],
+        resource: [Line],
+        context: {},
+    };
+}

@@ -1,0 +1,24 @@
+// Five-Way Role Intersection — stresses §8.6 role-intersection trap
+// detection with a 5-role, 5-action, 4-category grid, and principals
+// that may hold multiple roles simultaneously (primary + secondary).
+
+entity User = {
+    // Primary role. One of: "admin", "auditor", "developer", "qa", "support".
+    role: String,
+    // Additional roles the user also holds. A user in role R means
+    // principal.role == R OR principal.secondaryRoles.contains(R).
+    // Same string domain as `role`.
+    secondaryRoles: Set<String>,
+};
+
+entity Resource = {
+    // One of: "code", "logs", "tickets", "config".
+    category: String,
+};
+
+// Five actions covering read, mutation, destructive, observability, and
+// an escalation-chain action.
+action read, modify, delete, audit, escalate appliesTo {
+    principal: [User],
+    resource: [Resource],
+};

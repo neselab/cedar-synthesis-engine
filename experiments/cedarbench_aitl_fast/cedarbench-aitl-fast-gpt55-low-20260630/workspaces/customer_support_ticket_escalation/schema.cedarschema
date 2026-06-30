@@ -1,0 +1,40 @@
+// Customer Support Ticket Escalation
+//
+// Agents are tiered support staff (tier1, tier2, tier3, manager).
+// Each agent has a maxPriority indicating the highest ticket priority
+// they can handle. Tickets have a numeric priority and an escalation
+// flag that restricts who can close them.
+
+entity Agent = {
+    // One of "tier1", "tier2", "tier3", "manager".
+    role: String,
+    // 1 = can handle low only, 4 = can handle up to critical.
+    maxPriority: Long,
+};
+
+entity Ticket = {
+    // 1 = low, 2 = medium, 3 = high, 4 = critical.
+    priority: Long,
+    // When true, only a manager can close this ticket.
+    isEscalated: Bool,
+};
+
+action respond appliesTo {
+    principal: [Agent],
+    resource: [Ticket],
+};
+
+action escalate appliesTo {
+    principal: [Agent],
+    resource: [Ticket],
+};
+
+action close appliesTo {
+    principal: [Agent],
+    resource: [Ticket],
+};
+
+action reassign appliesTo {
+    principal: [Agent],
+    resource: [Ticket],
+};

@@ -1,0 +1,14 @@
+// Audit Log Immutability — append-only audit entries.
+// Tests asymmetric permissions (append OK, delete/modify forbidden).
+
+entity User = {
+    role: String,   // "service" | "analyst" | "auditor" | "admin"
+};
+
+entity AuditEntry;
+
+action append, read, export, delete, modify appliesTo {
+    principal: [User],
+    resource: [AuditEntry],
+    context: {},
+};

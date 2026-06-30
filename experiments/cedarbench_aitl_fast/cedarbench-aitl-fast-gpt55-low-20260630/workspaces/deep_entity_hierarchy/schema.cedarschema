@@ -1,0 +1,23 @@
+// Deep Entity Hierarchy — 5-level organizational membership chain.
+// Tests Cedar's transitive `in` relation across multiple entity types.
+//
+// Hierarchy: Employee in Team in Department in Division in Organization
+//
+// Documents have a classification and are owned by a Team.
+
+entity Organization;
+entity Division in [Organization];
+entity Department in [Division];
+entity Team in [Department];
+entity Employee in [Team];
+
+entity Document = {
+    classification: String,   // "public" | "internal" | "confidential"
+    ownerTeam: Team,
+};
+
+action view, edit, delete appliesTo {
+    principal: [Employee],
+    resource: [Document],
+    context: {},
+};

@@ -1,0 +1,21 @@
+// Five Orthogonal Forbids — defense-in-depth multi-gate access control.
+
+entity User = {
+    isBlocked: Bool,
+    mfaVerified: Bool,
+};
+
+entity Resource = {
+    isArchived: Bool,
+    requiresMfa: Bool,
+};
+
+action access appliesTo {
+    principal: [User],
+    resource: [Resource],
+    context: {
+        now: datetime,
+        outsideBusinessHours: Bool,
+        rateLimited: Bool,
+    },
+};

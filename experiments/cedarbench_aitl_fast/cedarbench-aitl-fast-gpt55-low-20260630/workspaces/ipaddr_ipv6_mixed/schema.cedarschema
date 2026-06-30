@@ -1,0 +1,16 @@
+// Dual-Stack Data Center Access — exercises the Cedar `ipaddr` extension
+// with IPv6 + IPv4 addresses and the family-discrimination predicates.
+
+entity Operator;
+
+entity Server = {
+    serverIp: ipaddr,
+};
+
+action connect, manage appliesTo {
+    principal: [Operator],
+    resource: [Server],
+    context: {
+        clientIp: ipaddr,
+    },
+};

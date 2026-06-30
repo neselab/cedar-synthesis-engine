@@ -1,0 +1,10 @@
+permit (
+  principal is User,
+  action == Action::"view",
+  resource is Document
+)
+when {
+  (principal.role == "reader" || principal.role == "admin") &&
+  principal.mfaVerified == true &&
+  principal == resource.owner
+};

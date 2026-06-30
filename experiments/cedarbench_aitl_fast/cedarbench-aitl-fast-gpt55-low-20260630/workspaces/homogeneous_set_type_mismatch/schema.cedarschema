@@ -1,0 +1,23 @@
+// Homogeneous set type mismatch — group access with set literals.
+// Tests Cedar's set-homogeneity validator constraint.
+
+entity User in [Group] = {
+    id: String,
+};
+
+entity Group = {
+    members: Set<User>,
+    aliases: Set<String>,
+};
+
+entity Document = {
+    owner: User,
+    members: Set<User>,
+    aliases: Set<String>,
+};
+
+action view, share appliesTo {
+    principal: [User],
+    resource: [Document],
+    context: {},
+};

@@ -1,0 +1,28 @@
+// FERPA age-18 transition: parental rights to a student's educational
+// records transfer to the student on the 18th birthday. School officials
+// retain access at all ages.
+
+entity Person = {
+    // Date of birth used to compute age at request time.
+    dateOfBirth: datetime,
+
+    // One of: "self", "parent", "guardian", "school_official".
+    // "self" indicates the principal is accessing their own record;
+    // for self-access the policy ALSO requires principal == resource.studentId.
+    relationshipToStudent: String,
+};
+
+entity EducationalRecord = {
+    // The student to whom this record pertains. The age-of-majority
+    // computation uses studentId.dateOfBirth, not the principal's.
+    studentId: Person,
+};
+
+action viewRecord, requestCorrection, disclose appliesTo {
+    principal: [Person],
+    resource: [EducationalRecord],
+    context: {
+        // Current wall-clock time, supplied by the host application.
+        now: datetime,
+    },
+};

@@ -1,0 +1,16 @@
+// Wide Set 50 Elements — feature gating with many specific capability tags.
+// Tests Set<String> attribute reasoning across ~50 distinct string predicates.
+
+entity User = {
+    subscribedFeatures: Set<String>,
+};
+
+entity Feature = {
+    requiredCapabilities: Set<String>,
+};
+
+action useFeature appliesTo {
+    principal: [User],
+    resource: [Feature],
+    context: {},
+};

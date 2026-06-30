@@ -1,0 +1,34 @@
+// Conditional Role Activation — geo-fenced role activation. The
+// `homeRole` attribute names the role provisioned for the employee,
+// but the elevated `"admin"` role is only active when both a context
+// attestation (connectedFromOffice) and a principal attribute
+// (officeNetworkAuth) are true.
+
+entity SecureSystem;
+
+entity Employee = {
+    // The role provisioned for this employee. One of "user" or "admin".
+    homeRole: String,
+    // Whether this employee's account has the office-network
+    // authorization flag set. Required (in addition to the office
+    // network attestation) to activate the admin role.
+    officeNetworkAuth: Bool,
+};
+
+action read appliesTo {
+    principal: [Employee],
+    resource: [SecureSystem],
+    context: {
+        now: datetime,
+        connectedFromOffice: Bool,
+    },
+};
+
+action adminConfig appliesTo {
+    principal: [Employee],
+    resource: [SecureSystem],
+    context: {
+        now: datetime,
+        connectedFromOffice: Bool,
+    },
+};

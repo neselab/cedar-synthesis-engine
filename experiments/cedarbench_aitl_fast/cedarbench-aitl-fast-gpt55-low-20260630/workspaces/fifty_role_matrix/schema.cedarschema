@@ -1,0 +1,6 @@
+// 50-role matrix.
+entity User = { role: String };
+entity Resource;
+
+action read, write, delete, share, comment, approve, audit, export, configure, admin
+       appliesTo { principal: [User], resource: [Resource], context: {} };

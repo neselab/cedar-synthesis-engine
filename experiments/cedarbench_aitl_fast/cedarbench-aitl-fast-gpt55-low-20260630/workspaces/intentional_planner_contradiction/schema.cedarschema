@@ -1,0 +1,23 @@
+// Self-Reference Corner Case — a scenario deliberately constructed to
+// test whether the harness's §8.8 floor-bound consistency rule is
+// necessary. The spec has a subtle corner case (owner-self-blocking)
+// that, if handled naively by the planner, would produce jointly
+// unsatisfiable bounds. This scenario acts as a regression test for
+// §8.8.
+
+entity User = {
+    // The set of users this user has personally blocked. Users may
+    // block themselves (a "quiet mode" feature — some messaging
+    // platforms actually support this, and it creates the corner case
+    // that §8.8 catches).
+    blocked: Set<User>,
+};
+
+entity Post = {
+    author: User,
+};
+
+action readPost appliesTo {
+    principal: [User],
+    resource: [Post],
+};

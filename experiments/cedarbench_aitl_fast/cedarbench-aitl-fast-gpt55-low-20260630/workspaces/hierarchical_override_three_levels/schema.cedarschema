@@ -1,0 +1,24 @@
+// Hierarchical Override (Three Levels) — employees with a numeric
+// seniority level interact with resources of varying sensitivity.
+// Senior employees may READ restricted resources but may NOT EXECUTE
+// them; only leads may execute restricted resources.
+
+entity Employee = {
+    // Seniority level: 1=junior, 2=senior, 3=lead.
+    level: Long,
+};
+
+entity Resource = {
+    // One of "standard", "criticalAction", "restrictedAction".
+    category: String,
+};
+
+action read appliesTo {
+    principal: [Employee],
+    resource: [Resource],
+};
+
+action execute appliesTo {
+    principal: [Employee],
+    resource: [Resource],
+};

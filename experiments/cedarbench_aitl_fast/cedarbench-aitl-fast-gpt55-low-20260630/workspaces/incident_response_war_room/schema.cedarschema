@@ -1,0 +1,25 @@
+// Incident Response War Room — tiered escalation access for SRE incidents.
+//
+// Responders have a role (oncall, lead, commander) and a numeric clearance
+// level (1-3). Incidents have a severity (sev1, sev2, sev3) and an active
+// flag. Higher-severity incidents require higher clearance to modify.
+
+entity Responder = {
+    role: String,           // "oncall" | "lead" | "commander"
+    clearanceLevel: Long,   // 1-3
+};
+
+entity Incident = {
+    severity: String,       // "sev1" | "sev2" | "sev3"
+    isActive: Bool,
+};
+
+// viewDetails     — read incident details (active only)
+// updateStatus    — change incident status (active + clearance gating)
+// accessLogs      — read incident logs (any state, senior roles only)
+// declareResolved — close an incident (commander + active only)
+
+action viewDetails, updateStatus, accessLogs, declareResolved appliesTo {
+    principal: [Responder],
+    resource: [Incident],
+};

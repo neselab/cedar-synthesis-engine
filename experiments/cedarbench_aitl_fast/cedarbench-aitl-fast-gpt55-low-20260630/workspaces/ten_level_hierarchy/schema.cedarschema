@@ -1,0 +1,19 @@
+// Ten-level hierarchy.
+entity Org;
+entity Co in [Org];
+entity Region in [Co];
+entity Division in [Region];
+entity Dept in [Division];
+entity Team in [Dept];
+entity Squad in [Team];
+entity Group in [Squad];
+entity Pair in [Group];
+entity Individual in [Pair];
+
+entity Resource = { parentOrg: Org };
+
+action access appliesTo {
+    principal: [Individual],
+    resource: [Resource],
+    context: {},
+};

@@ -93,6 +93,13 @@ def _make_harness_llm_client() -> Any:
     return Anthropic()
 
 
+def _harness_output_config() -> dict[str, str] | None:
+    effort = os.environ.get("AUTOCEDAR_HARNESS_EFFORT", "").strip().lower()
+    if effort in {"low", "medium", "high", "max"}:
+        return {"effort": effort}
+    return None
+
+
 def _estimate_cost(model: str, input_tokens: int, output_tokens: int) -> float:
     """Estimate cost in USD for given token counts."""
     pricing = MODEL_PRICING.get(model, {"input": 3.00, "output": 15.00})
@@ -306,6 +313,7 @@ Revise the verification plan and reference policies to address the feedback abov
         max_tokens=8192,
         system=PHASE1_SYSTEM,
         messages=[{"role": "user", "content": prompt}],
+        output_config=_harness_output_config(),
     )
     usage = (response.usage.input_tokens, response.usage.output_tokens)
     return _extract_json(response.content[0].text), usage
@@ -1823,6 +1831,7 @@ def run_scenario(
                 max_tokens=4096,
                 system=PHASE2_SYSTEM,
                 messages=messages,
+                output_config=_harness_output_config(),
             )
             iter_in_tok = response.usage.input_tokens
             iter_out_tok = response.usage.output_tokens

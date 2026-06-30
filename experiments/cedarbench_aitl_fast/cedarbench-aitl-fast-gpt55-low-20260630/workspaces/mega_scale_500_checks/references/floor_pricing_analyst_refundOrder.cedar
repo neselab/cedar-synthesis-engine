@@ -1,0 +1,9 @@
+// Floor: user with role "pricing_analyst" must be permitted to perform action refundOrder.
+permit (
+    principal is User,
+    action == Action::"refundOrder",
+    resource is Order
+)
+when {
+    principal.role == "pricing_analyst"
+};

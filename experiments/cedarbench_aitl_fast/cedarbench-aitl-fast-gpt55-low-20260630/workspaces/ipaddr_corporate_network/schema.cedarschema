@@ -1,0 +1,44 @@
+// IP-Address Corporate Network -- enterprise access control gated by
+// source IP, role, and per-system VPN requirement. First scenario in
+// CedarBench exercising Cedar's `ipaddr` extension type.
+
+entity Employee = {
+    // One of "standard", "ops", or "admin".
+    role: String,
+};
+
+entity InternalSystem = {
+    // True if this system can only be reached from the corporate VPN
+    // segment (10.10.0.0/16).
+    requiresVpn: Bool,
+};
+
+// General read access. Source IP must sit in a corporate range and
+// outside the known-compromised range. VPN-required systems
+// additionally require the source IP to be in the VPN segment.
+action access appliesTo {
+    principal: [Employee],
+    resource: [InternalSystem],
+    context: {
+        sourceIp: ipaddr,
+    },
+};
+
+// Configuration / mutation. Restricted to ops/admin AND requires
+// the request to originate from the admin jump-host subnet.
+action configure appliesTo {
+    principal: [Employee],
+    resource: [InternalSystem],
+    context: {
+        sourceIp: ipaddr,
+    },
+};
+
+// Break-glass admin path. Admin role only, no IP restriction.
+action emergencyAccess appliesTo {
+    principal: [Employee],
+    resource: [InternalSystem],
+    context: {
+        sourceIp: ipaddr,
+    },
+};

@@ -1,0 +1,40 @@
+// Compound Attestation Multi-Signer — three optional attestation
+// records, each from a distinct signer with its own validity window.
+
+entity User;
+
+entity Proposal = {
+    // The three users expected to attest before the proposal can execute.
+    requiredSigners: Set<User>,
+};
+
+// view is open to any user; no context required.
+action view appliesTo {
+    principal: [User],
+    resource: [Proposal],
+};
+
+// execute requires three independent attestations, each signed by a
+// distinct member of resource.requiredSigners and currently valid.
+action execute appliesTo {
+    principal: [User],
+    resource: [Proposal],
+    context: {
+        attestation1?: {
+            signer: User,
+            signedAt: datetime,
+            validUntil: datetime,
+        },
+        attestation2?: {
+            signer: User,
+            signedAt: datetime,
+            validUntil: datetime,
+        },
+        attestation3?: {
+            signer: User,
+            signedAt: datetime,
+            validUntil: datetime,
+        },
+        now: datetime,
+    },
+};

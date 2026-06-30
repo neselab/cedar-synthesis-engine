@@ -1,0 +1,17 @@
+// Empty-Set Vacuous Truth — workstation training compliance.
+// Tests the trap that [].containsAll(anything) == true in Cedar.
+
+entity Employee = {
+    completedTrainings: Set<String>,
+    role: String,
+};
+
+entity Workstation = {
+    requiredTrainings: Set<String>,
+};
+
+action useWorkstation, bypass appliesTo {
+    principal: [Employee],
+    resource: [Workstation],
+    context: {},
+};

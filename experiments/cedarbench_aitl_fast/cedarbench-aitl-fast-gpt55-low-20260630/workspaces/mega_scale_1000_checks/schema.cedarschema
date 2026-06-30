@@ -1,0 +1,7 @@
+// Mega-Scale 1000-Check — 50 roles × 20 actions = 1000 cells.
+
+entity User = { role: String };
+entity Order = { total: Long, status: String };
+
+action viewOrder, listOrders, createOrder, updateOrder, cancelOrder, refundOrder, partialRefund, shipOrder, markDelivered, returnOrder, disputeOrder, resolveDispute, viewPII, maskPII, exportData, bulkOperations, modifyPricing, applyDiscount, voidTransaction, adminOverride
+       appliesTo { principal: [User], resource: [Order], context: {} };

@@ -1,0 +1,26 @@
+// Implicit Deny-by-Default — patient chart access. The spec lists only
+// the allowed (role, action) combinations; anything not listed is denied
+// by Cedar's default-deny semantics.
+
+entity Worker = {
+    // One of "nurse", "doctor", "administrator".
+    role: String,
+};
+
+entity Chart = {
+};
+
+action view appliesTo {
+    principal: [Worker],
+    resource: [Chart],
+};
+
+action edit appliesTo {
+    principal: [Worker],
+    resource: [Chart],
+};
+
+action archive appliesTo {
+    principal: [Worker],
+    resource: [Chart],
+};

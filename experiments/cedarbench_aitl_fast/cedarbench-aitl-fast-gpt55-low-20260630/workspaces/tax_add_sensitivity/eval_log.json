@@ -1,0 +1,61 @@
+{
+  "scenario": "tax_add_sensitivity",
+  "model": "gpt-5.5",
+  "phase1_model": "gpt-5.5",
+  "phase2_model": "gpt-5.5",
+  "converged": true,
+  "iterations": 3,
+  "max_iterations": 20,
+  "total_time_s": 25.78,
+  "phase1_time_s": 0.02,
+  "phase2_time_s": 25.75,
+  "final_loss": 0,
+  "checks_total": 4,
+  "iteration_log": [
+    {
+      "iteration": 1,
+      "loss": 1,
+      "checks_passed": 0,
+      "checks_total": 4,
+      "solver_time_s": 0.0,
+      "counterexample_count": 1,
+      "syntax_valid": false,
+      "status": "syntax_error",
+      "input_tokens": 2611,
+      "output_tokens": 531
+    },
+    {
+      "iteration": 2,
+      "loss": 1,
+      "checks_passed": 0,
+      "checks_total": 4,
+      "solver_time_s": 0.0,
+      "counterexample_count": 1,
+      "syntax_valid": false,
+      "status": "syntax_error",
+      "input_tokens": 2926,
+      "output_tokens": 240
+    },
+    {
+      "iteration": 3,
+      "loss": 0,
+      "checks_passed": 4,
+      "checks_total": 4,
+      "solver_time_s": 0.087,
+      "counterexample_count": 0,
+      "syntax_valid": true,
+      "status": "pass",
+      "input_tokens": 3373,
+      "output_tokens": 454
+    }
+  ],
+  "error": "",
+  "phase1_input_tokens": 0,
+  "phase1_output_tokens": 0,
+  "phase2_input_tokens": 8910,
+  "phase2_output_tokens": 1225,
+  "total_input_tokens": 8910,
+  "total_output_tokens": 1225,
+  "total_tokens": 10135,
+  "estimated_cost_usd": 0.0451
+}

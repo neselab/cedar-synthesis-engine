@@ -1,0 +1,37 @@
+{
+  "scenario": "tax_remove_consent",
+  "model": "gpt-5.5",
+  "phase1_model": "gpt-5.5",
+  "phase2_model": "gpt-5.5",
+  "converged": true,
+  "iterations": 1,
+  "max_iterations": 20,
+  "total_time_s": 4.75,
+  "phase1_time_s": 0.01,
+  "phase2_time_s": 4.73,
+  "final_loss": 0,
+  "checks_total": 3,
+  "iteration_log": [
+    {
+      "iteration": 1,
+      "loss": 0,
+      "checks_passed": 3,
+      "checks_total": 3,
+      "solver_time_s": 0.033,
+      "counterexample_count": 0,
+      "syntax_valid": true,
+      "status": "pass",
+      "input_tokens": 2267,
+      "output_tokens": 195
+    }
+  ],
+  "error": "",
+  "phase1_input_tokens": 0,
+  "phase1_output_tokens": 0,
+  "phase2_input_tokens": 2267,
+  "phase2_output_tokens": 195,
+  "total_input_tokens": 2267,
+  "total_output_tokens": 195,
+  "total_tokens": 2462,
+  "estimated_cost_usd": 0.0097
+}

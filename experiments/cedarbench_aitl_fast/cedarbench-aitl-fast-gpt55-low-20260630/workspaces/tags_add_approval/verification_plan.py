@@ -1,0 +1,105 @@
+"""Auto-generated verification plan."""
+import os
+
+REFS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "references")
+
+
+def get_checks():
+    return [
+        {
+            "name": "update_requires_approval",
+            "description": "UpdateWorkspace is forbidden when resource.isApproved is false",
+            "type": "implies",
+            "principal_type": "User",
+            "action": "Action::\"UpdateWorkspace\"",
+            "resource_type": "Workspace",
+            "reference_path": os.path.join(REFS, "ceiling_update.cedar"),
+        },
+        {
+            "name": "delete_requires_approval",
+            "description": "DeleteWorkspace is forbidden when resource.isApproved is false",
+            "type": "implies",
+            "principal_type": "User",
+            "action": "Action::\"DeleteWorkspace\"",
+            "resource_type": "Workspace",
+            "reference_path": os.path.join(REFS, "ceiling_delete.cedar"),
+        },
+        {
+            "name": "update_requires_role_a",
+            "description": "UpdateWorkspace requires principal in Role-A and approval",
+            "type": "implies",
+            "principal_type": "User",
+            "action": "Action::\"UpdateWorkspace\"",
+            "resource_type": "Workspace",
+            "reference_path": os.path.join(REFS, "ceiling_update_role.cedar"),
+        },
+        {
+            "name": "delete_requires_role_a",
+            "description": "DeleteWorkspace requires principal in Role-A and approval",
+            "type": "implies",
+            "principal_type": "User",
+            "action": "Action::\"DeleteWorkspace\"",
+            "resource_type": "Workspace",
+            "reference_path": os.path.join(REFS, "ceiling_delete_role.cedar"),
+        },
+        {
+            "name": "read_requires_role",
+            "description": "ReadWorkspace requires principal in Role-A or Role-B",
+            "type": "implies",
+            "principal_type": "User",
+            "action": "Action::\"ReadWorkspace\"",
+            "resource_type": "Workspace",
+            "reference_path": os.path.join(REFS, "ceiling_read_role.cedar"),
+        },
+        {
+            "name": "floor_role_a_update_all_tags",
+            "description": "Role-A user with ALL wildcards MUST be able to update an approved workspace when tags match trivially",
+            "type": "floor",
+            "principal_type": "User",
+            "action": "Action::\"UpdateWorkspace\"",
+            "resource_type": "Workspace",
+            "floor_path": os.path.join(REFS, "floor_update_role_a.cedar"),
+        },
+        {
+            "name": "floor_role_b_read",
+            "description": "Role-B user with ALL wildcards MUST be able to read a workspace when tags match trivially",
+            "type": "floor",
+            "principal_type": "User",
+            "action": "Action::\"ReadWorkspace\"",
+            "resource_type": "Workspace",
+            "floor_path": os.path.join(REFS, "floor_read_role_b.cedar"),
+        },
+        {
+            "name": "floor_role_a_read_unapproved",
+            "description": "Role-A user with matching tags MUST be able to read even unapproved workspaces",
+            "type": "floor",
+            "principal_type": "User",
+            "action": "Action::\"ReadWorkspace\"",
+            "resource_type": "Workspace",
+            "floor_path": os.path.join(REFS, "floor_read_unapproved.cedar"),
+        },
+        {
+            "name": "liveness_update",
+            "description": "UpdateWorkspace is not trivially denied for all requests",
+            "type": "always-denies-liveness",
+            "principal_type": "User",
+            "action": "Action::\"UpdateWorkspace\"",
+            "resource_type": "Workspace",
+        },
+        {
+            "name": "liveness_delete",
+            "description": "DeleteWorkspace is not trivially denied for all requests",
+            "type": "always-denies-liveness",
+            "principal_type": "User",
+            "action": "Action::\"DeleteWorkspace\"",
+            "resource_type": "Workspace",
+        },
+        {
+            "name": "liveness_read",
+            "description": "ReadWorkspace is not trivially denied for all requests",
+            "type": "always-denies-liveness",
+            "principal_type": "User",
+            "action": "Action::\"ReadWorkspace\"",
+            "resource_type": "Workspace",
+        },
+    ]

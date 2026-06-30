@@ -1,0 +1,47 @@
+// Recurring Maintenance Window -- access control based on whether the
+// current time falls inside a recurring (e.g. weekly) maintenance window.
+//
+// Cedar has no modulo operator on datetime, so "are we currently in a
+// recurring window?" cannot be computed in-policy. The host application
+// is responsible for supplying the window boundaries: `windowStart` is
+// the start of the current window (if any; otherwise a far-past sentinel
+// and a zero-duration `windowDuration`). A request is inside the window
+// iff `context.now >= context.windowStart` AND
+//     `context.now < context.windowStart.offset(context.windowDuration)`.
+
+entity User = {
+    // One of "user", "oncall", or "admin".
+    role: String,
+};
+
+entity System;
+
+// General system access. Ordinary users are locked out during the
+// maintenance window; oncall and admin may access at any time.
+action access appliesTo {
+    principal: [User],
+    resource: [System],
+    context: {
+        // Current wall-clock time, populated by the host.
+        now: datetime,
+        // Start of the current maintenance window. If not currently in
+        // a window, the host supplies a far-past datetime together with
+        // a zero duration below.
+        windowStart: datetime,
+        // Length of the maintenance window (e.g. duration("2h")).
+        // The host supplies duration("0s") when no window is active.
+        windowDuration: duration,
+    },
+};
+
+// Privileged administrative operations. Restricted to admins AND only
+// during the maintenance window (the inverse of `access`).
+action adminOperation appliesTo {
+    principal: [User],
+    resource: [System],
+    context: {
+        now: datetime,
+        windowStart: datetime,
+        windowDuration: duration,
+    },
+};

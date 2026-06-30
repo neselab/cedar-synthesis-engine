@@ -1,0 +1,45 @@
+// Three-Way Mutual Exclusion — change-request workflow with three
+// pairwise mutually-exclusive actions (submit, approve, audit) on the
+// same ChangeRequest. The same Engineer must not perform any two of
+// these three roles for a given request.
+//
+// Design note: prior-actor identity is supplied by the host application
+// as an optional context attribute (one of `prevSubmitter`,
+// `prevApprover`, `prevAuditor`). When the request has not yet been
+// touched in that role, the corresponding attribute is absent. The
+// policy must `has`-guard every read of these optional attributes.
+
+entity Engineer;
+
+entity ChangeRequest;
+
+action submit appliesTo {
+    principal: [Engineer],
+    resource: [ChangeRequest],
+    context: {
+        // Absent when the request has not yet been approved.
+        prevApprover?: Engineer,
+        // Absent when the request has not yet been audited.
+        prevAuditor?: Engineer,
+    },
+};
+
+action approve appliesTo {
+    principal: [Engineer],
+    resource: [ChangeRequest],
+    context: {
+        // Absent when the request has not yet been submitted (in which
+        // case approval is moot, but the policy still runs cleanly).
+        prevSubmitter?: Engineer,
+        prevAuditor?: Engineer,
+    },
+};
+
+action audit appliesTo {
+    principal: [Engineer],
+    resource: [ChangeRequest],
+    context: {
+        prevSubmitter?: Engineer,
+        prevApprover?: Engineer,
+    },
+};

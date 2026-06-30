@@ -1,0 +1,32 @@
+// Warehouse zone-restricted inventory access.
+// Workers are assigned to zones; inventory items track their current zone.
+// Hazardous items require supervisor role for certain actions.
+
+entity Worker = {
+    // One of "receiving", "storage", "shipping", or "all".
+    zone: String,
+    // One of "handler" or "supervisor".
+    role: String,
+};
+
+entity Inventory = {
+    // Current zone of this item: "receiving", "storage", or "shipping".
+    currentZone: String,
+    // Whether this item is classified as hazardous.
+    isHazardous: Bool,
+};
+
+action move appliesTo {
+    principal: [Worker],
+    resource: [Inventory],
+};
+
+action inspect appliesTo {
+    principal: [Worker],
+    resource: [Inventory],
+};
+
+action dispose appliesTo {
+    principal: [Worker],
+    resource: [Inventory],
+};

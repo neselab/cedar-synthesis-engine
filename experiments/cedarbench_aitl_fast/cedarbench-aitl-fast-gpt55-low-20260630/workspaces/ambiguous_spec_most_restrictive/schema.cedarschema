@@ -1,0 +1,41 @@
+// Ambiguous Spec, Most-Restrictive Interpretation — schema.
+//
+// The schema is deliberately minimal. The interesting work is in the
+// natural-language spec, which uses hedged language ("typically",
+// "sometimes", "high-impact"). The planner's job is to read those
+// hedges as least-privilege defaults and produce references that
+// require an explicit grant for every positive case.
+
+entity User = {
+    // The user's organizational role. Expected values: "admin", "user",
+    // "guest". Any other value is treated as no-privilege.
+    role: String,
+
+    // Whether this user has been explicitly granted access. Under the
+    // most-restrictive reading, this gates ALL view and approve
+    // permissions — without it, no action is permitted.
+    explicitGrant: Bool,
+};
+
+entity Document = {
+    // Sensitivity classification. Not used for gating in the
+    // most-restrictive reading (the explicit-grant requirement
+    // dominates), but present so that future, more permissive
+    // interpretations could relax behavior per-sensitivity.
+    sensitivity: String,
+
+    // Whether the document requires approval. Informational under the
+    // most-restrictive reading — the approve action is gated on the
+    // principal regardless of this flag.
+    requiresApproval: Bool,
+};
+
+action view appliesTo {
+    principal: [User],
+    resource: [Document],
+};
+
+action approve appliesTo {
+    principal: [User],
+    resource: [Document],
+};

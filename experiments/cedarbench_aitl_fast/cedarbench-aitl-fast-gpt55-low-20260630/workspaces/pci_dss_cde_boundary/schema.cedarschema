@@ -1,0 +1,52 @@
+// PCI DSS Cardholder Data Environment (CDE) Boundary — tokenization-based
+// scope reduction. Principals are Systems (services / processes), not users.
+// Resources are PaymentRecords classified by dataType (PAN / TOKEN /
+// MASKED_PAN) and tagged with cdeMember to indicate whether the record
+// itself sits inside the CDE.
+
+// A System is a service or process that interacts with payment data.
+// cdeAuthorized: this system is in PCI scope and approved to handle PAN.
+// auditCompliant: this system passes the stronger audit-trail requirement
+// needed for detokenization.
+entity System = {
+    cdeAuthorized: Bool,
+    auditCompliant: Bool,
+};
+
+// A PaymentRecord is the data object being read / tokenized / detokenized
+// / audited. dataType classifies what kind of data it contains.
+// cdeMember: whether this record is hosted inside the CDE.
+entity PaymentRecord = {
+    dataType: String,
+    cdeMember: Bool,
+};
+
+// Read a payment record. Gating depends on dataType — PAN requires CDE
+// membership of both principal and resource; TOKEN and MASKED_PAN are
+// readable by any system.
+action read appliesTo {
+    principal: [System],
+    resource: [PaymentRecord],
+};
+
+// Tokenize a PAN — produce a TOKEN that maps to it. Requires the
+// principal to be cdeAuthorized; the resource must currently be a PAN.
+action tokenize appliesTo {
+    principal: [System],
+    resource: [PaymentRecord],
+};
+
+// Detokenize a TOKEN — re-expose its underlying PAN. Highest restriction:
+// requires BOTH cdeAuthorized AND auditCompliant; the resource must be
+// a TOKEN.
+action detokenize appliesTo {
+    principal: [System],
+    resource: [PaymentRecord],
+};
+
+// Audit a payment record. Any system may audit non-PAN records; auditing
+// a PAN record additionally requires the auditor to be cdeAuthorized.
+action audit appliesTo {
+    principal: [System],
+    resource: [PaymentRecord],
+};

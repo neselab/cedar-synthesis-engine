@@ -1,0 +1,20 @@
+// GDPR Art. 35 DPIA gating — high-risk processing requires a valid,
+// approved, non-stale Data Protection Impact Assessment.
+
+entity Processor = {
+    role: String,   // "controller" | "dpo"
+};
+
+entity ProcessingActivity = {
+    riskLevel: String,                 // "low" | "medium" | "high"
+    dpiaCompletedDate?: datetime,      // optional — present iff DPIA performed
+    dpiaApproved: Bool,
+};
+
+action initiateProcessing, modifyProcessing, terminateProcessing appliesTo {
+    principal: [Processor],
+    resource: [ProcessingActivity],
+    context: {
+        now: datetime,
+    },
+};

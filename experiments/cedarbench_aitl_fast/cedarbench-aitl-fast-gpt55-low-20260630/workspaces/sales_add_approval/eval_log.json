@@ -1,0 +1,37 @@
+{
+  "scenario": "sales_add_approval",
+  "model": "gpt-5.5",
+  "phase1_model": "gpt-5.5",
+  "phase2_model": "gpt-5.5",
+  "converged": true,
+  "iterations": 1,
+  "max_iterations": 20,
+  "total_time_s": 30.97,
+  "phase1_time_s": 0.12,
+  "phase2_time_s": 30.84,
+  "final_loss": 0,
+  "checks_total": 28,
+  "iteration_log": [
+    {
+      "iteration": 1,
+      "loss": 0,
+      "checks_passed": 28,
+      "checks_total": 28,
+      "solver_time_s": 0.342,
+      "counterexample_count": 0,
+      "syntax_valid": true,
+      "status": "pass",
+      "input_tokens": 4247,
+      "output_tokens": 1629
+    }
+  ],
+  "error": "",
+  "phase1_input_tokens": 0,
+  "phase1_output_tokens": 0,
+  "phase2_input_tokens": 4247,
+  "phase2_output_tokens": 1629,
+  "total_input_tokens": 4247,
+  "total_output_tokens": 1629,
+  "total_tokens": 5876,
+  "estimated_cost_usd": 0.0372
+}

@@ -1,0 +1,22 @@
+// Priority-Based Role Resolution — content library where Users hold
+// multiple roles, Records are tiered by sensitivity, and access rules
+// must follow an explicit role-priority ordering (admin > premium >
+// subscriber > guest) encoded as additive positive permits.
+
+entity User = {
+    // The set of roles the user holds. Possible values:
+    //   "guest", "subscriber", "premium", "admin".
+    // A user may hold multiple simultaneously (e.g. {"guest","subscriber"}).
+    roles: Set<String>,
+};
+
+entity Record = {
+    // Sensitivity tier. One of:
+    //   "public", "confidential", "premium-only", "admin-only".
+    tier: String,
+};
+
+action viewRecord, editRecord, deleteRecord appliesTo {
+    principal: [User],
+    resource: [Record],
+};

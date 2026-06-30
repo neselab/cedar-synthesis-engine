@@ -1,0 +1,39 @@
+// Subscription Content Gate -- subscription-based content access for
+// streaming / SaaS platforms. Subscribers have a plan tier and active
+// flag; Content items have a tier and preview flag.
+
+entity Subscriber = {
+    // One of "free", "basic", "premium".
+    plan: String,
+    // Whether the subscription is currently active. Inactive
+    // subscribers are denied all actions.
+    isActive: Bool,
+};
+
+entity Content = {
+    // One of "free", "basic", "premium" -- the minimum plan required
+    // for non-preview access.
+    tier: String,
+    // Preview content can be streamed by any active subscriber
+    // regardless of plan, but cannot be downloaded by free-plan users.
+    isPreview: Bool,
+};
+
+// Streaming: requires active + (preview OR plan >= tier).
+action stream appliesTo {
+    principal: [Subscriber],
+    resource: [Content],
+};
+
+// Downloading: requires active + plan in {basic, premium} + plan >= tier.
+// Preview flag does NOT bypass the download gate.
+action download appliesTo {
+    principal: [Subscriber],
+    resource: [Content],
+};
+
+// Sharing: requires active + plan == premium. No tier restriction.
+action share appliesTo {
+    principal: [Subscriber],
+    resource: [Content],
+};

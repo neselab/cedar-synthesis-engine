@@ -1,0 +1,45 @@
+// AML / KYC Tiered Customer Due Diligence — risk-based verification
+// depths for retail bank customers. Tiers (SDD / CDD / EDD) and EDD
+// attestations (UBO, adverse media) compose with transaction amount
+// bands and per-customer risk score to gate four customer actions.
+
+entity BankCustomer = {
+    // 0 (lowest) to 100 (highest), as scored by the bank's risk engine.
+    riskScore: Long,
+    // One of "SDD", "CDD", "EDD".
+    kycTier: String,
+    // Ultimate Beneficial Owner verification completed.
+    uboVerified: Bool,
+    // Adverse media / sanctions screening returned no hits.
+    adverseMediaClean: Bool,
+};
+
+entity Transaction = {
+    amount: Long,
+    requiresEdd: Bool,
+};
+
+// View own account summary. Any tier permitted.
+action viewAccount appliesTo {
+    principal: [BankCustomer],
+    resource: [BankCustomer],
+};
+
+// Initiate an outbound transfer. Tiered on amount band.
+action transferOut appliesTo {
+    principal: [BankCustomer],
+    resource: [Transaction],
+};
+
+// Open a new bank product. High-risk principals require EDD path.
+// Resource is the customer's own profile.
+action openProduct appliesTo {
+    principal: [BankCustomer],
+    resource: [BankCustomer],
+};
+
+// File a manual compliance escalation. CDD or EDD only.
+action escalateReview appliesTo {
+    principal: [BankCustomer],
+    resource: [BankCustomer],
+};

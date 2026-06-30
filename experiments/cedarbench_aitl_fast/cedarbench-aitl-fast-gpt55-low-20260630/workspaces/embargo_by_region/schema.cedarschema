@@ -1,0 +1,42 @@
+// Embargo By Region -- regional release-window enforcement. Each Asset
+// carries three independent release datetimes (one per region). The
+// user's `region` selects which release datetime applies. Cedar has no
+// dynamic record key access, so the policy must branch explicitly on
+// each region value.
+
+entity User = {
+    // One of "us", "eu", "apac". The host application is responsible
+    // for ensuring the value is exactly one of these three strings.
+    region: String,
+};
+
+entity Asset = {
+    // Per-region release datetimes. An asset is considered released in
+    // a region once `context.now >= release<REGION>`.
+    releaseUS: datetime,
+    releaseEU: datetime,
+    releaseAPAC: datetime,
+};
+
+// Lightweight viewing of a released asset. Permitted as soon as the
+// asset is released in the user's region.
+action view appliesTo {
+    principal: [User],
+    resource: [Asset],
+    context: {
+        // Current wall-clock time, supplied by the host application.
+        now: datetime,
+    },
+};
+
+// Download is more sensitive: requires the asset to have been released
+// in the user's region for at least 24 hours before download is
+// permitted. This anti-leak buffer gives the rights team time to pull
+// the asset back in case of a botched embargo lift.
+action download appliesTo {
+    principal: [User],
+    resource: [Asset],
+    context: {
+        now: datetime,
+    },
+};

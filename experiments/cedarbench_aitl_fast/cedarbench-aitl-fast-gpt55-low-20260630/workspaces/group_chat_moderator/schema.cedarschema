@@ -1,0 +1,18 @@
+// Group Chat Moderator — Discord/Slack-style channel moderation.
+// Tests entity membership (in), set contains for moderator list,
+// and owner vs moderator vs member permission split.
+
+entity User;
+
+entity Channel = {
+    owner: User,
+    members: Set<User>,
+    moderators: Set<User>,
+    isArchived: Bool,
+};
+
+action read, post, deleteMessage, pin, archive appliesTo {
+    principal: [User],
+    resource: [Channel],
+    context: {},
+};

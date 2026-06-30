@@ -1,0 +1,52 @@
+// Tags & Roles -- Cedar Schema (with Role-C)
+
+entity Role;
+entity User in [Role] {
+  allowedTagsForRole: {
+    "Role-A"?: {
+        production_status?: Set<String>,
+        country?: Set<String>,
+        stage?: Set<String>,
+    },
+    "Role-B"?: {
+        production_status?: Set<String>,
+        country?: Set<String>,
+        stage?: Set<String>,
+    },
+    "Role-C"?: {
+        production_status?: Set<String>,
+        country?: Set<String>,
+        stage?: Set<String>,
+    },
+  },
+};
+entity Workspace {
+  tags: {
+    production_status?: Set<String>,
+    country?: Set<String>,
+    stage?: Set<String>,
+  }
+};
+
+action "Role-A Actions";
+action "Role-B Actions";
+action "Role-C Actions";
+action UpdateWorkspace in ["Role-A Actions"] appliesTo {
+  principal: User,
+  resource: Workspace,
+};
+
+action DeleteWorkspace in ["Role-A Actions"] appliesTo {
+  principal: User,
+  resource: Workspace,
+};
+
+action ReadWorkspace in ["Role-A Actions", "Role-B Actions"] appliesTo {
+  principal: User,
+  resource: Workspace,
+};
+
+action ArchiveWorkspace in ["Role-C Actions"] appliesTo {
+  principal: User,
+  resource: Workspace,
+};

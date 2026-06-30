@@ -1,0 +1,32 @@
+// Purpose-Bound Field Access -- data minimization on patient records.
+// Each purpose (treatment, billing, research) has its own field allowlist
+// stored as a separate Set<String> on the resource, because Cedar has no
+// dynamic record key access. Encoded policies must explicitly branch on
+// the declaredPurpose literal to select the matching set.
+
+entity Workforce = {
+    // One of "clinician", "billing_clerk", "researcher".
+    // Other roles are unsupported.
+    role: String,
+};
+
+entity PatientRecord = {
+    // Fields visible to clinicians for treatment purpose.
+    purposeFieldsTreatment: Set<String>,
+    // Fields visible to billing clerks for billing purpose.
+    purposeFieldsBilling: Set<String>,
+    // Fields visible to researchers for research purpose.
+    purposeFieldsResearch: Set<String>,
+};
+
+action accessField appliesTo {
+    principal: [Workforce],
+    resource: [PatientRecord],
+    context: {
+        // The field name the workforce member is requesting.
+        requestedField: String,
+        // One of "treatment", "billing", "research". Other values
+        // are unsupported and must be denied.
+        declaredPurpose: String,
+    },
+};

@@ -1,0 +1,33 @@
+namespace Taxpreparer {
+  type orgInfo = {
+    organization: String,
+    serviceline: String,
+    location: String,
+  };
+  entity Professional = {
+    assigned_orgs: Set<orgInfo>,
+    location: String,
+  };
+  entity Auditor = {
+    location: String,
+    auditScope: Set<String>,
+  };
+  entity Document = {
+    serviceline: String,
+    location: String,
+    owner: Client,
+  };
+  entity Client = {
+    organization: String
+  };
+  type Consent = {
+    client: Client,
+    team_region_list: Set<String>
+  };
+
+  action viewDocument appliesTo {
+    principal: [Professional, Auditor],
+    resource: [Document],
+    context: { consent: Consent }
+  };
+}

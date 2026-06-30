@@ -1,0 +1,33 @@
+// Rate Limit by Role -- API gateway rate limiting where the rate
+// ceiling is derived from the client's tier attribute.
+
+entity ApiClient = {
+    // "free", "standard", or "premium"
+    tier: String,
+};
+
+entity Endpoint = {
+    // Public endpoints are callable by any tier; non-public endpoints
+    // require standard or premium.
+    isPublic: Bool,
+};
+
+// Invoke a single endpoint.
+action call appliesTo {
+    principal: [ApiClient],
+    resource: [Endpoint],
+    context: {
+        // Number of requests the client has already made in the
+        // current minute window, injected by the API gateway.
+        requestsThisMinute: Long,
+    },
+};
+
+// Invoke an endpoint via the bulk/batch API (premium only).
+action bulkCall appliesTo {
+    principal: [ApiClient],
+    resource: [Endpoint],
+    context: {
+        requestsThisMinute: Long,
+    },
+};

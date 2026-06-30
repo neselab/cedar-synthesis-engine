@@ -1,0 +1,43 @@
+// Four-Level Unless Chain — emergency lockdown override.
+// Encodes a 4-deep "permitted, unless A, unless B, unless C, unless D"
+// chain as a single Cedar permit-when-unless block, with a separate
+// commander-only forceAccess action.
+
+entity User = {
+    // One of "user", "responder", "lead", "commander".
+    role: String,
+    // Pre-attested emergency-response credential.
+    hasEmergencyAuth: Bool,
+    // Red-cell override token; supersedes redCellLockdown.
+    hasOverride: Bool,
+};
+
+entity Resource = {
+    // Informational only — not used in access logic.
+    isLocked: Bool,
+    securityHold: Bool,
+};
+
+// Standard resource access. Subject to the four-level unless chain.
+action access appliesTo {
+    principal: [User],
+    resource: [Resource],
+    context: {
+        lockoutActive: Bool,
+        emergencyMode: Bool,
+        commanderOverrideActive: Bool,
+        redCellLockdown: Bool,
+    },
+};
+
+// Emergency forced access — commander + hasOverride only, all flags ignored.
+action forceAccess appliesTo {
+    principal: [User],
+    resource: [Resource],
+    context: {
+        lockoutActive: Bool,
+        emergencyMode: Bool,
+        commanderOverrideActive: Bool,
+        redCellLockdown: Bool,
+    },
+};

@@ -1,0 +1,17 @@
+// File-Path ACL with Literal Special Characters — exercises Cedar's
+// `like` operator with escape sequences for literal `*` characters.
+// Cedar's only string-matching primitive is `like`, where `*` is the
+// glob wildcard and `\*` matches a literal asterisk in the target.
+
+entity User = {
+    role: String,  // "admin" | "user"
+};
+
+entity File = {
+    path: String,
+};
+
+action read, write appliesTo {
+    principal: [User],
+    resource: [File],
+};

@@ -1,0 +1,17 @@
+// Backup/Restore Asymmetric — different permission levels for
+// backup vs restore, with environment-based restriction.
+
+entity Operator = {
+    role: String,       // "engineer" | "sre" | "admin"
+    isOnCall: Bool,
+};
+
+entity System = {
+    environment: String,   // "production" | "staging"
+};
+
+action backup, restore, verify appliesTo {
+    principal: [Operator],
+    resource: [System],
+    context: {},
+};

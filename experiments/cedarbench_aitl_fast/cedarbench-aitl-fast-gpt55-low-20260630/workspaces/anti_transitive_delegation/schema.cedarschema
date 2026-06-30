@@ -1,0 +1,54 @@
+// Anti-Transitive Delegation — the owner of a Resource may delegate
+// access to one other User (depth=1), but the delegate CANNOT
+// re-delegate. Models real-world patterns where capability
+// re-issuance is forbidden (e.g. notarized power of attorney that
+// explicitly disallows substitution, or contractor access that may
+// not be sub-contracted).
+//
+// Design note: as in delegation_temporary_grant, the host application
+// is the source of truth for the grant graph. It looks up "is there a
+// pre-validated grant from the resource owner to this principal?" and,
+// if found, attaches a record describing that grant to the request
+// context as the optional `delegationGrant` attribute. The grant
+// carries a `depth` field that the host has computed by walking the
+// grant chain. The policy enforces that only depth==1 grants confer
+// access — and only the owner can perform `delegate` itself.
+
+entity User;
+
+entity Resource = {
+    owner: User,
+};
+
+// A pre-validated delegation grant attached by the host application.
+// `depth` is the number of hops from the owner: 1 means "owner
+// granted directly to this principal." A grant with depth >= 2 means
+// the host application is reporting a transitive chain, which the
+// policy MUST refuse to honor.
+type DelegationGrant = {
+    delegator: User,
+    delegatee: User,
+    resource: Resource,
+    depth: Long,
+};
+
+action read, write appliesTo {
+    principal: [User],
+    resource: [Resource],
+    context: {
+        // Optional: present when the host application has resolved a
+        // delegation grant for this request. Absent for direct
+        // owner-driven access.
+        delegationGrant?: DelegationGrant,
+    },
+};
+
+// Delegation itself is a separate action. Only the resource owner is
+// permitted to perform it; the policy intentionally does NOT consult
+// `delegationGrant` for this action so that no chain can extend
+// itself. (See policy_spec.md §4.)
+action delegate appliesTo {
+    principal: [User],
+    resource: [Resource],
+    context: {},
+};

@@ -1,0 +1,22 @@
+// Missing Edge Case: Empty Set -- viewByTag on tagged documents.
+// The schema is intentionally minimal so the only "shape" guard the
+// planner can offer comes from policy-side conditions on the empty
+// set and empty string.
+
+entity User;
+
+entity Document = {
+    // A document's tags. Cedar has no "non-empty set" type, so the
+    // emptiness invariant must live in the policy, not the schema.
+    tags: Set<String>,
+};
+
+action viewByTag appliesTo {
+    principal: [User],
+    resource: [Document],
+    context: {
+        // Tag the client is filtering by. The client may send an
+        // empty string; the policy must treat that as a denial.
+        requestedTag: String,
+    },
+};

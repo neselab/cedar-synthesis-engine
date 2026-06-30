@@ -1,0 +1,48 @@
+// COPPA (Children's Online Privacy Protection Act) — under-13 users
+// require verifiable parental consent for collection of personal data,
+// and personal data of under-13 users may NEVER be shared with third
+// parties even with parental consent (16 CFR Part 312 stricter rule).
+//
+// Design note: verifiable parental consent is administered by the host
+// application (out of scope for the policy). When consent has been
+// collected and verified, the host attaches an opaque token to the
+// request context as an optional attribute. The policy treats the
+// presence of the token as proof of consent.
+
+entity User = {
+    // User's date of birth, used to determine COPPA applicability
+    // (under 13 = COPPA-regulated).
+    dateOfBirth: datetime,
+};
+
+entity DataPoint = {
+    // Owning user — the natural person to whom the data point pertains.
+    owner: User,
+    // Category of data:
+    //   "anonymous"    — no PII, no behavioral signal (e.g. aggregate counts)
+    //   "behavioral"   — usage / interaction telemetry tied to the user
+    //   "personal"     — PII (name, email, address, etc.)
+    //   "geolocation"  — precise location data
+    category: String,
+};
+
+action collect, share appliesTo {
+    principal: [User],
+    resource: [DataPoint],
+    context: {
+        // Current wall-clock time, supplied by the host application.
+        now: datetime,
+        // Optional: opaque token issued by the host application after
+        // verifiable parental consent has been collected per 16 CFR
+        // 312.5. Absent when no consent has been collected.
+        parentalConsentToken?: String,
+    },
+};
+
+action delete appliesTo {
+    principal: [User],
+    resource: [DataPoint],
+    context: {
+        now: datetime,
+    },
+};

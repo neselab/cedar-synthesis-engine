@@ -1,0 +1,33 @@
+// Tacit Domain Convention -- standard RBAC for a content management system.
+//
+// Tests planner inference of unstated domain conventions: "standard RBAC"
+// + "usual hierarchy" implies role inheritance (admin >= editor >= viewer)
+// and default deny, neither of which is spelled out in the spec.
+
+entity User = {
+    // One of "viewer", "editor", "admin".
+    role: String,
+};
+
+entity Article = {};
+
+// view: read an article. Minimum role: viewer.
+action view appliesTo {
+    principal: [User],
+    resource: [Article],
+    context: {},
+};
+
+// edit: modify an article. Minimum role: editor.
+action edit appliesTo {
+    principal: [User],
+    resource: [Article],
+    context: {},
+};
+
+// delete: delete an article. Minimum role: admin.
+action delete appliesTo {
+    principal: [User],
+    resource: [Article],
+    context: {},
+};

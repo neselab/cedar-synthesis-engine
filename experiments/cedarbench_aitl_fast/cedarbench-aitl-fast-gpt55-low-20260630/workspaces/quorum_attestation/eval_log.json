@@ -1,0 +1,37 @@
+{
+  "scenario": "quorum_attestation",
+  "model": "gpt-5.5",
+  "phase1_model": "gpt-5.5",
+  "phase2_model": "gpt-5.5",
+  "converged": true,
+  "iterations": 1,
+  "max_iterations": 20,
+  "total_time_s": 12.2,
+  "phase1_time_s": 0.03,
+  "phase2_time_s": 12.16,
+  "final_loss": 0,
+  "checks_total": 8,
+  "iteration_log": [
+    {
+      "iteration": 1,
+      "loss": 0,
+      "checks_passed": 8,
+      "checks_total": 8,
+      "solver_time_s": 0.084,
+      "counterexample_count": 0,
+      "syntax_valid": true,
+      "status": "pass",
+      "input_tokens": 3461,
+      "output_tokens": 482
+    }
+  ],
+  "error": "",
+  "phase1_input_tokens": 0,
+  "phase1_output_tokens": 0,
+  "phase2_input_tokens": 3461,
+  "phase2_output_tokens": 482,
+  "total_input_tokens": 3461,
+  "total_output_tokens": 482,
+  "total_tokens": 3943,
+  "estimated_cost_usd": 0.0176
+}

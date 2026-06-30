@@ -1,0 +1,16 @@
+// Content Moderation Escalation — tiered moderation with trust levels.
+// Tests numeric comparison for trust-level/severity threshold matching.
+
+entity Moderator = {
+    trustLevel: Long,   // 1 = junior, 2 = senior, 3 = lead
+};
+
+entity ContentReport = {
+    severity: Long,     // 1–5 (5 = most severe)
+};
+
+action review, resolve, escalate, override appliesTo {
+    principal: [Moderator],
+    resource: [ContentReport],
+    context: {},
+};

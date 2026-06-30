@@ -1,0 +1,37 @@
+{
+  "scenario": "doccloud_base",
+  "model": "gpt-5.5",
+  "phase1_model": "gpt-5.5",
+  "phase2_model": "gpt-5.5",
+  "converged": true,
+  "iterations": 1,
+  "max_iterations": 20,
+  "total_time_s": 23.01,
+  "phase1_time_s": 0.12,
+  "phase2_time_s": 22.88,
+  "final_loss": 0,
+  "checks_total": 43,
+  "iteration_log": [
+    {
+      "iteration": 1,
+      "loss": 0,
+      "checks_passed": 43,
+      "checks_total": 43,
+      "solver_time_s": 0.386,
+      "counterexample_count": 0,
+      "syntax_valid": true,
+      "status": "pass",
+      "input_tokens": 4428,
+      "output_tokens": 1197
+    }
+  ],
+  "error": "",
+  "phase1_input_tokens": 0,
+  "phase1_output_tokens": 0,
+  "phase2_input_tokens": 4428,
+  "phase2_output_tokens": 1197,
+  "total_input_tokens": 4428,
+  "total_output_tokens": 1197,
+  "total_tokens": 5625,
+  "estimated_cost_usd": 0.0312
+}

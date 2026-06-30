@@ -1,0 +1,37 @@
+{
+  "scenario": "conference_room_booking",
+  "model": "gpt-5.5",
+  "phase1_model": "gpt-5.5",
+  "phase2_model": "gpt-5.5",
+  "converged": true,
+  "iterations": 1,
+  "max_iterations": 20,
+  "total_time_s": 4.25,
+  "phase1_time_s": 0.03,
+  "phase2_time_s": 4.21,
+  "final_loss": 0,
+  "checks_total": 9,
+  "iteration_log": [
+    {
+      "iteration": 1,
+      "loss": 0,
+      "checks_passed": 9,
+      "checks_total": 9,
+      "solver_time_s": 0.074,
+      "counterexample_count": 0,
+      "syntax_valid": true,
+      "status": "pass",
+      "input_tokens": 2205,
+      "output_tokens": 95
+    }
+  ],
+  "error": "",
+  "phase1_input_tokens": 0,
+  "phase1_output_tokens": 0,
+  "phase2_input_tokens": 2205,
+  "phase2_output_tokens": 95,
+  "total_input_tokens": 2205,
+  "total_output_tokens": 95,
+  "total_tokens": 2300,
+  "estimated_cost_usd": 0.008
+}

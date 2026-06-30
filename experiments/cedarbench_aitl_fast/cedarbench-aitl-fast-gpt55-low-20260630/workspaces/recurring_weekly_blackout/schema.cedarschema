@@ -1,0 +1,40 @@
+// Recurring Weekly Blackout -- access control governed by a host-supplied
+// boolean attestation indicating whether the current moment falls inside
+// a recurring weekly blackout window.
+
+entity User = {
+    // One of "user" or "oncall".
+    role: String,
+};
+
+entity System;
+
+// Routine system access. Ordinary users are blocked during a blackout
+// window; on-call engineers are trusted to access at any time.
+action access appliesTo {
+    principal: [User],
+    resource: [System],
+    context: {
+        // The current time. Used for audit/logging.
+        now: datetime,
+        // Host-attested boolean: is the current moment inside a
+        // recurring blackout window? Computed by the host because
+        // Cedar has no modulo / weekday operators.
+        inBlackoutWindow: Bool,
+        // Optional: when the current blackout ends (if known).
+        blackoutEnds?: datetime,
+    },
+};
+
+// Emergency on-call access. Restricted to oncall principals AND
+// only valid during a blackout window. (Outside the blackout the
+// oncall engineer should use the routine `access` action.)
+action emergencyAccess appliesTo {
+    principal: [User],
+    resource: [System],
+    context: {
+        now: datetime,
+        inBlackoutWindow: Bool,
+        blackoutEnds?: datetime,
+    },
+};

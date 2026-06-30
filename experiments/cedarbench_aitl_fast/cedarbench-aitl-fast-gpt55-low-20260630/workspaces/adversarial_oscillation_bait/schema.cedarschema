@@ -1,0 +1,27 @@
+// Adversarial Oscillation Bait — a scenario constructed to maximize
+// the fix-A-break-B oscillation potential of the Phase 2 synthesizer.
+//
+// The role / classification / contractor-flag / MFA-flag interaction
+// produces a CEILING with four narrowly-tailored disjuncts, each of
+// which is matched by exactly one FLOOR. The naive "fix" to one floor
+// almost always breaks another. Without §8.1 directional feedback,
+// §8.2 hash-based oscillation detection, and §8.8 floor-bound
+// consistency, the synthesizer oscillates indefinitely.
+
+entity User = {
+    role: String,           // "admin" | "user" | "guest"
+    department: String,     // "eng" | "finance" | "ops"
+    isContractor: Bool,
+};
+
+entity Resource = {
+    classification: String, // "public" | "internal" | "confidential"
+    owner: User,
+    requiresMfa: Bool,
+};
+
+action read, write, delete appliesTo {
+    principal: [User],
+    resource: [Resource],
+    context: { mfaVerified: Bool },
+};

@@ -1,0 +1,59 @@
+// Regression Battery — All Traps. A single scenario engineered so that
+// each documented harness contribution (§8.1, §8.4, §8.6, §8.8, §8.9,
+// §8.11) is required to converge:
+//
+//   §8.1  directional feedback   — both ceilings AND floors, opposite
+//                                  directions (tighten reads, loosen
+//                                  admin archive).
+//   §8.4  parse-vs-validation    — `mfaToken?: String` optional context
+//                                  attribute; reads must be has-guarded.
+//   §8.6  role-intersection trap — multi-role users (primaryRole +
+//                                  secondaryRoles); contractor
+//                                  restriction must NOT be encoded as a
+//                                  role-keyed forbid.
+//   §8.8  floor-bound consistency — global "blocked users" forbid;
+//                                  every floor must exclude blocked.
+//   §8.9  datetime/duration syntax — references use Go-style
+//                                  duration("21h"); ISO 8601 ("PT21H")
+//                                  must be rejected.
+//   §8.11 ternary detector       — confidential-document MFA gate is a
+//                                  natural ?: candidate; must be
+//                                  expressed with boolean logic.
+
+entity User = {
+    // One of: "admin" | "manager" | "contractor".
+    primaryRole: String,
+    // Additional roles the user also holds (same string domain).
+    // Membership in role R = (primaryRole == R) OR
+    // (secondaryRoles.contains(R)).
+    secondaryRoles: Set<String>,
+    // If true, the user is globally blocked — no action permitted.
+    isBlocked: Bool,
+};
+
+entity Document = {
+    // One of: "public" | "confidential".
+    classification: String,
+    owner: User,
+    // When the document expires. After this time, only `archive` is
+    // available, and only to admins.
+    expiresAt: datetime,
+};
+
+// Three actions: read (most permissive), edit (admin/manager only),
+// archive (admin only, post-expiry).
+action read, edit, archive appliesTo {
+    principal: [User],
+    resource: [Document],
+    context: {
+        // Current request time.
+        now: datetime,
+        // Host-supplied grace window applied to expiresAt for read/edit.
+        // Cedar duration is Go-style — e.g. duration("21h").
+        graceWindow: duration,
+        // OPTIONAL — set only when the user has presented a valid MFA
+        // token. Reads MUST be `has`-guarded; otherwise validation
+        // rejects the policy (§8.4).
+        mfaToken?: String,
+    },
+};

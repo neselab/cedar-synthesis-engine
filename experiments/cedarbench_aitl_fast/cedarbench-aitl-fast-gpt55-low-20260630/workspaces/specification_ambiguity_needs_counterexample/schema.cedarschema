@@ -1,0 +1,24 @@
+// Specification Ambiguity -- editor role vs document ownership.
+//
+// Two orthogonal permission paths grant `edit` on a Document:
+//   - the user's role is "editor", or
+//   - the user owns the document.
+//
+// The spec wording is intentionally compact and admits both an OR
+// (intended) and an AND (over-restrictive) reading. The discriminating
+// floor is an editor who does NOT own the document.
+
+entity User = {
+    role: String,
+};
+
+entity Document = {
+    owner: User,
+};
+
+// edit: modify document contents.
+action edit appliesTo {
+    principal: [User],
+    resource: [Document],
+    context: {},
+};

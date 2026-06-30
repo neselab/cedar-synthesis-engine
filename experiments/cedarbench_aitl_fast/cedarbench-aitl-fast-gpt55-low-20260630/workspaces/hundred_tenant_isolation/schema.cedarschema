@@ -1,0 +1,20 @@
+// Hundred-Tenant Isolation — multi-tenant SaaS with strict tenant-id
+// equality enforcement across 100 distinct tenants. Each User is
+// pinned to exactly one tenant via a String attribute; each Resource
+// is similarly tagged. The policy must permit access iff the IDs
+// match. This stresses the harness with 100 floor checks (one per
+// tenant) plus a global ceiling and a single liveness check.
+
+entity User = {
+    tenantId: String,
+};
+
+entity Resource = {
+    tenantId: String,
+};
+
+action access
+appliesTo {
+    principal: [User],
+    resource: [Resource],
+};

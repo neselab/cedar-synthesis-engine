@@ -1,0 +1,18 @@
+// Mega-Scale 500-Check Stress — 25 roles × 20 actions = 500 cells.
+// The harness must process 540 total checks per iteration.
+
+entity User = {
+    role: String,  // one of 25 role strings
+};
+
+entity Order = {
+    total: Long,
+    status: String,
+};
+
+action viewOrder, listOrders, createOrder, updateOrder, cancelOrder, refundOrder, partialRefund, shipOrder, markDelivered, returnOrder, disputeOrder, resolveDispute, viewPII, maskPII, exportData, bulkOperations, modifyPricing, applyDiscount, voidTransaction, adminOverride
+       appliesTo {
+    principal: [User],
+    resource: [Order],
+    context: {},
+};

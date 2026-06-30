@@ -1,0 +1,35 @@
+// Universal API gateway with many principal types in a single action.
+// Tests `appliesTo` with N=6 distinct principal entity types and the
+// `is`-narrowing required to access type-specific attributes safely.
+
+entity User = {
+    mfaVerified: Bool,
+};
+
+entity ApiKey = {
+    scopes: Set<String>,
+};
+
+entity ServiceAccount = {
+    serviceName: String,
+};
+
+entity Webhook = {
+    signatureValid: Bool,
+};
+
+entity BatchJob = {
+    jobOwner: User,
+};
+
+entity Scheduler = {
+    cronVerified: Bool,
+};
+
+entity Resource;
+
+action invoke appliesTo {
+    principal: [User, ApiKey, ServiceAccount, Webhook, BatchJob, Scheduler],
+    resource: [Resource],
+    context: {},
+};

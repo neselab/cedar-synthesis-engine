@@ -1,0 +1,75 @@
+// API Key Scoped Access — machine-to-machine authorization where the
+// principal is an API key (not a user) with a set of scope strings and
+// an expiry datetime. Tests the pattern where non-User principals act
+// on behalf of an organization or integration.
+
+entity Organization;
+
+// API keys are principals distinct from human users. Each key belongs
+// to an organization, has a scope set, and expires at a specific
+// datetime.
+entity ApiKey = {
+    organization: Organization,
+    // The set of scope strings this key is authorized for. Scopes
+    // follow a "verb:noun" convention: "read:document",
+    // "write:document", "delete:document", "read:invoice", etc.
+    scopes: Set<String>,
+    expiresAt: datetime,
+    // Whether this key has been manually revoked. Revoked keys should
+    // reject all requests regardless of scope or expiry.
+    revoked: Bool,
+};
+
+// Resources belong to an organization (every resource is tenant-scoped).
+entity Document = {
+    organization: Organization,
+};
+
+entity Invoice = {
+    organization: Organization,
+    // Whether this invoice has been submitted (finalized). Submitted
+    // invoices are read-only even for keys with write:invoice scope.
+    submitted: Bool,
+};
+
+// Document actions — each requires a specific scope.
+action readDocument appliesTo {
+    principal: [ApiKey],
+    resource: [Document],
+    context: {
+        now: { datetime: datetime },
+    },
+};
+
+action writeDocument appliesTo {
+    principal: [ApiKey],
+    resource: [Document],
+    context: {
+        now: { datetime: datetime },
+    },
+};
+
+action deleteDocument appliesTo {
+    principal: [ApiKey],
+    resource: [Document],
+    context: {
+        now: { datetime: datetime },
+    },
+};
+
+// Invoice actions.
+action readInvoice appliesTo {
+    principal: [ApiKey],
+    resource: [Invoice],
+    context: {
+        now: { datetime: datetime },
+    },
+};
+
+action writeInvoice appliesTo {
+    principal: [ApiKey],
+    resource: [Invoice],
+    context: {
+        now: { datetime: datetime },
+    },
+};

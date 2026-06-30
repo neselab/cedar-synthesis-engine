@@ -1,0 +1,25 @@
+// Age Verification with Leap Years -- per-resource minimum age
+// enforced against User.dateOfBirth at request time.
+
+entity User = {
+    // Birth date stored as a Cedar datetime.
+    dateOfBirth: datetime,
+};
+
+entity Content = {
+    // Minimum age in years required to access this content.
+    // Supported values: 13, 18, 21. Other values are unsupported
+    // and cause the request to be denied by default.
+    minAgeYears: Long,
+};
+
+// All three actions enforce the same age threshold against
+// resource.minAgeYears, parameterized by the current time.
+action view, purchase, subscribe appliesTo {
+    principal: [User],
+    resource: [Content],
+    context: {
+        // Current wall-clock time, supplied by the host application.
+        now: datetime,
+    },
+};

@@ -1,0 +1,31 @@
+// Time-of-Day Business Hours -- enterprise access control based on the
+// current hour of day and the user's role.
+
+entity User = {
+    // One of "employee", "manager", or "admin".
+    role: String,
+};
+
+entity System;
+
+// General system access. Employees are restricted to business hours;
+// managers and admins may access at any time.
+action access appliesTo {
+    principal: [User],
+    resource: [System],
+    context: {
+        // The current hour of day (0-23, 24-hour clock). Populated by
+        // the host application from the server clock.
+        currentHour: Long,
+    },
+};
+
+// System maintenance tasks. Restricted to admins only and only outside
+// business hours (before 9 or at/after 17).
+action maintenance appliesTo {
+    principal: [User],
+    resource: [System],
+    context: {
+        currentHour: Long,
+    },
+};

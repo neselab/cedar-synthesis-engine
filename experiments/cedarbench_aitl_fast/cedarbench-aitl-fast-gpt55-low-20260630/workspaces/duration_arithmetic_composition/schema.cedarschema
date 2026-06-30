@@ -1,0 +1,23 @@
+// Grace-period quota tracking with composed duration arithmetic.
+//
+// Each User carries:
+//   - graceStart: the datetime at which their grace window opened.
+//   - graceQuotaUsed: how much grace time has already been consumed
+//     in PREVIOUS sessions (a duration; non-negative under the spec,
+//     but the type system can't enforce that — policies must guard).
+//
+// At request time the host supplies context.now and the policy must
+// decide whether the user is still inside the 90-day total grace
+// budget once the elapsed time of the current session is added in.
+entity User = {
+    graceStart: datetime,
+    graceQuotaUsed: duration,
+};
+
+entity Resource;
+
+action accessWithGrace appliesTo {
+    principal: User,
+    resource: Resource,
+    context: { now: datetime }
+};

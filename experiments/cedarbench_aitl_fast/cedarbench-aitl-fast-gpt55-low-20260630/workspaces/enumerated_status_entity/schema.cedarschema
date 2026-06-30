@@ -1,0 +1,14 @@
+entity Status enum ["active", "pending", "archived"];
+
+entity User {
+  role: String
+};
+
+entity Document {
+  currentStatus: Status
+};
+
+action "view", "archive", "reactivate" appliesTo {
+  principal: [User],
+  resource: [Document]
+};

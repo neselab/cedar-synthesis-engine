@@ -1,0 +1,53 @@
+// GDPR Article 5.1.b — Purpose Limitation. Personal data is tagged with
+// the set of purposes the data subject consented to. Each access request
+// must declare a purpose; the purpose must be in the allowed set OR the
+// host application must attach a compatible-use approval (Art. 6.4).
+// Three roles control which actions are permitted: controller and
+// processor may read and process; only the DPO (data protection officer)
+// may disclose.
+
+entity Processor = {
+    // One of "controller", "processor", "dpo".
+    role: String,
+};
+
+entity PersonalData = {
+    // Set of purpose tags the data subject consented to at collection
+    // time, e.g. {"analytics", "marketing"}.
+    allowedPurposes: Set<String>,
+    // Top-level consent flag. Without consent, no access is permitted
+    // under any circumstance, including with a compatible-use approval.
+    subjectConsent: Bool,
+};
+
+action read appliesTo {
+    principal: [Processor],
+    resource: [PersonalData],
+    context: {
+        // The purpose the requester is invoking for this access.
+        declaredPurpose: String,
+        // OPTIONAL. When present and true, this is the host application's
+        // signed assertion that a compatible-use review under Art. 6.4
+        // has been performed and cross-purpose access is permitted.
+        // Policies MUST has-guard before reading.
+        compatibleUseApproval?: Bool,
+    },
+};
+
+action process appliesTo {
+    principal: [Processor],
+    resource: [PersonalData],
+    context: {
+        declaredPurpose: String,
+        compatibleUseApproval?: Bool,
+    },
+};
+
+action disclose appliesTo {
+    principal: [Processor],
+    resource: [PersonalData],
+    context: {
+        declaredPurpose: String,
+        compatibleUseApproval?: Bool,
+    },
+};

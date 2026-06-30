@@ -1,0 +1,16 @@
+// Role-Set Intersection Required — controlled material handling.
+// Tests "must hold ALL of a set of certifications" via containsAll.
+
+entity Worker = {
+    certifications: Set<String>,
+};
+
+entity Material = {
+    requiredCerts: Set<String>,
+};
+
+action view, handle appliesTo {
+    principal: [Worker],
+    resource: [Material],
+    context: {},
+};

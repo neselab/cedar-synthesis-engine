@@ -1,0 +1,43 @@
+// GitHub Repository Permissions — Cedar Schema
+// Adapted from cedar-policy/cedar-examples/cedar-example-use-cases/github_example
+
+entity Team, UserGroup in [UserGroup];
+
+entity Issue = {
+    repo: Repository,
+    reporter: User,
+};
+
+entity Org = {
+    members: UserGroup,
+    owners: UserGroup,
+};
+
+entity Repository = {
+    readers: UserGroup,
+
+    writers: UserGroup,
+    maintainers: UserGroup,
+    admins: UserGroup,
+    isArchived: Bool,
+};
+
+entity User in [UserGroup, Team];
+
+// Repository actions
+action pull, push, fork appliesTo {
+    principal: [User],
+    resource: [Repository],
+};
+
+// Issue actions
+action assign_issue, delete_issue, edit_issue appliesTo {
+    principal: [User],
+    resource: [Issue],
+};
+
+// Admin actions
+action add_reader, add_writer, add_maintainer, add_admin appliesTo {
+    principal: [User],
+    resource: [Repository],
+};

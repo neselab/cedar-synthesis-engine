@@ -1,0 +1,23 @@
+// Inverted Default-Permit -- public content with explicit denylist.
+//
+// Tests the inversion of Cedar's natural deny-by-default model: a
+// PublicArticle is readable by anyone whose id is NOT in the article's
+// bannedReaders set. The trap is that a planner may default to a
+// "deny-by-default + positive permission" shape, which over-denies.
+
+entity User = {
+    // Stable user identifier, e.g. "u_42".
+    id: String,
+};
+
+entity PublicArticle = {
+    // Set of user IDs explicitly denied read access. Empty by default.
+    bannedReaders: Set<String>,
+};
+
+// read: retrieve the article's content. Public by default.
+action read appliesTo {
+    principal: [User],
+    resource: [PublicArticle],
+    context: {},
+};

@@ -1,0 +1,16 @@
+// Policy Annotations — simple CMS with role-based access.
+// Tests @id and @description annotations on policy rules.
+
+entity User = {
+    role: String,   // "viewer" | "editor" | "admin"
+};
+
+entity Article = {
+    isPublished: Bool,
+};
+
+action read, write, delete appliesTo {
+    principal: [User],
+    resource: [Article],
+    context: {},
+};

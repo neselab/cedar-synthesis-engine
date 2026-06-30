@@ -1,0 +1,34 @@
+// Context-Scoped Admin — admin powers are scoped to specific tenants
+// via an explicit adminOf set on the user, NOT a global "admin" role.
+//
+// The hazard this models: admin powers that cross tenant boundaries.
+// A naive policy keyed off `principal.role == "admin"` permits a user
+// with that role to act on ANY tenant's resource. The correct check is
+// membership-based: `principal.adminOf.contains(resource.tenant)`.
+
+entity Tenant;
+
+entity User = {
+    // Free-form role string. Common values: "admin", "member", "viewer".
+    // The value "admin" alone confers NO cross-tenant authority — admin
+    // powers are conferred by the adminOf set, not by the role string.
+    role: String,
+    // The set of tenants in which this user has admin authority. A user
+    // can be admin in multiple tenants, or in none. To act as admin on
+    // a resource, the resource's tenant must be in this set.
+    adminOf: Set<Tenant>,
+};
+
+entity Resource = {
+    tenant: Tenant,
+};
+
+// view and modify: any user whose adminOf set includes the resource's
+// tenant. (View and modify are equally scoped — both require admin
+// membership in the resource's tenant.)
+//
+// delete: same scoping — admin in the resource's tenant.
+action view, modify, delete appliesTo {
+    principal: [User],
+    resource: [Resource],
+};

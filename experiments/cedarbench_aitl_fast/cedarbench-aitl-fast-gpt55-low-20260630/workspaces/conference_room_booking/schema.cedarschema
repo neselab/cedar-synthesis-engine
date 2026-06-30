@@ -1,0 +1,21 @@
+// Conference Room Booking — time-windowed resource reservation.
+// Tests datetime comparison + numeric capacity check.
+
+entity Employee = {
+    level: Long,   // 1=regular, 2=manager, 3=executive
+};
+
+entity Room = {
+    capacity: Long,
+    minBookingLevel: Long,   // minimum employee level to book
+};
+
+action book, cancel, view appliesTo {
+    principal: [Employee],
+    resource: [Room],
+    context: {
+        now: datetime,
+        bookingStart: datetime,
+        groupSize: Long,
+    },
+};

@@ -1,0 +1,20 @@
+// Shared Inbox Delegation -- multi-user shared mailbox with role-based
+// access tiers: owner (full control), delegate (read + send-as),
+// member (read-only).
+//
+// Uses Set<User> for membership rather than entity group hierarchy,
+// because cedar symcc cannot verify liveness for entity `in` checks.
+
+entity User;
+
+entity Mailbox = {
+    owner: User,
+    delegates: Set<User>,
+    members: Set<User>,
+};
+
+action readMail, sendAs, manageFolders, grantAccess appliesTo {
+    principal: [User],
+    resource: [Mailbox],
+    context: {},
+};

@@ -1,0 +1,42 @@
+// Deceptive Progress Signal — exam grading system with near-symmetric
+// access rules. Three roles (teacher / ta / student) and three actions
+// (viewGrade / editGrade / addComment) form a 3x3 matrix where each
+// cell has subtly different subject-matching constraints.
+//
+// The intentional design: "fixes" that look like progress (one fewer
+// violation) are actually regressions (a different but equally wrong
+// permit). Stresses §8.1 directional feedback vs §8.2 set-based
+// progress detection.
+
+entity User = {
+    // One of "teacher", "ta", "student".
+    role: String,
+    // Department: "math", "cs", or "eng".
+    dept: String,
+};
+
+entity Exam = {
+    // Subject: "math", "cs", or "eng". Compared against principal.dept
+    // for "in own subject" gating.
+    subject: String,
+    // The instructor who owns/manages this exam. May be in any dept.
+    instructor: User,
+    // The student whose exam this grade record is for. Used for
+    // student self-access on viewGrade.
+    student: User,
+};
+
+action viewGrade appliesTo {
+    principal: [User],
+    resource: [Exam],
+};
+
+action editGrade appliesTo {
+    principal: [User],
+    resource: [Exam],
+};
+
+action addComment appliesTo {
+    principal: [User],
+    resource: [Exam],
+};

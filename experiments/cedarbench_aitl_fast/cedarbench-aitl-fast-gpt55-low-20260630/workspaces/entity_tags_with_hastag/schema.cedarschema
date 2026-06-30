@@ -1,0 +1,17 @@
+// Entity Tags with hasTag/getTag — classified-data clearance/compartment access.
+//
+// Tests Cedar RFC 0082 entity tags: a dynamic key/value namespace on
+// entities where all tag values share a single type (Set<String> here).
+//
+// User tag keys: "clearance", "compartment", "edit_authorized", "role"
+// Document tag keys: "required_clearance", "compartments_required"
+// All tag values are Set<String>.
+
+entity User tags Set<String>;
+entity Document tags Set<String>;
+
+action view, edit, declassify appliesTo {
+    principal: [User],
+    resource: [Document],
+    context: {},
+};

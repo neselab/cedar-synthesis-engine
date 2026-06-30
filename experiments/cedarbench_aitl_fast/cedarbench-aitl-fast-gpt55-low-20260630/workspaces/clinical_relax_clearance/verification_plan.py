@@ -1,0 +1,106 @@
+"""Auto-generated verification plan."""
+import os
+
+REFS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "references")
+
+
+def get_checks():
+    return [
+        {
+            "name": "view_safety_ceiling",
+            "description": "View is only allowed when projectStatus is Active, principal is in ClinicalResearcher or PrincipalInvestigator role, and the relevant role constraints are met",
+            "type": "implies",
+            "principal_type": "User",
+            "action": "Action::\"View\"",
+            "resource_type": "Document",
+            "reference_path": os.path.join(REFS, "ceiling_view.cedar"),
+        },
+        {
+            "name": "edit_safety_ceiling",
+            "description": "Edit is only allowed when projectStatus is Active, principal is in ClinicalResearcher or PrincipalInvestigator role, and the relevant role constraints are met",
+            "type": "implies",
+            "principal_type": "User",
+            "action": "Action::\"Edit\"",
+            "resource_type": "Document",
+            "reference_path": os.path.join(REFS, "ceiling_edit.cedar"),
+        },
+        {
+            "name": "cross_department_block_view",
+            "description": "View is forbidden when user department does not match document projectManagingDepartment (unless GlobalAuditor). The ceiling must enforce department match or GlobalAuditor membership.",
+            "type": "implies",
+            "principal_type": "User",
+            "action": "Action::\"View\"",
+            "resource_type": "Document",
+            "reference_path": os.path.join(REFS, "ceiling_view_dept.cedar"),
+        },
+        {
+            "name": "cross_department_block_edit",
+            "description": "Edit is forbidden when user department does not match document projectManagingDepartment (unless GlobalAuditor). The ceiling must enforce department match or GlobalAuditor membership.",
+            "type": "implies",
+            "principal_type": "User",
+            "action": "Action::\"Edit\"",
+            "resource_type": "Document",
+            "reference_path": os.path.join(REFS, "ceiling_edit_dept.cedar"),
+        },
+        {
+            "name": "clinical_researcher_view_floor",
+            "description": "A ClinicalResearcher with clearanceLevel >= 3, same department, active project, non-HighlyRestricted doc MUST be able to View",
+            "type": "floor",
+            "principal_type": "User",
+            "action": "Action::\"View\"",
+            "resource_type": "Document",
+            "floor_path": os.path.join(REFS, "floor_cr_view.cedar"),
+        },
+        {
+            "name": "clinical_researcher_edit_floor",
+            "description": "A ClinicalResearcher with clearanceLevel >= 3, same department, active project, non-HighlyRestricted doc MUST be able to Edit",
+            "type": "floor",
+            "principal_type": "User",
+            "action": "Action::\"Edit\"",
+            "resource_type": "Document",
+            "floor_path": os.path.join(REFS, "floor_cr_edit.cedar"),
+        },
+        {
+            "name": "pi_view_floor",
+            "description": "A PrincipalInvestigator with networkRiskScore < 20, compliant device, same department, active project MUST be able to View",
+            "type": "floor",
+            "principal_type": "User",
+            "action": "Action::\"View\"",
+            "resource_type": "Document",
+            "floor_path": os.path.join(REFS, "floor_pi_view.cedar"),
+        },
+        {
+            "name": "pi_edit_floor",
+            "description": "A PrincipalInvestigator with networkRiskScore < 20, compliant device, same department, active project MUST be able to Edit",
+            "type": "floor",
+            "principal_type": "User",
+            "action": "Action::\"Edit\"",
+            "resource_type": "Document",
+            "floor_path": os.path.join(REFS, "floor_pi_edit.cedar"),
+        },
+        {
+            "name": "auditor_cross_dept_view_floor",
+            "description": "A GlobalAuditor who is also a ClinicalResearcher with clearanceLevel >= 3, active project, non-HighlyRestricted doc MUST be able to View even across departments",
+            "type": "floor",
+            "principal_type": "User",
+            "action": "Action::\"View\"",
+            "resource_type": "Document",
+            "floor_path": os.path.join(REFS, "floor_auditor_view.cedar"),
+        },
+        {
+            "name": "liveness_view",
+            "description": "View policy is not trivially deny-all",
+            "type": "always-denies-liveness",
+            "principal_type": "User",
+            "action": "Action::\"View\"",
+            "resource_type": "Document",
+        },
+        {
+            "name": "liveness_edit",
+            "description": "Edit policy is not trivially deny-all",
+            "type": "always-denies-liveness",
+            "principal_type": "User",
+            "action": "Action::\"Edit\"",
+            "resource_type": "Document",
+        },
+    ]

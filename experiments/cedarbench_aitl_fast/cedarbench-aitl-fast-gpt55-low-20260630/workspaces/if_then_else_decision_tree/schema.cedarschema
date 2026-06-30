@@ -1,0 +1,40 @@
+// If-Then-Else Decision Tree -- incident response platform whose
+// access rules are modelled as nested if-then-else trees keyed on
+// incident severity and category. Tests Cedar's expression-level
+// `if ... then ... else` operator.
+
+entity Responder = {
+    // 1 (lowest) through 5 (highest).
+    clearanceLevel: Long,
+};
+
+entity Incident = {
+    // 1 (least severe) through 10 (most severe).
+    severity: Long,
+    // One of "network", "security", "data".
+    category: String,
+};
+
+// View an incident. Severity-tiered clearance gate.
+action view appliesTo {
+    principal: [Responder],
+    resource: [Incident],
+};
+
+// Take action on an incident. Severity AND category gates.
+action respond appliesTo {
+    principal: [Responder],
+    resource: [Incident],
+};
+
+// Escalate an incident. Severity-conditional clearance gate.
+action escalate appliesTo {
+    principal: [Responder],
+    resource: [Incident],
+};
+
+// Close an incident. Senior responders only (clearance >= 5).
+action closeIncident appliesTo {
+    principal: [Responder],
+    resource: [Incident],
+};

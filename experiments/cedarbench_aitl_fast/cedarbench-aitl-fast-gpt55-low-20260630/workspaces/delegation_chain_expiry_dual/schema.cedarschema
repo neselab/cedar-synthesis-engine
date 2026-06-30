@@ -1,0 +1,40 @@
+// Delegation Chain with Dual Expiry — a two-hop time-bounded
+// delegation pattern. The resource owner delegates to B; B can then
+// delegate onward to C. C's authorization is valid only during the
+// intersection of both delegation windows.
+//
+// Design note: in a real production system, the host application
+// maintains the delegation graph and walks it when a request comes
+// in. It attaches the relevant chain links to the request context
+// as optional `firstGrant` and `secondGrant` attributes. The policy
+// then verifies the chain-of-trust continuity and the time windows.
+
+entity User;
+
+entity Resource = {
+    owner: User,
+};
+
+// One link in the delegation chain. `delegator` issued the grant;
+// `delegatee` received it. The grant is valid from `grantedAt` until
+// `expiresAt`.
+type Grant = {
+    delegator: User,
+    delegatee: User,
+    grantedAt: datetime,
+    expiresAt: datetime,
+};
+
+action read, write appliesTo {
+    principal: [User],
+    resource: [Resource],
+    context: {
+        now: datetime,
+        // First link in the chain (owner → B). Present in both the
+        // single-hop and two-hop cases.
+        firstGrant?: Grant,
+        // Second link in the chain (B → C). Present only in the
+        // two-hop case.
+        secondGrant?: Grant,
+    },
+};

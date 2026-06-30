@@ -1,0 +1,48 @@
+// Common type definitions: Address composes into ContactInfo, which is shared
+// across Customer/Vendor/Employee. This exercises Cedar's `type X = ...`
+// schema feature, plus nested record access through the common type alias
+// (e.g. resource.contact.address.country).
+
+type Address = {
+    street: String,
+    zip: String,
+    country: String
+};
+
+type ContactInfo = {
+    email: String,
+    phone: String,
+    address: Address
+};
+
+entity Customer = {
+    contact: ContactInfo,
+    kycStatus: String
+};
+
+entity Vendor = {
+    contact: ContactInfo,
+    taxId: String
+};
+
+entity Employee = {
+    contact: ContactInfo,
+    dept: String
+};
+
+entity Admin;
+
+action viewContact appliesTo {
+    principal: [Customer, Vendor, Employee, Admin],
+    resource: [Customer, Vendor, Employee]
+};
+
+action updateContact appliesTo {
+    principal: [Customer, Vendor, Employee],
+    resource: [Customer, Vendor, Employee]
+};
+
+action verifyAddress appliesTo {
+    principal: [Admin],
+    resource: [Customer, Vendor, Employee]
+};

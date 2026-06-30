@@ -1,0 +1,30 @@
+// Role Composition From Attributes — the "manager" role is NOT a
+// stored attribute. It is computed inline from a conjunction of
+// `seniority`, `certifications`, and `employmentStatus`. The schema
+// deliberately OMITS any `role` attribute on Employee.
+
+entity Employee = {
+    // Years of service / level. Effective manager requires >= 5.
+    seniority: Long,
+    // Certifications held. Effective manager requires "MGMT-101".
+    certifications: Set<String>,
+    // "active" | "terminated" | "on_leave" | "suspended" | ...
+    // Only "active" employees may take any action.
+    employmentStatus: String,
+};
+
+entity Resource;
+
+// view — open to any active employee.
+action view appliesTo {
+    principal: [Employee],
+    resource: [Resource],
+};
+
+// manage — effective-manager only. The manager predicate is a
+// three-way conjunction over employee attributes; there is no
+// `principal.role` field to consult.
+action manage appliesTo {
+    principal: [Employee],
+    resource: [Resource],
+};

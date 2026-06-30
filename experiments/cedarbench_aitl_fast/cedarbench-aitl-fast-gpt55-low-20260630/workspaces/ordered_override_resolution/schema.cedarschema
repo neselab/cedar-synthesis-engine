@@ -1,0 +1,25 @@
+// Ordered Override Resolution -- precedence-ordered quota rules.
+// Rule 1 (customQuota, highest) overrides Rule 2 (enterprise=unlimited)
+// which overrides Rule 3 (tier defaults: free<10, pro<100).
+// Cedar has no native rule priorities; precedence is encoded via guards.
+
+entity User = {
+    // "free", "pro", or "enterprise"
+    tier: String,
+    // OPTIONAL per-user override quota.  When present, takes
+    // precedence over BOTH the tier default and the enterprise
+    // unlimited rule.
+    customQuota?: Long,
+};
+
+entity Service = {};
+
+action call appliesTo {
+    principal: [User],
+    resource: [Service],
+    context: {
+        // Number of requests in the current billing window, injected
+        // by the gateway before the authorization decision.
+        requestCount: Long,
+    },
+};

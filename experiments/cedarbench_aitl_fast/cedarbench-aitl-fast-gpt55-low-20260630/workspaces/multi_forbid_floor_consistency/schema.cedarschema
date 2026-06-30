@@ -1,0 +1,34 @@
+// Multi-Forbid Floor Consistency — stress test for §8.8 floor-bound
+// consistency at a 4-way boundary. Every floor must be jointly
+// satisfiable with four orthogonal global forbids.
+
+entity User = {
+    // Disciplinary suspension. Suspended users are blocked from ALL
+    // actions on ALL resources.
+    isSuspended: Bool,
+    // Whether the user has completed MFA in this session. Required for
+    // any access to a classified resource.
+    mfaVerified: Bool,
+};
+
+entity Resource = {
+    // Classified resources can only be touched by MFA-verified users.
+    isClassified: Bool,
+    // Approval-flagged resources cannot be `access`-ed without an
+    // approval attestation in the request context.
+    requiresApproval: Bool,
+};
+
+action access, view appliesTo {
+    principal: [User],
+    resource: [Resource],
+    context: {
+        // Whether the request originated outside 9-5 local business
+        // hours. Outside hours blocks `access` but not `view`.
+        outsideBusinessHours: Bool,
+        // Out-of-band approval attestation provided by the host app
+        // after verifying an approval ticket. Required for `access`
+        // on resources where requiresApproval is true.
+        approvalGranted: Bool,
+    },
+};

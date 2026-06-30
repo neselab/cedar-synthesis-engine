@@ -1,0 +1,56 @@
+// Educational Gradebook — role-based visibility and edit rules for
+// academic grade records. Teachers assign/publish grades; students
+// view their own grades; parents view their child's grades via an
+// optional context attribute.
+
+entity User = {
+    // One of "teacher", "student", "parent".
+    role: String,
+    // The class section the user belongs to (e.g. "Math-101").
+    assignedClass: String,
+};
+
+entity GradeRecord = {
+    // The student this grade belongs to.
+    studentId: User,
+    // The class section this grade is for.
+    class: String,
+    // Whether the grade has been finalized (published).
+    isFinal: Bool,
+};
+
+action viewGrade appliesTo {
+    principal: [User],
+    resource: [GradeRecord],
+    context: {
+        // Optional: present when the principal is a parent. The host
+        // application pre-validates the parent-child relationship and
+        // attaches the child's User entity here. Absent for teachers
+        // and students.
+        parentOf?: User,
+    },
+};
+
+action editGrade appliesTo {
+    principal: [User],
+    resource: [GradeRecord],
+    context: {
+        parentOf?: User,
+    },
+};
+
+action publishGrade appliesTo {
+    principal: [User],
+    resource: [GradeRecord],
+    context: {
+        parentOf?: User,
+    },
+};
+
+action viewClassAverage appliesTo {
+    principal: [User],
+    resource: [GradeRecord],
+    context: {
+        parentOf?: User,
+    },
+};

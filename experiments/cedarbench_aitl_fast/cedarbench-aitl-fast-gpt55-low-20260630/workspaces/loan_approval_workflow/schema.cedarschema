@@ -1,0 +1,52 @@
+// Loan Approval Workflow — multi-tier banking loan approval with
+// numeric approval-limit checks, role-based gating, and risk-based
+// escalation requirements.
+
+entity Officer = {
+    // One of "analyst", "manager", "director", "vp".
+    role: String,
+    // Maximum loan amount this officer may approve.
+    approvalLimit: Long,
+};
+
+entity LoanApplication = {
+    // Requested loan amount in dollars.
+    amount: Long,
+    // One of "low", "medium", "high". High-risk loans require
+    // director or VP approval regardless of limit.
+    riskRating: String,
+    // Whether the application has been submitted for review.
+    isSubmitted: Bool,
+};
+
+// Actions on loan applications:
+//   submit   — analyst submits a draft application for review
+//   review   — any officer reviews a submitted application
+//   approve  — officer approves (limit + risk check)
+//   reject   — any officer rejects a submitted application
+//   escalate — any officer escalates to higher authority
+
+action submit appliesTo {
+    principal: [Officer],
+    resource: [LoanApplication],
+};
+
+action review appliesTo {
+    principal: [Officer],
+    resource: [LoanApplication],
+};
+
+action approve appliesTo {
+    principal: [Officer],
+    resource: [LoanApplication],
+};
+
+action reject appliesTo {
+    principal: [Officer],
+    resource: [LoanApplication],
+};
+
+action escalate appliesTo {
+    principal: [Officer],
+    resource: [LoanApplication],
+};

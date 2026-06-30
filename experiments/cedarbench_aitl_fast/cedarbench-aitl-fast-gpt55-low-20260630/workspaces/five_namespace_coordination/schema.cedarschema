@@ -1,0 +1,41 @@
+// Five-namespace coordination — entities and actions consolidated per namespace.
+
+namespace Identity {
+    entity User = { email: String };
+}
+
+namespace Billing {
+    entity Invoice = { customer: Identity::User, amount: Long };
+    action viewInvoice, payInvoice appliesTo {
+        principal: [Identity::User],
+        resource: [Invoice],
+        context: {},
+    };
+}
+
+namespace Catalog {
+    entity Product = { sku: String };
+    action viewProduct appliesTo {
+        principal: [Identity::User],
+        resource: [Product],
+        context: {},
+    };
+}
+
+namespace Shipping {
+    entity Address = { country: String, owner: Identity::User };
+    action viewAddress appliesTo {
+        principal: [Identity::User],
+        resource: [Address],
+        context: {},
+    };
+}
+
+namespace Audit {
+    entity Event = { actor: Identity::User, timestamp: datetime };
+    action recordEvent appliesTo {
+        principal: [Identity::User],
+        resource: [Event],
+        context: {},
+    };
+}

@@ -1,0 +1,56 @@
+// Grace Period Three-Tier — TLS certificate lifecycle access control.
+//
+// A Subscriber presents a TLS certificate to a Service. The certificate
+// has an expiration timestamp `certExpiresAt`. The policy enforces a
+// four-tier temporal lifecycle relative to that expiration:
+//
+//   Tier 1 — Pre-warning: now < certExpiresAt - 7 days
+//            Normal `connect` is permitted.
+//   Tier 2 — Warning:    certExpiresAt - 7 days <= now < certExpiresAt
+//            `connectWithWarning` is permitted (client should renew soon).
+//   Tier 3 — Grace:      certExpiresAt <= now < certExpiresAt + 30 days
+//            `connectInGrace` is permitted (audit-logged).
+//   Tier 4 — After grace: now >= certExpiresAt + 30 days
+//            All connect actions are denied.
+
+entity Subscriber = {
+    // Wall-clock instant at which this subscriber's TLS certificate
+    // expires. Encoded as a Cedar `datetime` (millisecond-precision
+    // ISO 8601, e.g. "2025-03-02T20:00:00Z").
+    certExpiresAt: datetime,
+};
+
+entity Service;
+
+// Normal connection. Only permitted when the certificate has more than
+// 7 days of life remaining (tier 1, pre-warning).
+action connect appliesTo {
+    principal: [Subscriber],
+    resource: [Service],
+    context: {
+        // The current wall-clock instant, populated by the host service
+        // from its trusted clock at the time of the connection attempt.
+        now: datetime,
+    },
+};
+
+// Connection with renewal warning. Only permitted in the 7-day window
+// immediately before expiration (tier 2, warning).
+action connectWithWarning appliesTo {
+    principal: [Subscriber],
+    resource: [Service],
+    context: {
+        now: datetime,
+    },
+};
+
+// Grace-period connection (after expiry). Only permitted in the 30-day
+// window after expiration (tier 3, grace). Host application is
+// responsible for emitting an audit log entry.
+action connectInGrace appliesTo {
+    principal: [Subscriber],
+    resource: [Service],
+    context: {
+        now: datetime,
+    },
+};

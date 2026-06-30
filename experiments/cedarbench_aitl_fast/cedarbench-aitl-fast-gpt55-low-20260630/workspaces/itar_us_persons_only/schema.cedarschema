@@ -1,0 +1,52 @@
+// ITAR / EAR US-Persons-Only export-control pattern. Models the
+// "deemed export" rule: technical data classified as ITAR-controlled
+// or EAR-controlled (above EAR99) may only be released to "US persons"
+// (US citizens or Lawful Permanent Residents). The deemed-export
+// doctrine treats access by a non-US person — even within the United
+// States — as an export. Downloading from a foreign location is also
+// treated as an export.
+
+entity Engineer = {
+    // One of "US_CITIZEN", "LPR", "VISA", "NON_US".
+    // "US_CITIZEN" and "LPR" are "US persons" under 22 CFR 120.62.
+    citizenshipStatus: String,
+    // Whether the engineer has cleared the export-control briefing
+    // and identity verification required for an actual export action.
+    clearanceVerified: Bool,
+};
+
+entity TechnicalData = {
+    // True if this data is ITAR-controlled (USML — most restrictive).
+    itarControlled: Bool,
+    // EAR classification. "EAR99" is the catch-all uncontrolled
+    // category. Any other string (e.g. "5A002", "3A001", "4A003")
+    // denotes a controlled ECCN under the EAR.
+    earCategory: String,
+};
+
+action view appliesTo {
+    principal: [Engineer],
+    resource: [TechnicalData],
+    context: {
+        // Access location ISO country code. "US" indicates access from
+        // within the United States; any other code indicates a foreign
+        // access location.
+        accessLocation: String,
+    },
+};
+
+action download appliesTo {
+    principal: [Engineer],
+    resource: [TechnicalData],
+    context: {
+        accessLocation: String,
+    },
+};
+
+action export appliesTo {
+    principal: [Engineer],
+    resource: [TechnicalData],
+    context: {
+        accessLocation: String,
+    },
+};

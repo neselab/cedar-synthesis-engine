@@ -1,0 +1,44 @@
+// Business Hours with User-Supplied Timezone Offset.
+//
+// Each Employee carries a timezoneOffset (Cedar duration) representing
+// the offset of their local timezone from UTC. For example, an employee
+// in PST has timezoneOffset == duration("-8h"); an employee in IST has
+// timezoneOffset == duration("5h30m").
+//
+// The host application supplies context.now as a UTC datetime. The
+// employee's local time-of-day is computed as:
+//     context.now.offset(principal.timezoneOffset).toTime()
+// which yields a duration in the range [0h, 24h) representing the
+// local time-of-day. Business hours are 9:00 (>= duration("9h")) up
+// to but not including 17:00 (< duration("17h")).
+
+entity Employee = {
+    // Offset from UTC for the employee's local timezone. May be
+    // negative (Western hemisphere) or positive (Eastern hemisphere).
+    // Examples: duration("-8h") for PST, duration("5h30m") for IST.
+    timezoneOffset: duration,
+};
+
+entity System;
+
+// General system access. Restricted to local business hours (9-17)
+// computed by offsetting the supplied UTC datetime by the employee's
+// timezone offset.
+action access appliesTo {
+    principal: [Employee],
+    resource: [System],
+    context: {
+        // Current wall-clock time in UTC, supplied by the host.
+        now: datetime,
+    },
+};
+
+// Report submission. Permitted at any time of day regardless of
+// timezone, since reports are batched and time-insensitive.
+action report appliesTo {
+    principal: [Employee],
+    resource: [System],
+    context: {
+        now: datetime,
+    },
+};

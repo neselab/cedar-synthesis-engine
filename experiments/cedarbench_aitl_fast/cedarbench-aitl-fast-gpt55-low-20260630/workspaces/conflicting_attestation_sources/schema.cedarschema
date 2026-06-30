@@ -1,0 +1,31 @@
+// Conflicting Attestation Sources -- two parallel attribute sources
+// (resource.recordedOwner = system-of-record; context.claimedOwner =
+// caller's assertion) must agree when both are present.
+
+entity User;
+
+entity Document = {
+    // Authoritative owner per the system-of-record. The policy treats
+    // this as ground truth for access decisions.
+    recordedOwner: User,
+};
+
+// view permits inspection. claimedOwner is optional: if the caller
+// asserts ownership, it MUST match recordedOwner; if absent, the
+// recorded ownership stands on its own.
+//
+// transfer is a higher-risk action: claimedOwner MUST be present and
+// MUST agree with both recordedOwner and the principal.
+action view, transfer appliesTo {
+    principal: [User],
+    resource: [Document],
+    context: {
+        // Wall-clock time supplied by the host. Not used in the
+        // current rules but reserved for future expiry / freshness
+        // checks on the attestation.
+        now: datetime,
+        // Optional caller-asserted owner. When present, must agree
+        // with resource.recordedOwner or the request is denied.
+        claimedOwner?: User,
+    },
+};

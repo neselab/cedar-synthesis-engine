@@ -1,0 +1,44 @@
+// Dual-Owner Joint Consent — assets co-owned by exactly two principals.
+// Either owner may perform a read (`view`); a `transfer` requires fresh
+// signed consent attestations from BOTH owners (in either order).
+//
+// The two consent records are OPTIONAL context attributes: every field
+// read must sit behind a `context has consentN` guard (§8.3).
+
+entity User;
+
+entity JointAsset = {
+    // The two co-owners. Exactly two; not a set.
+    owner1: User,
+    owner2: User,
+};
+
+// view — single-owner read. Either owner may view at any time.
+action view appliesTo {
+    principal: [User],
+    resource: [JointAsset],
+    context: {
+        now: datetime,
+    },
+};
+
+// transfer — joint action. Requires:
+//   (a) both consent1 and consent2 present,
+//   (b) the two consents' signers match owner1 and owner2
+//       (in either order — order of the consents is irrelevant),
+//   (c) both consents were signed within the last 24h.
+action transfer appliesTo {
+    principal: [User],
+    resource: [JointAsset],
+    context: {
+        now: datetime,
+        consent1?: {
+            signer: User,
+            signedAt: datetime,
+        },
+        consent2?: {
+            signer: User,
+            signedAt: datetime,
+        },
+    },
+};

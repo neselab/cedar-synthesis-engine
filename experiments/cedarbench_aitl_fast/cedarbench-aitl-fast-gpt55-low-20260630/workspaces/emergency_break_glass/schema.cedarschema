@@ -1,0 +1,54 @@
+// Emergency Break-Glass — healthcare-grade access control with emergency override.
+//
+// Policy governs access to patient medical records at a hospital. Normal
+// access is restricted to members of the patient's care team. A narrow
+// emergency-override path allows on-call clinicians to break glass for
+// viewing (not editing) during declared emergencies, with an attested
+// reason.
+
+entity Hospital;
+
+entity Clinician = {
+    hospital: Hospital,
+    // The set of patients this clinician is formally assigned to as part
+    // of a care team.
+    careTeamPatients: Set<Patient>,
+    // Whether this clinician is currently in the hospital's on-call pool.
+    // Only on-call clinicians can invoke break-glass access.
+    isOnCall: Bool,
+};
+
+entity Patient = {
+    hospital: Hospital,
+};
+
+entity Record = {
+    patient: Patient,
+    hospital: Hospital,
+};
+
+// Actions on medical records.
+action viewRecord appliesTo {
+    principal: [Clinician],
+    resource: [Record],
+    context: {
+        // Whether the hospital has declared an active emergency for this
+        // clinician's session (e.g. trauma, code blue, mass casualty).
+        emergencyActive: Bool,
+        // Free-form attestation the clinician must supply at break-glass
+        // time. Any non-empty string suffices from the policy's viewpoint;
+        // the host application audits the content out of band.
+        emergencyReason: String,
+    },
+};
+
+// Editing is strictly care-team only. Break-glass DOES NOT authorize edits
+// — even in an emergency, only care-team clinicians may modify a record.
+action editRecord appliesTo {
+    principal: [Clinician],
+    resource: [Record],
+    context: {
+        emergencyActive: Bool,
+        emergencyReason: String,
+    },
+};

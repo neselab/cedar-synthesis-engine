@@ -1,0 +1,44 @@
+// Time-Decay Permissions -- credential aging tiers.
+//
+// An Operator's authentication "freshness" decays with elapsed time
+// since their last successful authentication (principal.lastAuthAt).
+// The set of actions they may take on a Resource depends on (a) how
+// stale that credential is and (b) the resource's sensitivity:
+//
+//   * Fresh window  (age < 1h):  all actions allowed for any sensitivity
+//   * Stale window  (1h <= age < 4h):
+//        - read   allowed for any sensitivity
+//        - write  allowed only for sensitivity == 1
+//        - delete allowed only for sensitivity == 1
+//   * Expired       (age >= 4h):  no actions allowed
+//
+// "age" is computed as
+//     context.now.durationSince(principal.lastAuthAt)
+// which requires the sign guard
+//     context.now >= principal.lastAuthAt
+// (without it, a negative duration compares less than duration("1h")
+// and the policy would erroneously permit pre-auth requests).
+
+entity Operator = {
+    // Wall-clock timestamp of this Operator's most recent successful
+    // authentication. Updated by the auth system on each login.
+    lastAuthAt: datetime,
+};
+
+entity Resource = {
+    // Sensitivity tier in [1, 3]. 1 = low / routine; 3 = high / critical.
+    // The host application is responsible for ensuring values are in
+    // range; the policy treats only sensitivity == 1 as "low" for the
+    // purposes of stale-window write/delete.
+    sensitivity: Long,
+};
+
+// All three actions share the same applies-to shape and context.
+action read, write, delete appliesTo {
+    principal: [Operator],
+    resource: [Resource],
+    context: {
+        // Wall-clock time of the request, supplied by the host app.
+        now: datetime,
+    },
+};

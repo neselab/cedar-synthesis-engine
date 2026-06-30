@@ -1,0 +1,9 @@
+// Floor: user with role "fulfillment_manager" must be permitted to perform action createOrder.
+permit (
+    principal is User,
+    action == Action::"createOrder",
+    resource is Order
+)
+when {
+    principal.role == "fulfillment_manager"
+};

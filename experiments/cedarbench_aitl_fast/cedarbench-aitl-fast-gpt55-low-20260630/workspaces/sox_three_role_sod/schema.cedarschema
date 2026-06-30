@@ -1,0 +1,50 @@
+// SOX Three-Role Separation of Duties — banking trade lifecycle.
+//
+// The trade workflow has three independent steps:
+//   initiate_trade -> settle_trade -> audit_trade
+// performed by trader, settlement_clerk, and auditor respectively.
+// The SOX requirement: no single principal may perform actions from
+// more than one of those roles on the same trade. We enforce this via
+// host-supplied context attestations of who performed each prior step.
+
+entity Employee = {
+    // One of "trader", "settlement_clerk", "auditor", "manager".
+    // Manager is a multi-step role allowed to initiate and settle (but
+    // never to audit), still subject to the cross-step SoD.
+    role: String,
+};
+
+entity Trade;
+
+action initiate_trade appliesTo {
+    principal: [Employee],
+    resource: [Trade],
+};
+
+action settle_trade appliesTo {
+    principal: [Employee],
+    resource: [Trade],
+    context: {
+        // Optional: the employee who performed the prior initiate_trade
+        // step on this trade. Attached by the host application from the
+        // trade's audit trail. Absent only when no initiation has been
+        // recorded yet, in which case the SoD predicate is vacuous.
+        // NOTE: optional attributes in Cedar must be guarded with `has`
+        // before being read. The negated-has trap (§8.3) means the SoD
+        // check must be written as a fully-guarded disjunction.
+        prevTradeActor?: Employee,
+    },
+};
+
+action audit_trade appliesTo {
+    principal: [Employee],
+    resource: [Trade],
+    context: {
+        // Optional: the employee who performed the prior initiate_trade
+        // step. Same semantics as for settle_trade.
+        prevTradeActor?: Employee,
+        // Optional: the employee who performed the prior settle_trade
+        // step. Auditor must differ from BOTH prior actors.
+        prevSettleActor?: Employee,
+    },
+};

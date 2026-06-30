@@ -1,0 +1,26 @@
+entity User {
+  role: String,
+  auditCleared: Bool
+};
+entity Document;
+
+action ReadOnly;
+action AuditLogged;
+action Destructive;
+
+action View in [ReadOnly, AuditLogged] appliesTo {
+  principal: User,
+  resource: Document
+};
+action Search in [ReadOnly] appliesTo {
+  principal: User,
+  resource: Document
+};
+action Edit in [AuditLogged] appliesTo {
+  principal: User,
+  resource: Document
+};
+action Delete in [AuditLogged, Destructive] appliesTo {
+  principal: User,
+  resource: Document
+};

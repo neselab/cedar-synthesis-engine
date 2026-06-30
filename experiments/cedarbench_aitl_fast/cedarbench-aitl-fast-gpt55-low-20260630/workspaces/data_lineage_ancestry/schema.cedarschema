@@ -1,0 +1,48 @@
+// Data Lineage Ancestry -- access to datasets depends on the user's
+// clearance relative to the dataset's inherited classification label.
+//
+// Clearance hierarchy: public < internal < restricted.
+// Four actions with layered requirements:
+//   query    -- clearance >= classification
+//   derive   -- clearance >= classification AND department match
+//   export   -- clearance >= classification AND no personal data
+//   delete   -- clearance == restricted AND department match
+
+entity User = {
+    // One of "public", "internal", "restricted".
+    clearance: String,
+    // The user's organizational department (e.g. "engineering", "finance").
+    department: String,
+};
+
+entity Dataset = {
+    // One of "public", "internal", "restricted".
+    // Inherited from upstream lineage -- the highest classification
+    // among all ancestor datasets propagates downward.
+    classification: String,
+    // The department that owns the source pipeline.
+    sourceDepartment: String,
+    // Whether any ancestor (or this dataset itself) contains PII /
+    // personal data.  Once set, it propagates to all descendants.
+    hasPersonalData: Bool,
+};
+
+action query appliesTo {
+    principal: [User],
+    resource: [Dataset],
+};
+
+action derive appliesTo {
+    principal: [User],
+    resource: [Dataset],
+};
+
+action export appliesTo {
+    principal: [User],
+    resource: [Dataset],
+};
+
+action delete appliesTo {
+    principal: [User],
+    resource: [Dataset],
+};

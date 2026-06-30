@@ -1,0 +1,38 @@
+// Webhook Signature Verification -- outbound M2M delivery authorization.
+//
+// The principal is a WebhookEndpoint (a registered callback URL), not a
+// human user. Each endpoint carries a boolean `isVerified` flag and a
+// set of event-type strings it is subscribed to. Events are the
+// resources; each has an eventType string and an isInternal flag that
+// gates external delivery.
+
+entity WebhookEndpoint = {
+    isVerified: Bool,
+    allowedEvents: Set<String>,
+};
+
+entity Event = {
+    eventType: String,
+    isInternal: Bool,
+};
+
+// deliver: send event payload to an endpoint.
+action deliver appliesTo {
+    principal: [WebhookEndpoint],
+    resource: [Event],
+    context: {},
+};
+
+// retry: re-deliver a previously failed event.
+action retry appliesTo {
+    principal: [WebhookEndpoint],
+    resource: [Event],
+    context: {},
+};
+
+// inspect: read event metadata for debugging (no payload delivery).
+action inspect appliesTo {
+    principal: [WebhookEndpoint],
+    resource: [Event],
+    context: {},
+};

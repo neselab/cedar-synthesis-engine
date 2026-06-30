@@ -1,0 +1,30 @@
+// Federated Resource Access — fifteen optional attestation booleans in
+// the request context. Five specific attestations are required by the
+// policy; the remaining ten are forward-compatibility carriers that
+// the schema must still accept.
+
+entity User;
+
+entity Resource;
+
+action accessFederatedResource appliesTo {
+    principal: [User],
+    resource: [Resource],
+    context: {
+        mfaToken?: Bool,
+        deviceTrusted?: Bool,
+        locationVerified?: Bool,
+        identityProofed?: Bool,
+        complianceFlag?: Bool,
+        riskAssessmentDone?: Bool,
+        nonRepudiationSigned?: Bool,
+        biometricVerified?: Bool,
+        networkSegmentTrusted?: Bool,
+        encryptionAttested?: Bool,
+        auditLoggingEnabled?: Bool,
+        sessionFresh?: Bool,
+        rateLimitOk?: Bool,
+        geographicAllowed?: Bool,
+        contractValid?: Bool,
+    },
+};

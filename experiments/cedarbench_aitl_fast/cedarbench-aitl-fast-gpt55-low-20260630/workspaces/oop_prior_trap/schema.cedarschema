@@ -1,0 +1,45 @@
+// OOP-Prior Trap — entity names deliberately mimic Java/C# class
+// nomenclature ("AccountManager", "BankAccount") to maximize the
+// pull of an OOP prior on the synthesizer. The synthesizer must
+// resist using:
+//   - method-call syntax: e.g. principal.getAccount(),
+//     resource.isOpen(), account.balance.compareTo(0)
+//   - null checks: e.g. resource.balance != null (Cedar has NO null;
+//     required attributes always have a value, optionals are gated
+//     by `has`)
+//   - inheritance / instanceof: must use Cedar `is` for entity-type
+//     tests, not `instanceof`
+//   - chained property navigation through methods
+//
+// Cedar reality:
+//   - Only extension types (decimal, datetime, duration, ipaddr) and
+//     Set have method-style accessors. User-defined entity attributes
+//     are accessed positionally (`x.attr`) and compared with operators.
+//   - There is no `null`. There is `has` for optional attributes.
+//   - There is no inheritance. Entity-type tests use `is`.
+//
+// The naming below is engineered to feel like a Spring/JPA-style
+// banking domain to invite the OOP idioms.
+
+entity User = {
+    userId: String,           // String identifier — note: not a method, a field
+    employeeFlag: Bool,
+};
+
+entity AccountManager = {
+    roleType: String,         // "manager" | "associate" | "trainee"
+    accountList: Set<String>, // String IDs (not entity refs) — the
+                              // accountHolder.userId is matched against
+                              // membership in this Set
+};
+
+entity BankAccount = {
+    accountHolder: User,
+    balance: Long,
+    accountStatus: String,    // "OPEN" | "FROZEN" | "CLOSED"
+};
+
+action viewBalance, transferFunds, closeAccount appliesTo {
+    principal: [AccountManager],
+    resource: [BankAccount],
+};

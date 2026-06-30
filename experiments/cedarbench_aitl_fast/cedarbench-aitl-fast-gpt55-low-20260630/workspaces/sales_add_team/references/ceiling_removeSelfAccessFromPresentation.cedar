@@ -1,0 +1,12 @@
+permit (
+    principal is User,
+    action == Action::"removeSelfAccessFromPresentation",
+    resource is Presentation
+)
+when {
+    resource.owner == principal ||
+    principal in resource.viewers ||
+    principal in resource.editors ||
+    principal in resource.viewerTeams ||
+    principal in resource.editorTeams
+};

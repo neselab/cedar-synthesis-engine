@@ -1,0 +1,20 @@
+// Long Arithmetic Overflow Avoidance — project budget tracking.
+// Tests overflow-safe encoding of Cedar Long arithmetic.
+
+entity Project = {
+    spentSoFar: Long,
+    monthlyBudget: Long,
+};
+
+entity Approver = {
+    role: String,   // "member" | "admin"
+};
+
+action requestSpend, approveSpend appliesTo {
+    principal: [Approver],
+    resource: [Project],
+    context: {
+        requestedAmount: Long,
+        now: datetime,
+    },
+};

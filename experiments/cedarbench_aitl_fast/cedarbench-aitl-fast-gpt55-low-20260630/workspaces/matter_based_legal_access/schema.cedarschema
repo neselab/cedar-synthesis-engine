@@ -1,0 +1,42 @@
+// Matter-Based Legal Access -- law firm document access control where
+// users are assigned to specific legal matters and can only act on
+// documents belonging to those matters. Privileged (attorney-client
+// privilege) documents have additional role restrictions.
+
+entity User = {
+    // One of "associate", "partner", "paralegal", "admin".
+    role: String,
+    // The set of matter identifiers this user is assigned to.
+    assignedMatters: Set<String>,
+};
+
+entity Document = {
+    // The matter this document belongs to.
+    matter: String,
+    // Whether this document is protected by attorney-client privilege.
+    isPrivileged: Bool,
+};
+
+// View a document (read-only access).
+action view appliesTo {
+    principal: [User],
+    resource: [Document],
+};
+
+// Edit a document (modify content).
+action edit appliesTo {
+    principal: [User],
+    resource: [Document],
+};
+
+// File a document into the matter record system.
+action file appliesTo {
+    principal: [User],
+    resource: [Document],
+};
+
+// Redact sensitive content from a document.
+action redact appliesTo {
+    principal: [User],
+    resource: [Document],
+};

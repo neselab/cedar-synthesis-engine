@@ -1,0 +1,22 @@
+// Priority-Ordered Requirements — three rules with explicit precedence
+// for a record store. Tests whether the planner correctly encodes
+// priority via negation of higher-priority conditions on lower rules.
+
+entity User = {
+    // Examples: "legal_team", "reader", "operator", "guest".
+    role: String,
+    // Active PII clearance flag.
+    pii_clearance: Bool,
+};
+
+entity Record = {
+    // True when the record is under a legal hold order.
+    legalHold: Bool,
+    // True when the record contains PII.
+    containsPII: Bool,
+};
+
+action access appliesTo {
+    principal: [User],
+    resource: [Record],
+};

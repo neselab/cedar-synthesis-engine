@@ -1,0 +1,44 @@
+// Decimal Currency Comparison -- tiered transaction approval using
+// Cedar's `decimal` extension. Tests method-style comparison on
+// decimal values (.lessThan, .greaterThan); operator syntax is not
+// supported on decimals.
+
+entity Approver = {
+    // One of "teller", "manager", or "vp".
+    role: String,
+};
+
+entity Transaction = {
+    // Transaction amount in the base currency. Fixed-point with up
+    // to 4 fractional digits.
+    amount: decimal,
+    // Per-approver daily cap for the approver handling this
+    // transaction. Checked against accumulatedToday.
+    dailyLimit: decimal,
+    // True if the transaction crosses a national border.
+    isInternational: Bool,
+};
+
+// Approve a transaction. Tiered by role with daily-limit and
+// international-cap restrictions.
+action approve appliesTo {
+    principal: [Approver],
+    resource: [Transaction],
+    context: {
+        // Amount already approved by this approver today. Maintained
+        // by the host application.
+        accumulatedToday: decimal,
+    },
+};
+
+// Reverse a prior approval. VP only.
+action reverse appliesTo {
+    principal: [Approver],
+    resource: [Transaction],
+};
+
+// View a transaction. Any role.
+action audit appliesTo {
+    principal: [Approver],
+    resource: [Transaction],
+};

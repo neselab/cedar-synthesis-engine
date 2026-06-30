@@ -1,0 +1,37 @@
+// Plateau-landscape adversarial scenario.
+//
+// Five independent boolean attributes on User. Access is permitted iff
+// EXACTLY 3 of the 5 booleans are true. In Cedar (no arithmetic over
+// Bool, no count() over fields), this MUST be expanded as a disjunction
+// over C(5,3) = 10 distinct subsets:
+//
+//   (b1 && b2 && b3 && !b4 && !b5)
+//   || (b1 && b2 && !b3 && b4 && !b5)
+//   || (b1 && b2 && !b3 && !b4 && b5)
+//   || (b1 && !b2 && b3 && b4 && !b5)
+//   || (b1 && !b2 && b3 && !b4 && b5)
+//   || (b1 && !b2 && !b3 && b4 && b5)
+//   || (!b1 && b2 && b3 && b4 && !b5)
+//   || (!b1 && b2 && b3 && !b4 && b5)
+//   || (!b1 && b2 && !b3 && b4 && b5)
+//   || (!b1 && !b2 && b3 && b4 && b5)
+//
+// Dropping any single disjunct passes 4 of 5 floors and fails 1 (the
+// floor whose pinned 3-of-5 combination matches the dropped disjunct).
+// The plateau: many candidates have identical failure counts but
+// different failure identities, so no local gradient exists.
+
+entity User = {
+    bool1: Bool,
+    bool2: Bool,
+    bool3: Bool,
+    bool4: Bool,
+    bool5: Bool,
+};
+
+entity Resource;
+
+action access appliesTo {
+    principal: [User],
+    resource: [Resource],
+};

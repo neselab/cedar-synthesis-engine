@@ -1,0 +1,18 @@
+// Contradicting Requirements (Literal) — schema for the document
+// view scenario. The spec contains two literally-contradicting
+// requirements (owner-must-view vs. quarantined-never-viewable)
+// resolved by a precedence rule. This scenario tests whether the
+// planner correctly applies §8.8 floor-bound consistency to avoid
+// writing an unsatisfiable owner floor.
+
+entity User;
+
+entity Document = {
+    owner: User,
+    quarantined: Bool,
+};
+
+action view appliesTo {
+    principal: [User],
+    resource: [Document],
+};

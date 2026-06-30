@@ -1,0 +1,25 @@
+// IoT Device Authorization — capability-based device access.
+// Tests non-User principals (Device) with set-contains for capability checks.
+
+entity User;
+
+entity Device = {
+    capabilities: Set<String>,   // e.g. "read_sensor", "actuate", "stream"
+    isActive: Bool,
+};
+
+entity Endpoint = {
+    owner: User,
+};
+
+action telemetry, control, stream appliesTo {
+    principal: [Device],
+    resource: [Endpoint],
+    context: {},
+};
+
+action manage appliesTo {
+    principal: [User],
+    resource: [Endpoint],
+    context: {},
+};

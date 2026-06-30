@@ -1,0 +1,31 @@
+// Default Scope Mismatch — tenant-level default-deny gated by an
+// unconditional cross-tenant forbid, with a user-scope admin role
+// override of the tenant default. Writes are admin-only same-tenant.
+
+entity Tenant = {
+    // When true, the tenant blocks access by default. The user-scope
+    // admin role overrides this default; the cross-tenant gate does
+    // NOT honor any override.
+    defaultDeny: Bool,
+};
+
+entity User = {
+    // "member" or "admin". Admin is the user-scope override of the
+    // tenant-scope defaultDeny flag, AND is required for write.
+    role: String,
+    tenant: Tenant,
+};
+
+entity Document = {
+    tenant: Tenant,
+};
+
+action read appliesTo {
+    principal: [User],
+    resource: [Document],
+};
+
+action write appliesTo {
+    principal: [User],
+    resource: [Document],
+};

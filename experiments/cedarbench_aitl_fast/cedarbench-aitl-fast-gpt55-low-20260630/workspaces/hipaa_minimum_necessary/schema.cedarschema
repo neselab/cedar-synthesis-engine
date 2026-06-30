@@ -1,0 +1,62 @@
+// HIPAA §164.502(b) Minimum Necessary — purpose-bound field access for
+// PHI (Protected Health Information) under the HIPAA Privacy Rule.
+//
+// Workforce members may access PatientRecords only when their declared
+// purpose matches an allowed role-purpose pairing AND the request carries
+// a purpose attestation AND the data category is appropriate for the
+// purpose. Patient-authorized disclosures (per §164.508) override the
+// minimum-necessary restriction.
+
+entity Workforce = {
+    // One of "clinician", "billing", "researcher", "privacy_officer".
+    role: String,
+};
+
+entity PatientRecord = {
+    // Opaque identifier of the patient this record pertains to.
+    patientId: String,
+    // One of "demographic", "clinical", "billing", "research".
+    dataCategory: String,
+};
+
+action view appliesTo {
+    principal: [Workforce],
+    resource: [PatientRecord],
+    context: {
+        // Must be true — request must carry an attested declared purpose
+        // (HIPAA requires purpose-of-use attestation).
+        purposeAttested: Bool,
+        // One of "treatment", "payment", "operations", "research".
+        declaredPurpose: String,
+        // Whether the request has been logged to the immutable audit
+        // trail. For `view` this is not required but still present in
+        // the context schema; for `disclose` it must be true.
+        disclosureLog: Bool,
+        // Optional — whether the patient has executed a §164.508
+        // authorization for this disclosure. If present and true, the
+        // minimum-necessary rule is waived.
+        patientAuthorized?: Bool,
+    },
+};
+
+action disclose appliesTo {
+    principal: [Workforce],
+    resource: [PatientRecord],
+    context: {
+        purposeAttested: Bool,
+        declaredPurpose: String,
+        disclosureLog: Bool,
+        patientAuthorized?: Bool,
+    },
+};
+
+action amend appliesTo {
+    principal: [Workforce],
+    resource: [PatientRecord],
+    context: {
+        purposeAttested: Bool,
+        declaredPurpose: String,
+        disclosureLog: Bool,
+        patientAuthorized?: Bool,
+    },
+};

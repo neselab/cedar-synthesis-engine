@@ -1,0 +1,41 @@
+// Compliance Training Gate -- access gated on completion of required
+// compliance training courses. Tests containsAll set operation,
+// boolean sensitivity flag, and role-based action restriction.
+
+entity Employee = {
+    // One of "analyst", "engineer", "manager".
+    role: String,
+    // The set of training course IDs this employee has completed.
+    // Examples: "SEC-101", "HIPAA-200", "SOX-300".
+    completedTrainings: Set<String>,
+};
+
+entity System = {
+    // The set of training course IDs required before any interaction
+    // with this system. An employee must have completed ALL of these.
+    requiredTrainings: Set<String>,
+    // Whether this system holds sensitive data. Sensitive systems
+    // cannot be exported under any circumstances.
+    isSensitive: Bool,
+};
+
+// General access -- requires training gate only.
+action access appliesTo {
+    principal: [Employee],
+    resource: [System],
+    context: {},
+};
+
+// Data export -- requires training gate AND system is not sensitive.
+action export appliesTo {
+    principal: [Employee],
+    resource: [System],
+    context: {},
+};
+
+// Administrative configuration -- requires manager role AND training gate.
+action adminConfig appliesTo {
+    principal: [Employee],
+    resource: [System],
+    context: {},
+};

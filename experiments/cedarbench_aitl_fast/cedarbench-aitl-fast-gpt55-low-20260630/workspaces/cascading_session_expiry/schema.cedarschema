@@ -1,0 +1,45 @@
+// Cascading Session Expiry -- effective session expiry is min(parent, child).
+//
+// Sessions in a hierarchical authentication model carry two expiry
+// timestamps: a "parent" expiry (the umbrella SSO/refresh token's
+// lifetime) and a "self" expiry (the per-session/per-app token's
+// lifetime). The effective expiry of any given session is the EARLIER
+// (i.e. the minimum) of these two timestamps. A session is usable iff
+// the current time is strictly before BOTH expiries.
+//
+// Cedar has no built-in `min` operator; the policy must encode the
+// "earlier of two" semantics. The simplest, idiomatic encoding is the
+// conjunction:
+//     context.now < context.session.parentExpiresAt
+//     && context.now < context.session.selfExpiresAt
+// which is equivalent to context.now < min(parentExpiresAt, selfExpiresAt).
+
+entity User;
+
+// A session record. Carries two expiry timestamps. The "effective"
+// expiry is the minimum (earlier) of the two.
+entity Session = {
+    // The expiry of the parent (umbrella) session. When the parent
+    // expires, all child sessions must also be considered expired
+    // regardless of their own selfExpiresAt.
+    parentExpiresAt: datetime,
+    // The expiry of this specific session. Even if the parent is still
+    // valid, this session is unusable past selfExpiresAt.
+    selfExpiresAt: datetime,
+};
+
+entity Resource;
+
+// Use the session to access a resource. Permitted only when the current
+// time is strictly before BOTH the parent and self expiry timestamps
+// (equivalently, strictly before the minimum of the two).
+action useSession appliesTo {
+    principal: [User],
+    resource: [Resource],
+    context: {
+        // Wall-clock time of the request, supplied by the host app.
+        now: datetime,
+        // The session record, looked up and attached by the host.
+        session: Session,
+    },
+};

@@ -1,0 +1,20 @@
+// Quiescence Window -- per-user cooldown rate limiting expressed via
+// Cedar's datetime/duration extensions.
+
+entity User = {
+    // The wall-clock time at which the user last performed `performAction`.
+    // The host application updates this on every successful permit.
+    lastActionAt: datetime,
+};
+
+entity Resource;
+
+// Sensitive action gated by a 1-hour quiescence window.
+action performAction appliesTo {
+    principal: [User],
+    resource: [Resource],
+    context: {
+        // Current wall-clock time supplied by the host application.
+        now: datetime,
+    },
+};

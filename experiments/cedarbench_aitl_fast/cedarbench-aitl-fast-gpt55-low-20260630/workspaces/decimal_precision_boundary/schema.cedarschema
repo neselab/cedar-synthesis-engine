@@ -1,0 +1,35 @@
+// Decimal Precision Boundary -- exercises Cedar's decimal extension at
+// the edges of its representable range and the constraints of its
+// method-only comparison API.
+
+entity User;
+
+entity Account = {
+    // Current account balance. Stored as a decimal to preserve cent /
+    // sub-cent precision exactly.
+    balance: decimal,
+    // Account-level credit limit. Present in the schema for realism;
+    // the policy does not branch on it directly.
+    creditLimit: decimal,
+};
+
+entity Transaction = {
+    // Transaction amount in account currency.
+    amount: decimal,
+    // Per-transaction fee rate (e.g. decimal("0.0250") = 2.5%). Present
+    // for realism; not used in policy comparisons because Cedar decimal
+    // does not support arithmetic.
+    feeRate: decimal,
+};
+
+// withdraw and viewBalance act on an Account; transfer acts on a
+// Transaction whose amount the policy bounds.
+action withdraw, viewBalance appliesTo {
+    principal: [User],
+    resource: [Account],
+};
+
+action transfer appliesTo {
+    principal: [User],
+    resource: [Transaction],
+};

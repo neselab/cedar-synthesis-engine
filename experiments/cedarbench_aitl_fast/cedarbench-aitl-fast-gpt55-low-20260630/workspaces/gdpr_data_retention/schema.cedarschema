@@ -1,0 +1,19 @@
+// GDPR Data Retention — personal data records with retention expiry
+// and erasure request flags.
+
+entity User = {
+    role: String,   // "processor" | "controller" | "dpo"
+};
+
+entity DataRecord = {
+    retentionExpiry: datetime,
+    erasureRequested: Bool,
+};
+
+action read, process, delete, audit appliesTo {
+    principal: [User],
+    resource: [DataRecord],
+    context: {
+        now: datetime,
+    },
+};

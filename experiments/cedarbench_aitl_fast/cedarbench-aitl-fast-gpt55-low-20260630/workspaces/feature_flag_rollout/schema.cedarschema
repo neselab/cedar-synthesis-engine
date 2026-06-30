@@ -1,0 +1,41 @@
+// Feature Flag Rollout -- gradual rollout access control.
+//
+// Tests percentage-based rollout via numeric comparison
+// (rolloutBucket < rolloutPercentage), boolean master-switch gating,
+// and string-based role overrides for beta testers and admins.
+
+entity User = {
+    // One of "user", "beta_tester", "admin".
+    role: String,
+    // Deterministic bucket 0-99, assigned by hashing the user ID.
+    rolloutBucket: Long,
+};
+
+entity Feature = {
+    // Master switch: feature must be enabled for production use.
+    isEnabled: Bool,
+    // 0-100: percentage of users that have access. A user with
+    // rolloutBucket < rolloutPercentage is "rolled in."
+    rolloutPercentage: Long,
+};
+
+// use: access a feature in production (requires isEnabled + rollout/role).
+action use appliesTo {
+    principal: [User],
+    resource: [Feature],
+    context: {},
+};
+
+// preview: access a feature in staging (beta_tester or admin, no flag check).
+action preview appliesTo {
+    principal: [User],
+    resource: [Feature],
+    context: {},
+};
+
+// configure: change feature flag settings (admin only).
+action configure appliesTo {
+    principal: [User],
+    resource: [Feature],
+    context: {},
+};

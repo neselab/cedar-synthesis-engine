@@ -1,0 +1,33 @@
+// Role Elevation With Attestation — temporary role elevation requiring
+// a non-empty justification string for sensitive resource access.
+//
+// Users with baseRole "user" or "lead" need elevationGranted=true AND
+// a non-empty context.elevationJustification to access sensitive
+// resources. Managers have standing authority and need neither.
+
+entity User = {
+    // One of "user", "lead", "manager".
+    baseRole: String,
+    // Whether a temporary privileged-access grant is active for this user.
+    elevationGranted: Bool,
+};
+
+entity SensitiveResource = {};
+
+// Routine access — any role permitted, no elevation required.
+action accessNormal appliesTo {
+    principal: [User],
+    resource: [SensitiveResource],
+};
+
+// Privileged access — managers always; users/leads only with active
+// elevation grant AND a non-empty justification string.
+action accessSensitive appliesTo {
+    principal: [User],
+    resource: [SensitiveResource],
+    context: {
+        // Optional: free-text business justification for the elevated
+        // request. Must be present AND non-empty for elevation to apply.
+        elevationJustification?: String,
+    },
+};

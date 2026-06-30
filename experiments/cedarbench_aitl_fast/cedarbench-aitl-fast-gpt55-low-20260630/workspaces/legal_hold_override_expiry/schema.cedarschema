@@ -1,0 +1,33 @@
+// Legal Hold Override Expiry — records management with expiry + legal
+// hold. Documents automatically become read-only after their expiryDate,
+// UNLESS they are under an active legal hold, in which case the legal
+// team retains edit access indefinitely.
+
+entity User = {
+    // Whether this user is on the legal team. Legal team members have
+    // editing authority on documents under legal hold even when those
+    // documents would otherwise be expired.
+    isLegalTeam: Bool,
+};
+
+entity Document = {
+    owner: User,
+    // The date after which the document is auto-archived. Once the
+    // current request time is >= expiryDate, the document becomes
+    // read-only to everyone EXCEPT legal-team members acting on a
+    // legal-hold document.
+    expiryDate: datetime,
+    // Whether this document is currently under a legal hold. Legal
+    // holds are set by the legal team and prevent auto-archive.
+    legalHold: Bool,
+};
+
+action readDocument, editDocument, deleteDocument appliesTo {
+    principal: [User],
+    resource: [Document],
+    context: {
+        now: {
+            datetime: datetime,
+        },
+    },
+};

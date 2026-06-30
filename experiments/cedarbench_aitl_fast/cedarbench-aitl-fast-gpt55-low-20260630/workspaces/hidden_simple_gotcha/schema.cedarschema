@@ -1,0 +1,22 @@
+// Hidden Simple Gotcha -- file ownership transfer with a subtle invariant.
+//
+// Files carry TWO user-valued fields:
+//   creator      -- immutable, set at file-creation time
+//   currentOwner -- mutable, updated by `transfer`
+//
+// The presence of both fields encodes an invariant: the creator retains
+// read access permanently, even after the current owner changes.
+// `transfer`, in contrast, is restricted to the current owner only.
+
+entity User;
+
+entity File = {
+    creator: User,
+    currentOwner: User,
+};
+
+action read, transfer appliesTo {
+    principal: [User],
+    resource: [File],
+    context: {},
+};

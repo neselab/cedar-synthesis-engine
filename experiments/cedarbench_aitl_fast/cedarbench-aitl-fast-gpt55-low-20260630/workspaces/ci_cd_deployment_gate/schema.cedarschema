@@ -1,0 +1,33 @@
+// CI/CD Deployment Gate
+//
+// Pipeline users are authorized to deploy, rollback, or approve
+// deployments based on their role and the target environment.
+// Deployments carry a boolean indicating whether the test suite passed.
+
+entity PipelineUser = {
+    role: String,        // "developer" | "lead" | "releaseManager"
+    isCodeOwner: Bool,
+};
+
+entity Deployment = {
+    environment: String, // "dev" | "staging" | "production"
+    hasPassedTests: Bool,
+};
+
+action deploy appliesTo {
+    principal: [PipelineUser],
+    resource: [Deployment],
+    context: {},
+};
+
+action rollback appliesTo {
+    principal: [PipelineUser],
+    resource: [Deployment],
+    context: {},
+};
+
+action approve appliesTo {
+    principal: [PipelineUser],
+    resource: [Deployment],
+    context: {},
+};

@@ -1,0 +1,9 @@
+{
+  "run_id": "cedarbench-aitl-fast-gpt55-low-20260630",
+  "mode": "AutoCedar-AITL fast path",
+  "model": "gpt-5.5",
+  "effort": "low",
+  "max_iters": 20,
+  "scenario_count": 221,
+  "description": "Uses CedarBench checked-in schemas, verification plans, and reference policies as the expert/AITL formal target; runs verifier-guided synthesis with the requested model."
+}

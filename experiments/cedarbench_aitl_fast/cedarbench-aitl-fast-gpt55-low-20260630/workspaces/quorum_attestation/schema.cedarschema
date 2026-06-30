@@ -1,0 +1,29 @@
+// Quorum Attestation — 3-of-5 emergency override quorum. Cedar has no
+// .size() on sets, so the threshold must be encoded by enumerating the
+// C(5,3) = 10 possible quorum subsets and checking each via .containsAll().
+
+entity Approver;
+
+entity EmergencyAction = {
+    // Informational: the five known eligible approvers. The policy
+    // hard-codes Approver::"s1" .. Approver::"s5".
+    eligibleApprovers: Set<Approver>,
+};
+
+// Execute the emergency override. Requires the principal to be one of
+// the five eligible approvers AND context.attesters to contain at least
+// 3 of the 5 eligible approvers (encoded via 10-disjunct containsAll).
+action executeEmergency appliesTo {
+    principal: [Approver],
+    resource: [EmergencyAction],
+    context: {
+        attesters: Set<Approver>,
+    },
+};
+
+// View the emergency record. Any Approver entity may view (broad
+// situational awareness during incident response).
+action viewEmergency appliesTo {
+    principal: [Approver],
+    resource: [EmergencyAction],
+};

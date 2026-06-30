@@ -1,0 +1,6 @@
+// Twenty-action workflow.
+entity User = { role: String };
+entity Document;
+
+action request, review, approve, reject, escalate, delegate, cancel, resubmit, audit, close, reopen, archive, export, sign, countersign, annotate, comment, notify, cc, bcc
+       appliesTo { principal: [User], resource: [Document], context: {} };

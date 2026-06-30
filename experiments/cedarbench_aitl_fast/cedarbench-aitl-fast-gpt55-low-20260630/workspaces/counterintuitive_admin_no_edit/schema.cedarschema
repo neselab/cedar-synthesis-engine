@@ -1,0 +1,27 @@
+// Read-Only Auditor Admin — schema.
+//
+// Counterintuitive RBAC: the `auditAdmin` role is the broadest VIEW
+// role but has ZERO write permissions. The `manager` role is the only
+// role allowed to delete.
+
+entity Worker = {
+    // One of: "editor", "manager", "auditAdmin".
+    role: String,
+};
+
+entity Record = {};
+
+action view appliesTo {
+    principal: [Worker],
+    resource: [Record],
+};
+
+action edit appliesTo {
+    principal: [Worker],
+    resource: [Record],
+};
+
+action delete appliesTo {
+    principal: [Worker],
+    resource: [Record],
+};

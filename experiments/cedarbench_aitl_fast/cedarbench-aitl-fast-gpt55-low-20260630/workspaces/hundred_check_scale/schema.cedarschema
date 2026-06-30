@@ -1,0 +1,26 @@
+// Hundred-Check Scale — an e-commerce back-office with 10 roles and
+// 10 actions, producing a 10x10 role/action permission matrix. The
+// goal is to stress-test the harness with a verification plan of
+// ~100 checks (roughly 3x the largest scenario in CedarBench so far)
+// and see whether the conversation trimming, feedback message size,
+// or hash-based oscillation detection breaks at scale.
+
+entity User = {
+    // One of: "viewer", "cs_agent", "cs_manager", "fulfillment",
+    // "warehouse_lead", "returns", "finance_ops", "finance_manager",
+    // "platform_admin", "security_admin".
+    role: String,
+};
+
+entity Order = {
+    total: Long,
+    status: String,  // "cart" | "pending" | "shipped" | "delivered" | "refunded"
+};
+
+// Ten actions spanning CRUD + domain-specific operations.
+action viewOrder, listOrders, updateCart, placeOrder, cancelOrder,
+       refundOrder, shipOrder, markDelivered, modifyPricing, adminOverride
+appliesTo {
+    principal: [User],
+    resource: [Order],
+};

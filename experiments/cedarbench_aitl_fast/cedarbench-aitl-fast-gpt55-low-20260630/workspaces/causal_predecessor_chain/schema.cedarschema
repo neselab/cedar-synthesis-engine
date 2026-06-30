@@ -1,0 +1,37 @@
+// Causal Predecessor Chain — a three-step sequential workflow
+// (prepare → submit → approve) where each later step requires
+// host-supplied attestation that its immediate predecessor succeeded.
+//
+// The host application maintains the workflow log and, before
+// dispatching each request, attaches a `predecessorAuthorized` record
+// to the context describing the most recent successful action on the
+// document. The policy reads that attestation to enforce the chain.
+
+entity User;
+
+// The resource. Workflow state lives in the host's log, not on the
+// document itself, so no required attributes here.
+entity Document;
+
+// Attestation record describing the predecessor action: who did it,
+// what it was, and when. Carried in context as an optional attribute.
+type PredecessorAttestation = {
+    actor: User,
+    actionType: String,
+    timestamp: datetime,
+};
+
+// All three workflow actions accept the optional attestation. It is
+// ignored by `prepare` (root of the chain) and required by the
+// downstream actions.
+action prepare, submit, approve appliesTo {
+    principal: [User],
+    resource: [Document],
+    context: {
+        // Optional: present when the host has resolved a predecessor
+        // for this request. Absent means no predecessor has been
+        // verified (correct for `prepare`; wrong for `submit` /
+        // `approve`).
+        predecessorAuthorized?: PredecessorAttestation,
+    },
+};
