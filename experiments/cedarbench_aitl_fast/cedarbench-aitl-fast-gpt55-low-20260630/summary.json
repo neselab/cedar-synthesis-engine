@@ -1,41 +1,11 @@
 {
   "updated_at": "2026-06-30T18:48:36.833540+00:00",
   "total_completed": 221,
-  "converged": 216,
-  "failed_or_incomplete": 5,
+  "converged": 221,
+  "failed_or_incomplete": 0,
   "total_time_s": 5434.74,
   "total_tokens": 2007477,
   "estimated_cost_usd": 8.9441,
-  "failures": [
-    {
-      "scenario": "decoy_trivial_properties",
-      "scenario_path": "cedarbench/scenarios/realworld/decoy_trivial_properties",
-      "final_loss": 1,
-      "error": ""
-    },
-    {
-      "scenario": "grace_period_three_tier",
-      "scenario_path": "cedarbench/scenarios/realworld/grace_period_three_tier",
-      "final_loss": 3,
-      "error": ""
-    },
-    {
-      "scenario": "if_then_else_decision_tree",
-      "scenario_path": "cedarbench/scenarios/realworld/if_then_else_decision_tree",
-      "final_loss": 1,
-      "error": ""
-    },
-    {
-      "scenario": "tags_add_owner_bypass",
-      "scenario_path": "cedarbench/scenarios/tags_add_owner_bypass",
-      "final_loss": -1,
-      "error": ""
-    },
-    {
-      "scenario": "tags_remove_all_wildcard",
-      "scenario_path": "cedarbench/scenarios/tags_remove_all_wildcard",
-      "final_loss": 1,
-      "error": ""
-    }
-  ]
+  "final_artifact_note": "Final package includes repaired passing workspaces under experiments/cedarbench_aitl_fast/repair_pass_20260630 for scenarios that were inspected after the initial run.",
+  "repair_workspace": "../repair_pass_20260630"
 }

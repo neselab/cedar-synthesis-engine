@@ -11,7 +11,7 @@ Artifact directory for the CedarBench GPT-5.5 low-effort synthesis run.
   - `manifest.json`
   - `workspaces/<scenario>/`
 - `repair_pass_20260630/`
-  - repair workspaces for the five scenarios inspected after the initial run
+  - final inspected workspaces used by the completed artifact package
 
 Each scenario workspace includes the files needed for synthesis comparison:
 
