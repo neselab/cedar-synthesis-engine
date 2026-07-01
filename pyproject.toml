@@ -7,7 +7,7 @@ requires-python = ">=3.11"
 license = "Apache-2.0"
 license-files = ["LICENSE"]
 authors = [
-    { name = "Adarsh Vatsa", email = "avatsa@stevens.edu" },
+    { name = "AutoCedar Authors" },
 ]
 keywords = [
     "access-control",
