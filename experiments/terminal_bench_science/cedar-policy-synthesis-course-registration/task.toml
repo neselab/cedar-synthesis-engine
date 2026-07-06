@@ -1,0 +1,45 @@
+schema_version = "1.0"
+
+artifacts = ["/app/policy.cedar"]
+
+[metadata]
+author_name = "AutoCedar Authors"
+author_email = ""
+author_organization = ""
+difficulty_explanation = "This task requires translating realistic organizational authorization intent into Cedar policy code while preserving interacting lifecycle, ownership, role/action, professor-eligibility, conflict, privacy, and least-permissive boundaries. Plausible direct translations often pass syntax validation but over-permit registration, report-card, course-offering, roster, or grade-entry workflows, especially when one role has several related but differently scoped actions."
+solution_explanation = "The oracle policy encodes each workflow as a scoped Cedar permit: student catalogue access is campus-LAN bounded, schedule changes require own selection and open registration, report cards require self-access and completed semester, professor actions require eligibility/no-conflict/ownership/completion as applicable, and registrar-only actions are isolated."
+verification_explanation = "The verifier runs cedar validate, then uses cedar symcc to check hidden semantic ceilings for over-permission, floors for required access, and always-denies checks for liveness. The checks accept any policy denotation that satisfies the intended behavior; they do not require matching the oracle policy syntax."
+domain = "other-sciences"
+field = "engineering-sciences"
+subfield = "autoformalization"
+tags = [
+  "autoformalization",
+  "access-control",
+  "cedar",
+  "formal-verification",
+  "security-policy",
+  "engineering-sciences",
+]
+expert_time_estimate_hours = 1.5
+relevant_experience = "The authors work on AutoCedar and CedarBench, a research project and benchmark for verifier-guided Cedar policy synthesis from natural-language authorization intent."
+expected_agent_failures = [
+  "Allow students to modify schedules after registration closes",
+  "Allow students to view another student's report card",
+  "Allow professors to edit another professor's course offering",
+  "Allow non-professors to enter grades",
+  "Forget the campus-LAN access boundary",
+]
+
+[environment]
+allow_internet = true
+build_timeout_sec = 900.0
+cpus = 2
+memory_mb = 4096
+storage_mb = 10240
+gpus = 0
+
+[agent]
+timeout_sec = 900.0
+
+[verifier]
+timeout_sec = 240.0

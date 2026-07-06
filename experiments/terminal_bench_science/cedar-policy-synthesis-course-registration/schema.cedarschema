@@ -1,0 +1,103 @@
+entity User = {
+    role: String,
+};
+
+entity CourseOffering = {
+    eligibleProfessors: Set<User>,
+    instructor?: User,
+    registrationOpen: Bool,
+    hasScheduleConflict: Bool,
+};
+
+entity CourseSelection = {
+    student: User,
+    offering: CourseOffering,
+    registrationOpen: Bool,
+};
+
+entity ReportCard = {
+    student: User,
+    semesterCompleted: Bool,
+};
+
+entity Roster = {
+    offering: CourseOffering,
+    instructor: User,
+};
+
+entity GradeEntry = {
+    student: User,
+    offering: CourseOffering,
+    instructor: User,
+    semesterCompleted: Bool,
+};
+
+entity StudentInformation = {
+    student: User,
+};
+
+entity RegistrationProcess = {
+    registrationOpen: Bool,
+};
+
+action browseCatalogue appliesTo {
+    principal: [User],
+    resource: [CourseOffering],
+    context: {
+        fromCampusLAN: Bool,
+    },
+};
+
+action addCourse appliesTo {
+    principal: [User],
+    resource: [CourseSelection],
+    context: {},
+};
+
+action dropCourse appliesTo {
+    principal: [User],
+    resource: [CourseSelection],
+    context: {},
+};
+
+action updateCourseSelection appliesTo {
+    principal: [User],
+    resource: [CourseSelection],
+    context: {},
+};
+
+action viewReportCard appliesTo {
+    principal: [User],
+    resource: [ReportCard],
+    context: {},
+};
+
+action selectTeachingOffering appliesTo {
+    principal: [User],
+    resource: [CourseOffering],
+    context: {},
+};
+
+action viewRoster appliesTo {
+    principal: [User],
+    resource: [Roster],
+    context: {},
+};
+
+action enterGrade appliesTo {
+    principal: [User],
+    resource: [GradeEntry],
+    context: {},
+};
+
+action changeStudentInformation appliesTo {
+    principal: [User],
+    resource: [StudentInformation],
+    context: {},
+};
+
+action closeRegistration appliesTo {
+    principal: [User],
+    resource: [RegistrationProcess],
+    context: {},
+};
