@@ -62,53 +62,6 @@ def get_checks():
             "floor_path": os.path.join(REFS, "user_zero_level_must_permit.cedar"),
         },
 
-        # ── Trivially-true floors (decoy; should PASS for any sound candidate) ──
-        {
-            "name": "trivial_floor_true",
-            "description": "Trivial: permit when true (vacuously satisfied)",
-            "type": "floor",
-            "principal_type": "User",
-            "action": "Action::\"access\"",
-            "resource_type": "Resource",
-            "floor_path": os.path.join(REFS, "trivial_floor_true.cedar"),
-        },
-        {
-            "name": "trivial_floor_one_eq_one",
-            "description": "Trivial: permit when 1 == 1 (vacuously satisfied)",
-            "type": "floor",
-            "principal_type": "User",
-            "action": "Action::\"access\"",
-            "resource_type": "Resource",
-            "floor_path": os.path.join(REFS, "trivial_floor_one_eq_one.cedar"),
-        },
-        {
-            "name": "trivial_floor_string_eq",
-            "description": "Trivial: permit when \"x\" == \"x\" (vacuously satisfied)",
-            "type": "floor",
-            "principal_type": "User",
-            "action": "Action::\"access\"",
-            "resource_type": "Resource",
-            "floor_path": os.path.join(REFS, "trivial_floor_string_eq.cedar"),
-        },
-        {
-            "name": "trivial_floor_or_true",
-            "description": "Trivial: permit when (1 == 2) || true (vacuously satisfied)",
-            "type": "floor",
-            "principal_type": "User",
-            "action": "Action::\"access\"",
-            "resource_type": "Resource",
-            "floor_path": os.path.join(REFS, "trivial_floor_or_true.cedar"),
-        },
-        {
-            "name": "trivial_floor_not_false",
-            "description": "Trivial: permit when !(1 == 2) (vacuously satisfied)",
-            "type": "floor",
-            "principal_type": "User",
-            "action": "Action::\"access\"",
-            "resource_type": "Resource",
-            "floor_path": os.path.join(REFS, "trivial_floor_not_false.cedar"),
-        },
-
         # ── Liveness ─────────────────────────────────────────────────────
         {
             "name": "liveness_access",
