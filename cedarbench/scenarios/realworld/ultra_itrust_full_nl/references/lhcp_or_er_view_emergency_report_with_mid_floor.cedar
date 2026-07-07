@@ -1,0 +1,1 @@
+permit (principal, action == Action::"viewEmergencyReport", resource is EmergencyReport) when { context.session.isActive && context.session has licensedHealthCareProfessional && context.session.licensedHealthCareProfessional == principal && context.mid == resource.patient.mid && (principal is LicensedHealthCareProfessional || principal is EmergencyResponder) };

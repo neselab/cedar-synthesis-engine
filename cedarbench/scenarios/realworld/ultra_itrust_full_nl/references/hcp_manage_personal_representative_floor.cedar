@@ -1,0 +1,4 @@
+permit (principal is HealthCareProfessional, action == Action::"managePersonalRepresentative", resource is Patient) when {
+    (context.session.isActive && context.session has healthCareProfessional && context.session.healthCareProfessional == principal)
+    && !(resource.isDeactivated)
+};

@@ -1,0 +1,1 @@
+permit (principal, action == Action::"reactivatePatient", resource) when { context.session.isActive && context.session has administratorUser && context.session.administratorUser == principal && !resource.isActive };

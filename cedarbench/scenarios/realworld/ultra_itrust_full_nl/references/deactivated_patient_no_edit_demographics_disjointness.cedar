@@ -1,0 +1,1 @@
+permit (principal is User, action == Action::"editDemographicInformation", resource is DemographicInformation) when { !resource.patient.isDeactivated };

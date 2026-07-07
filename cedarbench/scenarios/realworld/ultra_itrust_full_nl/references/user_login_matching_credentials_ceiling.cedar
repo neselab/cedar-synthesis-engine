@@ -1,0 +1,1 @@
+permit (principal is User, action == Action::"login", resource is Session) when { resource.user == principal && context.mid == principal.mid && context.password == principal.password };

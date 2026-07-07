@@ -1,0 +1,133 @@
+entity User = {
+    role: String,
+    submittedAllAssignedReviews: Bool,
+};
+
+entity Submission = {
+    authors: Set<User>,
+    contactPerson: User,
+    assignedReviewers: Set<User>,
+    conflictedReviewers: Set<User>,
+    reviewersSubmitted: Set<User>,
+    selected: Bool,
+    step1Open: Bool,
+    step2Open: Bool,
+    reviewOpen: Bool,
+    reviewProcessDone: Bool,
+    distributionDone: Bool,
+    hasConflictingReviews: Bool,
+    onlyNonExpertReviews: Bool,
+};
+
+entity ReviewerDirectory = {
+    owner: User,
+    allowedUsers: Set<User>,
+};
+
+entity ReviewFile = {
+    directory: ReviewerDirectory,
+    paper: Submission,
+    allowedUsers: Set<User>,
+};
+
+entity ReviewOverview = {
+    paper: Submission,
+};
+
+action submitStep1 appliesTo {
+    principal: [User],
+    resource: [Submission],
+};
+
+action submitFullPaper appliesTo {
+    principal: [User],
+    resource: [Submission],
+    context: {
+        hasStep2Credential: Bool,
+    },
+};
+
+action updateStep1Info appliesTo {
+    principal: [User],
+    resource: [Submission],
+    context: {
+        hasStep2Credential: Bool,
+    },
+};
+
+action submitCameraReady appliesTo {
+    principal: [User],
+    resource: [Submission],
+};
+
+action downloadPaper appliesTo {
+    principal: [User],
+    resource: [Submission],
+};
+
+action displayAbstract appliesTo {
+    principal: [User],
+    resource: [Submission],
+};
+
+action submitReview appliesTo {
+    principal: [User],
+    resource: [Submission],
+};
+
+action updateReview appliesTo {
+    principal: [User],
+    resource: [Submission],
+};
+
+action readOtherReviews appliesTo {
+    principal: [User],
+    resource: [Submission],
+};
+
+action declareConflict appliesTo {
+    principal: [User],
+    resource: [Submission],
+};
+
+action indicateExpertise appliesTo {
+    principal: [User],
+    resource: [Submission],
+    context: {
+        expertiseLevel: String,
+    },
+};
+
+action indicateWillingness appliesTo {
+    principal: [User],
+    resource: [Submission],
+    context: {
+        willingness: String,
+    },
+};
+
+action volunteerForConflictingPaper appliesTo {
+    principal: [User],
+    resource: [Submission],
+};
+
+action monitorReviewProcess appliesTo {
+    principal: [User],
+    resource: [ReviewOverview],
+};
+
+action askAdditionalReviewer appliesTo {
+    principal: [User],
+    resource: [ReviewOverview],
+};
+
+action accessReviewerDirectory appliesTo {
+    principal: [User],
+    resource: [ReviewerDirectory],
+};
+
+action readReviewFile appliesTo {
+    principal: [User],
+    resource: [ReviewFile],
+};
+

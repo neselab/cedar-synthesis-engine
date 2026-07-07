@@ -1,0 +1,665 @@
+[
+  {
+    "atom_name": "hcp_can_create_patient",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {
+      "edits": [
+        {
+          "field": "reference_cedar",
+          "old": "permit (principal in Hcp, action == Action::\"createPatient\", resource in Patient) when { context.session.user == principal && context.session.isActive };",
+          "new": "permit (principal, action == Action::\"createPatient\", resource) when { context.session.isActive };"
+        },
+        {
+          "field": "plain_english_summary",
+          "old": "An HCP with an active session for that HCP should be allowed to create a patient.",
+          "new": "An HCP with an active session should be allowed to create a patient."
+        }
+      ]
+    },
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "patient_mid_not_editable",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "hcp_cannot_enter_patient_credentials",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "hcp_can_edit_patient_data",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "hcp_cannot_edit_patient_credentials",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "administrator_can_create_lhcp",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "hcp_cannot_view_patient_credentials",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "administrator_can_create_emergency_responder",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "administrator_can_create_public_health_agent",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "lhcp_can_create_uap",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "administrator_can_assign_lhcp_to_hospital",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "user_can_login_with_own_credentials",
+    "action": "reject",
+    "reason": "Stage 2 decomposition critic repair: The login floor is materially useful, but it replaces the source authentication boundary with a proxy. The requirement is that the user enters their MID and password to gain role-based entry; the schema exposes only a Credential owner and hasPassword flag, not request-entered MID/password values or a password/MID verification result. Requiring context.credential.user == principal and hasPassword does not represent successful authentication with the entered MID and password.",
+    "edit_delta": {
+      "critic_decision": "repair",
+      "critic_tags": [
+        "schema-gap",
+        "missing-authentication-boundary",
+        "missing-entered-mid",
+        "missing-password-verification"
+      ]
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "user_can_login_with_verified_credentials",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "login_only_with_verified_own_credentials",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "user_can_request_own_password_change",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "password_change_only_own_credential",
+    "action": "reject",
+    "reason": "Stage 2 decomposition critic repair: The same-action ceiling for password-change requests is materially useful because the source's 'their password' creates an own-credential boundary not implied by the approved floor. However, the atom says the user may act only while they have an active session, and the schema exposes Session.user, but the Cedar condition only checks context.session.isActive and does not bind context.session.user to the principal. Repair the ceiling to include the session ownership/lifecycle boundary, e.g. context.session.user == principal in addition to resource.user == principal and context.session.isActive.",
+    "edit_delta": {
+      "critic_decision": "repair",
+      "critic_tags": [
+        "missing-session-ownership-boundary",
+        "repair-reference-cedar"
+      ]
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "password_change_only_own_credential_active_session",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {
+      "reject_history": [
+        {
+          "atom_name": "password_change_only_own_credential_active_own_session",
+          "reason": "Adds an own-session equality constraint not stated by the selected requirement and conflicts with the approved own-credential active-session floor. Keep own credential plus active session; do not add this ceiling as a separate intent atom for this slice."
+        }
+      ],
+      "replaced_after_reject": true
+    },
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "inactive_session_blocks_create_patient",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "inactive_session_blocks_edit_patient_data",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "inactive_session_blocks_create_lhcp",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "inactive_session_blocks_create_emergency_responder",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "user_can_logout_own_session",
+    "action": "reject",
+    "reason": "Stage 2 decomposition critic repair: The logout floor is materially useful and not already covered, but it omits the lifecycle boundary in the source: the session being ended is an authenticated/active session. The schema exposes this as Session.isActive on the resource, so the floor should be scoped to the user's own active session, e.g. require resource.user == principal && resource.isActive.",
+    "edit_delta": {
+      "critic_decision": "repair",
+      "critic_tags": [
+        "missing-lifecycle-boundary",
+        "missing-authenticated-session-boundary",
+        "repair-reference-cedar"
+      ]
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "user_can_logout_own_active_session",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "logout_only_own_active_session",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "user_can_close_own_active_session",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "close_application_only_own_active_session",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "administrator_can_set_inactivity_period_length",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "patient_can_view_own_prior_and_designated_lhcps",
+    "action": "reject",
+    "reason": "Stage 2 decomposition critic repair: The source grant is not merely generic access to the patient's ProviderList; it is specifically to view LHCPs the patient has ever had an office visit with and LHCPs the patient has designated. The proposed floor correctly includes the own-patient boundary and active-session boundary, but it accepts ProviderList as a proxy even though the schema does not expose an office-visit history relationship and does not connect ProviderList to ProviderDesignation/isDesignated membership. Repair is needed to make the prior-office-visit and designated-LHCP boundaries explicit; if those cannot be represented with the current schema, this is a schema gap rather than an acceptable proxy.",
+    "edit_delta": {
+      "critic_decision": "repair",
+      "critic_tags": [
+        "schema-gap",
+        "missing-prior-office-visit-lhcp-boundary",
+        "missing-designated-lhcp-membership-boundary",
+        "proxy-resource-not-equivalent"
+      ]
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "inactive_session_blocks_create_public_health_agent",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "patient_can_view_own_access_log_for_period",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "access_log_view_only_own_period_active_session",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "patient_can_add_provider_to_own_list_by_available_search_filters",
+    "action": "reject",
+    "reason": "Do not weaken the source requirement by dropping provider-name matching. The selected NL says the patient searches by name, specialty, and optionally zip code. Repair the schema with a provider name hook or otherwise make name matching representable before accepting this floor.",
+    "edit_delta": {
+      "reject_history": [
+        {
+          "atom_name": "patient_can_add_provider_to_own_list_by_search",
+          "reason": "The add-provider intent is wanted, but this encoding needs provider-side search attributes. The approved schema does not expose name on Hcp, so context.provider.name cannot validate. Repair the schema/property so provider name and optional specialty/zip matching are representable."
+        },
+        {
+          "atom_name": "patient_can_add_provider_to_own_list_by_available_search_filters",
+          "reason": "Do not weaken the source requirement by dropping provider-name matching. The selected NL says the patient searches by name, specialty, and optionally zip code. Repair the schema with a provider name hook or otherwise make name matching representable before accepting this floor."
+        }
+      ]
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "patient_can_designate_lhcp_for_self",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "designate_dlhcp_only_for_self",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "patient_can_undesignate_lhcp_for_self",
+    "action": "reject",
+    "reason": "Stage 2 decomposition critic repair: The undesignation floor is materially useful and not covered by the approved designation atoms, but it omits the source state boundary that the LHCP is currently designated as a DLHCP for that patient. The schema exposes this as ProviderDesignation.isDesignated, so the floor should be scoped to an active session, resource.patient == principal, and resource.isDesignated before allowing undesignateDlhcp.",
+    "edit_delta": {
+      "critic_decision": "repair",
+      "critic_tags": [
+        "missing-designation-state-boundary",
+        "repair-reference-cedar"
+      ]
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "patient_can_undesignate_current_dlhcp_for_self",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "undesignate_dlhcp_only_current_for_self",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "patient_can_view_own_medical_record",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "medical_record_view_only_own_or_represented_active_session",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "personal_representative_can_view_represented_medical_record",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {
+      "edits": [
+        {
+          "field": "reference_cedar",
+          "old": "permit (principal, action == Action::\"viewMedicalRecord\", resource) when { context.session.isActive && context has representedPatient && context.representedPatient == resource.patient && context.representedPatient in principal.representedPatients };",
+          "new": "permit (principal, action == Action::\"viewMedicalRecord\", resource) when { context.session.isActive && context has representedPatient && context.representedPatient == resource.patient && principal.representedPatients.contains(context.representedPatient) };"
+        }
+      ]
+    },
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "patient_can_view_own_family_history",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "family_history_view_only_own_or_represented_active_session",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "personal_representative_can_view_represented_family_history",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {
+      "edits": [
+        {
+          "field": "reference_cedar",
+          "old": "permit (principal, action == Action::\"viewFamilyHistory\", resource) when { context.session.isActive && resource.hasFamilyHistory && context has representedPatient && context.representedPatient == resource.patient && principal.representedPatients.contains(context.representedPatient) };",
+          "new": "permit (principal, action == Action::\"viewFamilyHistory\", resource) when { context.session.isActive && resource.hasFamilyHistory && context has representedPatient && context.representedPatient == resource.patient && principal.representedPatients.contains(context.representedPatient) };"
+        }
+      ]
+    },
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "patient_can_view_own_personal_health_information",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "personal_health_information_view_only_own_or_represented_active_session",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "personal_representative_can_view_represented_personal_health_information",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {
+      "edits": [
+        {
+          "field": "reference_cedar",
+          "old": "permit (principal, action == Action::\"viewPersonalHealthInformation\", resource) when { context.session.isActive && resource.hasPersonalHealthInformation && context has representedPatient && context.representedPatient == resource.patient && principal.representedPatients.contains(context.representedPatient) };",
+          "new": "permit (principal, action == Action::\"viewPersonalHealthInformation\", resource) when { context.session.isActive && resource.hasPersonalHealthInformation && context has representedPatient && context.representedPatient == resource.patient && principal.representedPatients.contains(context.representedPatient) };"
+        }
+      ]
+    },
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "patient_can_view_own_immunizations",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "immunizations_view_only_own_or_represented_active_session",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "personal_representative_can_view_represented_immunizations",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {
+      "edits": [
+        {
+          "field": "reference_cedar",
+          "old": "permit (principal, action == Action::\"viewImmunizations\", resource) when { context.session.isActive && resource.hasImmunizations && context has representedPatient && context.representedPatient == resource.patient && principal.representedPatients.contains(context.representedPatient) };",
+          "new": "permit (principal, action == Action::\"viewImmunizations\", resource) when { context.session.isActive && resource.hasImmunizations && context has representedPatient && context.representedPatient == resource.patient && principal.representedPatients.contains(context.representedPatient) };"
+        }
+      ]
+    },
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "patient_can_view_own_office_visit_information",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "office_visit_information_view_only_own_or_represented_active_session",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "inactive_session_blocks_set_inactivity_period_length",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "inactive_session_blocks_create_uap",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "patient_can_view_own_prior_and_designated_lhcps",
+    "action": "reject",
+    "reason": "Stage 2 decomposition critic repair: The source requirement is materially useful and the schema now exposes relevant hooks, but the proposed floor still does not connect the LHCPs being viewed to the prior-office-visit and designation slices. It only checks that every OfficeVisit and ProviderDesignation stored on the ProviderList belongs to the requesting patient and that listed designations are active; it does not require the viewed ProviderList.providers to be exactly or at least composed from office-visit LHCPs and designated LHCPs, nor that the visit/designation LHCPs are included in the providers set. Repair the reference Cedar/summary to use the existing ProviderList.providers, ProviderList.officeVisits.lhcp, and ProviderList.designations.lhcp/isDesignated hooks rather than accepting patient-owned ProviderList metadata as a proxy.",
+    "edit_delta": {
+      "critic_decision": "repair",
+      "critic_tags": [
+        "missing-provider-membership-boundary",
+        "missing-prior-office-visit-lhcp-inclusion-boundary",
+        "missing-designated-lhcp-inclusion-boundary",
+        "repair-reference-cedar"
+      ]
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "patient_can_view_own_prior_visit_and_designated_lhcp_providers",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {
+      "edits": [
+        {
+          "field": "reference_cedar",
+          "old": "permit (principal, action == Action::\"viewPriorAndDesignatedLhcps\", resource) when { context.session.isActive && resource.patient == principal && resource.officeVisits.all(visit, visit.patient == principal && resource.providers.contains(visit.lhcp)) && resource.designations.all(designation, designation.patient == principal && (!designation.isDesignated || resource.providers.contains(designation.lhcp))) && resource.providers.all(provider, resource.officeVisits.any(visit, visit.patient == principal && visit.lhcp == provider) || resource.designations.any(designation, designation.patient == principal && designation.isDesignated && designation.lhcp == provider)) };",
+          "new": "permit (principal, action == Action::\"viewPriorAndDesignatedLhcps\", resource) when { context.session.isActive && resource.patient == principal };"
+        },
+        {
+          "field": "plain_english_summary",
+          "old": "A patient with an active session should be allowed to view their own provider list when every listed provider is an LHCP from that patient's prior office visits or an actively designated LHCP for that patient, and all such prior-visit and actively designated LHCPs are included in the providers set.",
+          "new": "A patient with an active session should be allowed to view their own provider list of prior and designated LHCPs."
+        }
+      ]
+    },
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "prior_designated_lhcp_view_only_own_active_session",
+    "action": "reject",
+    "reason": "Stage 2 decomposition critic repair: The same-action ceiling is materially useful because there is no approved safety bound for viewPriorAndDesignatedLhcps, but the proposed condition only enforces active session and ProviderList ownership. The source is not generic access to a patient's ProviderList; it is specifically the list of LHCPs the patient has ever had an office visit with and LHCPs the patient has designated. The schema exposes ProviderList.providers, ProviderList.officeVisits.lhcp, and ProviderList.designations.lhcp/isDesignated, so the ceiling should use those hooks to bound the viewed provider set rather than accepting a patient-owned ProviderList proxy.",
+    "edit_delta": {
+      "critic_decision": "repair",
+      "critic_tags": [
+        "missing-provider-membership-boundary",
+        "missing-prior-office-visit-lhcp-boundary",
+        "missing-designated-lhcp-boundary",
+        "repair-reference-cedar"
+      ]
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "prior_designated_lhcp_view_only_own_active_session",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {
+      "reject_history": [
+        {
+          "atom_name": "prior_designated_lhcp_view_only_composed_own_active_session",
+          "reason": "Reject as data-content composition rather than an authorization boundary. Cedar should enforce that the patient can view their own provider-list resource with an active session; exact derivation of the provider list from office visits and designations is application data integrity and the proposed Cedar quantifier encoding is invalid."
+        }
+      ],
+      "replaced_after_reject": true
+    },
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "inactive_session_blocks_assign_lhcp_to_hospital",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "add_provider_only_own_list_active_session",
+    "action": "reject",
+    "reason": "Stage 2 decomposition critic repair: The add-provider safety bound is materially useful, but this proposed ceiling accepts a proxy for the source workflow. The source scopes the add operation not only to the patient's own provider list and an active session, but also to adding a provider found by search by provider name, specialty, and optionally zip code. Prior review already identified the unresolved search/name matching boundary; a ceiling that omits it would allow policies to add arbitrary providers as long as the list is owned by the patient. Because the current schema does not provide a reliable provider-name/search-match hook for Hcp/Lhcp, repair is needed rather than accepting the own-list proxy.",
+    "edit_delta": {
+      "critic_decision": "repair",
+      "critic_tags": [
+        "schema-gap",
+        "missing-provider-name-match-boundary",
+        "missing-search-filter-boundary",
+        "proxy-resource-not-equivalent"
+      ]
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "patient_can_add_provider_to_own_list_by_search",
+    "action": "reject",
+    "reason": "Stage 2 decomposition critic repair: The add-provider floor is materially useful and no approved floor covers this workflow, and the current schema exposes provider name, specialty, and zip-code search hooks. However, the proposed condition weakens the source requirement by making specialty matching optional whenever context.searchSpecialty is absent. The source says the patient searches by name and specialty, with only zip code optional. Repair the atom to require a supplied specialty search value and provider specialty match, while keeping zip-code matching conditional on the optional zip-code field.",
+    "edit_delta": {
+      "critic_decision": "repair",
+      "critic_tags": [
+        "missing-specialty-search-boundary",
+        "source-boundary-weakened",
+        "repair-reference-cedar"
+      ]
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": false
+  },
+  {
+    "atom_name": "patient_can_add_provider_to_own_list_by_name_and_specialty_search",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "add_provider_only_own_list_by_name_and_specialty_search",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {},
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "personal_representative_can_view_represented_office_visit_information",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {
+      "edits": [
+        {
+          "field": "reference_cedar",
+          "old": "permit (principal, action == Action::\"viewOfficeVisitInformation\", resource) when { context.session.isActive && resource.hasOfficeVisitInformation && context has representedPatient && context.representedPatient == resource.patient && principal.representedPatients.contains(context.representedPatient) };",
+          "new": "permit (principal, action == Action::\"viewOfficeVisitInformation\", resource) when { context.session.isActive && resource.hasOfficeVisitInformation && context has representedPatient && context.representedPatient == resource.patient && principal.representedPatients.contains(context.representedPatient) };"
+        }
+      ]
+    },
+    "intent_acknowledged_by_user": true,
+    "symbolic_verified": false
+  }
+]

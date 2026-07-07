@@ -1,0 +1,4 @@
+permit (principal is UnlicensedPersonnel, action == Action::"editDiagnosticInformation", resource is DiagnosticInformation) when {
+    (context.session.isActive && context.session has unlicensedPersonnel && context.session.unlicensedPersonnel == principal)
+    && !(resource.patient.isDeactivated)
+};

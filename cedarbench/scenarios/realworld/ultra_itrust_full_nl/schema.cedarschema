@@ -1,0 +1,298 @@
+entity User {
+    mid: String,
+    password: String,
+    role: String,
+    representedPatients: Set<Patient>,
+};
+
+entity Patient in [User] {
+    isDeactivated: Bool,
+    securityQuestion?: String,
+    securityAnswer?: String,
+    designatedLHCPs: Set<LicensedHealthCareProfessional>,
+    personalRepresentatives: Set<User>,
+    mid: String,
+};
+
+entity Administrator in [User];
+
+entity HealthCareProfessional in [User];
+
+entity LicensedHealthCareProfessional in [HealthCareProfessional] {
+    associatedUAPs: Set<UnlicensedPersonnel>,
+};
+
+entity UnlicensedPersonnel in [User];
+
+entity PublicHealthAgent in [User];
+
+entity LabTechnician in [User];
+
+entity EmergencyResponder in [User];
+
+entity Session {
+    user: User,
+    isActive: Bool,
+    healthCareProfessional?: HealthCareProfessional,
+    patient?: Patient,
+    licensedHealthCareProfessional?: LicensedHealthCareProfessional,
+    emergencyResponder?: EmergencyResponder,
+    labTechnician?: LabTechnician,
+    administrator?: Administrator,
+    unlicensedPersonnel?: UnlicensedPersonnel,
+    publicHealthAgent?: PublicHealthAgent,
+};
+
+entity MedicalRecord {
+    patient: Patient,
+};
+
+entity DiagnosticInformation {
+    patient: Patient,
+    isRestrictable: Bool,
+    allowedLHCPs: Set<LicensedHealthCareProfessional>,
+};
+
+entity DemographicInformation {
+    patient: Patient,
+};
+
+entity OfficeVisit {
+    patient: Patient,
+    attendingPhysician?: HealthCareProfessional,
+};
+
+entity LabProcedure {
+    patient: Patient,
+    assignedTechnician?: LabTechnician,
+};
+
+entity AccessLog {
+    patient: Patient,
+    accessor: User,
+    accessedAt: datetime,
+    transactionType: String,
+};
+
+entity AdverseEventReport;
+
+entity EmergencyReport {
+    patient: Patient,
+};
+
+entity ComprehensivePatientReport {
+    patient: Patient,
+};
+
+entity Message {
+    sender: User,
+    recipient: User,
+    patient?: Patient,
+    patientRecipient?: Patient,
+    personalRepresentativeRecipient?: User,
+    lhcpRecipient?: LicensedHealthCareProfessional,
+};
+
+entity Immunization {
+    patient: Patient,
+};
+
+action login appliesTo {
+    principal: [User],
+    resource: [Session],
+    context: {
+        mid: String,
+        password: String,
+    },
+};
+
+action requestPasswordChange appliesTo {
+    principal: [User],
+    resource: [User],
+    context: {
+        session: Session,
+    },
+};
+
+action assignCredentials appliesTo {
+    principal: [Administrator],
+    resource: [LicensedHealthCareProfessional],
+    context: {
+        session: Session,
+    },
+};
+
+action reactivatePatient appliesTo {
+    principal: [Administrator],
+    resource: [Patient],
+    context: {
+        session: Session,
+    },
+};
+
+action editDemographicInformation appliesTo {
+    principal: [User, UnlicensedPersonnel, HealthCareProfessional],
+    resource: [DemographicInformation],
+    context: {
+        session: Session,
+        includesSecurityQuestionOrPassword: Bool,
+        mid: String,
+    },
+};
+
+action viewMedicalRecord appliesTo {
+    principal: [User, LicensedHealthCareProfessional, UnlicensedPersonnel],
+    resource: [MedicalRecord],
+    context: {
+        session: Session,
+    },
+};
+
+action viewDiagnosticInformation appliesTo {
+    principal: [User, LicensedHealthCareProfessional],
+    resource: [DiagnosticInformation],
+    context: {
+        session: Session,
+    },
+};
+
+action editDiagnosticInformation appliesTo {
+    principal: [UnlicensedPersonnel],
+    resource: [DiagnosticInformation],
+    context: {
+        session: Session,
+    },
+};
+
+action toggleDesignatedLHCP appliesTo {
+    principal: [Patient],
+    resource: [LicensedHealthCareProfessional],
+    context: {
+        session: Session,
+        patient: Patient,
+    },
+};
+
+action viewAccessLog appliesTo {
+    principal: [User, Patient],
+    resource: [AccessLog],
+    context: {
+        session: Session,
+    },
+};
+
+action editPersonalHealthInformation appliesTo {
+    principal: [HealthCareProfessional, UnlicensedPersonnel],
+    resource: [MedicalRecord],
+    context: {
+        session: Session,
+    },
+};
+
+action modifyOfficeVisit appliesTo {
+    principal: [HealthCareProfessional, UnlicensedPersonnel],
+    resource: [OfficeVisit],
+    context: {
+        session: Session,
+    },
+};
+
+action deleteOfficeVisitFields appliesTo {
+    principal: [HealthCareProfessional],
+    resource: [OfficeVisit],
+    context: {
+        session: Session,
+    },
+};
+
+action managePersonalRepresentative appliesTo {
+    principal: [HealthCareProfessional],
+    resource: [Patient],
+    context: {
+        session: Session,
+        representative: User,
+    },
+};
+
+action viewEmergencyReport appliesTo {
+    principal: [LicensedHealthCareProfessional, EmergencyResponder],
+    resource: [EmergencyReport],
+    context: {
+        session: Session,
+        mid: String,
+    },
+};
+
+action requestComprehensivePatientReport appliesTo {
+    principal: [LicensedHealthCareProfessional],
+    resource: [ComprehensivePatientReport],
+    context: {
+        session: Session,
+    },
+};
+
+action viewLabProcedureResults appliesTo {
+    principal: [Patient, User],
+    resource: [LabProcedure],
+    context: {
+        session: Session,
+    },
+};
+
+action viewLabProcedureQueue appliesTo {
+    principal: [LabTechnician],
+    resource: [LabProcedure],
+    context: {
+        session: Session,
+    },
+};
+
+action recordLabProcedureResults appliesTo {
+    principal: [LabTechnician],
+    resource: [LabProcedure],
+    context: {
+        session: Session,
+    },
+};
+
+action viewAdverseEventReport appliesTo {
+    principal: [PublicHealthAgent],
+    resource: [AdverseEventReport],
+    context: {
+        session: Session,
+    },
+};
+
+action respondToAdverseEventReport appliesTo {
+    principal: [PublicHealthAgent],
+    resource: [AdverseEventReport],
+    context: {
+        session: Session,
+    },
+};
+
+action sendMessage appliesTo {
+    principal: [User, LicensedHealthCareProfessional],
+    resource: [Message],
+    context: {
+        session: Session,
+        patient: Patient,
+    },
+};
+
+action viewOfficeVisitInformation appliesTo {
+    principal: [Patient, User],
+    resource: [OfficeVisit],
+    context: {
+        session: Session,
+        includesNotes: Bool,
+    },
+};
+
+action viewImmunizationInformation appliesTo {
+    principal: [Patient, User],
+    resource: [Immunization],
+    context: {
+        session: Session,
+    },
+};

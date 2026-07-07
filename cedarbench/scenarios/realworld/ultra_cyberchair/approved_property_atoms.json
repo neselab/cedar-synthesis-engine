@@ -1,0 +1,333 @@
+{
+  "artifact": "approved_property_atoms_with_reference_cedar",
+  "scenario": "CyberChair",
+  "status": "manual_aitl_reviewed",
+  "verification": {
+    "candidate": "candidate.cedar",
+    "verification_plan": "verification_plan.py",
+    "loss": 0,
+    "checks_passed": 20
+  },
+  "atoms": [
+    {
+      "name": "submit_step1_ceiling",
+      "constraint_type": "ceiling",
+      "action": "submitStep1",
+      "principal_types": [
+        "User"
+      ],
+      "resource_types": [
+        "Submission"
+      ],
+      "plain_english_summary": "Only authors of the submission may submit step-1 material while step 1 is open.",
+      "reference_file": "references/submit_step1_ceiling.cedar",
+      "intent_acknowledged_by_user": true,
+      "symbolic_verified": true,
+      "reference_cedar": "permit (principal is User, action == Action::\"submitStep1\", resource is Submission)\nwhen {\n    principal.role == \"author\"\n    && resource.authors.contains(principal)\n    && resource.step1Open\n};"
+    },
+    {
+      "name": "submit_full_paper_ceiling",
+      "constraint_type": "ceiling",
+      "action": "submitFullPaper",
+      "principal_types": [
+        "User"
+      ],
+      "resource_types": [
+        "Submission"
+      ],
+      "plain_english_summary": "Only authors with step-2 credentials may upload full papers during step 2.",
+      "reference_file": "references/submit_full_paper_ceiling.cedar",
+      "intent_acknowledged_by_user": true,
+      "symbolic_verified": true,
+      "reference_cedar": "permit (principal is User, action == Action::\"submitFullPaper\", resource is Submission)\nwhen {\n    principal.role == \"author\"\n    && resource.authors.contains(principal)\n    && resource.step2Open\n    && context.hasStep2Credential\n};"
+    },
+    {
+      "name": "update_step1_ceiling",
+      "constraint_type": "ceiling",
+      "action": "updateStep1Info",
+      "principal_types": [
+        "User"
+      ],
+      "resource_types": [
+        "Submission"
+      ],
+      "plain_english_summary": "Only authors with step-2 credentials may correct step-1 information during step 2.",
+      "reference_file": "references/update_step1_ceiling.cedar",
+      "intent_acknowledged_by_user": true,
+      "symbolic_verified": true,
+      "reference_cedar": "permit (principal is User, action == Action::\"updateStep1Info\", resource is Submission)\nwhen {\n    principal.role == \"author\"\n    && resource.authors.contains(principal)\n    && resource.step2Open\n    && context.hasStep2Credential\n};"
+    },
+    {
+      "name": "camera_ready_ceiling",
+      "constraint_type": "ceiling",
+      "action": "submitCameraReady",
+      "principal_types": [
+        "User"
+      ],
+      "resource_types": [
+        "Submission"
+      ],
+      "plain_english_summary": "Only authors of selected submissions may submit camera-ready versions after review.",
+      "reference_file": "references/camera_ready_ceiling.cedar",
+      "intent_acknowledged_by_user": true,
+      "symbolic_verified": true,
+      "reference_cedar": "permit (principal is User, action == Action::\"submitCameraReady\", resource is Submission)\nwhen {\n    principal.role == \"author\"\n    && resource.authors.contains(principal)\n    && resource.selected\n    && resource.reviewProcessDone\n};"
+    },
+    {
+      "name": "download_assigned_ceiling",
+      "constraint_type": "ceiling",
+      "action": "downloadPaper",
+      "principal_types": [
+        "User"
+      ],
+      "resource_types": [
+        "Submission"
+      ],
+      "plain_english_summary": "Only assigned non-conflicted reviewers may download papers after distribution.",
+      "reference_file": "references/download_assigned_ceiling.cedar",
+      "intent_acknowledged_by_user": true,
+      "symbolic_verified": true,
+      "reference_cedar": "permit (principal is User, action == Action::\"downloadPaper\", resource is Submission)\nwhen {\n    principal.role == \"reviewer\"\n    && resource.distributionDone\n    && resource.assignedReviewers.contains(principal)\n    && !resource.conflictedReviewers.contains(principal)\n};"
+    },
+    {
+      "name": "display_abstract_ceiling",
+      "constraint_type": "ceiling",
+      "action": "displayAbstract",
+      "principal_types": [
+        "User"
+      ],
+      "resource_types": [
+        "Submission"
+      ],
+      "plain_english_summary": "Only assigned non-conflicted reviewers may display abstracts after distribution.",
+      "reference_file": "references/display_abstract_ceiling.cedar",
+      "intent_acknowledged_by_user": true,
+      "symbolic_verified": true,
+      "reference_cedar": "permit (principal is User, action == Action::\"displayAbstract\", resource is Submission)\nwhen {\n    principal.role == \"reviewer\"\n    && resource.distributionDone\n    && resource.assignedReviewers.contains(principal)\n    && !resource.conflictedReviewers.contains(principal)\n};"
+    },
+    {
+      "name": "submit_review_ceiling",
+      "constraint_type": "ceiling",
+      "action": "submitReview",
+      "principal_types": [
+        "User"
+      ],
+      "resource_types": [
+        "Submission"
+      ],
+      "plain_english_summary": "Only assigned non-conflicted reviewers may submit reviews while review is open.",
+      "reference_file": "references/submit_review_ceiling.cedar",
+      "intent_acknowledged_by_user": true,
+      "symbolic_verified": true,
+      "reference_cedar": "permit (principal is User, action == Action::\"submitReview\", resource is Submission)\nwhen {\n    principal.role == \"reviewer\"\n    && resource.reviewOpen\n    && resource.assignedReviewers.contains(principal)\n    && !resource.conflictedReviewers.contains(principal)\n};"
+    },
+    {
+      "name": "update_review_ceiling",
+      "constraint_type": "ceiling",
+      "action": "updateReview",
+      "principal_types": [
+        "User"
+      ],
+      "resource_types": [
+        "Submission"
+      ],
+      "plain_english_summary": "Only assigned non-conflicted reviewers may update reviews while review is open.",
+      "reference_file": "references/update_review_ceiling.cedar",
+      "intent_acknowledged_by_user": true,
+      "symbolic_verified": true,
+      "reference_cedar": "permit (principal is User, action == Action::\"updateReview\", resource is Submission)\nwhen {\n    principal.role == \"reviewer\"\n    && resource.reviewOpen\n    && resource.assignedReviewers.contains(principal)\n    && !resource.conflictedReviewers.contains(principal)\n};"
+    },
+    {
+      "name": "read_other_reviews_ceiling",
+      "constraint_type": "ceiling",
+      "action": "readOtherReviews",
+      "principal_types": [
+        "User"
+      ],
+      "resource_types": [
+        "Submission"
+      ],
+      "plain_english_summary": "Reviewers may read other reviewers' reviews only after submitting their own review for the paper.",
+      "reference_file": "references/read_other_reviews_ceiling.cedar",
+      "intent_acknowledged_by_user": true,
+      "symbolic_verified": true,
+      "reference_cedar": "permit (principal is User, action == Action::\"readOtherReviews\", resource is Submission)\nwhen {\n    principal.role == \"reviewer\"\n    && resource.assignedReviewers.contains(principal)\n    && resource.reviewersSubmitted.contains(principal)\n    && !resource.conflictedReviewers.contains(principal)\n};"
+    },
+    {
+      "name": "volunteer_conflicting_paper_ceiling",
+      "constraint_type": "ceiling",
+      "action": "volunteerForConflictingPaper",
+      "principal_types": [
+        "User"
+      ],
+      "resource_types": [
+        "Submission"
+      ],
+      "plain_english_summary": "Reviewers may volunteer for conflicting-review papers only after finishing assigned reviews and absent conflict of interest.",
+      "reference_file": "references/volunteer_conflicting_paper_ceiling.cedar",
+      "intent_acknowledged_by_user": true,
+      "symbolic_verified": true,
+      "reference_cedar": "permit (principal is User, action == Action::\"volunteerForConflictingPaper\", resource is Submission)\nwhen {\n    principal.role == \"reviewer\"\n    && principal.submittedAllAssignedReviews\n    && resource.hasConflictingReviews\n    && !resource.conflictedReviewers.contains(principal)\n};"
+    },
+    {
+      "name": "monitor_ceiling",
+      "constraint_type": "ceiling",
+      "action": "monitorReviewProcess",
+      "principal_types": [
+        "User"
+      ],
+      "resource_types": [
+        "ReviewOverview"
+      ],
+      "plain_english_summary": "Only chair/PCC roles may monitor review overviews.",
+      "reference_file": "references/monitor_ceiling.cedar",
+      "intent_acknowledged_by_user": true,
+      "symbolic_verified": true,
+      "reference_cedar": "permit (principal is User, action == Action::\"monitorReviewProcess\", resource is ReviewOverview)\nwhen {\n    principal.role == \"chair\" || principal.role == \"pcc\"\n};"
+    },
+    {
+      "name": "ask_additional_reviewer_ceiling",
+      "constraint_type": "ceiling",
+      "action": "askAdditionalReviewer",
+      "principal_types": [
+        "User"
+      ],
+      "resource_types": [
+        "ReviewOverview"
+      ],
+      "plain_english_summary": "Only PCC may ask additional reviewers for low-expertise papers.",
+      "reference_file": "references/ask_additional_reviewer_ceiling.cedar",
+      "intent_acknowledged_by_user": true,
+      "symbolic_verified": true,
+      "reference_cedar": "permit (principal is User, action == Action::\"askAdditionalReviewer\", resource is ReviewOverview)\nwhen {\n    principal.role == \"pcc\"\n    && resource.paper.onlyNonExpertReviews\n};"
+    },
+    {
+      "name": "directory_access_ceiling",
+      "constraint_type": "ceiling",
+      "action": "accessReviewerDirectory",
+      "principal_types": [
+        "User"
+      ],
+      "resource_types": [
+        "ReviewerDirectory"
+      ],
+      "plain_english_summary": "Reviewer directories are protected by owner or allowed-user list.",
+      "reference_file": "references/directory_access_ceiling.cedar",
+      "intent_acknowledged_by_user": true,
+      "symbolic_verified": true,
+      "reference_cedar": "permit (principal is User, action == Action::\"accessReviewerDirectory\", resource is ReviewerDirectory)\nwhen {\n    principal.role == \"reviewer\"\n    && (principal == resource.owner || resource.allowedUsers.contains(principal))\n};"
+    },
+    {
+      "name": "review_file_access_ceiling",
+      "constraint_type": "ceiling",
+      "action": "readReviewFile",
+      "principal_types": [
+        "User"
+      ],
+      "resource_types": [
+        "ReviewFile"
+      ],
+      "plain_english_summary": "Review files are protected by the file and directory allowed-user lists.",
+      "reference_file": "references/review_file_access_ceiling.cedar",
+      "intent_acknowledged_by_user": true,
+      "symbolic_verified": true,
+      "reference_cedar": "permit (principal is User, action == Action::\"readReviewFile\", resource is ReviewFile)\nwhen {\n    principal.role == \"reviewer\"\n    && resource.allowedUsers.contains(principal)\n    && (principal == resource.directory.owner || resource.directory.allowedUsers.contains(principal))\n};"
+    },
+    {
+      "name": "author_submit_step1_floor",
+      "constraint_type": "floor",
+      "action": "submitStep1",
+      "principal_types": [
+        "User"
+      ],
+      "resource_types": [
+        "Submission"
+      ],
+      "plain_english_summary": "Authors must be able to submit step-1 material during step 1.",
+      "reference_file": "references/author_submit_step1_floor.cedar",
+      "intent_acknowledged_by_user": true,
+      "symbolic_verified": true,
+      "reference_cedar": "permit (principal is User, action == Action::\"submitStep1\", resource is Submission)\nwhen {\n    principal.role == \"author\"\n    && resource.authors.contains(principal)\n    && resource.step1Open\n};"
+    },
+    {
+      "name": "reviewer_read_other_reviews_floor",
+      "constraint_type": "floor",
+      "action": "readOtherReviews",
+      "principal_types": [
+        "User"
+      ],
+      "resource_types": [
+        "Submission"
+      ],
+      "plain_english_summary": "A reviewer who has submitted their own review must be able to read other reviews for that paper.",
+      "reference_file": "references/reviewer_read_other_reviews_floor.cedar",
+      "intent_acknowledged_by_user": true,
+      "symbolic_verified": true,
+      "reference_cedar": "permit (principal is User, action == Action::\"readOtherReviews\", resource is Submission)\nwhen {\n    principal.role == \"reviewer\"\n    && resource.assignedReviewers.contains(principal)\n    && resource.reviewersSubmitted.contains(principal)\n    && !resource.conflictedReviewers.contains(principal)\n};"
+    },
+    {
+      "name": "pcc_ask_additional_reviewer_floor",
+      "constraint_type": "floor",
+      "action": "askAdditionalReviewer",
+      "principal_types": [
+        "User"
+      ],
+      "resource_types": [
+        "ReviewOverview"
+      ],
+      "plain_english_summary": "PCC must be able to ask for additional review on low-expertise papers.",
+      "reference_file": "references/pcc_ask_additional_reviewer_floor.cedar",
+      "intent_acknowledged_by_user": true,
+      "symbolic_verified": true,
+      "reference_cedar": "permit (principal is User, action == Action::\"askAdditionalReviewer\", resource is ReviewOverview)\nwhen {\n    principal.role == \"pcc\"\n    && resource.paper.onlyNonExpertReviews\n};"
+    },
+    {
+      "name": "liveness_submit_step1",
+      "constraint_type": "liveness",
+      "action": "submitStep1",
+      "principal_types": [
+        "User"
+      ],
+      "resource_types": [
+        "Submission"
+      ],
+      "plain_english_summary": "At least one author step-1 submission request should be possible.",
+      "reference_file": null,
+      "intent_acknowledged_by_user": true,
+      "symbolic_verified": true,
+      "reference_cedar": ""
+    },
+    {
+      "name": "liveness_submit_review",
+      "constraint_type": "liveness",
+      "action": "submitReview",
+      "principal_types": [
+        "User"
+      ],
+      "resource_types": [
+        "Submission"
+      ],
+      "plain_english_summary": "At least one reviewer submit-review request should be possible.",
+      "reference_file": null,
+      "intent_acknowledged_by_user": true,
+      "symbolic_verified": true,
+      "reference_cedar": ""
+    },
+    {
+      "name": "liveness_monitor",
+      "constraint_type": "liveness",
+      "action": "monitorReviewProcess",
+      "principal_types": [
+        "User"
+      ],
+      "resource_types": [
+        "ReviewOverview"
+      ],
+      "plain_english_summary": "At least one chair/PCC monitoring request should be possible.",
+      "reference_file": null,
+      "intent_acknowledged_by_user": true,
+      "symbolic_verified": true,
+      "reference_cedar": ""
+    }
+  ]
+}

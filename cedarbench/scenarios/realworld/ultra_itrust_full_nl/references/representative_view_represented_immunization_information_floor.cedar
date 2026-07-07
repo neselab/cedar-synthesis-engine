@@ -1,0 +1,1 @@
+permit (principal is User, action == Action::"viewImmunizationInformation", resource is Immunization) when { context.session.isActive && context.session has user && context.session has user && context.session has user && context.session.user == principal && principal in resource.patient.personalRepresentatives };

@@ -1,0 +1,1 @@
+permit (principal is PublicHealthAgent, action == Action::"respondToAdverseEventReport", resource is AdverseEventReport) when { context.session.isActive && context.session has publicHealthAgent && context.session.publicHealthAgent == principal };

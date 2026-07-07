@@ -1,0 +1,1 @@
+permit (principal is HealthCareProfessional, action == Action::"editPersonalHealthInformation", resource is MedicalRecord) when { !resource.patient.isDeactivated };

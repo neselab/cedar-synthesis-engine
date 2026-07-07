@@ -1,0 +1,1 @@
+permit (principal is Administrator, action == Action::"assignCredentials", resource is LicensedHealthCareProfessional) when { context.session.isActive && context.session has administrator && context.session.administrator == principal };

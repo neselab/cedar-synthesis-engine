@@ -1,0 +1,1 @@
+permit (principal is User, action == Action::"login", resource is Session) when { !(principal is Patient && principal.isDeactivated) };

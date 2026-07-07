@@ -1,0 +1,1 @@
+permit (principal, action == Action::"takeOfficeVisitSurvey", resource) when { context.session.isActive && context.session has personalRepresentativeUser && context.session.personalRepresentativeUser == principal && context.patient == resource.patient && principal.representedPatients.contains(resource.patient) && !resource.surveyTaken };

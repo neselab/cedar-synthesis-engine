@@ -1,0 +1,1 @@
+permit (principal is User, action == Action::"viewOfficeVisitInformation", resource is OfficeVisit) when { !context.includesNotes };

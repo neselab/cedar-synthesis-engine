@@ -59,6 +59,11 @@ designed by hand to probe production patterns and harness edge cases.
 | 40 | [ci_cd_deployment_gate](./ci_cd_deployment_gate) | CI/CD deployment authorization | medium | Environment-tiered deploy + test-pass boolean gate |
 | 41 | [subscription_content_gate](./subscription_content_gate) | Subscription-based content | medium | Plan-tier hierarchy + preview bypass |
 | 42 | [compliance_training_gate](./compliance_training_gate) | Compliance training prerequisite | medium | `Set.containsAll()` for training completion + sensitive export restriction |
+| 143 | [ultra_ibm_course_registration](./ultra_ibm_course_registration) | Corpus-derived university course registration | ultra-hard | Reviewed schema + property target from IBM/REDE-style requirements |
+| 144 | [ultra_cyberchair](./ultra_cyberchair) | Corpus-derived conference management | ultra-hard | Review lifecycle, conflicts of interest, staged visibility, PCC monitoring |
+| 145 | [ultra_itrust_full_nl](./ultra_itrust_full_nl) | Corpus-derived healthcare access control | ultra-hard | Full iTrust NL intent with reviewed schema/property atoms |
+| 146 | [ultra_itrust_acre](./ultra_itrust_acre) | iTrust ACRE-derived healthcare access control | ultra-hard | ACRE-style source formalized into Cedar target |
+| 147 | [ultra_itrust_text2policy](./ultra_itrust_text2policy) | iTrust Text2Policy-derived healthcare access control | ultra-hard | Text2Policy-style source formalized into Cedar target |
 
 ## Pattern Taxonomy
 
@@ -113,6 +118,11 @@ designed by hand to probe production patterns and harness edge cases.
 ### Meta / harness-stress patterns
 - **§8.8 regression test** — intentional_planner_contradiction (11)
 - **Scale stress** — hundred_check_scale (12)
+
+### Corpus-derived ultra-hard scenarios
+- **Education / course registration** — ultra_ibm_course_registration (143)
+- **Conference management** — ultra_cyberchair (144)
+- **Healthcare / iTrust** — ultra_itrust_full_nl (145), ultra_itrust_acre (146), ultra_itrust_text2policy (147)
 
 ## Cedar Features Exercised (First Appearance)
 

@@ -1,0 +1,1 @@
+permit (principal is Administrator, action == Action::"createEmergencyResponder", resource is EmergencyResponder) when { !(!context.session.isActive) };

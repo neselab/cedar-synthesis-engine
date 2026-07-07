@@ -1,0 +1,1 @@
+permit (principal, action == Action::"viewDiagnosticInformation", resource is DiagnosticInformation) when { principal is LicensedHealthCareProfessional && context.session.isActive && context.session has licensedHealthCareProfessional && context.session.licensedHealthCareProfessional == principal && principal in resource.allowedLHCPs };

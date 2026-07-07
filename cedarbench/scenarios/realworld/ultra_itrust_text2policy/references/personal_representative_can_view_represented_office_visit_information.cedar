@@ -1,0 +1,1 @@
+permit (principal, action == Action::"viewOfficeVisitInformation", resource) when { principal is PersonalRepresentative && context.session.isActive && resource.hasOfficeVisitInformation && context has representedPatient && context.representedPatient == resource.patient && principal.representedPatients.contains(context.representedPatient) };

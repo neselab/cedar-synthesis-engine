@@ -1,0 +1,1 @@
+permit (principal is Administrator, action == Action::"setInactivityPeriodLength", resource is Session) when { !(!context.session.isActive) };

@@ -1,0 +1,1 @@
+permit (principal is LabTechnician, action == Action::"viewLabProcedureQueue", resource is LabProcedure) when { context.session.isActive && context.session has labTechnician && context.session.labTechnician == principal && resource has assignedTechnician && resource.assignedTechnician == principal };

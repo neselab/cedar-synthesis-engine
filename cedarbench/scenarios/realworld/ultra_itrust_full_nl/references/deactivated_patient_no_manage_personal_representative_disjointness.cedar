@@ -1,0 +1,1 @@
+permit (principal is HealthCareProfessional, action == Action::"managePersonalRepresentative", resource is Patient) when { !resource.isDeactivated };

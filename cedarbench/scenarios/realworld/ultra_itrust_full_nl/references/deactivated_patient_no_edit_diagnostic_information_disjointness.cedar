@@ -1,0 +1,1 @@
+permit (principal is UnlicensedPersonnel, action == Action::"editDiagnosticInformation", resource is DiagnosticInformation) when { !resource.patient.isDeactivated };

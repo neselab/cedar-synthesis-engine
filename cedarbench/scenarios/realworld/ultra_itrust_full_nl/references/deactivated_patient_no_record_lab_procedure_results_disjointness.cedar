@@ -1,0 +1,1 @@
+permit (principal is LabTechnician, action == Action::"recordLabProcedureResults", resource is LabProcedure) when { !resource.patient.isDeactivated };

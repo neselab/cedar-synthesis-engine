@@ -1,0 +1,1 @@
+permit (principal is User, action == Action::"requestPasswordChange", resource is User) when { !(resource is Patient && resource.isDeactivated) };

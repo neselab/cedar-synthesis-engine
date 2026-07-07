@@ -1,0 +1,20 @@
+# Ultra-Hard Corpus Scenario: iTrust ACRE-Derived Intent
+
+This scenario is an iTrust case-study variant derived from ACRE-style
+requirements material and formalized into Cedar.
+
+It is included in CedarBench as an ultra-hard realworld scenario because it
+tests whether policy synthesis can preserve healthcare access-control intent
+across many role/resource/action combinations rather than isolated local
+rules.
+
+## Files
+
+- `source_intent.md` — curated source intent used for formalization.
+- `policy_spec.md` — reviewed natural-language target summary.
+- `schema.cedarschema` — reviewed Cedar schema.
+- `verification_plan.py` — formal floor/ceiling/liveness/disjointness checks.
+- `references/` — Cedar reference policies for the checks.
+- `candidate.cedar` — converged policy artifact from the curated HITL run.
+- `approved_property_atoms.json` — reviewed property decisions.
+

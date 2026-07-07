@@ -11,16 +11,19 @@ sets of scenarios:
    remove a constraint, add a new action, etc.), testing whether a
    policy synthesizer can keep up with realistic evolution of a
    specification.
-2. **Realworld scenarios** (`scenarios/realworld/*`) — 42 hand-designed
-   scenarios targeting specific production access-control patterns and
-   Cedar features. Each realworld scenario is authored to probe a
+2. **Realworld scenarios** (`scenarios/realworld/*`) — 147 hand-designed
+   and corpus-derived scenarios targeting specific production
+   access-control patterns, Cedar features, and organizational
+   requirements corpora. Each realworld scenario is authored to probe a
    particular real-world workflow (emergency break-glass, approval
    chains, multi-tenant SaaS, MFA elevation, GDPR compliance, loan
-   approval, IoT device auth, CI/CD deployment gates, etc.) with
-   enough fidelity that the result is suitable for both harness
-   evaluation and as a reference implementation for practitioners.
+   approval, IoT device auth, CI/CD deployment gates, corpus-derived
+   course registration, conference management, and healthcare access
+   control) with enough fidelity that the result is suitable for both
+   harness evaluation and as a reference implementation for
+   practitioners.
 
-Together, CedarBench provides **121 verification-ready scenarios**,
+Together, CedarBench provides **226 verification-ready scenarios**,
 each with a natural-language specification, a Cedar schema, and a
 hand- or auto-authored verification plan defining the checks the
 harness runs against a synthesized candidate policy.
@@ -30,17 +33,31 @@ policies with both natural-language specifications and formal
 verification plans, suitable for benchmarking LLM-based policy
 synthesis, formal verification, and CEGIS-style feedback loops.
 
+## Benchmark Levels
+
+CedarBench supports two evaluation levels:
+
+- **Level 1: fixed-target policy synthesis.** The benchmark supplies the
+  schema, verification plan, and reference policies. A system must synthesize a
+  Cedar policy that satisfies the fixed formal target.
+- **Level 2: agent-in-the-loop intent formalization.** A system starts from
+  natural-language requirements and must construct the schema, property atoms,
+  verification plan, references, and final policy through an AITL/HITL loop.
+
+See [BENCHMARK_LEVELS.md](./BENCHMARK_LEVELS.md) for the full protocol and
+current performance table.
+
 ## Structure
 
 ```
 cedarbench/
 ├── README.md                 # this file
-├── scenarios/                # 121 total scenarios
+├── scenarios/                # 226 total scenarios
 │   ├── <domain>_base/        # 8 domain-base scenarios
 │   ├── <domain>_add_X/       # domain × mutation scenarios
 │   ├── <domain>_remove_X/    # (79 total mutation scenarios)
 │   ├── <domain>_full_expansion/
-│   └── realworld/            # 42 hand-designed scenarios
+│   └── realworld/            # 147 hand-designed / corpus-derived scenarios
 │       ├── README.md         # realworld-specific index
 │       └── <scenario>/
 ├── base_scenarios.py         # definitions for the 8 base scenarios
@@ -79,7 +96,7 @@ Each base scenario is further mutated by the mutation generator
 (`generate.py` + `mutations/`) into 8–14 scenario variants that add,
 remove, or modify a single aspect of the base policy.
 
-## The 42 Realworld Scenarios
+## Realworld Scenarios
 
 See `scenarios/realworld/README.md` for the full index, pattern
 taxonomy, and per-scenario results. Summary of domains covered:
@@ -95,6 +112,7 @@ taxonomy, and per-scenario results. Summary of domains covered:
 | Structural / Cedar-feature | 3 | deep hierarchy, namespaces, annotations |
 | Meta / harness-stress | 2 | §8.8 regression, 157-check scale |
 | Multi-factor / security | 2 | graduated MFA unlock, API key scoping |
+| Corpus-derived ultra-hard | 5 | IBM course registration, CyberChair, iTrust full NL, iTrust ACRE, iTrust Text2Policy |
 
 ## Running a Scenario
 
@@ -106,7 +124,7 @@ python3 eval_harness.py \
     --no-review --max-iters 20 \
     --run-id my_run
 
-# Run all 121 scenarios in sequence
+# Run all 226 scenarios in sequence
 python3 eval_harness.py \
     --all \
     --model gpt-5.5 \
@@ -140,10 +158,29 @@ A typical benchmark run records, per scenario:
 - **Tokens / cost** — how many input and output tokens the Phase 2
   synthesizer consumed, and the resulting API cost
 
-Under the current post-fix harness (as of the latest commit),
-all 121 scenarios converge successfully with Haiku 4.5 as the
-Phase 2 synthesizer. The harness documents ten novel CEGIS
-signal-layer contributions (§8.1–§8.10) in `docs/harness_fix_log.md`.
+Current recorded headline results:
+
+| Level | Configuration | Slice | Converged | Notes |
+| --- | --- | ---: | ---: | --- |
+| Level 1 | AutoCedar fixed-target synthesis with GPT-5.5 low | 221 | 221/221 | Mean 1.67 iterations; mean $0.0405/scenario |
+| Level 1 | AutoCedar fixed-target synthesis with Haiku 4.5 | 221 | 221/221 | Mean 2.51 iterations; mean $0.0185/scenario |
+| Level 1 ablation study | Full AutoCedar signal stack, GPT-5.5 low | hard-100 | 100/100 | Same schema, targets, validator, and model as ablations |
+| Level 1 ablation study | Native Cedar/SymCC verifier loop, GPT-5.5 low | hard-100 | 94/100 | Same target, less structured repair signal |
+| Level 1 ablation study | Schema + property atoms, one-shot GPT-5.5 low | hard-100 | 84/100 | Mean final loss 0.27 |
+| Level 1 ablation study | Schema only, one-shot GPT-5.5 low | hard-100 | 85/100 | Mean final loss 15.58 |
+| Level 2 | AutoCedar AITL fast path, GPT-5.5 low | 221 | 221/221 | Includes schema/target generation; total cost $8.9441 |
+| Level 2 | AutoCedar corpus-derived ultra-hard HITL case studies | 4 listed runs | 4/4 | IBM, CyberChair, iTrust Text2Policy, iTrust ACRE |
+
+Under the current post-fix harness and curated AutoCedar runs, the
+benchmark includes the original synthetic/mutation tasks, the v2
+realworld extension, and five ultra-hard corpus-derived organizational
+case studies. The harness documents the CEGIS signal-layer
+contributions in `docs/harness_fix_log.md`.
+
+For the complete evaluation summary, including direct LLM baselines,
+AutoCedar-schema baselines, property-check pass rates, real-world semantic
+request tests, and ablation-study rows, see
+[BENCHMARK_LEVELS.md](./BENCHMARK_LEVELS.md).
 
 ## Citation
 

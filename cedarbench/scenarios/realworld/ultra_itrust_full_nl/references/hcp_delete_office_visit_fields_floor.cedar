@@ -1,0 +1,4 @@
+permit (principal is HealthCareProfessional, action == Action::"deleteOfficeVisitFields", resource is OfficeVisit) when {
+    (context.session.isActive && context.session has healthCareProfessional && context.session.healthCareProfessional == principal)
+    && !(resource.patient.isDeactivated)
+};

@@ -1,0 +1,1 @@
+permit (principal is LicensedHealthCareProfessional, action == Action::"requestComprehensivePatientReport", resource is ComprehensivePatientReport) when { context.session.isActive && context.session has licensedHealthCareProfessional && context.session.licensedHealthCareProfessional == principal };

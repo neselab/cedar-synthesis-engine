@@ -1,0 +1,1 @@
+permit (principal is Patient, action == Action::"viewLabProcedureResults", resource is LabProcedure) when { context.session.isActive && context.session has patient && context.session.patient == principal && resource.patient == principal };

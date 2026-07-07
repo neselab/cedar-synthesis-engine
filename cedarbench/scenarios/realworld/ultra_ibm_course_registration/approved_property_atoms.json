@@ -1,0 +1,349 @@
+{
+  "artifact": "approved_property_atoms_with_reference_cedar",
+  "scenario": "IBM Course Registration",
+  "status": "manual_aitl_reviewed",
+  "verification": {
+    "candidate": "candidate.cedar",
+    "verification_plan": "verification_plan.py",
+    "loss": 0,
+    "checks_passed": 21
+  },
+  "atoms": [
+    {
+      "name": "catalogue_ceiling",
+      "constraint_type": "ceiling",
+      "action": "requestCatalogue",
+      "principal_types": [
+        "User"
+      ],
+      "resource_types": [
+        "CourseCatalogue"
+      ],
+      "plain_english_summary": "Students may request catalogues from the campus LAN at the beginning of semester.",
+      "reference_file": "references/catalogue_ceiling.cedar",
+      "intent_acknowledged_by_user": true,
+      "symbolic_verified": true,
+      "reference_cedar": "permit (principal is User, action == Action::\"requestCatalogue\", resource is CourseCatalogue)\nwhen {\n    principal.role == \"student\"\n    && context.onCampusLan\n    && resource.semesterIsBeginning\n};"
+    },
+    {
+      "name": "register_course_ceiling",
+      "constraint_type": "ceiling",
+      "action": "registerCourse",
+      "principal_types": [
+        "User"
+      ],
+      "resource_types": [
+        "CourseSelection"
+      ],
+      "plain_english_summary": "Students may register only for their own current-semester selections while registration is open.",
+      "reference_file": "references/register_course_ceiling.cedar",
+      "intent_acknowledged_by_user": true,
+      "symbolic_verified": true,
+      "reference_cedar": "permit (principal is User, action == Action::\"registerCourse\", resource is CourseSelection)\nwhen {\n    principal.role == \"student\"\n    && context.onCampusLan\n    && resource.student == principal\n    && resource.offering.isCurrentSemester\n    && resource.offering.registrationOpen\n};"
+    },
+    {
+      "name": "add_course_ceiling",
+      "constraint_type": "ceiling",
+      "action": "addCourseSelection",
+      "principal_types": [
+        "User"
+      ],
+      "resource_types": [
+        "CourseSelection"
+      ],
+      "plain_english_summary": "Students may add only their own current selections during add/drop while registration is open.",
+      "reference_file": "references/add_course_ceiling.cedar",
+      "intent_acknowledged_by_user": true,
+      "symbolic_verified": true,
+      "reference_cedar": "permit (principal is User, action == Action::\"addCourseSelection\", resource is CourseSelection)\nwhen {\n    principal.role == \"student\"\n    && context.onCampusLan\n    && resource.student == principal\n    && resource.isCurrentSelection\n    && resource.offering.isCurrentSemester\n    && resource.offering.registrationOpen\n    && resource.offering.addDropOpen\n};"
+    },
+    {
+      "name": "update_course_ceiling",
+      "constraint_type": "ceiling",
+      "action": "updateCourseSelection",
+      "principal_types": [
+        "User"
+      ],
+      "resource_types": [
+        "CourseSelection"
+      ],
+      "plain_english_summary": "Students may update only their own current selections during add/drop while registration is open.",
+      "reference_file": "references/update_course_ceiling.cedar",
+      "intent_acknowledged_by_user": true,
+      "symbolic_verified": true,
+      "reference_cedar": "permit (principal is User, action == Action::\"updateCourseSelection\", resource is CourseSelection)\nwhen {\n    principal.role == \"student\"\n    && context.onCampusLan\n    && resource.student == principal\n    && resource.isCurrentSelection\n    && resource.offering.isCurrentSemester\n    && resource.offering.registrationOpen\n    && resource.offering.addDropOpen\n};"
+    },
+    {
+      "name": "delete_course_ceiling",
+      "constraint_type": "ceiling",
+      "action": "deleteCourseSelection",
+      "principal_types": [
+        "User"
+      ],
+      "resource_types": [
+        "CourseSelection"
+      ],
+      "plain_english_summary": "Students may delete only their own current selections during add/drop while registration is open.",
+      "reference_file": "references/delete_course_ceiling.cedar",
+      "intent_acknowledged_by_user": true,
+      "symbolic_verified": true,
+      "reference_cedar": "permit (principal is User, action == Action::\"deleteCourseSelection\", resource is CourseSelection)\nwhen {\n    principal.role == \"student\"\n    && context.onCampusLan\n    && resource.student == principal\n    && resource.isCurrentSelection\n    && resource.offering.isCurrentSemester\n    && resource.offering.registrationOpen\n    && resource.offering.addDropOpen\n};"
+    },
+    {
+      "name": "report_card_ceiling",
+      "constraint_type": "ceiling",
+      "action": "viewReportCard",
+      "principal_types": [
+        "User"
+      ],
+      "resource_types": [
+        "ReportCard"
+      ],
+      "plain_english_summary": "Students may view only their own previous-semester report cards from the campus LAN.",
+      "reference_file": "references/report_card_ceiling.cedar",
+      "intent_acknowledged_by_user": true,
+      "symbolic_verified": true,
+      "reference_cedar": "permit (principal is User, action == Action::\"viewReportCard\", resource is ReportCard)\nwhen {\n    principal.role == \"student\"\n    && context.onCampusLan\n    && resource.student == principal\n    && resource.previousSemesterCompleted\n};"
+    },
+    {
+      "name": "select_teaching_ceiling",
+      "constraint_type": "ceiling",
+      "action": "selectTeachingOffering",
+      "principal_types": [
+        "User"
+      ],
+      "resource_types": [
+        "CourseOffering"
+      ],
+      "plain_english_summary": "Professors may select eligible upcoming offerings only while registration is open and conflict-free.",
+      "reference_file": "references/select_teaching_ceiling.cedar",
+      "intent_acknowledged_by_user": true,
+      "symbolic_verified": true,
+      "reference_cedar": "permit (principal is User, action == Action::\"selectTeachingOffering\", resource is CourseOffering)\nwhen {\n    principal.role == \"professor\"\n    && resource.isUpcomingSemester\n    && resource.registrationOpen\n    && !resource.hasTeachingConflict\n    && resource.eligibleProfessors.contains(principal)\n};"
+    },
+    {
+      "name": "modify_assigned_offering_ceiling",
+      "constraint_type": "ceiling",
+      "action": "modifyAssignedOffering",
+      "principal_types": [
+        "User"
+      ],
+      "resource_types": [
+        "CourseOffering"
+      ],
+      "plain_english_summary": "Professors may modify only their own assigned offerings while registration is open.",
+      "reference_file": "references/modify_assigned_offering_ceiling.cedar",
+      "intent_acknowledged_by_user": true,
+      "symbolic_verified": true,
+      "reference_cedar": "permit (principal is User, action == Action::\"modifyAssignedOffering\", resource is CourseOffering)\nwhen {\n    principal.role == \"professor\"\n    && resource.registrationOpen\n    && resource has instructor\n    && resource.instructor == principal\n};"
+    },
+    {
+      "name": "view_roster_ceiling",
+      "constraint_type": "ceiling",
+      "action": "viewRoster",
+      "principal_types": [
+        "User"
+      ],
+      "resource_types": [
+        "CourseOffering"
+      ],
+      "plain_english_summary": "Professors may view rosters only for offerings they teach.",
+      "reference_file": "references/view_roster_ceiling.cedar",
+      "intent_acknowledged_by_user": true,
+      "symbolic_verified": true,
+      "reference_cedar": "permit (principal is User, action == Action::\"viewRoster\", resource is CourseOffering)\nwhen {\n    principal.role == \"professor\"\n    && resource has instructor\n    && resource.instructor == principal\n};"
+    },
+    {
+      "name": "enter_grade_ceiling",
+      "constraint_type": "ceiling",
+      "action": "enterGrade",
+      "principal_types": [
+        "User"
+      ],
+      "resource_types": [
+        "GradeRecord"
+      ],
+      "plain_english_summary": "Only the professor for a completed previous-semester class may enter grades.",
+      "reference_file": "references/enter_grade_ceiling.cedar",
+      "intent_acknowledged_by_user": true,
+      "symbolic_verified": true,
+      "reference_cedar": "permit (principal is User, action == Action::\"enterGrade\", resource is GradeRecord)\nwhen {\n    principal.role == \"professor\"\n    && resource.previousSemesterCompleted\n    && resource.professor == principal\n    && resource.offering has instructor\n    && resource.offering.instructor == principal\n};"
+    },
+    {
+      "name": "student_info_ceiling",
+      "constraint_type": "ceiling",
+      "action": "changeStudentInfo",
+      "principal_types": [
+        "User"
+      ],
+      "resource_types": [
+        "StudentInfo"
+      ],
+      "plain_english_summary": "Only the registrar may change student information.",
+      "reference_file": "references/student_info_ceiling.cedar",
+      "intent_acknowledged_by_user": true,
+      "symbolic_verified": true,
+      "reference_cedar": "permit (principal is User, action == Action::\"changeStudentInfo\", resource is StudentInfo)\nwhen {\n    principal.role == \"registrar\"\n};"
+    },
+    {
+      "name": "close_registration_ceiling",
+      "constraint_type": "ceiling",
+      "action": "closeRegistration",
+      "principal_types": [
+        "User"
+      ],
+      "resource_types": [
+        "RegistrationProcess"
+      ],
+      "plain_english_summary": "Only the registrar may close current registration.",
+      "reference_file": "references/close_registration_ceiling.cedar",
+      "intent_acknowledged_by_user": true,
+      "symbolic_verified": true,
+      "reference_cedar": "permit (principal is User, action == Action::\"closeRegistration\", resource is RegistrationProcess)\nwhen {\n    principal.role == \"registrar\"\n    && resource.isCurrentSemester\n    && resource.isOpen\n};"
+    },
+    {
+      "name": "register_course_floor",
+      "constraint_type": "floor",
+      "action": "registerCourse",
+      "principal_types": [
+        "User"
+      ],
+      "resource_types": [
+        "CourseSelection"
+      ],
+      "plain_english_summary": "Students must be able to register for their own current-semester offering while registration is open.",
+      "reference_file": "references/register_course_floor.cedar",
+      "intent_acknowledged_by_user": true,
+      "symbolic_verified": true,
+      "reference_cedar": "permit (principal is User, action == Action::\"registerCourse\", resource is CourseSelection)\nwhen {\n    principal.role == \"student\"\n    && context.onCampusLan\n    && resource.student == principal\n    && resource.offering.isCurrentSemester\n    && resource.offering.registrationOpen\n};"
+    },
+    {
+      "name": "add_course_floor",
+      "constraint_type": "floor",
+      "action": "addCourseSelection",
+      "principal_types": [
+        "User"
+      ],
+      "resource_types": [
+        "CourseSelection"
+      ],
+      "plain_english_summary": "Students must be able to add their own current selections during add/drop.",
+      "reference_file": "references/add_course_floor.cedar",
+      "intent_acknowledged_by_user": true,
+      "symbolic_verified": true,
+      "reference_cedar": "permit (principal is User, action == Action::\"addCourseSelection\", resource is CourseSelection)\nwhen {\n    principal.role == \"student\"\n    && context.onCampusLan\n    && resource.student == principal\n    && resource.isCurrentSelection\n    && resource.offering.isCurrentSemester\n    && resource.offering.registrationOpen\n    && resource.offering.addDropOpen\n};"
+    },
+    {
+      "name": "report_card_floor",
+      "constraint_type": "floor",
+      "action": "viewReportCard",
+      "principal_types": [
+        "User"
+      ],
+      "resource_types": [
+        "ReportCard"
+      ],
+      "plain_english_summary": "Students must be able to view their own previous-semester report cards.",
+      "reference_file": "references/report_card_floor.cedar",
+      "intent_acknowledged_by_user": true,
+      "symbolic_verified": true,
+      "reference_cedar": "permit (principal is User, action == Action::\"viewReportCard\", resource is ReportCard)\nwhen {\n    principal.role == \"student\"\n    && context.onCampusLan\n    && resource.student == principal\n    && resource.previousSemesterCompleted\n};"
+    },
+    {
+      "name": "select_teaching_floor",
+      "constraint_type": "floor",
+      "action": "selectTeachingOffering",
+      "principal_types": [
+        "User"
+      ],
+      "resource_types": [
+        "CourseOffering"
+      ],
+      "plain_english_summary": "Eligible professors must be able to select conflict-free upcoming offerings before registration closes.",
+      "reference_file": "references/select_teaching_floor.cedar",
+      "intent_acknowledged_by_user": true,
+      "symbolic_verified": true,
+      "reference_cedar": "permit (principal is User, action == Action::\"selectTeachingOffering\", resource is CourseOffering)\nwhen {\n    principal.role == \"professor\"\n    && resource.isUpcomingSemester\n    && resource.registrationOpen\n    && !resource.hasTeachingConflict\n    && resource.eligibleProfessors.contains(principal)\n};"
+    },
+    {
+      "name": "enter_grade_floor",
+      "constraint_type": "floor",
+      "action": "enterGrade",
+      "principal_types": [
+        "User"
+      ],
+      "resource_types": [
+        "GradeRecord"
+      ],
+      "plain_english_summary": "Professors must be able to enter grades for their completed classes.",
+      "reference_file": "references/enter_grade_floor.cedar",
+      "intent_acknowledged_by_user": true,
+      "symbolic_verified": true,
+      "reference_cedar": "permit (principal is User, action == Action::\"enterGrade\", resource is GradeRecord)\nwhen {\n    principal.role == \"professor\"\n    && resource.previousSemesterCompleted\n    && resource.professor == principal\n    && resource.offering has instructor\n    && resource.offering.instructor == principal\n};"
+    },
+    {
+      "name": "registrar_close_floor",
+      "constraint_type": "floor",
+      "action": "closeRegistration",
+      "principal_types": [
+        "User"
+      ],
+      "resource_types": [
+        "RegistrationProcess"
+      ],
+      "plain_english_summary": "Registrar must be able to close current registration.",
+      "reference_file": "references/registrar_close_floor.cedar",
+      "intent_acknowledged_by_user": true,
+      "symbolic_verified": true,
+      "reference_cedar": "permit (principal is User, action == Action::\"closeRegistration\", resource is RegistrationProcess)\nwhen {\n    principal.role == \"registrar\"\n    && resource.isCurrentSemester\n    && resource.isOpen\n};"
+    },
+    {
+      "name": "liveness_register",
+      "constraint_type": "liveness",
+      "action": "registerCourse",
+      "principal_types": [
+        "User"
+      ],
+      "resource_types": [
+        "CourseSelection"
+      ],
+      "plain_english_summary": "At least one student registration request should be possible.",
+      "reference_file": null,
+      "intent_acknowledged_by_user": true,
+      "symbolic_verified": true,
+      "reference_cedar": ""
+    },
+    {
+      "name": "liveness_enter_grade",
+      "constraint_type": "liveness",
+      "action": "enterGrade",
+      "principal_types": [
+        "User"
+      ],
+      "resource_types": [
+        "GradeRecord"
+      ],
+      "plain_english_summary": "At least one professor grade-entry request should be possible.",
+      "reference_file": null,
+      "intent_acknowledged_by_user": true,
+      "symbolic_verified": true,
+      "reference_cedar": ""
+    },
+    {
+      "name": "liveness_close_registration",
+      "constraint_type": "liveness",
+      "action": "closeRegistration",
+      "principal_types": [
+        "User"
+      ],
+      "resource_types": [
+        "RegistrationProcess"
+      ],
+      "plain_english_summary": "At least one registrar close-registration request should be possible.",
+      "reference_file": null,
+      "intent_acknowledged_by_user": true,
+      "symbolic_verified": true,
+      "reference_cedar": ""
+    }
+  ]
+}

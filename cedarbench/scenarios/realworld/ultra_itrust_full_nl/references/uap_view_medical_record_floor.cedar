@@ -1,0 +1,1 @@
+permit (principal is UnlicensedPersonnel, action == Action::"viewMedicalRecord", resource is MedicalRecord) when { context.session.isActive && context.session has unlicensedPersonnel && context.session.unlicensedPersonnel == principal };

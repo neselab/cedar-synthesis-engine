@@ -1,0 +1,123 @@
+entity User = {
+    role: String,
+};
+
+entity CourseCatalogue = {
+    semesterIsBeginning: Bool,
+};
+
+entity CourseOffering = {
+    isCurrentSemester: Bool,
+    isUpcomingSemester: Bool,
+    registrationOpen: Bool,
+    addDropOpen: Bool,
+    eligibleProfessors: Set<User>,
+    instructor?: User,
+    hasTeachingConflict: Bool,
+};
+
+entity CourseSelection = {
+    student: User,
+    offering: CourseOffering,
+    isCurrentSelection: Bool,
+};
+
+entity ReportCard = {
+    student: User,
+    previousSemesterCompleted: Bool,
+};
+
+entity GradeRecord = {
+    student: User,
+    offering: CourseOffering,
+    professor: User,
+    previousSemesterCompleted: Bool,
+};
+
+entity StudentInfo = {
+    student: User,
+};
+
+entity RegistrationProcess = {
+    isCurrentSemester: Bool,
+    isOpen: Bool,
+};
+
+action requestCatalogue appliesTo {
+    principal: [User],
+    resource: [CourseCatalogue],
+    context: {
+        onCampusLan: Bool,
+    },
+};
+
+action registerCourse appliesTo {
+    principal: [User],
+    resource: [CourseSelection],
+    context: {
+        onCampusLan: Bool,
+    },
+};
+
+action addCourseSelection appliesTo {
+    principal: [User],
+    resource: [CourseSelection],
+    context: {
+        onCampusLan: Bool,
+    },
+};
+
+action updateCourseSelection appliesTo {
+    principal: [User],
+    resource: [CourseSelection],
+    context: {
+        onCampusLan: Bool,
+    },
+};
+
+action deleteCourseSelection appliesTo {
+    principal: [User],
+    resource: [CourseSelection],
+    context: {
+        onCampusLan: Bool,
+    },
+};
+
+action viewReportCard appliesTo {
+    principal: [User],
+    resource: [ReportCard],
+    context: {
+        onCampusLan: Bool,
+    },
+};
+
+action selectTeachingOffering appliesTo {
+    principal: [User],
+    resource: [CourseOffering],
+};
+
+action modifyAssignedOffering appliesTo {
+    principal: [User],
+    resource: [CourseOffering],
+};
+
+action viewRoster appliesTo {
+    principal: [User],
+    resource: [CourseOffering],
+};
+
+action enterGrade appliesTo {
+    principal: [User],
+    resource: [GradeRecord],
+};
+
+action changeStudentInfo appliesTo {
+    principal: [User],
+    resource: [StudentInfo],
+};
+
+action closeRegistration appliesTo {
+    principal: [User],
+    resource: [RegistrationProcess],
+};
+
