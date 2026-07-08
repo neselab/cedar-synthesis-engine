@@ -679,12 +679,27 @@ def author(
         session.write_stage2_decisions(decisions2)
         session.write_stage2_symbolic_verification_logs(verification_logs)
     property_frontier_nodes = source_doc.authorization_nodes()
+    property_frontier_total = len(property_frontier_nodes)
+    property_frontier_index = {
+        node.id: index for index, node in enumerate(property_frontier_nodes, start=1)
+    }
     active_property_node = None
     active_packet = None
     active_spec_text = ""
     pending_property_atoms: list[tuple[PropertyAtom, bool]] = []
     property_frontier_exhausted = False
     _notify_review_stage(review_atom, "Property intent review", None)
+    _notify_property_progress(
+        review_atom,
+        event="start",
+        source_total=property_frontier_total,
+        source_completed=len(completed_property_node_ids),
+        source_open=max(property_frontier_total - len(completed_property_node_ids), 0),
+        approved=len(plan.properties),
+        decisions=len(decisions2),
+        proposed=len(prop_atoms),
+        queued=0,
+    )
     for _ in range(max_property_proposals):
         if active_property_node is None:
             active_property_node = next(
@@ -699,6 +714,19 @@ def author(
                 property_frontier_exhausted = True
                 break
             pending_property_atoms = []
+            _notify_property_progress(
+                review_atom,
+                event="source_start",
+                source_id=active_property_node.id,
+                source_index=property_frontier_index.get(active_property_node.id),
+                source_total=property_frontier_total,
+                source_completed=len(completed_property_node_ids),
+                source_open=max(property_frontier_total - len(completed_property_node_ids), 0),
+                approved=len(plan.properties),
+                decisions=len(decisions2),
+                proposed=len(prop_atoms),
+                queued=0,
+            )
         if not pending_property_atoms:
             active_packet = select_property_packet(
                 source_doc,
@@ -723,6 +751,21 @@ def author(
                 (attach_source_ids(atom, active_packet.focus_node_ids), proposal_was_batch)
                 for atom in proposed
             )
+            _notify_property_progress(
+                review_atom,
+                event="bundle_proposed",
+                source_id=active_property_node.id,
+                source_index=property_frontier_index.get(active_property_node.id),
+                source_total=property_frontier_total,
+                source_completed=len(completed_property_node_ids),
+                source_open=max(property_frontier_total - len(completed_property_node_ids), 0),
+                packet_id=active_packet.id,
+                bundle_size=len(proposed),
+                approved=len(plan.properties),
+                decisions=len(decisions2),
+                proposed=len(prop_atoms),
+                queued=len(pending_property_atoms),
+            )
             if not pending_property_atoms:
                 completion_blocker = _source_node_completion_blocker(
                     active_packet.focus_node_ids,
@@ -741,6 +784,23 @@ def author(
                         ),
                     )
                     session.write_stage2_decisions(decisions2)
+                    _notify_property_progress(
+                        review_atom,
+                        event="coverage_blocked",
+                        source_id=active_property_node.id,
+                        source_index=property_frontier_index.get(active_property_node.id),
+                        source_total=property_frontier_total,
+                        source_completed=len(completed_property_node_ids),
+                        source_open=max(
+                            property_frontier_total - len(completed_property_node_ids),
+                            0,
+                        ),
+                        approved=len(plan.properties),
+                        decisions=len(decisions2),
+                        proposed=len(prop_atoms),
+                        queued=0,
+                        reason=completion_blocker,
+                    )
                     continue
                 completed_property_node_ids.add(active_property_node.id)
                 session.write_stage0_coverage_ledger(
@@ -751,11 +811,41 @@ def author(
                         property_packets=property_context_packets,
                     ),
                 )
+                _notify_property_progress(
+                    review_atom,
+                    event="source_complete",
+                    source_id=active_property_node.id,
+                    source_index=property_frontier_index.get(active_property_node.id),
+                    source_total=property_frontier_total,
+                    source_completed=len(completed_property_node_ids),
+                    source_open=max(property_frontier_total - len(completed_property_node_ids), 0),
+                    approved=len(plan.properties),
+                    decisions=len(decisions2),
+                    proposed=len(prop_atoms),
+                    queued=0,
+                )
                 active_property_node = None
                 continue
         atom, atom_from_batch = pending_property_atoms.pop(0)
         if active_packet is None:
             raise RuntimeError("Stage 2 property packet missing for queued atom")
+        _notify_property_progress(
+            review_atom,
+            event="atom_review",
+            source_id=active_property_node.id if active_property_node is not None else None,
+            source_index=(
+                property_frontier_index.get(active_property_node.id)
+                if active_property_node is not None else None
+            ),
+            source_total=property_frontier_total,
+            source_completed=len(completed_property_node_ids),
+            source_open=max(property_frontier_total - len(completed_property_node_ids), 0),
+            atom_name=atom.name,
+            approved=len(plan.properties),
+            decisions=len(decisions2),
+            proposed=len(prop_atoms),
+            queued=len(pending_property_atoms),
+        )
         support_gaps = missing_schema_support(atom.required_schema_support, schema_text)
         if support_gaps:
             gap_reason = (
@@ -1057,6 +1147,25 @@ def author(
                 )
         decisions2.append(decision)
         session.write_stage2_decisions(decisions2)
+        _notify_property_progress(
+            review_atom,
+            event="atom_decision",
+            source_id=active_property_node.id if active_property_node is not None else None,
+            source_index=(
+                property_frontier_index.get(active_property_node.id)
+                if active_property_node is not None else None
+            ),
+            source_total=property_frontier_total,
+            source_completed=len(completed_property_node_ids),
+            source_open=max(property_frontier_total - len(completed_property_node_ids), 0),
+            atom_name=getattr(reviewed_atom, "name", decision.atom_name),
+            decision=decision.action,
+            approved=len(plan.properties),
+            rejected=sum(1 for item in decisions2 if item.action != "approve"),
+            decisions=len(decisions2),
+            proposed=len(prop_atoms),
+            queued=len(pending_property_atoms),
+        )
         if unrepaired_prior_conflict is not None:
             session.write_stage2_intent_graph(
                 build_property_intent_graph(plan.properties),
@@ -1215,6 +1324,23 @@ def author(
                     ),
                 )
                 session.write_stage2_decisions(decisions2)
+                _notify_property_progress(
+                    review_atom,
+                    event="coverage_blocked",
+                    source_id=active_property_node.id,
+                    source_index=property_frontier_index.get(active_property_node.id),
+                    source_total=property_frontier_total,
+                    source_completed=len(completed_property_node_ids),
+                    source_open=max(
+                        property_frontier_total - len(completed_property_node_ids),
+                        0,
+                    ),
+                    approved=len(plan.properties),
+                    decisions=len(decisions2),
+                    proposed=len(prop_atoms),
+                    queued=0,
+                    reason=completion_blocker,
+                )
                 continue
             completed_property_node_ids.add(active_property_node.id)
             session.write_stage0_coverage_ledger(
@@ -1224,6 +1350,19 @@ def author(
                     schema_packets=schema_context_packets,
                     property_packets=property_context_packets,
                 ),
+            )
+            _notify_property_progress(
+                review_atom,
+                event="source_complete",
+                source_id=active_property_node.id,
+                source_index=property_frontier_index.get(active_property_node.id),
+                source_total=property_frontier_total,
+                source_completed=len(completed_property_node_ids),
+                source_open=max(property_frontier_total - len(completed_property_node_ids), 0),
+                approved=len(plan.properties),
+                decisions=len(decisions2),
+                proposed=len(prop_atoms),
+                queued=0,
             )
             active_property_node = None
             active_packet = None
@@ -1251,6 +1390,18 @@ def author(
         session.write_stage2_attribution_decisions(attributions2)
     session.write_stage2_decisions(decisions2)
     session.write_stage2_approved_atoms(plan.properties)
+    _notify_property_progress(
+        review_atom,
+        event="complete" if property_frontier_exhausted else "stopped",
+        source_total=property_frontier_total,
+        source_completed=len(completed_property_node_ids),
+        source_open=max(property_frontier_total - len(completed_property_node_ids), 0),
+        approved=len(plan.properties),
+        rejected=sum(1 for item in decisions2 if item.action != "approve"),
+        decisions=len(decisions2),
+        proposed=len(prop_atoms),
+        queued=0,
+    )
     _notify_review_stage_complete(review_atom, "Property intent review", decisions2)
     _notify_property_plan_ready(review_atom, plan.properties)
     session.write_stage2_intent_graph(
@@ -2191,6 +2342,12 @@ def _notify_schema_ready(review_atom: AtomReviewer, schema_text: str) -> None:
     callback = getattr(review_atom, "schema_ready", None)
     if callable(callback):
         callback(schema_text)
+
+
+def _notify_property_progress(review_atom: AtomReviewer, **payload: Any) -> None:
+    callback = getattr(review_atom, "property_progress", None)
+    if callable(callback):
+        callback(payload)
 
 
 def _notify_property_plan_ready(

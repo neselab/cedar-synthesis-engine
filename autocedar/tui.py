@@ -53,6 +53,7 @@ from autocedar.env import (
 from autocedar.harness_adapter import make_harness_synthesizer
 from autocedar.llm import DEFAULT_EFFORT, LLMClient, default_model_for_provider, default_provider
 from autocedar.pipeline import author as author_pipeline
+from autocedar.progress import format_property_progress
 from autocedar.property_atomizer import propose_property_atom
 from autocedar.schema_atomizer import propose_schema_atoms
 from autocedar.ui.terminal import (
@@ -357,6 +358,9 @@ class TuiAtomReviewer:
     def property_plan_ready(self, properties: list[Any]) -> None:
         self.app.call_from_thread(self.app.show_property_overview, properties)
 
+    def property_progress(self, payload: dict[str, Any]) -> None:
+        self.app.call_from_thread(self.app.update_property_progress, payload)
+
     def __call__(self, atom: Any) -> ReviewedAtom:
         self.sequence += 1
         stage_label = self.stage_label
@@ -531,6 +535,7 @@ class AutoCedarApp(App[None]):
         self.latest_synthesis_iterations: int | None = None
         self.latest_synthesis_loss: int | None = None
         self.latest_status_summary = ""
+        self.property_progress_summary = "none"
         self.copyable_transcript: list[str] = []
         self.last_assistant_text = ""
         self.activity_message = ""
@@ -708,6 +713,27 @@ class AutoCedarApp(App[None]):
                 padding=(1, 2),
             ),
         )
+
+    def update_property_progress(self, payload: dict[str, Any]) -> None:
+        summary = format_property_progress(payload)
+        self.property_progress_summary = summary
+        event = str(payload.get("event") or "")
+        if event in {
+            "start",
+            "source_start",
+            "bundle_proposed",
+            "coverage_blocked",
+            "atom_decision",
+            "source_complete",
+            "complete",
+            "stopped",
+        }:
+            style = CORAL if event in {"coverage_blocked", "stopped"} else TEAL
+            self._write(
+                f"[bold {style}]property progress[/] "
+                f"[dim {MUTED}]>[/] {escape(summary)}",
+            )
+        self._update_status()
 
     def _handle_review_input(self, raw: str) -> None:
         request = self.pending_review
@@ -2118,11 +2144,11 @@ class AutoCedarApp(App[None]):
                     return auto_approve(atom)
                 return reviewer(atom)
 
-            if not options.auto_approve:
-                review_atom.begin_stage = reviewer.begin_stage  # type: ignore[attr-defined]
-                review_atom.end_stage = reviewer.end_stage  # type: ignore[attr-defined]
-                review_atom.schema_ready = reviewer.schema_ready  # type: ignore[attr-defined]
-                review_atom.property_plan_ready = reviewer.property_plan_ready  # type: ignore[attr-defined]
+            review_atom.begin_stage = reviewer.begin_stage  # type: ignore[attr-defined]
+            review_atom.end_stage = reviewer.end_stage  # type: ignore[attr-defined]
+            review_atom.schema_ready = reviewer.schema_ready  # type: ignore[attr-defined]
+            review_atom.property_plan_ready = reviewer.property_plan_ready  # type: ignore[attr-defined]
+            review_atom.property_progress = reviewer.property_progress  # type: ignore[attr-defined]
 
             stage3_synthesizer = make_harness_synthesizer(
                 phase1_model=options.model or self.llm_model,
@@ -2428,6 +2454,7 @@ class AutoCedarApp(App[None]):
             f"[dim {MUTED}]effort[/]\n[bold {CREAM}]{escape(self.llm_effort)}[/]\n\n"
             f"[dim {MUTED}]{auth_label}[/]\n[bold {key_color}]{key_state}[/]\n\n"
             f"[dim {MUTED}]pending atom review[/]\n[bold {review_color}]{review_state}[/]\n\n"
+            f"[dim {MUTED}]property progress[/]\n[bold {CREAM}]{escape(self.property_progress_summary)}[/]\n\n"
             f"[dim {MUTED}]pending yes/no[/]\n[bold {action_color}]{action_state}[/]\n\n"
             f"[dim {MUTED}]draft capture[/]\n[bold {drafting_color}]{drafting_state}[/]\n\n"
             f"[dim {MUTED}]draft lines[/]\n[bold {CREAM}]{draft_state}[/]\n\n"
@@ -2453,6 +2480,7 @@ class AutoCedarApp(App[None]):
             f"latest session: {self.latest_session_dir or 'none'}",
             f"latest schema: {self.latest_schema_path or 'none'}",
             f"latest policy: {self.latest_policy_path or 'none'}",
+            f"property progress: {self.property_progress_summary}",
             f"drafting: {'active' if self.drafting_active else 'off'}",
             f"draft lines: {len(self.draft_lines)}",
             f"pending confirmation: {pending_summary}",

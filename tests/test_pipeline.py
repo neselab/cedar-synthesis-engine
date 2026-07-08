@@ -355,6 +355,9 @@ class _RecordingReviewer:
     def property_plan_ready(self, properties: list[PropertyAtom]) -> None:
         self.events.append(("properties", len(properties)))
 
+    def property_progress(self, payload: dict[str, object]) -> None:
+        self.events.append(("progress", dict(payload)))
+
     def __call__(self, atom: object) -> AtomDecision:
         return _approve(atom)
 
@@ -469,6 +472,14 @@ def test_author_emits_review_stage_and_overview_hooks(
     assert ("begin", ("Property intent review", None)) in reviewer.events
     assert ("end", ("Property intent review", 0, 0)) in reviewer.events
     assert ("properties", 0) in reviewer.events
+    progress_events = [
+        payload for kind, payload in reviewer.events if kind == "progress"
+    ]
+    assert any(event["event"] == "start" for event in progress_events)
+    assert any(event["event"] == "source_start" for event in progress_events)
+    assert any(event["event"] == "bundle_proposed" for event in progress_events)
+    assert any(event["event"] == "source_complete" for event in progress_events)
+    assert progress_events[-1]["event"] == "complete"
 
 
 def test_stage2_reviews_bundled_properties_without_extra_planner_calls(

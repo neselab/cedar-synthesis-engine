@@ -36,6 +36,7 @@ from autocedar.tui import (
     parse_synthesize_args,
     tokenize,
 )
+from autocedar.progress import format_property_progress
 
 
 class FakePlanner:
@@ -79,6 +80,9 @@ class _ImmediateReviewApp:
 
     def _say(self, message: str) -> None:
         self.messages.append(message)
+
+    def update_property_progress(self, payload) -> None:
+        self.messages.append(format_property_progress(payload))
 
 
 def test_tokenize_accepts_slash_commands_and_quotes() -> None:
@@ -147,6 +151,26 @@ def test_tui_reviewer_property_counter_resets_after_schema_stage() -> None:
     assert [request.index for request in app.requests] == [1, 2, 1]
     assert app.requests[-1].sequence == 3
     assert app.requests[-1].stage_label == "Property intent review"
+
+
+def test_tui_reviewer_forwards_property_progress() -> None:
+    app = _ImmediateReviewApp()
+    reviewer = TuiAtomReviewer(app)  # type: ignore[arg-type]
+
+    reviewer.property_progress(
+        {
+            "event": "source_start",
+            "source_index": 2,
+            "source_total": 5,
+            "source_open": 4,
+            "approved": 3,
+            "decisions": 6,
+        },
+    )
+
+    assert app.messages[-1] == (
+        "source start | source 2/5 | open 4 | approved 3 | decisions 6"
+    )
 
 
 def test_slash_command_palette_filters_commands() -> None:

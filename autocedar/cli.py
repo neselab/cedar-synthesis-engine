@@ -30,6 +30,7 @@ from autocedar.env import (
 from autocedar.harness_adapter import make_harness_synthesizer
 from autocedar.llm import DEFAULT_EFFORT, LLMClient, default_model_for_provider, default_provider
 from autocedar.pipeline import author as author_pipeline
+from autocedar.progress import format_property_progress
 from autocedar.property_atomizer import propose_property_atom
 from autocedar.schema_atomizer import propose_schema_atoms
 from autocedar.ui.terminal import auto_approve, interactive_review_loop
@@ -428,6 +429,11 @@ def _cmd_author(args: argparse.Namespace) -> int:
         )
         return reviewed[0]
 
+    def property_progress(payload):
+        print(f"property progress: {format_property_progress(payload)}", flush=True)
+
+    reviewer.property_progress = property_progress  # type: ignore[attr-defined]
+
     result = author_pipeline(
         spec_path=spec_path,
         output_dir=Path(args.out),
@@ -538,6 +544,11 @@ def _cmd_resume(args: argparse.Namespace) -> int:
             spec_text=spec_text,
         )
         return reviewed[0]
+
+    def property_progress(payload):
+        print(f"property progress: {format_property_progress(payload)}", flush=True)
+
+    reviewer.property_progress = property_progress  # type: ignore[attr-defined]
 
     result = author_pipeline(
         spec_path=spec_path,
