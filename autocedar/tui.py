@@ -24,7 +24,7 @@ from textual.binding import Binding
 from textual.containers import Horizontal, Vertical
 from textual import events
 from textual.message import Message
-from textual.widgets import Footer, Header, Input, RichLog, Static
+from textual.widgets import Footer, Header, Input, ProgressBar, RichLog, Static
 
 from autocedar.agent import AgentAction, AgentState, ProviderAgentPlanner
 from autocedar.api_key import (
@@ -495,6 +495,12 @@ class AutoCedarApp(App[None]):
         margin-bottom: 1;
     }
 
+    #property_progress_bar {
+        display: none;
+        height: 1;
+        margin: 0 0 1 0;
+    }
+
     #command_rail {
         color: #bda98f;
     }
@@ -536,6 +542,8 @@ class AutoCedarApp(App[None]):
         self.latest_synthesis_loss: int | None = None
         self.latest_status_summary = ""
         self.property_progress_summary = "none"
+        self.property_progress_total: int | None = None
+        self.property_progress_completed = 0
         self.copyable_transcript: list[str] = []
         self.last_assistant_text = ""
         self.activity_message = ""
@@ -558,6 +566,7 @@ class AutoCedarApp(App[None]):
             with Vertical(id="side"):
                 yield Static(BRAND_TEXT, id="brand")
                 yield Static(id="status_text")
+                yield ProgressBar(total=1, show_eta=False, id="property_progress_bar")
                 yield Static(COMMAND_RAIL, id="command_rail")
         yield CommandInput(
             placeholder="Tell AutoCedar what to do, or type /help",
@@ -579,6 +588,7 @@ class AutoCedarApp(App[None]):
             "start a policy draft; author this; show the draft.[/]",
         )
         self._show_setup_hint_if_needed()
+        self._update_property_progress_bar()
         self._update_status()
         self._clear_stream_output()
         self.set_interval(0.2, self._tick_activity)
@@ -717,6 +727,10 @@ class AutoCedarApp(App[None]):
     def update_property_progress(self, payload: dict[str, Any]) -> None:
         summary = format_property_progress(payload)
         self.property_progress_summary = summary
+        self.property_progress_total = _positive_int_or_none(payload.get("source_total"))
+        self.property_progress_completed = _positive_int_or_zero(
+            payload.get("source_completed"),
+        )
         event = str(payload.get("event") or "")
         if event in {
             "start",
@@ -733,7 +747,23 @@ class AutoCedarApp(App[None]):
                 f"[bold {style}]property progress[/] "
                 f"[dim {MUTED}]>[/] {escape(summary)}",
             )
+        self._update_property_progress_bar()
         self._update_status()
+
+    def _update_property_progress_bar(self) -> None:
+        try:
+            progress_bar = self.query_one("#property_progress_bar", ProgressBar)
+        except Exception:
+            return
+        if not self.property_progress_total:
+            progress_bar.display = False
+            progress_bar.update(total=1, progress=0)
+            return
+        progress_bar.display = True
+        progress_bar.update(
+            total=self.property_progress_total,
+            progress=min(self.property_progress_completed, self.property_progress_total),
+        )
 
     def _handle_review_input(self, raw: str) -> None:
         request = self.pending_review
@@ -2525,6 +2555,22 @@ class AutoCedarApp(App[None]):
 
 def _squash(text: str) -> str:
     return re.sub(r"\s+", " ", text.strip())
+
+
+def _positive_int_or_none(value: Any) -> int | None:
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        return None
+    return parsed if parsed > 0 else None
+
+
+def _positive_int_or_zero(value: Any) -> int:
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        return 0
+    return max(parsed, 0)
 
 
 def _agent_tool_catalog() -> list[dict[str, str]]:

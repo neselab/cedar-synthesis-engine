@@ -10,6 +10,7 @@ from typing import Sequence
 
 import pytest
 from textual import events
+from textual.widgets import ProgressBar
 
 from autocedar.agent import AgentAction
 from autocedar.atoms import EntityAtom, PropertyAtom
@@ -171,6 +172,31 @@ def test_tui_reviewer_forwards_property_progress() -> None:
     assert app.messages[-1] == (
         "source start | source 2/5 | open 4 | approved 3 | decisions 6"
     )
+
+
+def test_tui_property_progress_bar_updates_from_payload() -> None:
+    async def run() -> None:
+        app = AutoCedarApp()
+        async with app.run_test() as pilot:
+            progress_bar = app.query_one("#property_progress_bar", ProgressBar)
+            assert progress_bar.display is False
+
+            app.update_property_progress(
+                {
+                    "event": "source_complete",
+                    "source_total": 5,
+                    "source_completed": 2,
+                    "approved": 7,
+                    "decisions": 8,
+                },
+            )
+            await pilot.pause()
+
+            assert progress_bar.display is True
+            assert progress_bar.total == 5
+            assert progress_bar.progress == 2
+
+    asyncio.run(run())
 
 
 def test_slash_command_palette_filters_commands() -> None:

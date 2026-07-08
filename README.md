@@ -419,9 +419,10 @@ review contract: each returned property atom is still symbolically checked and
 sent through HITL review one by one before it can enter the formal target. Each
 source packet records the current source node, nearby clauses, related
 definitions, approved atoms, and prior review history.
-During this stage, AutoCedar prints and displays property progress such as the
-current source packet, open source-node count, approved/rejected atom count, and
-queued atoms so long reviews do not look stuck.
+During this stage, AutoCedar prints property progress and shows a TUI progress
+bar over source packets, with details such as the current source packet, open
+source-node count, approved/rejected atom count, and queued atoms so long
+reviews do not look stuck.
 
 The approved atoms become the formal verification harness:
 
