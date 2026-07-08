@@ -1132,9 +1132,9 @@ def test_author_confirmation_describes_schema_mode() -> None:
     ])
 
     assert "propose schema atoms" in _describe_author_action(no_schema, from_draft=False)
-    assert "one Stage 2 property atom at a time" in _describe_author_action(no_schema, from_draft=False)
+    assert "bounded local Stage 2 property bundles" in _describe_author_action(no_schema, from_draft=False)
     assert "skip Stage 1 schema atomization" in _describe_author_action(with_schema, from_draft=False)
-    assert "one Stage 2 property atom at a time" in _describe_author_action(with_schema, from_draft=False)
+    assert "bounded local Stage 2 property bundles" in _describe_author_action(with_schema, from_draft=False)
 
 
 def test_textual_settings_commands_update_runtime(

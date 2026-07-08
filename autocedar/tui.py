@@ -646,9 +646,8 @@ class AutoCedarApp(App[None]):
                 Panel(
                     (
                         f"{escape(label)} starts now.\n"
-                        "AutoCedar will propose one property atom at a time, "
-                        "verify it, and wait for your decision before asking "
-                        "for the next one."
+                        "AutoCedar may propose a small local property bundle, "
+                        "but it verifies and reviews each atom one by one."
                     ),
                     title=f"[bold {COPPER}]Review stage[/]",
                     border_style=TEAL,
@@ -2478,7 +2477,7 @@ class AutoCedarApp(App[None]):
                 "All slash-command capabilities are available to the planner as tools. For workflow-status or generated-file questions, the planner should choose inspect_workflow or search_artifacts instead of answering from guesswork.",
                 "Authoring from prose without a schema override: AutoCedar saves the prose spec, runs Stage 1 schema atomization, proposes entity/action/attribute/type-alias atoms, and sends each proposed schema atom through HITL review before composing the schema.",
                 "Authoring with a schema path: AutoCedar uses that existing schema directly and skips Stage 1 schema atomization/review.",
-                "Stage 2 property atoms: AutoCedar proposes one property atom at a time from the spec, validated schema, approved prior atoms, and review history; symbolically verifies it; and sends it through HITL review before asking for the next one.",
+                "Stage 2 property atoms: AutoCedar proposes bounded local bundles from the spec, validated schema, approved prior atoms, and review history; symbolically verifies each atom; and sends each atom through HITL review one by one.",
                 "The authoring engine receives clean inputs: saved spec text, optional schema path, and HITL review decisions. The chat transcript is not passed into authoring.",
                 "Runtime LLM settings are user-selectable inside the TUI through /settings, /provider, /models, /model, /effort, and /apikey. Anthropic uses ANTHROPIC_API_KEY; Codex uses local Codex OAuth from the Codex auth cache. The selected model is used for agent planning, authoring atomization, and default synthesis phase models unless an explicit command overrides it. Effort is used for planning and authoring atomization calls that support adaptive thinking.",
                 "Artifact inspection commands: /artifacts lists latest session/schema/policy paths, /schema shows the latest or provided schema file, /policy shows the latest or provided Cedar policy, and /copy can copy the latest session path, schema text/path, policy text/path, draft, or literal text.",
@@ -2591,7 +2590,7 @@ def _describe_author_action(options: AuthorOptions, *, from_draft: bool) -> str:
             "schema path: none supplied; propose schema atoms from the spec and pause for HITL review.",
         )
     lines.append(
-        "properties: propose one Stage 2 property atom at a time, symbolically verify it, then pause for HITL review before the next proposal.",
+        "properties: propose bounded local Stage 2 property bundles, then symbolically verify and review each atom one by one.",
     )
     if from_draft:
         lines.append(f"I’ll first save the current draft to {options.spec}.")

@@ -277,7 +277,7 @@ graph LR
     D --> E["HITL review<br/>approve / reject / edit / question"]
     E --> F["Composed Cedar schema"]
     C -- "Yes" --> G["Use supplied schema<br/>skip Stage 1"]
-    F --> H["Stage 2<br/>LLM proposes one property slice at a time"]
+    F --> H["Stage 2<br/>LLM proposes bounded local property bundles"]
     G --> H
     H --> I["Symbolic checks<br/>cedar symcc + CVC5"]
     I --> J["HITL review<br/>approve / reject / edit / question"]
@@ -412,15 +412,15 @@ be a boolean flag, use `E cedar_type=Bool`. AutoCedar re-presents the edited
 atom before you approve it. If you edit a property atom, symbolic checks are
 rerun after approval so stale verification results are not reused.
 
-After the schema is established, AutoCedar proposes Stage 2 property atoms one
-at a time from a bounded source packet plus the current schema and approved
-target. It does not ask the model to reprocess the whole spec for every
-decision. Each source packet records the current source node, nearby clauses,
-related definitions, approved atoms, and prior review history.
+After the schema is established, AutoCedar asks the model for bounded local
+Stage 2 property bundles from a source packet plus the current schema and
+approved target. This cuts repeated model round trips without changing the
+review contract: each returned property atom is still symbolically checked and
+sent through HITL review one by one before it can enter the formal target. Each
+source packet records the current source node, nearby clauses, related
+definitions, approved atoms, and prior review history.
 
-Each property proposal is symbolically checked and sent through HITL review
-before AutoCedar asks the model for the next property. The approved atoms become
-the formal verification harness:
+The approved atoms become the formal verification harness:
 
 - `verification_plan.py` — check descriptors such as `implies`,
   `always-denies-liveness`, and `never-errors`

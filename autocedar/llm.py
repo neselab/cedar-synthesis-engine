@@ -546,6 +546,58 @@ class LLMClient:
             return None
         return _translate_property_atom(atoms[0])
 
+    def propose_property_atoms(
+        self,
+        spec_text: str,
+        schema_text: str,
+        *,
+        prior_atoms: list[PropertyAtom] | None = None,
+        prior_decisions: list[Any] | None = None,
+    ) -> list[PropertyAtom]:
+        """Ask the LLM for a bounded local bundle of Stage 2 atoms.
+
+        The bundle is a planner optimization, not a review shortcut: the
+        runtime still symbolically verifies and HITL-reviews each returned atom
+        one at a time. The model should use this only to cover the current
+        source packet, typically returning the floor plus matching
+        ceiling/safety/liveness atoms for the same bounded grant.
+        """
+        prior_atoms = prior_atoms or []
+        prior_decisions = prior_decisions or []
+        system_prompt = _load_prompt("property_atomization.md")
+        prior_json = [_summarize_property_atom(atom) for atom in prior_atoms]
+        decision_json = [_summarize_atom_decision(decision) for decision in prior_decisions]
+        coverage_instruction = _property_coverage_instruction(prior_atoms)
+        response = self._call_parse(
+            system_prompt=system_prompt,
+            spec_text=spec_text,
+            user_turn=(
+                "Use this validated Cedar schema as the grounding context:\n\n"
+                f"```cedarschema\n{schema_text}\n```\n\n"
+                "Already-approved property atoms:\n\n"
+                f"```json\n{json.dumps(prior_json, indent=2)}\n```\n\n"
+                "Prior review decisions and rejected proposals:\n\n"
+                f"```json\n{json.dumps(decision_json, indent=2)}\n```\n\n"
+                f"Coverage instruction for this source packet: {coverage_instruction}\n\n"
+                "Propose a COMPLETE LOCAL BUNDLE of materially distinct Stage 2 "
+                "property atoms for this packet's focus source node, or return an "
+                "empty `atoms` list if approved atoms already cover it. The bundle "
+                "should normally include both sides of each bounded grant: floor "
+                "atoms for required access plus matching ceiling, disjointness, "
+                "or liveness atoms for the approved safety boundary. Keep every "
+                "atom narrow and independently reviewable; the runtime will review "
+                "and verify them one at a time. Do not include requirements from "
+                "outside the packet, do not emit duplicates, and do not merge "
+                "several source requirements into one atom. Non-liveness atoms "
+                "must include complete `reference_cedar` policies. Liveness atoms "
+                "should include a concrete probe policy when the requirement names "
+                "a slice that must remain possible."
+            ),
+            output_format=PropertyAtomsResponse,
+            effort_override=_stage2_effort(self._provider, self._effort),
+        )
+        return [_translate_property_atom(atom) for atom in response.parsed_output.atoms]
+
     def propose_alternative_property_atom(
         self,
         rejected_atom: PropertyAtom,

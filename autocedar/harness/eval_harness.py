@@ -44,7 +44,7 @@ import sys
 import time
 from dataclasses import dataclass, asdict
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, Literal
 
 from anthropic import Anthropic
 
@@ -65,6 +65,48 @@ EVAL_RUNS_DIR = os.path.join(ROOT_DIR, "eval_runs")
 DEFAULT_MODEL = default_model_for_provider()
 DEFAULT_PHASE1_MODEL = DEFAULT_MODEL
 MAX_ITERATIONS = 20
+
+AblationMode = Literal[
+    "full",
+    "no_structured_signal",
+    "no_direction",
+    "no_witness",
+    "no_oscillation",
+]
+PromptMode = Literal["formal_target", "schema_only"]
+
+
+def _ablation_mode() -> AblationMode:
+    raw = os.environ.get("AUTOCEDAR_ABLATION_MODE", "full").strip().lower()
+    valid = {
+        "full",
+        "no_structured_signal",
+        "no_direction",
+        "no_counterexample",
+        "no_counterexamples",
+        "no_witness",
+        "no_oscillation",
+    }
+    if raw not in valid:
+        raise ValueError(
+            f"Unsupported AUTOCEDAR_ABLATION_MODE={raw!r}; "
+            "expected full, no_structured_signal, no_direction, "
+            "no_witness, or no_oscillation.",
+        )
+    if raw in {"no_counterexample", "no_counterexamples"}:
+        return "no_witness"
+    return raw  # type: ignore[return-value]
+
+
+def _prompt_mode() -> PromptMode:
+    raw = os.environ.get("AUTOCEDAR_PROMPT_MODE", "formal_target").strip().lower()
+    valid = {"formal_target", "schema_only"}
+    if raw not in valid:
+        raise ValueError(
+            f"Unsupported AUTOCEDAR_PROMPT_MODE={raw!r}; "
+            "expected formal_target or schema_only.",
+        )
+    return raw  # type: ignore[return-value]
 
 # Pricing per million tokens (USD)
 MODEL_PRICING = {
@@ -796,6 +838,24 @@ def _format_initial_prompt(schema: str, policy_spec: str, checks: list[dict]) ->
     return "\n".join(parts)
 
 
+def _format_schema_only_prompt(schema: str, policy_spec: str) -> str:
+    """Build a synthesis prompt that exposes schema and prose, but no formal target."""
+    return "\n".join(
+        [
+            "## Cedar Schema",
+            "```",
+            schema,
+            "```",
+            "",
+            "## Policy Specification",
+            policy_spec,
+            "",
+            "Write the complete Cedar policy store that implements the specification.",
+            "Use only the schema above. Output ONLY Cedar policy code.",
+        ]
+    )
+
+
 def _format_syntax_feedback(error_text: str) -> str:
     """
     Parse and deduplicate cedar validate error output.
@@ -1276,6 +1336,7 @@ def _format_feedback(
     prev_failed: set[str] | None = None,
     repeat_info: dict | None = None,
     candidate_text: str | None = None,
+    ablation_mode: AblationMode = "full",
 ) -> str:
     """
     Build a rich feedback message from verification results.
@@ -1292,6 +1353,9 @@ def _format_feedback(
     - Type-check / validation feedback (distinct from parse errors) with
       targeted help for unguarded optional attributes
     """
+    if ablation_mode == "no_structured_signal":
+        return _format_raw_feedback(vr)
+
     # Map check names to their definitions
     check_map = {c["name"]: c for c in checks}
 
@@ -1299,7 +1363,7 @@ def _format_feedback(
     parts = [f"## Verification Results — {vr.loss} check(s) FAILED\n"]
 
     # Hash-based repeat / cross-gate oscillation detection (strongest signal)
-    if repeat_info is not None:
+    if repeat_info is not None and ablation_mode != "no_oscillation":
         parts.append("**🛑 STOP — REPEATED POLICY DETECTED 🛑**")
         parts.append(
             f"You just submitted a byte-identical policy to the one you "
@@ -1326,7 +1390,7 @@ def _format_feedback(
             parts.append("")
 
     # Set-based oscillation detection (existing — kept as a softer signal)
-    if prev_failed is not None and repeat_info is None:
+    if prev_failed is not None and repeat_info is None and ablation_mode != "no_oscillation":
         fixed = prev_failed - failed_now
         regressed = failed_now - prev_failed
         if fixed and regressed:
@@ -1346,6 +1410,9 @@ def _format_feedback(
         check_def = check_map.get(r.check_name, {})
         ctype = check_def.get("type", r.check_type)
 
+        include_direction = ablation_mode != "no_direction"
+        include_witness = ablation_mode != "no_witness"
+
         # Directional explanation + reference policy
         if ctype == "syntax":
             parts.append(f"  **SYNTAX / PARSE ERROR — your policy failed to parse.**")
@@ -1362,32 +1429,52 @@ def _format_feedback(
                 parts.append("  **VALIDATION ERROR — Cedar's type-checker rejected the policy.**")
         elif ctype == "implies":
             ref_path = check_def.get("reference_path", "")
-            parts.append(f"  **Your policy is MORE permissive than the ceiling.**")
-            parts.append(f"  It allows something the ceiling forbids. Tighten conditions.")
+            if include_direction:
+                parts.append(f"  **Your policy is MORE permissive than the ceiling.**")
+                parts.append(f"  It allows something the ceiling forbids. Tighten conditions.")
+            else:
+                parts.append("  **This semantic check failed.**")
+                parts.append("  Revise the policy so this check passes without breaking other checks.")
             if ref_path and os.path.exists(ref_path):
                 with open(ref_path) as f:
-                    parts.append(f"  Ceiling policy (your policy must not exceed this):")
+                    label = (
+                        "Ceiling policy (your policy must not exceed this):"
+                        if include_direction else
+                        "Reference policy for this failed check:"
+                    )
+                    parts.append(f"  {label}")
                     parts.append(f"  ```cedar\n  {f.read().strip()}\n  ```")
-            parts.extend(_format_signal_diagnostics(r, check_def, candidate_text))
-            if r.counterexample:
+            if include_witness:
+                parts.extend(_format_signal_diagnostics(r, check_def, candidate_text))
+            if r.counterexample and include_witness:
                 parts.append(f"  Counterexample from solver:\n  ```\n  {r.counterexample}\n  ```")
         elif ctype == "floor":
             floor_path = check_def.get("floor_path", "")
-            parts.append(f"  **Your policy is MORE restrictive than the floor.**")
-            parts.append(f"  It denies something that MUST be allowed. Loosen conditions.")
+            if include_direction:
+                parts.append(f"  **Your policy is MORE restrictive than the floor.**")
+                parts.append(f"  It denies something that MUST be allowed. Loosen conditions.")
+            else:
+                parts.append("  **This semantic check failed.**")
+                parts.append("  Revise the policy so this check passes without breaking other checks.")
             floor_text = ""
             if floor_path and os.path.exists(floor_path):
                 with open(floor_path) as f:
                     floor_text = f.read().strip()
-                    parts.append(f"  Floor policy (your policy must allow at least this):")
+                    label = (
+                        "Floor policy (your policy must allow at least this):"
+                        if include_direction else
+                        "Reference policy for this failed check:"
+                    )
+                    parts.append(f"  {label}")
                     parts.append(f"  ```cedar\n  {floor_text}\n  ```")
-            parts.extend(_format_signal_diagnostics(r, check_def, candidate_text))
+            if include_witness:
+                parts.extend(_format_signal_diagnostics(r, check_def, candidate_text))
             # Structural hint: detect the role-intersection trap. The floor's
             # permitted set may include users who are in multiple roles, but
             # the candidate may have a forbid rule (or a permit-rule negation)
             # keyed on role membership that fires for those multi-role users.
             # Scan the candidate text for the smoking gun and call it out.
-            if candidate_text:
+            if candidate_text and include_witness:
                 import re as _re
                 # Forbid rules that mention `principal in Role::"..."` (or Group)
                 forbid_role_hits: list[str] = []
@@ -1475,21 +1562,42 @@ def _format_feedback(
                             "exist) and remove the duplicate `&&` clauses from "
                             "every permit rule."
                         )
-            if r.counterexample:
+            if r.counterexample and include_witness:
                 parts.append(f"  Counterexample from solver:\n  ```\n  {r.counterexample}\n  ```")
         elif "liveness" in ctype:
-            parts.append(f"  **Your policy denies ALL requests for this action.**")
-            parts.append(f"  At least one scenario must be permitted.")
-            if r.counterexample:
+            if include_direction:
+                parts.append(f"  **Your policy denies ALL requests for this action.**")
+                parts.append(f"  At least one scenario must be permitted.")
+            else:
+                parts.append("  **This liveness check failed.**")
+                parts.append("  Revise the policy so this check passes without breaking other checks.")
+            if r.counterexample and include_witness:
                 parts.append(f"  Counterexample from solver:\n  ```\n  {r.counterexample}\n  ```")
         else:
-            if r.counterexample:
+            if r.counterexample and include_witness:
                 parts.append(f"  Counterexample from solver:\n  ```\n  {r.counterexample}\n  ```")
 
     parts.append(
         "\nFix the policy to address EVERY failure without breaking passing checks. "
         "Output the COMPLETE updated policy."
     )
+    return "\n".join(parts)
+
+
+def _format_raw_feedback(vr: VerificationResult) -> str:
+    """Minimal raw verifier feedback for the signal-layer ablation."""
+    parts = [f"## Verification Results — {vr.loss} check(s) FAILED\n"]
+    for r in vr.results:
+        mark = "PASS" if r.passed else "FAIL"
+        parts.append(f"- {r.check_name} ({r.check_type}): **{mark}**")
+        if not r.passed and r.counterexample:
+            parts.append("  Raw verifier output:")
+            parts.append("  ```")
+            parts.append(r.counterexample[:4000])
+            if len(r.counterexample) > 4000:
+                parts.append(f"... ({len(r.counterexample) - 4000} chars truncated)")
+            parts.append("  ```")
+    parts.append("\nFix the policy to address every failure. Output the complete updated policy.")
     return "\n".join(parts)
 
 
@@ -1592,6 +1700,12 @@ def run_scenario(
     print(f"Phase 1:  {phase1_model}")
     print(f"Phase 2:  {phase2_model}")
     print(f"{'=' * 60}")
+    ablation_mode = _ablation_mode()
+    prompt_mode = _prompt_mode()
+    if ablation_mode != "full":
+        print(f"Ablation: {ablation_mode}")
+    if prompt_mode != "formal_target":
+        print(f"Prompt mode: {prompt_mode}")
 
     def _err(msg: str, **kw) -> ScenarioResult:
         return ScenarioResult(
@@ -1803,8 +1917,13 @@ def run_scenario(
     checks_total = len(checks)
     print(f"  Checks loaded: {checks_total}")
 
-    # Build initial conversation
-    initial_prompt = _format_initial_prompt(schema, policy_spec, checks)
+    # Build initial conversation. The schema-only ablation intentionally hides
+    # check names, reference policies, and floor/ceiling/liveness structure from
+    # the model while preserving the same verifier oracle for evaluation.
+    if prompt_mode == "schema_only":
+        initial_prompt = _format_schema_only_prompt(schema, policy_spec)
+    else:
+        initial_prompt = _format_initial_prompt(schema, policy_spec, checks)
     messages = [{"role": "user", "content": initial_prompt}]
 
     iteration_log = []
@@ -1922,7 +2041,7 @@ def run_scenario(
         current_failed = [r.check_name for r in vr.results if not r.passed]
         failure_history.append(set(current_failed))
         repeat_info = None
-        if cand_hash in seen_hashes:
+        if ablation_mode != "no_oscillation" and cand_hash in seen_hashes:
             first_iter, first_failed = seen_hashes[cand_hash]
             # Union of failure-mode names across the entire iteration window
             window_union: set[str] = set()
@@ -1938,7 +2057,7 @@ def run_scenario(
                 f"  ⚠ OSCILLATION: byte-identical to iter {first_iter}; "
                 f"{len(window_union)} unique failure modes seen so far"
             )
-        else:
+        elif ablation_mode != "no_oscillation":
             seen_hashes[cand_hash] = (iteration, list(current_failed))
 
         # ── Feedback for next iteration ──
@@ -1946,8 +2065,9 @@ def run_scenario(
             vr, checks, prev_failed,
             repeat_info=repeat_info,
             candidate_text=candidate_text,
+            ablation_mode=ablation_mode,
         )
-        prev_failed = set(current_failed)
+        prev_failed = None if ablation_mode == "no_oscillation" else set(current_failed)
         messages.append({"role": "user", "content": feedback})
 
         # Trim conversation to avoid context limits: keep first message + last 8

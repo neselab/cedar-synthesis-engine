@@ -7,8 +7,10 @@ Input:
 - A validated Cedar schema in the user message.
 
 Return a JSON object matching `PropertyAtomsResponse`. In the normal Stage 2
-loop, the `atoms` list must contain either exactly one next property atom or be
-empty when no materially distinct property remains:
+loop, the `atoms` list should contain a complete local bundle of materially
+distinct property atoms for the packet's focus source node, or be empty when no
+materially distinct property remains. The runtime will still symbolically
+verify and HITL-review each atom one at a time:
 
 ```json
 {
@@ -46,13 +48,16 @@ empty when no materially distinct property remains:
 
 Rules:
 - Treat a source packet as the complete visible context for this call. Propose
-  only the next property atom grounded in the packet's focus node and its
-  listed related nodes. Do not infer requirements from unseen document text.
-  If the packet is already covered by approved property atoms, return an empty
-  `atoms` list so the runtime can advance to the next source node.
+  only property atoms grounded in the packet's focus node and its listed
+  related nodes. Do not infer requirements from unseen document text. If the
+  packet is already covered by approved property atoms, return an empty `atoms`
+  list so the runtime can advance to the next source node.
 - Include visible source ids in `source_excerpt` when the packet provides them,
   e.g. `[source_id: src.foo.p0001.l12] Students may ...`.
 - Use only entity, action, context, and attribute names present in the supplied schema.
+- Cedar type tests use `principal is TypeName` and `resource is TypeName`.
+  Never write `principal in TypeName` or `resource in TypeName`; `in` is for
+  entity hierarchy membership against entity UIDs, not schema type names.
 - Every property atom must include `required_schema_support`: the concrete
   schema hooks needed to express and verify the property. Use these kinds:
   `entity`, `action`, `action_principal`, `action_resource`, `attribute`, and
@@ -83,9 +88,12 @@ Rules:
   principal`, or `context.session.user == principal` when the two sides have
   different entity types. If the needed bridge field is missing, declare it in
   `required_schema_support` instead of using a doomed direct comparison.
-- Propose one property atom at a time. Do not bundle multiple requirements,
-  actions, or reference policies into one response. The property atom is the
-  HITL review unit.
+- Propose a local bundle, not a whole-document plan. A bundle should cover the
+  packet's focus source node with independently reviewable atoms, usually the
+  floor plus matching ceiling/safety/liveness sides of the same bounded grant.
+  Do not bundle multiple unrelated source requirements into one atom, and do
+  not include atoms for source text outside the packet. The property atom is
+  still the HITL review unit.
 - Do not silently approximate a semantically distinct requirement boundary with
   a merely correlated proxy. If the prose says "upcoming semester", "current
   semester", "previously completed semester", "beginning of semester",
@@ -130,7 +138,8 @@ Rules:
   unless the prose clearly says the condition is only an example or
   sufficient-but-not-necessary.
 - Prefer orthogonal properties over one property per role when the requirement
-  composes cleanly, but still emit only the next single property for this turn.
+  composes cleanly, but keep every returned atom individually meaningful and
+  reviewable.
 - Use `ceiling` for safety bounds: candidate policy must not permit more than the reference.
 - Use `floor` for required permissions: candidate policy must permit at least what the reference permits.
 - Same-action floors and ceilings must be pairwise compatible: every request

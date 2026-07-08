@@ -461,7 +461,25 @@ def _is_symcc_setup_error(text: str) -> bool:
 
 
 def auto_approve(atom: Any) -> AtomDecision:
-    """Non-interactive reviewer: approve everything and mark intent ack."""
+    """Non-interactive reviewer for batch runs.
+
+    This is still only a plumbing convenience; it is not semantic HITL
+    validation. It must not approve a property atom whose verifier checks
+    failed, because that would let invalid reference Cedar enter the formal
+    target and later fail as a plan-level tooling error.
+    """
+    if isinstance(atom, PropertyAtom) and not getattr(atom, "symbolic_verified", False):
+        log = getattr(atom, "symbolic_verification_log", []) or []
+        reason = "Symbolic verification failed; auto-approve refuses invalid property atoms."
+        if log:
+            reason += " " + str(log[0])
+        return AtomDecision(
+            atom_name=getattr(atom, "name", "?"),
+            action="reject",
+            reason=reason,
+            intent_acknowledged_by_user=False,
+            symbolic_verified=False,
+        )
     return AtomDecision(
         atom_name=getattr(atom, "name", "?"),
         action="approve",

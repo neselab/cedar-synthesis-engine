@@ -21,6 +21,7 @@ from autocedar.atoms import (
 )
 from autocedar.ui.terminal import (
     VERIFIED_BADGE,
+    auto_approve,
     format_symbolic_verification_log,
     interactive_review_loop,
     render_property_atom,
@@ -142,6 +143,27 @@ def _liveness_property() -> PropertyAtom:
             "sugar-universal: ok (not applicable to primitives)",
         ],
     )
+
+
+def test_auto_approve_rejects_symbolically_failed_property_atoms() -> None:
+    atom = _property()
+    atom.symbolic_verified = False
+    atom.symbolic_verification_log = [
+        "type-correct: FAILED (cedar validate rejected reference policy)",
+    ]
+
+    decision = auto_approve(atom)
+
+    assert decision.action == "reject"
+    assert decision.symbolic_verified is False
+    assert "Symbolic verification failed" in decision.reason
+
+
+def test_auto_approve_still_approves_schema_atoms() -> None:
+    decision = auto_approve(_entity())
+
+    assert decision.action == "approve"
+    assert decision.intent_acknowledged_by_user is True
 
 
 # ---------------------------------------------------------------------------

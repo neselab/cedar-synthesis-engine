@@ -15,10 +15,14 @@ def propose_property_atom(
     llm: LLMClient,
     prior_atoms: list[PropertyAtom],
     prior_decisions: list[AtomDecision],
-) -> PropertyAtom | None:
-    """Propose the next Stage 2 property atom from spec, schema, and review history."""
+) -> list[PropertyAtom]:
+    """Propose a local Stage 2 property bundle from spec, schema, and review history.
+
+    The pipeline still reviews each returned atom individually. Returning a
+    bundle only avoids repeated model round trips for the same source packet.
+    """
     schema_text = Path(schema_path).read_text()
-    return llm.propose_property_atom(
+    return llm.propose_property_atoms(
         spec_text,
         schema_text,
         prior_atoms=prior_atoms,

@@ -239,7 +239,7 @@ def test_stage0_intent_dag_records_approved_property_atoms(
 ) -> None:
     spec_path, schema_path = workspace
     atom = _owner_must_floor()
-    calls = [atom, None]
+    calls = [atom, _owner_only_ceiling(), None]
 
     def property_proposer(
         spec: str,
@@ -249,6 +249,8 @@ def test_stage0_intent_dag_records_approved_property_atoms(
     ) -> PropertyAtom | None:
         assert "<autocedar_source_packet" in spec
         _ = schema, prior, decisions
+        if not calls:
+            return None
         return calls.pop(0)
 
     def fake_symbolic_verify(
@@ -282,7 +284,7 @@ def test_stage0_intent_dag_records_approved_property_atoms(
     )
 
     dag = json.loads((result.session_dir / "stage0" / "intent_dag.json").read_text())
-    assert dag["summary"]["property_atoms"] == 1
+    assert dag["summary"]["property_atoms"] == 2
     assert any(node["id"] == "property_atom:owner_must_read" for node in dag["nodes"])
     assert any(
         edge["target"] == "property_atom:owner_must_read"
@@ -358,7 +360,7 @@ class _RecordingReviewer:
 
 
 class _QueuedPropertyProposer:
-    def __init__(self, *atoms: PropertyAtom) -> None:
+    def __init__(self, *atoms: PropertyAtom | list[PropertyAtom]) -> None:
         self._atoms = list(atoms)
         self.calls: list[tuple[list[str], list[str]]] = []
 
@@ -368,7 +370,7 @@ class _QueuedPropertyProposer:
         schema_path_arg: str,
         prior_atoms: list[PropertyAtom],
         prior_decisions: list[AtomDecision],
-    ) -> PropertyAtom | None:
+    ) -> PropertyAtom | list[PropertyAtom] | None:
         _ = spec_text, schema_path_arg
         self.calls.append(
             (
@@ -469,7 +471,7 @@ def test_author_emits_review_stage_and_overview_hooks(
     assert ("properties", 0) in reviewer.events
 
 
-def test_stage2_proposes_one_property_after_each_review(
+def test_stage2_reviews_bundled_properties_without_extra_planner_calls(
     tmp_path: Path,
     workspace: tuple[Path, Path],
     monkeypatch: pytest.MonkeyPatch,
@@ -496,23 +498,116 @@ def test_stage2_proposes_one_property_after_each_review(
         ),
     )
 
-    proposer = _QueuedPropertyProposer(_owner_only_ceiling(), _owner_must_floor())
+    proposer = _QueuedPropertyProposer([_owner_must_floor(), _owner_only_ceiling()])
 
     author(
         spec_path=spec_path,
         output_dir=tmp_path / "out",
-        session_id="one-at-a-time",
+        session_id="bundled-stage2",
         propose_property_atom=proposer,
         review_atom=_approve,
         synthesize=_synthesize_stub,
         schema_path_override=str(schema_path),
     )
 
-    assert proposer.calls == [
-        ([], []),
-        (["owner_only_read"], ["owner_only_read"]),
-        (["owner_only_read", "owner_must_read"], ["owner_only_read", "owner_must_read"]),
-    ]
+    assert proposer.calls == [([], [])]
+
+
+def test_stage2_does_not_complete_source_node_with_floor_only(
+    tmp_path: Path,
+    workspace: tuple[Path, Path],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    spec_path, schema_path = workspace
+
+    def fake_symbolic_verify(
+        atom: PropertyAtom,
+        schema_path_arg: str,
+        prior_atoms: list[PropertyAtom] | None = None,
+    ) -> None:
+        _ = schema_path_arg, prior_atoms
+        atom.symbolic_verified = True
+        atom.symbolic_verification_log = [f"checked {atom.name}"]
+
+    monkeypatch.setattr("autocedar.pipeline.symbolic_verify_atom", fake_symbolic_verify)
+
+    def fail_synthesize(scenario_dir: Path) -> Path:
+        _ = scenario_dir
+        raise AssertionError("floor-only coverage must not reach Stage 3")
+
+    proposer = _QueuedPropertyProposer(_owner_must_floor())
+
+    result = author(
+        spec_path=spec_path,
+        output_dir=tmp_path / "out",
+        session_id="floor-only-open",
+        propose_property_atom=proposer,
+        review_atom=_approve,
+        synthesize=fail_synthesize,
+        schema_path_override=str(schema_path),
+        max_property_proposals=3,
+    )
+
+    assert result.final_user_approved is False
+    assert any("full source DAG" in note for note in result.notes)
+    decisions = json.loads(
+        (result.session_dir / "stage2" / "decisions.json").read_text(),
+    )
+    assert any(
+        decision["atom_name"].startswith("coverage_audit_")
+        and "no same-source same-action" in decision["reason"]
+        for decision in decisions
+    )
+    coverage = json.loads((result.session_dir / "stage0" / "coverage_ledger.json").read_text())
+    assert coverage["open_property_node_ids"]
+
+
+def test_stage2_completes_source_node_after_floor_and_safety(
+    tmp_path: Path,
+    workspace: tuple[Path, Path],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    spec_path, schema_path = workspace
+
+    def fake_symbolic_verify(
+        atom: PropertyAtom,
+        schema_path_arg: str,
+        prior_atoms: list[PropertyAtom] | None = None,
+    ) -> None:
+        _ = schema_path_arg, prior_atoms
+        atom.symbolic_verified = True
+        atom.symbolic_verification_log = [f"checked {atom.name}"]
+
+    monkeypatch.setattr("autocedar.pipeline.symbolic_verify_atom", fake_symbolic_verify)
+    monkeypatch.setattr(
+        "autocedar.pipeline.symbolic_consistency_check",
+        lambda *args, **kwargs: SimpleNamespace(
+            unsat=False,
+            core=[],
+            detail="",
+            tool_error=False,
+        ),
+    )
+
+    proposer = _QueuedPropertyProposer(_owner_must_floor(), _owner_only_ceiling())
+
+    result = author(
+        spec_path=spec_path,
+        output_dir=tmp_path / "out",
+        session_id="floor-plus-safety-complete",
+        propose_property_atom=proposer,
+        review_atom=_approve,
+        synthesize=_synthesize_stub,
+        schema_path_override=str(schema_path),
+    )
+
+    assert result.final_user_approved is True
+    coverage = json.loads((result.session_dir / "stage0" / "coverage_ledger.json").read_text())
+    assert coverage["open_property_node_ids"] == []
+    decisions = json.loads(
+        (result.session_dir / "stage2" / "decisions.json").read_text(),
+    )
+    assert not any(decision["atom_name"].startswith("coverage_audit_") for decision in decisions)
 
 
 def test_author_stops_when_no_schema_atoms_are_approved(tmp_path: Path) -> None:
@@ -781,7 +876,10 @@ def test_author_repairs_rejected_property_atom(
         spec_path=spec_path,
         output_dir=tmp_path / "out",
         session_id="repaired-prop",
-        propose_property_atom=_QueuedPropertyProposer(_owner_only_ceiling()),
+        propose_property_atom=_QueuedPropertyProposer(
+            _owner_only_ceiling(),
+            _owner_only_ceiling(),
+        ),
         plan_property_repair=repair_planner,
         repair_property_atom=repair_property_atom,
         review_atom=review_then_approve,
@@ -789,16 +887,18 @@ def test_author_repairs_rejected_property_atom(
         schema_path_override=str(schema_path),
     )
 
-    assert reviewed == ["owner_only_read", "owner_must_read"]
+    assert reviewed == ["owner_only_read", "owner_must_read", "owner_only_read"]
     assert repaired == [("owner_only_read", "floor conflicts with prior ceiling")]
     decisions = json.loads(
         (tmp_path / "out" / "repaired-prop" / "stage2" / "decisions.json").read_text(),
     )
-    assert len(decisions) == 1
+    assert len(decisions) == 2
     assert decisions[0]["action"] == "approve"
     assert decisions[0]["atom_name"] == "owner_must_read"
     assert decisions[0]["edit_delta"]["replaced_after_reject"] is True
     assert decisions[0]["edit_delta"]["reject_history"][0]["atom_name"] == "owner_only_read"
+    assert decisions[1]["action"] == "approve"
+    assert decisions[1]["atom_name"] == "owner_only_read"
 
 
 def test_author_skips_later_property_duplicate_after_repair(
@@ -1070,9 +1170,14 @@ def test_hitl_schema_gap_rejection_repairs_schema_and_continues(
             "when { resource.isCurrent };"
         ),
     )
+    current_ceiling = replace(
+        repaired_property,
+        name="student_register_current_ceiling",
+        constraint_type="ceiling",
+    )
     schema_calls = 0
     schema_seen_by_property: list[str] = []
-    properties = [weak_property, repaired_property]
+    properties = [weak_property, repaired_property, current_ceiling]
     synth_called = False
 
     def schema_proposer(text: str) -> list[object]:
@@ -1209,6 +1314,11 @@ def test_schema_gap_repair_patches_supplied_schema_without_llm_rewrite(
             "when { resource.isCurrent };"
         ),
     )
+    current_ceiling = replace(
+        repaired_property,
+        name="student_register_current_ceiling",
+        constraint_type="ceiling",
+    )
     is_current = AttributeAtom(
         name="course_offering_is_current",
         rationale="current semester marker",
@@ -1218,7 +1328,7 @@ def test_schema_gap_repair_patches_supplied_schema_without_llm_rewrite(
         field_name="isCurrent",
         cedar_type="Bool",
     )
-    properties = [weak_property, repaired_property]
+    properties = [weak_property, repaired_property, current_ceiling]
     schemas_seen: list[str] = []
 
     def fake_symbolic_verify(
@@ -1355,13 +1465,22 @@ def test_schema_gap_repairs_log_all_repair_records(
         name="current_ok",
         reference_cedar='permit (principal, action == Action::"register", resource) when { resource.isCurrent };',
     )
+    current_ceiling = replace(current_ok, name="current_ceiling", constraint_type="ceiling")
     weak_upcoming = replace(weak_current, name="weak_upcoming", source_excerpt="upcoming offerings")
     upcoming_ok = replace(
         weak_current,
         name="upcoming_ok",
         reference_cedar='permit (principal, action == Action::"register", resource) when { resource.isUpcoming };',
     )
-    property_queue = [weak_current, current_ok, weak_upcoming, upcoming_ok]
+    upcoming_ceiling = replace(upcoming_ok, name="upcoming_ceiling", constraint_type="ceiling")
+    property_queue = [
+        weak_current,
+        current_ok,
+        current_ceiling,
+        weak_upcoming,
+        upcoming_ok,
+        upcoming_ceiling,
+    ]
     schema_calls = 0
 
     def schema_proposer(text: str) -> list[object]:

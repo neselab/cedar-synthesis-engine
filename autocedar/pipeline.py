@@ -61,6 +61,7 @@ from autocedar.schema_support import (
 )
 from autocedar.source_doc import (
     attach_source_ids,
+    atom_source_ids,
     approved_target_spec,
     build_coverage_ledger,
     build_schema_packets,
@@ -81,10 +82,11 @@ DEFAULT_MAX_PROPERTY_PROPOSALS = 128
 Stage1AtomT = EntityAtom | AttributeAtom | ActionAtom | TypeAliasAtom
 SchemaProposer = Callable[[str], list[Stage1AtomT]]
 
-# Stage 2: propose the next property atom from prose + schema + review history.
+# Stage 2: propose property atoms from prose + schema + review history.
+PropertyProposalResult = Optional[PropertyAtom] | list[PropertyAtom]
 PropertyProposer = Callable[
     [str, str, list[PropertyAtom], list[AtomDecision]],
-    Optional[PropertyAtom],
+    PropertyProposalResult,
 ]
 
 # Stage 2 repair: propose one replacement after the user rejects a property atom.
@@ -138,7 +140,7 @@ def _stub_property_proposer(
     schema_path: str,
     prior_atoms: list[PropertyAtom],
     prior_decisions: list[AtomDecision],
-) -> Optional[PropertyAtom]:
+) -> PropertyProposalResult:
     """Test helper: return no next Stage 2 atom."""
     _ = spec_text, schema_path, prior_atoms, prior_decisions
     return None
@@ -678,6 +680,9 @@ def author(
         session.write_stage2_symbolic_verification_logs(verification_logs)
     property_frontier_nodes = source_doc.authorization_nodes()
     active_property_node = None
+    active_packet = None
+    active_spec_text = ""
+    pending_property_atoms: list[tuple[PropertyAtom, bool]] = []
     property_frontier_exhausted = False
     _notify_review_stage(review_atom, "Property intent review", None)
     for _ in range(max_property_proposals):
@@ -693,37 +698,64 @@ def author(
             if active_property_node is None:
                 property_frontier_exhausted = True
                 break
-        active_packet = select_property_packet(
-            source_doc,
-            active_property_node,
-            approved_schema_atoms=approved_schema_atoms,
-            approved_property_atoms=plan.properties,
-            prior_decisions=decisions2,
-        )
-        active_packet.id = f"{active_packet.id}.step{len(property_context_packets) + 1:04d}"
-        property_context_packets.append(active_packet)
-        session.write_stage0_context_packet(active_packet.id, active_packet.to_dict())
-        active_spec_text = active_packet.to_prompt_text()
-        atom = propose_property_atom(
-            active_spec_text,
-            str(schema_path),
-            plan.properties,
-            decisions2,
-        )
-        if atom is not None:
-            atom = attach_source_ids(atom, active_packet.node_ids())
-        if atom is None:
-            completed_property_node_ids.add(active_property_node.id)
-            session.write_stage0_coverage_ledger(
-                build_coverage_ledger(
-                    source_doc,
-                    completed_property_node_ids=completed_property_node_ids,
-                    schema_packets=schema_context_packets,
-                    property_packets=property_context_packets,
-                ),
+            pending_property_atoms = []
+        if not pending_property_atoms:
+            active_packet = select_property_packet(
+                source_doc,
+                active_property_node,
+                approved_schema_atoms=approved_schema_atoms,
+                approved_property_atoms=plan.properties,
+                prior_decisions=decisions2,
             )
-            active_property_node = None
-            continue
+            active_packet.id = f"{active_packet.id}.step{len(property_context_packets) + 1:04d}"
+            property_context_packets.append(active_packet)
+            session.write_stage0_context_packet(active_packet.id, active_packet.to_dict())
+            active_spec_text = active_packet.to_prompt_text()
+            proposal_result = propose_property_atom(
+                active_spec_text,
+                str(schema_path),
+                plan.properties,
+                decisions2,
+            )
+            proposed = _normalize_property_proposals(proposal_result)
+            proposal_was_batch = isinstance(proposal_result, list)
+            pending_property_atoms.extend(
+                (attach_source_ids(atom, active_packet.focus_node_ids), proposal_was_batch)
+                for atom in proposed
+            )
+            if not pending_property_atoms:
+                completion_blocker = _source_node_completion_blocker(
+                    active_packet.focus_node_ids,
+                    plan.properties,
+                )
+                if completion_blocker is not None:
+                    decisions2.append(
+                        AtomDecision(
+                            atom_name=f"coverage_audit_{active_property_node.id}",
+                            action="reject",
+                            reason=completion_blocker,
+                            edit_delta={
+                                "stage": "stage2_source_node_completion",
+                                "source_node_ids": list(active_packet.focus_node_ids),
+                            },
+                        ),
+                    )
+                    session.write_stage2_decisions(decisions2)
+                    continue
+                completed_property_node_ids.add(active_property_node.id)
+                session.write_stage0_coverage_ledger(
+                    build_coverage_ledger(
+                        source_doc,
+                        completed_property_node_ids=completed_property_node_ids,
+                        schema_packets=schema_context_packets,
+                        property_packets=property_context_packets,
+                    ),
+                )
+                active_property_node = None
+                continue
+        atom, atom_from_batch = pending_property_atoms.pop(0)
+        if active_packet is None:
+            raise RuntimeError("Stage 2 property packet missing for queued atom")
         support_gaps = missing_schema_support(atom.required_schema_support, schema_text)
         if support_gaps:
             gap_reason = (
@@ -815,6 +847,8 @@ def author(
             schema_text = repaired
             schema_gap_repair_count += 1
             _notify_schema_ready(review_atom, schema_text)
+            if atom_from_batch:
+                pending_property_atoms.insert(0, (atom, atom_from_batch))
             continue
         prop_atoms.append(atom)
         attributions2.append(
@@ -824,8 +858,6 @@ def author(
         session.write_stage2_attribution_decisions(attributions2)
         if atom.name in approved_property_names:
             decisions2.append(_duplicate_decision(atom.name, "property"))
-            completed_property_node_ids.add(active_property_node.id)
-            active_property_node = None
             continue
         current_atom = atom
         rejection_history: list[dict[str, str]] = []
@@ -971,7 +1003,7 @@ def author(
                     plan.properties,
                 )
                 if replacement is not None:
-                    replacement = attach_source_ids(replacement, active_packet.node_ids())
+                    replacement = attach_source_ids(replacement, active_packet.focus_node_ids)
                     replacement = _align_repaired_property_atom(
                         rejected_atom=reviewed_atom,
                         replacement=replacement,
@@ -1160,6 +1192,42 @@ def author(
             schema_gap_repair_count += 1
             _notify_schema_ready(review_atom, schema_text)
             continue
+        if (
+            atom_from_batch
+            and not pending_property_atoms
+            and active_property_node is not None
+            and active_packet is not None
+        ):
+            completion_blocker = _source_node_completion_blocker(
+                active_packet.focus_node_ids,
+                plan.properties,
+            )
+            if completion_blocker is not None:
+                decisions2.append(
+                    AtomDecision(
+                        atom_name=f"coverage_audit_{active_property_node.id}",
+                        action="reject",
+                        reason=completion_blocker,
+                        edit_delta={
+                            "stage": "stage2_source_node_completion",
+                            "source_node_ids": list(active_packet.focus_node_ids),
+                        },
+                    ),
+                )
+                session.write_stage2_decisions(decisions2)
+                continue
+            completed_property_node_ids.add(active_property_node.id)
+            session.write_stage0_coverage_ledger(
+                build_coverage_ledger(
+                    source_doc,
+                    completed_property_node_ids=completed_property_node_ids,
+                    schema_packets=schema_context_packets,
+                    property_packets=property_context_packets,
+                ),
+            )
+            active_property_node = None
+            active_packet = None
+            active_spec_text = ""
     if not property_frontier_exhausted:
         decisions2.append(
             AtomDecision(
@@ -1464,6 +1532,59 @@ def _approved_schema_repair_atoms(path: Path) -> list[Stage1AtomT]:
                 approved.append(atom)
                 seen.add(atom.name)
     return approved
+
+
+def _normalize_property_proposals(result: PropertyProposalResult) -> list[PropertyAtom]:
+    """Normalize old single-atom and new bundle proposers into a list."""
+    if result is None:
+        return []
+    if isinstance(result, PropertyAtom):
+        return [result]
+    return [atom for atom in result if isinstance(atom, PropertyAtom)]
+
+
+def _source_node_completion_blocker(
+    focus_node_ids: list[str],
+    approved_atoms: list[PropertyAtom],
+) -> str | None:
+    """Return a reason if a source node cannot be marked property-complete.
+
+    This is deliberately structural. It does not infer intent from English
+    keywords. Once HITL/AITL has accepted a floor for a source node, that node
+    represents a bounded grant and must also expose a same-action safety side
+    before Stage 2 can call the source node covered. The safety side may be a
+    ceiling, disjointness, or rate limit atom. Without this guard the model can
+    stop after a plausible positive permission and leave synthesis free to
+    over-permit around it.
+    """
+
+    focus_ids = set(focus_node_ids)
+    if not focus_ids:
+        return None
+    local_atoms = [
+        atom
+        for atom in approved_atoms
+        if focus_ids.intersection(atom_source_ids(atom))
+    ]
+    floors = [atom for atom in local_atoms if atom.constraint_type == "floor" and atom.action]
+    if not floors:
+        return None
+    safety_actions = {
+        atom.action
+        for atom in local_atoms
+        if atom.action and atom.constraint_type in {"ceiling", "disjointness", "rate_limit"}
+    }
+    missing = [atom for atom in floors if atom.action not in safety_actions]
+    if not missing:
+        return None
+    names = ", ".join(atom.name for atom in missing[:5])
+    actions = ", ".join(sorted({atom.action for atom in missing}))
+    return (
+        "Source-node coverage is incomplete: approved floor atom(s) "
+        f"{names} for action(s) {actions} have no same-source same-action "
+        "ceiling, disjointness, or rate-limit safety atom yet. Propose the "
+        "missing bounded-grant safety side before returning an empty atom list."
+    )
 
 
 def _approved_property_atoms_for_resume(

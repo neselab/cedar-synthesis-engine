@@ -445,6 +445,7 @@ def _cmd_author(args: argparse.Namespace) -> int:
             no_review=True,
         ),
         schema_path_override=args.schema,
+        run_incremental_checks=False,
         max_schema_gap_repairs=getattr(args, "max_schema_gap_repairs", None),
     )
 
