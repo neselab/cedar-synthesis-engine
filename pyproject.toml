@@ -5,7 +5,7 @@ description = "Human-in-the-loop Cedar policy authoring with symbolic verificati
 readme = "README.md"
 requires-python = ">=3.11"
 license = "Apache-2.0"
-license-files = ["LICENSE"]
+license-files = ["LICENSE", "NOTICE"]
 authors = [
     { name = "AutoCedar Authors" },
 ]
