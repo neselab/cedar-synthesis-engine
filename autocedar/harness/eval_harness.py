@@ -56,6 +56,10 @@ from autocedar.harness.solver_wrapper import (
     run_syntax_check,
 )
 from autocedar.llm import default_model_for_provider, default_provider
+from autocedar.openai_compatible import (
+    OpenAICompatibleClient,
+    is_openai_compatible_provider,
+)
 
 # In the packaged harness, default run/discovery paths are relative to the
 # caller's project directory instead of the installed package directory.
@@ -120,19 +124,21 @@ MODEL_PRICING = {
 def _make_harness_llm_client() -> Any:
     """Return the configured provider client for Phase 1 and Stage 3.
 
-    The harness still uses an Anthropic-message-shaped interface internally
-    (``client.messages.create(...)``). ``CodexAuthClient`` intentionally
-    implements that same small shape, so the synthesis loop does not need a
-    separate Codex shim.
+    The harness uses a small provider-neutral compatibility interface
+    internally. Codex OAuth, Anthropic opt-in, and OpenAI-compatible local
+    clients implement that interface so the synthesis loop remains independent
+    of each provider's wire protocol.
     """
     provider = default_provider()
     if is_codex_provider(provider):
         return CodexAuthClient()
-    if provider != "anthropic":
-        raise ValueError(
-            f"Unsupported AUTOCEDAR_PROVIDER={provider!r}; expected 'codex' or 'anthropic'.",
-        )
-    return Anthropic()
+    if is_openai_compatible_provider(provider):
+        return OpenAICompatibleClient()
+    if provider == "anthropic":
+        return Anthropic()
+    raise ValueError(
+        f"Unsupported AUTOCEDAR_PROVIDER={provider!r}; expected codex, anthropic, or local.",
+    )
 
 
 def _harness_output_config() -> dict[str, str] | None:
@@ -144,6 +150,8 @@ def _harness_output_config() -> dict[str, str] | None:
 
 def _estimate_cost(model: str, input_tokens: int, output_tokens: int) -> float:
     """Estimate cost in USD for given token counts."""
+    if is_openai_compatible_provider(default_provider()):
+        return 0.0
     pricing = MODEL_PRICING.get(model, {"input": 3.00, "output": 15.00})
     return (input_tokens * pricing["input"] + output_tokens * pricing["output"]) / 1_000_000
 

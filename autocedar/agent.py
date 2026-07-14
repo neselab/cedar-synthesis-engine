@@ -185,7 +185,7 @@ Critical rules:
   should choose the same actions as the matching slash shortcut instead of
   describing what the user could type.
 - Use show_models when users ask what models are available, and set_provider
-  when they ask to switch between Anthropic and Codex.
+  when they ask to switch between Codex, Anthropic, and a local model server.
 - Use the current state fields to answer workflow-status questions. If
   latest_authoring_complete is true and latest_candidate_validated is true,
   you may say the generated candidate passed the recorded verification checks.

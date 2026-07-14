@@ -105,6 +105,40 @@ def test_eval_harness_uses_anthropic_only_when_explicit(
     assert isinstance(eval_harness._make_harness_llm_client(), FakeAnthropic)
 
 
+def test_eval_harness_uses_openai_compatible_client_when_explicit(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import autocedar.harness.eval_harness as eval_harness
+
+    sentinel = object()
+    monkeypatch.setenv("AUTOCEDAR_PROVIDER", "local")
+    monkeypatch.setattr(eval_harness, "OpenAICompatibleClient", lambda: sentinel)
+
+    assert eval_harness._make_harness_llm_client() is sentinel
+    assert eval_harness._estimate_cost("served-local-model", 1000, 500) == 0.0
+
+
+def test_translator_resolves_provider_and_model_at_call_time(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import autocedar.harness.translator as translator
+
+    local_client = object()
+    codex_client = object()
+    monkeypatch.setattr(translator, "OpenAICompatibleClient", lambda: local_client)
+    monkeypatch.setattr(translator, "CodexAuthClient", lambda: codex_client)
+
+    monkeypatch.setenv("AUTOCEDAR_PROVIDER", "local")
+    monkeypatch.setenv("AUTOCEDAR_LOCAL_MODEL", "local-v1")
+    assert translator._get_client() is local_client
+    assert translator._model() == "local-v1"
+
+    monkeypatch.setenv("AUTOCEDAR_PROVIDER", "openai")
+    monkeypatch.setenv("AUTOCEDAR_CODEX_MODEL", "gpt-test")
+    assert translator._get_client() is codex_client
+    assert translator._model() == "gpt-test"
+
+
 def test_stage3_prompt_prefers_explicit_type_guards() -> None:
     import autocedar.harness.eval_harness as eval_harness
 

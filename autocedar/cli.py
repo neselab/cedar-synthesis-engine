@@ -153,11 +153,8 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     author_p.add_argument(
         "--model",
-        default=default_model_for_provider(),
-        help=(
-            "Model for schema/property atomization and Stage 3 synthesis "
-            f"(default: {default_model_for_provider()})."
-        ),
+        default=None,
+        help="Model for schema/property atomization and Stage 3 synthesis (default: provider default).",
     )
     author_p.add_argument(
         "--effort",
@@ -190,11 +187,8 @@ def _build_parser() -> argparse.ArgumentParser:
     resume_p.add_argument("--session-id", default=None, help="Stable resumed session id.")
     resume_p.add_argument(
         "--model",
-        default=default_model_for_provider(),
-        help=(
-            "Model for continued atomization and Stage 3 synthesis "
-            f"(default: {default_model_for_provider()})."
-        ),
+        default=None,
+        help="Model for continued atomization and Stage 3 synthesis (default: provider default).",
     )
     resume_p.add_argument(
         "--effort",
@@ -359,7 +353,8 @@ def _cmd_author(args: argparse.Namespace) -> int:
     if not spec_path.exists():
         raise SystemExit(f"spec not found: {spec_path}")
 
-    llm = LLMClient(provider=default_provider(), model=args.model, effort=args.effort)
+    model = args.model or default_model_for_provider()
+    llm = LLMClient(provider=default_provider(), model=model, effort=args.effort)
 
     spec_text = spec_path.read_text()
 
@@ -446,8 +441,8 @@ def _cmd_author(args: argparse.Namespace) -> int:
         plan_property_repair=property_repair_planner,
         repair_property_atom=property_repairer,
         synthesize=make_harness_synthesizer(
-            phase1_model=args.model,
-            phase2_model=args.model,
+            phase1_model=model,
+            phase2_model=model,
             no_review=True,
         ),
         schema_path_override=args.schema,
@@ -476,7 +471,8 @@ def _cmd_resume(args: argparse.Namespace) -> int:
         raise SystemExit(f"resume session has no input spec under: {session_dir / 'input'}")
     spec_path = input_files[0]
 
-    llm = LLMClient(provider=default_provider(), model=args.model, effort=args.effort)
+    model = args.model or default_model_for_provider()
+    llm = LLMClient(provider=default_provider(), model=model, effort=args.effort)
     spec_text = spec_path.read_text()
 
     def schema_proposer(text: str):
@@ -562,8 +558,8 @@ def _cmd_resume(args: argparse.Namespace) -> int:
         plan_property_repair=property_repair_planner,
         repair_property_atom=property_repairer,
         synthesize=make_harness_synthesizer(
-            phase1_model=args.model,
-            phase2_model=args.model,
+            phase1_model=model,
+            phase2_model=model,
             no_review=True,
         ),
         resume_from=session_dir,
@@ -652,7 +648,7 @@ def _cmd_synthesize(args: argparse.Namespace) -> int:
 
 
 def _provider_uses_anthropic_key() -> bool:
-    return default_provider() not in {"codex", "openai-codex"}
+    return default_provider() == "anthropic"
 
 
 def _can_prompt_for_secret() -> bool:
@@ -701,7 +697,8 @@ def _require_api_key_for_llm_command() -> None:
         return
     raise SystemExit(
         "ANTHROPIC_API_KEY is not configured. Run `autocedar apikey`, "
-        "or set AUTOCEDAR_PROVIDER=codex if you are using local Codex auth.",
+        "set AUTOCEDAR_PROVIDER=codex for Codex OAuth, or configure the "
+        "local provider for a vLLM server.",
     )
 
 

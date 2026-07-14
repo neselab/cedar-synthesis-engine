@@ -25,6 +25,7 @@ from autocedar.tui import (
     TuiAtomReviewer,
     _describe_author_action,
     _draft_lines_from_text,
+    _initial_model,
     _property_overview_text,
     _redact_sensitive_input,
     _render_cedar_for_review,
@@ -93,6 +94,16 @@ def test_tokenize_accepts_slash_commands_and_quotes() -> None:
         "--out",
         "runs",
     ]
+
+
+def test_initial_local_model_prefers_endpoint_specific_name(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("AUTOCEDAR_PROVIDER", "local")
+    monkeypatch.setenv("AUTOCEDAR_LOCAL_MODEL", "served-local")
+    monkeypatch.setenv("AUTOCEDAR_MODEL", "stale-cloud-model")
+
+    assert _initial_model() == "served-local"
 
 
 def test_setup_and_doctor_are_discoverable_in_tui_help() -> None:
@@ -1308,6 +1319,65 @@ def test_textual_provider_and_models_commands_use_codex_bridge(
             assert "max (Extra high reasoning depth)" in rendered
             assert "Fast" in rendered
             assert "272,000 default, 1,000,000 max" in rendered
+            await pilot.exit(None)
+
+    asyncio.run(run())
+
+
+def test_textual_provider_and_models_commands_use_local_server(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("AUTOCEDAR_PROVIDER", "codex")
+    monkeypatch.setenv("AUTOCEDAR_LOCAL_MODEL", "autocedar-local")
+
+    class FakeRuntimeInfo:
+        available = True
+        base_url = "http://127.0.0.1:8000/v1"
+        models = ["autocedar-local", "backup-local"]
+        error = None
+
+    monkeypatch.setattr("autocedar.tui.openai_runtime_info", lambda: FakeRuntimeInfo())
+
+    async def run() -> None:
+        app = AutoCedarApp()
+        written: list[object] = []
+
+        def capture(content: object) -> None:
+            written.append(getattr(content, "renderable", content))
+
+        async with app.run_test() as pilot:
+            app._write = capture  # type: ignore[method-assign]
+            app._handle_command_input("/provider local")
+            assert app.llm_provider == "local"
+            assert app.llm_model == "autocedar-local"
+            assert os.environ["AUTOCEDAR_PROVIDER"] == "local"
+
+            app._handle_command_input("/models")
+
+            rendered = "\n".join(str(item) for item in written)
+            assert "autocedar-local" in rendered
+            assert "backup-local" in rendered
+            assert "127.0.0.1:8000" in rendered
+
+            app._handle_command_input("/model local-v2")
+            assert app.llm_model == "local-v2"
+            assert os.environ["AUTOCEDAR_LOCAL_MODEL"] == "local-v2"
+
+            app._handle_command_input("/provider codex")
+            assert app.llm_provider == "codex"
+            assert app.llm_model.startswith("gpt-")
+
+            app._handle_command_input("/provider local")
+            assert app.llm_provider == "local"
+            assert app.llm_model == "local-v2"
+
+            monkeypatch.setattr(
+                "autocedar.tui.openai_runtime_info",
+                lambda: (_ for _ in ()).throw(
+                    AssertionError("status updates must not make network probes"),
+                ),
+            )
+            app._update_status()
             await pilot.exit(None)
 
     asyncio.run(run())

@@ -43,6 +43,11 @@ from autocedar.atoms import (
     TypeAliasAtom,
 )
 from autocedar.codex_auth import DEFAULT_CODEX_MODEL, CodexAuthClient, is_codex_provider
+from autocedar.openai_compatible import (
+    OpenAICompatibleClient,
+    is_openai_compatible_provider,
+    openai_model,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -57,13 +62,24 @@ DEFAULT_PROVIDER = "codex"
 
 
 def default_provider() -> str:
-    return os.environ.get("AUTOCEDAR_PROVIDER", DEFAULT_PROVIDER).strip().lower()
+    configured = os.environ.get("AUTOCEDAR_PROVIDER", DEFAULT_PROVIDER).strip().lower()
+    if is_codex_provider(configured):
+        return "codex"
+    if is_openai_compatible_provider(configured):
+        return "local"
+    return configured
 
 
 def default_model_for_provider(provider: str | None = None) -> str:
     resolved = (provider or default_provider()).strip().lower()
     if is_codex_provider(resolved):
         return os.environ.get("AUTOCEDAR_CODEX_MODEL") or DEFAULT_CODEX_MODEL
+    if is_openai_compatible_provider(resolved):
+        return openai_model()
+    if resolved != "anthropic":
+        raise ValueError(
+            f"Unsupported AUTOCEDAR_PROVIDER={resolved!r}; expected codex, anthropic, or local.",
+        )
     return (
         os.environ.get("AUTOCEDAR_MODEL")
         or os.environ.get("AUTOCEDAR_AUTHOR_MODEL")
@@ -420,12 +436,15 @@ class LLMClient:
     Construction:
       - ``client``: an ``anthropic.Anthropic`` instance, ``CodexAuthClient``,
         or any object exposing ``.messages.parse(**kwargs)``.
-      - ``provider``: ``"anthropic"`` or ``"codex"``. When omitted, reads
-        ``AUTOCEDAR_PROVIDER`` and defaults to Codex.
+      - ``provider``: ``"codex"``, ``"anthropic"``, or ``"local"`` for an
+        OpenAI-compatible local endpoint. When omitted, reads ``AUTOCEDAR_PROVIDER``
+        and defaults to Codex.
       - ``model``: optional model identifier; when omitted, defaults to the selected provider's
         default model. For Codex this is ``AUTOCEDAR_CODEX_MODEL`` or
         ``gpt-5.5``; for Anthropic this is ``claude-opus-4-7`` unless
-        overridden by ``AUTOCEDAR_MODEL`` / ``AUTOCEDAR_AUTHOR_MODEL``.
+        overridden by ``AUTOCEDAR_MODEL`` / ``AUTOCEDAR_AUTHOR_MODEL``; for
+        local servers it is ``AUTOCEDAR_LOCAL_MODEL`` or
+        ``autocedar-local``.
       - ``max_tokens``: per-call ceiling; defaults to 16000.
       - ``effort``: ``"low" | "medium" | "high" | "max"``; defaults to
         ``"high"`` per the skill guidance for intelligence-sensitive
@@ -451,12 +470,19 @@ class LLMClient:
         if client is None:
             if is_codex_provider(resolved_provider):
                 client = CodexAuthClient()
-            else:
+            elif is_openai_compatible_provider(resolved_provider):
+                client = OpenAICompatibleClient()
+            elif resolved_provider == "anthropic":
                 # Lazy-import the SDK so tests can run without ANTHROPIC_API_KEY
                 # set; only the live path requires it.
                 import anthropic
 
                 client = anthropic.Anthropic()
+            else:
+                raise ValueError(
+                    f"Unsupported AUTOCEDAR_PROVIDER={resolved_provider!r}; "
+                    "expected codex, anthropic, or local.",
+                )
         self._client = client
         self._provider = resolved_provider
         self._model = model

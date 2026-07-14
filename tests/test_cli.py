@@ -33,6 +33,16 @@ def test_parser_exposes_version_command() -> None:
     assert args.func is cli._cmd_version
 
 
+def test_version_parser_does_not_resolve_invalid_provider_model(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("AUTOCEDAR_PROVIDER", "typo")
+
+    args = cli._build_parser().parse_args(["version"])
+
+    assert args.func is cli._cmd_version
+
+
 def test_author_command_injects_harness_synthesizer(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -287,3 +297,19 @@ def test_parser_exposes_apikey_command() -> None:
     assert args.key == "sk-ant-test123"
     assert args.env == Path("local.env")
     assert args.func is cli._cmd_apikey
+
+
+def test_local_provider_does_not_prompt_for_anthropic_key(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("AUTOCEDAR_PROVIDER", "local")
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.setattr(
+        cli.getpass,
+        "getpass",
+        lambda *args, **kwargs: (_ for _ in ()).throw(
+            AssertionError("local provider must not ask for an Anthropic key"),
+        ),
+    )
+
+    cli._require_api_key_for_llm_command()

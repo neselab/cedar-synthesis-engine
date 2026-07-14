@@ -619,12 +619,15 @@ cargo install cedar-policy-cli --locked --version 4.10.0 --features analyze --fo
 
 ### LLM Providers And Local Config
 
-AutoCedar supports two live model providers:
+AutoCedar supports three live model providers:
 
 - **OpenAI Codex** by local Codex OAuth. This is the default provider. It reuses the login cache created by
   `codex login` and defaults to `gpt-5.5`.
 - **Anthropic** by API key. This is explicit opt-in via
   `AUTOCEDAR_PROVIDER=anthropic` or `/provider anthropic`.
+- **Local model servers** such as vLLM. This is explicit opt-in via
+  `AUTOCEDAR_PROVIDER=local` or `/provider local`. vLLM's OpenAI-compatible
+  protocol is an internal transport detail; no OpenAI cloud service is used.
 
 #### Anthropic API Key
 
@@ -708,6 +711,34 @@ speed/service tiers, and verbosity support. AutoCedar keeps the UI spelling
 `max`; when the selected provider is Codex, `/effort max` sends Codex's
 token-visible `xhigh` reasoning level.
 
+#### Local Models Through vLLM
+
+Start a chat/instruction model with an OpenAI-compatible server such as vLLM,
+then point AutoCedar at that server. The served model name must match the model
+name AutoCedar sends:
+
+```bash
+export AUTOCEDAR_PROVIDER=local
+export AUTOCEDAR_LOCAL_BASE_URL=http://127.0.0.1:8000/v1
+export AUTOCEDAR_LOCAL_API_KEY=autocedar-local
+export AUTOCEDAR_LOCAL_MODEL=autocedar-local
+export AUTOCEDAR_LOCAL_MAX_TOKENS=8192
+
+autocedar doctor
+autocedar author policy_spec.md --out ./autocedar-runs --model autocedar-local
+```
+
+The endpoint-specific key is optional if the local server does not require
+one. AutoCedar never reuses `OPENAI_API_KEY` implicitly for this path. Local
+model calls are reported at zero API cost; GPU allocation cost is outside that
+estimate. When using `127.0.0.1`, the server and AutoCedar must run on the same
+machine or Slurm node. `AUTOCEDAR_LOCAL_MAX_TOKENS` caps only local-model
+responses, which is useful when the served model has a smaller context window.
+
+For a freshman-friendly Slurm walkthrough, including rootless Cedar/CVC5 setup,
+vLLM startup, human review keys, and troubleshooting, see the
+[standalone `autocedar-jarvis` guide](https://github.com/neselab/cedar-synthesis-engine/tree/main/autocedar-jarvis).
+
 To switch to Anthropic explicitly:
 
 ```text
@@ -727,7 +758,7 @@ The interactive agent can configure the current session from inside the TUI:
 
 ```text
 /settings
-/provider anthropic|codex
+/provider codex|anthropic|local
 /models
 /model gpt-5.5
 /effort low|medium|high|max
@@ -740,8 +771,8 @@ with Anthropic before saving. `/apikey sk-ant-...` also works for one-line
 setup. Rejected keys are not persisted. Valid keys save to the same user-level
 AutoCedar config, so the key persists across new `uvx` sessions and package
 upgrades. `/provider codex` uses the Codex OAuth cache instead of the Anthropic
-API key; `/models` shows the token-visible Codex models, reasoning levels,
-context windows, and speed/service tiers.
+API key. `/provider local` uses `AUTOCEDAR_LOCAL_BASE_URL`; `/models` queries
+that server's `/v1/models` endpoint.
 
 ### Docker
 
@@ -866,7 +897,7 @@ Slash shortcuts are available for repeatable control:
 | Command | Purpose |
 | --- | --- |
 | `/settings` | Show selected provider, model, effort, and auth status. |
-| `/provider anthropic\|codex` | Switch between Anthropic API-key mode and local Codex OAuth mode. |
+| `/provider codex\|anthropic\|local` | Switch between Codex OAuth, Anthropic API-key mode, and a local model server such as vLLM. |
 | `/models` | Show available models for the active provider. For Codex, this queries the token-backed Codex model endpoint and shows reasoning levels, context windows, and speed/service tiers. |
 | `/model MODEL` | Set the default model for the agent planner, authoring atomization, and default TUI synthesis phases. |
 | `/effort low\|medium\|high\|max` | Set adaptive thinking effort for planner/authoring calls that support it. |

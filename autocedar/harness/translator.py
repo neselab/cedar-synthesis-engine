@@ -12,31 +12,34 @@ from anthropic import Anthropic
 
 from autocedar.codex_auth import CodexAuthClient, is_codex_provider
 from autocedar.llm import default_model_for_provider, default_provider
-
-MODEL = os.environ.get("CEDAR_TRANSLATE_MODEL") or default_model_for_provider()
-
-_client = None
+from autocedar.openai_compatible import (
+    OpenAICompatibleClient,
+    is_openai_compatible_provider,
+)
 
 
 def _get_client() -> Any:
-    global _client
-    if _client is None:
-        provider = default_provider()
-        if is_codex_provider(provider):
-            _client = CodexAuthClient()
-        elif provider == "anthropic":
-            _client = Anthropic()
-        else:
-            raise ValueError(
-                f"Unsupported AUTOCEDAR_PROVIDER={provider!r}; expected 'codex' or 'anthropic'.",
-            )
-    return _client
+    provider = default_provider()
+    if is_codex_provider(provider):
+        return CodexAuthClient()
+    if is_openai_compatible_provider(provider):
+        return OpenAICompatibleClient()
+    if provider == "anthropic":
+        return Anthropic()
+    raise ValueError(
+        f"Unsupported AUTOCEDAR_PROVIDER={provider!r}; "
+        "expected codex, anthropic, or local.",
+    )
+
+
+def _model() -> str:
+    return os.environ.get("CEDAR_TRANSLATE_MODEL") or default_model_for_provider()
 
 
 def policy_to_nl(policy_text: str, schema_text: str) -> str:
     """Translate a Cedar policy into plain-language summary."""
     response = _get_client().messages.create(
-        model=MODEL,
+        model=_model(),
         max_tokens=1024,
         messages=[{
             "role": "user",
@@ -71,7 +74,7 @@ def counterexample_to_nl(
 ) -> str:
     """Translate a solver counterexample into plain-language explanation."""
     response = _get_client().messages.create(
-        model=MODEL,
+        model=_model(),
         max_tokens=512,
         messages=[{
             "role": "user",
@@ -103,7 +106,7 @@ def feedback_to_policy(
 ) -> str:
     """Update a Cedar policy based on administrator NL feedback."""
     response = _get_client().messages.create(
-        model=MODEL,
+        model=_model(),
         max_tokens=2048,
         messages=[{
             "role": "user",

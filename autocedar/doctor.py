@@ -18,6 +18,10 @@ from autocedar.codex_auth import codex_runtime_info, is_codex_provider
 from autocedar.env import ANTHROPIC_API_KEY, find_dotenv, is_real_anthropic_api_key
 from autocedar.grounding import CEDAR_PATH, CVC5_PATH, _run_symcc
 from autocedar.llm import default_model_for_provider, default_provider
+from autocedar.openai_compatible import (
+    is_openai_compatible_provider,
+    openai_runtime_info,
+)
 
 
 @dataclass
@@ -91,6 +95,17 @@ def _dotenv_check(cwd: Path) -> DoctorCheck:
 
 def _llm_check() -> DoctorCheck:
     provider = default_provider()
+    if not (
+        is_codex_provider(provider)
+        or is_openai_compatible_provider(provider)
+        or provider == "anthropic"
+    ):
+        return DoctorCheck(
+            name="LLM provider",
+            status="FAIL",
+            detail=f"unsupported AUTOCEDAR_PROVIDER={provider!r}",
+            fix="set AUTOCEDAR_PROVIDER to codex, anthropic, or local",
+        )
     model = default_model_for_provider(provider)
     if is_codex_provider(provider):
         info = codex_runtime_info()
@@ -111,6 +126,43 @@ def _llm_check() -> DoctorCheck:
             status="FAIL",
             detail=f"{provider} using model {model}; Codex OAuth is not available at {info.auth_source}",
             fix="run `codex login`, then retry `autocedar doctor` or use `/provider anthropic` with `/apikey`",
+        )
+
+    if is_openai_compatible_provider(provider):
+        info = openai_runtime_info()
+        if not info.available:
+            return DoctorCheck(
+                name="LLM provider",
+                status="FAIL",
+                detail=(
+                    f"local using model {model}; server is not reachable "
+                    f"at {info.base_url}"
+                ),
+                fix=(
+                    "start vLLM on this node, confirm `/v1/models` responds, and set "
+                    "AUTOCEDAR_LOCAL_BASE_URL if it is not on 127.0.0.1:8000"
+                ),
+            )
+        if info.models and model not in info.models:
+            return DoctorCheck(
+                name="LLM provider",
+                status="FAIL",
+                detail=(
+                    f"local server is reachable at {info.base_url}, but "
+                    f"model {model!r} is not advertised; available: {', '.join(info.models)}"
+                ),
+                fix=(
+                    "set AUTOCEDAR_MODEL to one of the advertised names, or restart "
+                    "vLLM with `--served-model-name` matching this model"
+                ),
+            )
+        return DoctorCheck(
+            name="LLM provider",
+            status="OK",
+            detail=(
+                f"local using model {model} at {info.base_url}; "
+                f"available models: {', '.join(info.models) or '(server returned none)'}"
+            ),
         )
 
     if is_real_anthropic_api_key(os.environ.get(ANTHROPIC_API_KEY)):
