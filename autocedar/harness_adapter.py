@@ -14,6 +14,7 @@ OutputCallback = Callable[[str], None]
 
 def make_harness_synthesizer(
     *,
+    provider: str | None = None,
     phase1_model: str | None = None,
     phase2_model: str | None = None,
     max_iters: int | None = None,
@@ -58,6 +59,7 @@ def make_harness_synthesizer(
                     max_iters=iters,
                     gen_references=gen_references,
                     no_review=no_review,
+                    provider=provider,
                 )
             text = captured.getvalue().strip()
             if text and output_callback is not None:
@@ -71,6 +73,7 @@ def make_harness_synthesizer(
                 max_iters=iters,
                 gen_references=gen_references,
                 no_review=no_review,
+                provider=provider,
             )
 
         candidate_path = run_dir / scenario_dir.name / "candidate.cedar"

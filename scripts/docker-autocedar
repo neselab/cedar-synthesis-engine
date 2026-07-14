@@ -33,6 +33,27 @@ if ! "${DOCKER[@]}" info >/dev/null 2>&1; then
 fi
 
 USER_ID="$(id -u):$(id -g)"
+ENV_ARGS=()
+if [[ -f "$REPO_ROOT/.env" ]]; then
+  ENV_ARGS=(--env-file "$REPO_ROOT/.env")
+fi
+
+# The container runs as the host user, so /root is not a safe writable HOME.
+# Persist AutoCedar's split settings/auth store on the host and present it under
+# a writable container HOME. Override the host path when isolation is desired.
+HOST_CONFIG_DIR="${AUTOCEDAR_DOCKER_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/autocedar}"
+CONTAINER_HOME="/home/autocedar"
+mkdir -p "$HOST_CONFIG_DIR"
+chmod 700 "$HOST_CONFIG_DIR"
+MOUNT_ARGS=(
+  --env "HOME=$CONTAINER_HOME"
+  --volume "$HOST_CONFIG_DIR:$CONTAINER_HOME/.config/autocedar"
+  --volume "$REPO_ROOT:/work"
+  --workdir /work
+)
+if [[ -d "$HOME/.codex" ]]; then
+  MOUNT_ARGS+=(--volume "$HOME/.codex:$CONTAINER_HOME/.codex:ro")
+fi
 
 echo "Building Docker image: $IMAGE"
 "${DOCKER[@]}" build -t "$IMAGE" "$REPO_ROOT"
@@ -43,54 +64,26 @@ if [[ "${1:-}" == "apikey" || "${1:-}" == "api-key" ]]; then
       --rm \
       -it \
       --user "$USER_ID" \
-      --volume "$REPO_ROOT:/work" \
-      --workdir /work \
+      "${ENV_ARGS[@]}" \
+      "${MOUNT_ARGS[@]}" \
       "$IMAGE" \
       "$@"
   fi
   exec "${DOCKER[@]}" run \
     --rm \
     --user "$USER_ID" \
-    --volume "$REPO_ROOT:/work" \
-    --workdir /work \
+    "${ENV_ARGS[@]}" \
+    "${MOUNT_ARGS[@]}" \
     "$IMAGE" \
     "$@"
-fi
-
-NEEDS_API_KEY=0
-if [[ ! -f "$REPO_ROOT/.env" ]]; then
-  NEEDS_API_KEY=1
-elif ! grep -Eq '^[[:space:]]*(export[[:space:]]+)?ANTHROPIC_API_KEY[[:space:]]*=' "$REPO_ROOT/.env"; then
-  NEEDS_API_KEY=1
-elif grep -Eq '^[[:space:]]*(export[[:space:]]+)?ANTHROPIC_API_KEY[[:space:]]*=[[:space:]]*"?sk-ant-(\.\.\.|…)"?[[:space:]]*$' "$REPO_ROOT/.env"; then
-  NEEDS_API_KEY=1
-fi
-
-if [[ "$NEEDS_API_KEY" -eq 1 ]]; then
-  echo "ANTHROPIC_API_KEY is not configured in $REPO_ROOT/.env."
-  if [[ -t 0 && -t 1 ]]; then
-    echo "AutoCedar will ask for it now and save it to .env."
-    "${DOCKER[@]}" run \
-      --rm \
-      -it \
-      --user "$USER_ID" \
-      --volume "$REPO_ROOT:/work" \
-      --workdir /work \
-      "$IMAGE" \
-      apikey
-  else
-    echo "Run: ./scripts/docker-autocedar apikey sk-ant-..."
-    exit 1
-  fi
 fi
 
 echo "Checking AutoCedar environment inside Docker..."
 "${DOCKER[@]}" run \
   --rm \
   --user "$USER_ID" \
-  --env-file "$REPO_ROOT/.env" \
-  --volume "$REPO_ROOT:/work" \
-  --workdir /work \
+  "${ENV_ARGS[@]}" \
+  "${MOUNT_ARGS[@]}" \
   "$IMAGE" \
   doctor
 
@@ -100,9 +93,8 @@ if [[ -t 0 && -t 1 ]]; then
     --rm \
     -it \
     --user "$USER_ID" \
-    --env-file "$REPO_ROOT/.env" \
-    --volume "$REPO_ROOT:/work" \
-    --workdir /work \
+    "${ENV_ARGS[@]}" \
+    "${MOUNT_ARGS[@]}" \
     "$IMAGE" \
     "$@"
 elif [[ $# -eq 0 || "$1" == "tui" ]]; then
@@ -115,8 +107,7 @@ echo "Starting AutoCedar in Docker..."
 exec "${DOCKER[@]}" run \
   --rm \
   --user "$USER_ID" \
-  --env-file "$REPO_ROOT/.env" \
-  --volume "$REPO_ROOT:/work" \
-  --workdir /work \
+  "${ENV_ARGS[@]}" \
+  "${MOUNT_ARGS[@]}" \
   "$IMAGE" \
   "$@"

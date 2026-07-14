@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - uses: astral-sh/setup-uv@v5
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Install dependencies
+        run: uv sync --locked --group dev
+
+      - name: Install verifier toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends cvc5
+          uv run autocedar setup --yes --skip-cvc5
+          ~/.cargo/bin/cedar symcc --help | grep -- --principal-type
+
+      - name: Run tests
+        run: uv run pytest
+
+      - name: Build and check distributions
+        if: matrix.python-version == '3.12'
+        run: |
+          uv build --no-sources
+          uvx twine check dist/*

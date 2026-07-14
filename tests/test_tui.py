@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import os
-import sys
 from pathlib import Path
 from typing import Sequence
 
@@ -112,6 +112,9 @@ def test_setup_and_doctor_are_discoverable_in_tui_help() -> None:
     assert "doctor" in COMMANDS
     assert "provider" in COMMANDS
     assert "models" in COMMANDS
+    assert "endpoint" in COMMANDS
+    assert "login" in COMMANDS
+    assert "logout" in COMMANDS
     assert "export" in COMMANDS
     assert "inspect" in COMMANDS
     assert "search" in COMMANDS
@@ -119,6 +122,9 @@ def test_setup_and_doctor_are_discoverable_in_tui_help() -> None:
     assert "/doctor" in HELP_TEXT
     assert "/provider" in HELP_TEXT
     assert "/models" in HELP_TEXT
+    assert "/endpoint" in HELP_TEXT
+    assert "/login" in HELP_TEXT
+    assert "/logout" in HELP_TEXT
     assert "/export" in HELP_TEXT
     assert "/inspect" in HELP_TEXT
     assert "/search" in HELP_TEXT
@@ -365,8 +371,10 @@ def test_render_cedar_for_liveness_property_is_explanatory() -> None:
 
 def test_natural_language_without_api_key_requires_live_planner(
     monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
 ) -> None:
     monkeypatch.setenv("AUTOCEDAR_PROVIDER", "anthropic")
+    monkeypatch.setenv("AUTOCEDAR_CONFIG_DIR", str(tmp_path / "config"))
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     app = AutoCedarApp()
     messages: list[str] = []
@@ -376,7 +384,7 @@ def test_natural_language_without_api_key_requires_live_planner(
 
     assert app.pending_action is None
     assert app.draft_lines == []
-    assert "Natural-language control needs the live agent planner" in messages[0]
+    assert "needs anthropic authentication" in messages[0]
 
 
 def test_draft_mode_routes_requirements_through_planner() -> None:
@@ -1209,6 +1217,7 @@ def test_textual_settings_commands_update_runtime(
     monkeypatch.delenv("AUTOCEDAR_AUTHOR_MODEL", raising=False)
     monkeypatch.delenv("AUTOCEDAR_EFFORT", raising=False)
     monkeypatch.setenv("AUTOCEDAR_CONFIG_DIR", str(tmp_path / "config"))
+    monkeypatch.setenv("AUTOCEDAR_PROVIDER", "anthropic")
     validated: list[tuple[str, str]] = []
     monkeypatch.setattr(
         "autocedar.tui.validate_anthropic_api_key",
@@ -1220,30 +1229,32 @@ def test_textual_settings_commands_update_runtime(
         async with app.run_test() as pilot:
             app._handle_command_input("/model claude-sonnet-4-6")
             assert app.llm_model == "claude-sonnet-4-6"
-            assert os.environ["AUTOCEDAR_MODEL"] == "claude-sonnet-4-6"
+            assert "claude-sonnet-4-6" in (tmp_path / "config" / "settings.json").read_text()
 
             app._handle_command_input("/effort max")
             assert app.llm_effort == "max"
-            assert os.environ["AUTOCEDAR_EFFORT"] == "max"
+            assert '"reasoning_effort": "max"' in (
+                tmp_path / "config" / "settings.json"
+            ).read_text()
 
             app._handle_command_input("/effort xhigh")
             assert app.llm_effort == "max"
 
             app._handle_command_input("/apikey sk-ant-secret123")
-            assert os.environ["ANTHROPIC_API_KEY"] == "sk-ant-secret123"
+            assert "ANTHROPIC_API_KEY" not in os.environ
             assert app.active_api_key == "sk-ant-secret123"
             assert validated == [
                 ("sk-ant-secret123", ANTHROPIC_API_KEY_VALIDATION_MODEL),
             ]
-            env_path = tmp_path / "config" / ".env"
-            assert env_path.read_text() == "ANTHROPIC_API_KEY=sk-ant-secret123\n"
+            auth_path = tmp_path / "config" / "auth.json"
+            assert '"api_key": "sk-ant-secret123"' in auth_path.read_text()
 
             app._handle_command_input("/apikey status")
 
             app._handle_command_input("/apikey clear")
             assert "ANTHROPIC_API_KEY" not in os.environ
             assert app.active_api_key == ""
-            assert env_path.read_text() == ""
+            assert "sk-ant-secret123" not in auth_path.read_text()
             await pilot.exit(None)
 
     asyncio.run(run())
@@ -1251,10 +1262,12 @@ def test_textual_settings_commands_update_runtime(
 
 def test_textual_provider_and_models_commands_use_codex_bridge(
     monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
 ) -> None:
     monkeypatch.setenv("AUTOCEDAR_PROVIDER", "anthropic")
+    monkeypatch.setenv("AUTOCEDAR_CONFIG_DIR", str(tmp_path / "config"))
     monkeypatch.delenv("AUTOCEDAR_MODEL", raising=False)
-    monkeypatch.setattr("autocedar.tui.codex_auth_available", lambda: True)
+    monkeypatch.setattr("autocedar.tui._cli_auth_status", lambda provider: (True, "test login"))
 
     class FakeRuntimeInfo:
         auth_available = True
@@ -1311,7 +1324,8 @@ def test_textual_provider_and_models_commands_use_codex_bridge(
             app._handle_command_input("/provider codex")
             assert app.llm_provider == "codex"
             assert app.llm_model == "gpt-5.5"
-            assert os.environ["AUTOCEDAR_PROVIDER"] == "codex"
+            assert os.environ["AUTOCEDAR_PROVIDER"] == "anthropic"
+            assert '"default_provider": "codex"' in app.settings_store.path.read_text()
 
             app._handle_command_input("/models")
 
@@ -1329,9 +1343,11 @@ def test_textual_provider_and_models_commands_use_codex_bridge(
 
 def test_textual_provider_and_models_commands_use_local_server(
     monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
 ) -> None:
     monkeypatch.setenv("AUTOCEDAR_PROVIDER", "codex")
     monkeypatch.setenv("AUTOCEDAR_LOCAL_MODEL", "autocedar-local")
+    monkeypatch.setenv("AUTOCEDAR_CONFIG_DIR", str(tmp_path / "config"))
 
     class FakeRuntimeInfo:
         available = True
@@ -1339,7 +1355,10 @@ def test_textual_provider_and_models_commands_use_local_server(
         models = ["autocedar-local", "backup-local"]
         error = None
 
-    monkeypatch.setattr("autocedar.tui.openai_runtime_info", lambda: FakeRuntimeInfo())
+    monkeypatch.setattr(
+        "autocedar.tui.list_openai_models",
+        lambda **kwargs: FakeRuntimeInfo.models,
+    )
 
     async def run() -> None:
         app = AutoCedarApp()
@@ -1353,7 +1372,7 @@ def test_textual_provider_and_models_commands_use_local_server(
             app._handle_command_input("/provider local")
             assert app.llm_provider == "local"
             assert app.llm_model == "autocedar-local"
-            assert os.environ["AUTOCEDAR_PROVIDER"] == "local"
+            assert os.environ["AUTOCEDAR_PROVIDER"] == "codex"
 
             app._handle_command_input("/models")
 
@@ -1364,7 +1383,7 @@ def test_textual_provider_and_models_commands_use_local_server(
 
             app._handle_command_input("/model local-v2")
             assert app.llm_model == "local-v2"
-            assert os.environ["AUTOCEDAR_LOCAL_MODEL"] == "local-v2"
+            assert os.environ["AUTOCEDAR_LOCAL_MODEL"] == "autocedar-local"
 
             app._handle_command_input("/provider codex")
             assert app.llm_provider == "codex"
@@ -1375,12 +1394,219 @@ def test_textual_provider_and_models_commands_use_local_server(
             assert app.llm_model == "local-v2"
 
             monkeypatch.setattr(
-                "autocedar.tui.openai_runtime_info",
-                lambda: (_ for _ in ()).throw(
+                "autocedar.tui.list_openai_models",
+                lambda **kwargs: (_ for _ in ()).throw(
                     AssertionError("status updates must not make network probes"),
                 ),
             )
             app._update_status()
+            await pilot.exit(None)
+
+    asyncio.run(run())
+
+
+def test_textual_endpoint_persists_without_mutating_environment(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("AUTOCEDAR_CONFIG_DIR", str(tmp_path / "config"))
+    monkeypatch.setenv("AUTOCEDAR_PROVIDER", "local")
+    monkeypatch.delenv("AUTOCEDAR_LOCAL_BASE_URL", raising=False)
+
+    async def run() -> None:
+        app = AutoCedarApp()
+        async with app.run_test() as pilot:
+            app._handle_command_input("/endpoint http://127.0.0.1:9000/v1")
+
+            assert app.llm_endpoint == "http://127.0.0.1:9000/v1"
+            assert '"base_url": "http://127.0.0.1:9000/v1"' in (
+                tmp_path / "config" / "settings.json"
+            ).read_text()
+            assert "AUTOCEDAR_LOCAL_BASE_URL" not in os.environ
+
+            app._handle_command_input("/provider codex")
+            app._handle_command_input("/provider local")
+            assert app.llm_endpoint == "http://127.0.0.1:9000/v1"
+            await pilot.exit(None)
+
+    asyncio.run(run())
+
+
+def test_textual_supports_all_canonical_provider_ids(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("AUTOCEDAR_CONFIG_DIR", str(tmp_path / "config"))
+    monkeypatch.delenv("AUTOCEDAR_PROVIDER", raising=False)
+
+    async def run() -> None:
+        app = AutoCedarApp()
+        async with app.run_test() as pilot:
+            for provider in ("codex", "claude-cli", "anthropic", "openai", "local"):
+                app._set_provider(provider)
+                assert app.llm_provider == provider
+            await pilot.exit(None)
+
+    asyncio.run(run())
+
+
+def test_textual_openai_login_and_logout_use_private_auth_store(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("AUTOCEDAR_CONFIG_DIR", str(tmp_path / "config"))
+    monkeypatch.setenv("AUTOCEDAR_PROVIDER", "openai")
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+
+    async def run() -> None:
+        app = AutoCedarApp()
+        async with app.run_test() as pilot:
+            app._handle_command_input("/login openai")
+            assert app.pending_secret == "api_key:openai"
+            app._handle_pending_api_key("sk-openai-test-value")
+            assert '"api_key": "sk-openai-test-value"' in (
+                tmp_path / "config" / "auth.json"
+            ).read_text()
+            assert "OPENAI_API_KEY" not in os.environ
+
+            app._handle_command_input("/logout openai")
+            assert "sk-openai-test-value" not in (
+                tmp_path / "config" / "auth.json"
+            ).read_text()
+            await pilot.exit(None)
+
+    asyncio.run(run())
+
+
+def test_textual_claude_login_uses_cli_without_shell(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("AUTOCEDAR_CONFIG_DIR", str(tmp_path / "config"))
+    monkeypatch.setenv("AUTOCEDAR_PROVIDER", "claude-cli")
+    monkeypatch.setattr("autocedar.tui.shutil.which", lambda name: "/usr/bin/claude")
+    calls: list[tuple[list[str], dict[str, object]]] = []
+
+    def fake_run(command: list[str], **kwargs: object) -> object:
+        calls.append((command, kwargs))
+        return type("Completed", (), {"returncode": 0})()
+
+    monkeypatch.setattr("autocedar.tui.subprocess.run", fake_run)
+
+    async def run() -> None:
+        app = AutoCedarApp()
+        async with app.run_test() as pilot:
+            app.suspend = contextlib.nullcontext  # type: ignore[method-assign]
+            app._handle_command_input("/login claude-cli")
+            assert calls == [
+                (["/usr/bin/claude", "auth", "login"], {"check": False}),
+            ]
+            await pilot.exit(None)
+
+    asyncio.run(run())
+
+
+def test_pending_local_api_key_is_unconditionally_redacted_from_transcript(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("AUTOCEDAR_CONFIG_DIR", str(tmp_path / "config"))
+    monkeypatch.setenv("AUTOCEDAR_PROVIDER", "local")
+    secret = "jarvis-private-token-without-sk-prefix"
+
+    async def run() -> None:
+        app = AutoCedarApp()
+        rendered: list[str] = []
+        async with app.run_test() as pilot:
+            original_write = app._write
+
+            def capture(content: object) -> None:
+                rendered.append(str(content))
+                original_write(content)
+
+            app._write = capture  # type: ignore[method-assign]
+            app._submit_command_text("/login local")
+            assert app.pending_secret == "api_key:local"
+            assert app.query_one("#command").password is True
+            app._submit_command_text(secret)
+
+            assert app.query_one("#command").password is False
+            assert secret not in "\n".join(app.copyable_transcript)
+            assert secret not in "\n".join(rendered)
+            assert any("[redacted-api-key]" in line for line in app.copyable_transcript)
+            assert secret in (tmp_path / "config" / "auth.json").read_text()
+            await pilot.exit(None)
+
+    asyncio.run(run())
+
+
+def test_pending_api_key_cancel_resets_password_mode(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("AUTOCEDAR_CONFIG_DIR", str(tmp_path / "config"))
+    monkeypatch.setenv("AUTOCEDAR_PROVIDER", "local")
+
+    async def run() -> None:
+        app = AutoCedarApp()
+        async with app.run_test() as pilot:
+            app._submit_command_text("/login local")
+            command_input = app.query_one("#command")
+            assert command_input.password is True
+
+            app._submit_command_text("cancel")
+
+            assert app.pending_secret is None
+            assert command_input.password is False
+            assert command_input.placeholder == "Tell AutoCedar what to do, or type /help"
+            await pilot.exit(None)
+
+    asyncio.run(run())
+
+
+def test_settings_reports_effective_configuration_sources(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("AUTOCEDAR_CONFIG_DIR", str(tmp_path / "config"))
+    monkeypatch.setenv("AUTOCEDAR_PROVIDER", "local")
+    monkeypatch.setenv("AUTOCEDAR_LOCAL_MODEL", "source-model")
+
+    async def run() -> None:
+        app = AutoCedarApp()
+        async with app.run_test() as pilot:
+            settings = app._settings_text()
+            assert "environment:AUTOCEDAR_PROVIDER" in settings
+            assert "environment:AUTOCEDAR_LOCAL_MODEL" in settings
+
+            app._set_model("session-model")
+            settings = app._settings_text()
+            assert "TUI /model; saved to settings.json" in settings
+            await pilot.exit(None)
+
+    asyncio.run(run())
+
+
+def test_non_anthropic_planner_auth_error_does_not_delete_anthropic_key(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("AUTOCEDAR_CONFIG_DIR", str(tmp_path / "config"))
+    monkeypatch.setenv("AUTOCEDAR_PROVIDER", "openai")
+
+    class AuthenticationError(Exception):
+        pass
+
+    async def run() -> None:
+        app = AutoCedarApp()
+        app.auth_store.set_api_key("anthropic", "sk-ant-preserve-this")
+        messages: list[str] = []
+        async with app.run_test() as pilot:
+            app._say = messages.append  # type: ignore[method-assign]
+            app._finish_agent_planning(None, AuthenticationError("invalid x-api-key"))
+
+            assert app.auth_store.get_api_key("anthropic") == "sk-ant-preserve-this"
+            assert not any("cleared" in message for message in messages)
             await pilot.exit(None)
 
     asyncio.run(run())
@@ -1392,6 +1618,7 @@ def test_textual_apikey_rejects_invalid_key_before_saving(
 ) -> None:
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     monkeypatch.setenv("AUTOCEDAR_CONFIG_DIR", str(tmp_path / "config"))
+    monkeypatch.setenv("AUTOCEDAR_PROVIDER", "anthropic")
 
     class AuthenticationError(Exception):
         pass
@@ -1423,6 +1650,7 @@ def test_textual_apikey_rejects_redacted_placeholder_without_live_validation(
 ) -> None:
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     monkeypatch.setenv("AUTOCEDAR_CONFIG_DIR", str(tmp_path / "config"))
+    monkeypatch.setenv("AUTOCEDAR_PROVIDER", "anthropic")
     validation_calls: list[str] = []
     monkeypatch.setattr(
         "autocedar.tui.validate_anthropic_api_key",
@@ -1451,6 +1679,7 @@ def test_textual_apikey_normalizes_pasted_key_before_saving(
 ) -> None:
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     monkeypatch.setenv("AUTOCEDAR_CONFIG_DIR", str(tmp_path / "config"))
+    monkeypatch.setenv("AUTOCEDAR_PROVIDER", "anthropic")
     validated: list[str] = []
     monkeypatch.setattr(
         "autocedar.tui.validate_anthropic_api_key",
@@ -1463,33 +1692,37 @@ def test_textual_apikey_normalizes_pasted_key_before_saving(
             app._say = lambda message: None  # type: ignore[method-assign]
             app._handle_command_input('/apikey "sk-ant-\u200bsecret 123"')
             assert validated == ["sk-ant-secret123"]
-            assert os.environ["ANTHROPIC_API_KEY"] == "sk-ant-secret123"
-            assert (tmp_path / "config" / ".env").read_text() == (
-                "ANTHROPIC_API_KEY=sk-ant-secret123\n"
-            )
+            assert "ANTHROPIC_API_KEY" not in os.environ
+            assert '"api_key": "sk-ant-secret123"' in (
+                tmp_path / "config" / "auth.json"
+            ).read_text()
             await pilot.exit(None)
 
     asyncio.run(run())
 
 
-def test_make_anthropic_client_receives_resolved_api_key(
+def test_make_provider_backend_receives_resolved_api_key(
     monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
 ) -> None:
-    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-env123")
-    captured: list[str | None] = []
-
-    class FakeAnthropicModule:
-        class Anthropic:
-            def __init__(self, *, api_key: str | None = None) -> None:
-                captured.append(api_key)
-
-    monkeypatch.setitem(sys.modules, "anthropic", FakeAnthropicModule)
+    monkeypatch.setenv("AUTOCEDAR_CONFIG_DIR", str(tmp_path / "config"))
+    monkeypatch.setenv("AUTOCEDAR_PROVIDER", "anthropic")
+    captured: list[tuple[object, str | None]] = []
+    sentinel = object()
+    monkeypatch.setattr(
+        "autocedar.tui.create_runtime_backend",
+        lambda config, *, session_api_key=None: (
+            captured.append((config, session_api_key)) or sentinel
+        ),
+    )
 
     app = AutoCedarApp()
     app.active_api_key = "sk-ant-active123"
-    app._make_anthropic_client()
+    backend = app._make_provider_backend()
 
-    assert captured == ["sk-ant-active123"]
+    assert backend is sentinel
+    assert captured[0][1] == "sk-ant-active123"
+    assert captured[0][0].provider == "anthropic"
 
 
 def test_runtime_settings_resolve_author_and_synthesis_defaults() -> None:

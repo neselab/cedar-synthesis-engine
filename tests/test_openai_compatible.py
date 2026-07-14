@@ -16,6 +16,7 @@ from autocedar.openai_compatible import (
     openai_model,
     openai_runtime_info,
 )
+from autocedar.providers.base import ChatMessage, InstructionPart
 
 
 class Answer(BaseModel):
@@ -66,16 +67,19 @@ def test_list_models_uses_optional_bearer_key() -> None:
     assert seen["body"] is None
 
 
-def test_legacy_openai_environment_names_remain_supported(
+def test_direct_openai_environment_names_do_not_configure_local_runtime(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.delenv("AUTOCEDAR_LOCAL_BASE_URL", raising=False)
     monkeypatch.delenv("AUTOCEDAR_LOCAL_MODEL", raising=False)
+    monkeypatch.delenv("AUTOCEDAR_MODEL", raising=False)
+    monkeypatch.delenv("AUTOCEDAR_AUTHOR_MODEL", raising=False)
+    monkeypatch.delenv("AUTOCEDAR_CHAT_MODEL", raising=False)
     monkeypatch.setenv("AUTOCEDAR_OPENAI_BASE_URL", "http://legacy:8000/v1")
     monkeypatch.setenv("AUTOCEDAR_OPENAI_MODEL", "legacy-model")
 
-    assert openai_base_url() == "http://legacy:8000/v1"
-    assert openai_model() == "legacy-model"
+    assert openai_base_url() == DEFAULT_OPENAI_BASE_URL
+    assert openai_model() == DEFAULT_OPENAI_MODEL
 
 
 def test_list_models_rejects_reachable_server_with_no_models() -> None:
@@ -251,3 +255,36 @@ def test_create_surfaces_endpoint_error() -> None:
             system="system",
             messages=[{"role": "user", "content": "hello"}],
         )
+
+
+def test_local_native_backend_method_does_not_require_messages_shape() -> None:
+    seen: dict[str, Any] = {}
+
+    def requester(method, url, headers, body, timeout):
+        seen["body"] = body
+        return 200, {
+            "id": "chat_native",
+            "model": "local-native",
+            "choices": [{"message": {"content": "native"}}],
+            "usage": {
+                "prompt_tokens": 7,
+                "completion_tokens": 2,
+                "prompt_tokens_details": {"cached_tokens": 3},
+            },
+        }
+
+    client = OpenAICompatibleClient(requester=requester)
+    result = client.generate_text(
+        model="local-native",
+        system=(InstructionPart("one"), InstructionPart("two")),
+        messages=(ChatMessage(role="user", content="hello"),),
+        max_tokens=99,
+    )
+
+    assert result.text == "native"
+    assert result.usage.cache_read_input_tokens == 3
+    assert result.request_id == "chat_native"
+    assert seen["body"]["messages"] == [
+        {"role": "system", "content": "one\n\ntwo"},
+        {"role": "user", "content": "hello"},
+    ]

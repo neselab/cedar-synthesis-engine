@@ -35,36 +35,21 @@ from autocedar.api_key import (
     validate_anthropic_api_key,
 )
 from autocedar.codex_auth import (
-    DEFAULT_CODEX_MODEL,
-    CodexAuthClient,
-    codex_auth_available,
-    codex_auth_path,
     codex_runtime_info,
-    is_codex_provider,
 )
 from autocedar.corpus import AtomDecision
 from autocedar.env import (
-    ANTHROPIC_API_KEY,
-    is_real_anthropic_api_key,
     load_dotenv,
-    remove_user_config_value,
-    write_user_config_value,
 )
 from autocedar.harness_adapter import make_harness_synthesizer
 from autocedar.llm import (
     ANTHROPIC_API_KEY_VALIDATION_MODEL,
-    DEFAULT_ANTHROPIC_MODEL,
     DEFAULT_EFFORT,
     LLMClient,
-    default_model_for_provider,
-    default_provider,
+    create_runtime_backend,
 )
 from autocedar.openai_compatible import (
-    DEFAULT_OPENAI_MODEL,
-    OpenAICompatibleClient,
-    is_openai_compatible_provider,
-    openai_base_url,
-    openai_runtime_info,
+    list_openai_models,
 )
 from autocedar.pipeline import author as author_pipeline
 from autocedar.progress import format_property_progress
@@ -78,6 +63,18 @@ from autocedar.ui.terminal import (
     render_property_reference,
     render_schema_atom,
     render_schema_declaration,
+)
+from autocedar.providers import (
+    AuthStore,
+    CANONICAL_PROVIDER_IDS,
+    DEFAULT_MODELS,
+    ProviderOptions,
+    SessionOverrides,
+    SettingsStore,
+    canonical_provider_id,
+    get_provider_definition,
+    resolve_api_key,
+    resolve_provider_config,
 )
 
 
@@ -100,10 +97,13 @@ COMMANDS = {
     "doctor",
     "draft",
     "effort",
+    "endpoint",
     "exit",
     "export",
     "help",
     "inspect",
+    "login",
+    "logout",
     "model",
     "models",
     "new",
@@ -124,13 +124,16 @@ SLASH_COMMAND_DESCRIPTIONS = {
     "/verify": "verify a workspace",
     "/synthesize": "run the synthesis harness",
     "/setup": "show Cedar/CVC5 install steps",
-    "/doctor": "check API key and verifier setup",
+    "/doctor": "check provider authentication and verifier setup",
     "/settings": "show provider, model, effort, and auth status",
-    "/provider": "switch Codex, Anthropic, or a local model server",
+    "/provider": "switch among Codex, Claude CLI, API, or local providers",
     "/models": "show models available to the active provider",
     "/model": "set the default LLM model",
     "/effort": "set low, medium, high, or max effort",
-    "/apikey": "set, show, or clear the saved API key",
+    "/endpoint": "set the local OpenAI-compatible endpoint",
+    "/login": "authenticate the active or named provider",
+    "/logout": "remove authentication for the active or named provider",
+    "/apikey": "deprecated API-key shortcut for the active provider",
     "/draft": "show, start, clear, edit, delete, or insert draft lines",
     "/artifacts": "show latest session/schema/policy paths",
     "/inspect": "show workflow state, verification status, and key artifact files",
@@ -178,13 +181,16 @@ Slash shortcuts are also available:
   [#f0c678]/verify[/] [WORKSPACE]
   [#f0c678]/synthesize SCENARIO...[/] [--out DIR] [--max-iters N] [--no-review]
   [#f0c678]/setup[/]                 show local Cedar/CVC5 install steps
-  [#f0c678]/doctor[/]                check API-key, Cedar SymCC, and CVC5 setup
+  [#f0c678]/doctor[/]                check provider auth, Cedar SymCC, and CVC5
   [#f0c678]/settings[/]              show provider, model, effort, and auth status
-  [#f0c678]/provider codex|anthropic|local[/]
+  [#f0c678]/provider codex|claude-cli|anthropic|openai|local[/]
   [#f0c678]/models[/]                show available models for the active provider
   [#f0c678]/model MODEL[/]           set the default LLM model
   [#f0c678]/effort low|medium|high|max[/]
-  [#f0c678]/apikey[/] [KEY|status|clear] set, show, or clear the saved API key
+  [#f0c678]/endpoint URL[/]           set the local OpenAI-compatible endpoint
+  [#f0c678]/login[/] [PROVIDER]       authenticate with a CLI login or API key
+  [#f0c678]/logout[/] [PROVIDER]      remove provider authentication
+  [#f0c678]/apikey[/] [KEY|status|clear] deprecated API-key shortcut
   [#f0c678]/draft[/] [show|start|clear] show, start, or clear draft capture
   [#f0c678]/draft edit 2 TEXT[/]      replace line 2 in the working draft
   [#f0c678]/draft delete 2[/]         delete line 2 from the working draft
@@ -248,6 +254,9 @@ COMMAND_RAIL = """\
 [#f0c678]/models[/]
 [#f0c678]/model[/] gpt-5.5
 [#f0c678]/effort[/] high
+[#f0c678]/endpoint[/] http://127.0.0.1:8000/v1
+[#f0c678]/login[/]
+[#f0c678]/logout[/]
 [#f0c678]/apikey[/]
 [#f0c678]/draft[/]
 [#f0c678]/artifacts[/]
@@ -539,10 +548,17 @@ class AutoCedarApp(App[None]):
         self.pending_review: ReviewRequest | None = None
         self.pending_action: PendingAction | None = None
         self.pending_secret: str | None = None
-        self.llm_provider = default_provider()
-        self.llm_model = _initial_model()
-        self.llm_effort = _normalize_effort(os.environ.get("AUTOCEDAR_EFFORT")) or DEFAULT_EFFORT
-        self.active_api_key = normalize_anthropic_api_key(os.environ.get(ANTHROPIC_API_KEY, ""))
+        self.settings_store = SettingsStore()
+        self.auth_store = AuthStore()
+        self.provider_settings = self.settings_store.load()
+        self.session_provider_options: dict[str, ProviderOptions] = {}
+        self.session_provider_selected = False
+        initial = resolve_provider_config(settings=self.provider_settings)
+        self.llm_provider = initial.provider
+        self.llm_model = initial.model
+        self.llm_effort = initial.reasoning_effort or DEFAULT_EFFORT
+        self.llm_endpoint = initial.base_url
+        self.active_api_key = resolve_api_key("anthropic").api_key or ""
         self.busy = False
         self.active_task = "idle"
         self.latest_session_dir: Path | None = None
@@ -641,12 +657,17 @@ class AutoCedarApp(App[None]):
         self._hide_command_palette()
         if not raw:
             return
-        self.copyable_transcript.append(f"you > {_redact_sensitive_input(raw)}")
+        visible_input = (
+            "[redacted-api-key]"
+            if self.pending_secret and self.pending_secret.startswith("api_key")
+            else _redact_sensitive_input(raw)
+        )
+        self.copyable_transcript.append(f"you > {visible_input}")
         self._write(
             f"[bold {TEAL}]you[/] [dim {MUTED}]>[/] "
-            f"{escape(_redact_sensitive_input(raw))}",
+            f"{escape(visible_input)}",
         )
-        if self.pending_secret == "api_key":
+        if self.pending_secret and self.pending_secret.startswith("api_key"):
             self._handle_pending_api_key(raw)
             return
         if self.pending_review is not None:
@@ -943,31 +964,48 @@ class AutoCedarApp(App[None]):
         if self.agent_planner_factory or self._planner_provider_ready():
             self._start_agent_planning(raw)
             return
-        if is_codex_provider(self.llm_provider):
+        if self.llm_provider == "codex":
             self._say(
                 "Natural-language control is set to Codex, but no local Codex "
                 "OAuth session is available. Run `codex login`, then try again, "
                 "or switch providers with /provider anthropic.",
             )
-        elif is_openai_compatible_provider(self.llm_provider):
+        elif self.llm_provider == "claude-cli":
+            self._say(
+                "Natural-language control is set to Claude CLI, but its login is not "
+                "available. Run /login claude-cli, then try again.",
+            )
+        elif self.llm_provider == "local":
             self._say(
                 "Natural-language control is set to the local model "
-                f"server, but it is not reachable at {openai_base_url()}. Start "
+                f"server, but it is not reachable at {self.llm_endpoint}. Start "
                 "vLLM on this node, then try again.",
             )
         else:
             self._say(
-                "Natural-language control needs the live agent planner. Run /apikey "
-                "to add your Anthropic API key, or switch providers with /provider codex "
-                "after running `codex login`.",
+                f"Natural-language control needs {self.llm_provider} authentication. "
+                f"Run /login {self.llm_provider}, or switch providers with /provider codex.",
             )
 
     def _planner_provider_ready(self) -> bool:
-        if is_codex_provider(self.llm_provider):
-            return codex_auth_available()
-        if is_openai_compatible_provider(self.llm_provider):
-            return openai_runtime_info().available
-        return is_real_anthropic_api_key(self._active_api_key())
+        if self.llm_provider == "codex":
+            return _cli_auth_status("codex")[0]
+        if self.llm_provider == "claude-cli":
+            try:
+                return bool(self._make_provider_backend().auth_status().logged_in)  # type: ignore[attr-defined]
+            except Exception:
+                return False
+        if self.llm_provider == "local":
+            try:
+                list_openai_models(
+                    base_url=self.llm_endpoint,
+                    api_key=self._active_api_key("local") or None,
+                    timeout=2.0,
+                )
+                return True
+            except Exception:
+                return False
+        return bool(self._active_api_key(self.llm_provider))
 
     def _start_agent_planning(self, raw: str) -> None:
         if self.busy:
@@ -1006,12 +1044,11 @@ class AutoCedarApp(App[None]):
         self.query_one(Input).placeholder = "Tell AutoCedar what to do, or type /help"
         self._update_status()
         if error is not None:
-            if is_anthropic_auth_error(error):
-                remove_user_config_value(ANTHROPIC_API_KEY)
+            if self.llm_provider == "anthropic" and is_anthropic_auth_error(error):
+                self.auth_store.remove_api_key("anthropic")
                 self.active_api_key = ""
-                os.environ.pop(ANTHROPIC_API_KEY, None)
                 self._update_status()
-            self._say(_agent_failure_message(error))
+            self._say(_agent_failure_message(error, provider=self.llm_provider))
             return
         if action is None:
             self._say("The planner returned no action.")
@@ -1022,17 +1059,27 @@ class AutoCedarApp(App[None]):
         if self.agent_planner_factory is not None:
             return self.agent_planner_factory()
         return ProviderAgentPlanner(
-            client=self._make_provider_client(),
+            backend=self._make_provider_backend(),
             model=self.llm_model,
             effort=self.llm_effort,
         )
 
-    def _make_provider_client(self) -> Any:
-        if is_codex_provider(self.llm_provider):
-            return CodexAuthClient()
-        if is_openai_compatible_provider(self.llm_provider):
-            return OpenAICompatibleClient()
-        return self._make_anthropic_client()
+    def _make_provider_backend(self) -> Any:
+        return create_runtime_backend(
+            self._resolved_runtime_config(),
+            session_api_key=self._active_api_key(self.llm_provider) or None,
+        )
+
+    def _resolved_runtime_config(self):
+        return resolve_provider_config(
+            session=SessionOverrides(
+                provider=self.llm_provider,
+                model=self.llm_model,
+                base_url=self.llm_endpoint,
+                reasoning_effort=self.llm_effort,
+            ),
+            settings=self.provider_settings,
+        )
 
     def _agent_state(self) -> AgentState:
         review_summary = None
@@ -1063,8 +1110,8 @@ class AutoCedarApp(App[None]):
             provider=self.llm_provider,
             model=self.llm_model,
             effort=self.llm_effort,
-            api_key_set=is_real_anthropic_api_key(self._active_api_key()),
-            codex_auth_set=codex_auth_available(),
+            api_key_set=bool(self._active_api_key(self.llm_provider)),
+            codex_auth_set=_cli_auth_status("codex")[0],
         )
 
     def _agent_action_from_command(
@@ -1099,6 +1146,12 @@ class AutoCedarApp(App[None]):
             return AgentAction(kind="set_model", model=args[0]) if args else AgentAction(kind="show_settings")
         if command == "effort":
             return AgentAction(kind="set_effort", effort=args[0]) if args else AgentAction(kind="show_settings")
+        if command == "endpoint":
+            return AgentAction(kind="set_endpoint", value=args[0]) if args else AgentAction(kind="show_settings")
+        if command == "login":
+            return AgentAction(kind="login_provider", provider=args[0] if args else self.llm_provider)
+        if command == "logout":
+            return AgentAction(kind="logout_provider", provider=args[0] if args else self.llm_provider)
         if command in {"apikey", "api-key"}:
             if not args:
                 return AgentAction(kind="set_api_key_prompt")
@@ -1317,7 +1370,9 @@ class AutoCedarApp(App[None]):
                 self._show_settings()
             elif action.kind == "set_provider":
                 if not action.provider:
-                    raise ValueError("Provider must be codex, anthropic, or local.")
+                    raise ValueError(
+                        "Provider must be codex, claude-cli, anthropic, openai, or local.",
+                    )
                 self._set_provider(action.provider)
             elif action.kind == "set_model":
                 if not action.model:
@@ -1327,6 +1382,14 @@ class AutoCedarApp(App[None]):
                 if not action.effort:
                     raise ValueError("Effort must be one of: low, medium, high, max.")
                 self._set_effort(action.effort)
+            elif action.kind == "set_endpoint":
+                if not action.value:
+                    raise ValueError("Endpoint URL cannot be empty.")
+                self._set_endpoint(action.value)
+            elif action.kind == "login_provider":
+                self._login_provider(action.provider or self.llm_provider)
+            elif action.kind == "logout_provider":
+                self._logout_provider(action.provider or self.llm_provider)
             elif action.kind == "set_api_key":
                 if not action.value:
                     raise ValueError("API key cannot be empty.")
@@ -1383,12 +1446,18 @@ class AutoCedarApp(App[None]):
         self._append_draft_text(line)
 
     def _handle_api_key_command(self, args: Sequence[str]) -> None:
+        if self.llm_provider not in {"anthropic", "openai", "local"}:
+            raise ValueError(
+                f"{self.llm_provider} uses a CLI login. Run /login {self.llm_provider}.",
+            )
         if not args:
-            self.pending_secret = "api_key"
-            self.query_one(Input).placeholder = "Paste ANTHROPIC_API_KEY, or type cancel"
+            self.pending_secret = f"api_key:{self.llm_provider}"
+            command_input = self.query_one(Input)
+            command_input.password = True
+            command_input.placeholder = f"Paste {self.llm_provider} API key, or type cancel"
             self._say(
-                "Paste your Anthropic API key. I’ll redact it in the transcript "
-                "and validate it before saving it to the user-level AutoCedar config. "
+                f"Paste your {self.llm_provider} API key. I’ll redact it in the transcript "
+                "and save it to AutoCedar’s private auth.json. "
                 "Type “cancel” to stop.",
             )
             self._update_status()
@@ -1404,66 +1473,94 @@ class AutoCedarApp(App[None]):
 
     def _handle_pending_api_key(self, raw: str) -> None:
         value = raw.strip()
+        provider = (
+            self.pending_secret.split(":", 1)[1]
+            if self.pending_secret and ":" in self.pending_secret
+            else self.llm_provider
+        )
         self.pending_secret = None
-        self.query_one(Input).placeholder = "Tell AutoCedar what to do, or type /help"
+        command_input = self.query_one(Input)
+        command_input.password = False
+        command_input.placeholder = "Tell AutoCedar what to do, or type /help"
         if value.lower() in {"cancel", "stop", "abort", "no"}:
             self._say("Cancelled API key entry.")
             self._update_status()
             return
-        self._set_api_key(value)
+        self._set_api_key(value, provider=provider)
 
     def _set_provider(self, provider: str) -> None:
-        normalized = provider.strip().lower()
-        previous_provider = self.llm_provider
-        if normalized in {"anthropic", "claude"}:
-            self.llm_provider = "anthropic"
-            if previous_provider != self.llm_provider:
-                self.llm_model = DEFAULT_ANTHROPIC_MODEL
-        elif normalized in {"codex", "openai", "openai-codex"}:
-            self.llm_provider = "codex"
-            if previous_provider != self.llm_provider:
-                self.llm_model = os.environ.get("AUTOCEDAR_CODEX_MODEL", DEFAULT_CODEX_MODEL)
-        elif is_openai_compatible_provider(normalized):
-            self.llm_provider = "local"
-            if previous_provider != self.llm_provider:
-                self.llm_model = (
-                    os.environ.get("AUTOCEDAR_LOCAL_MODEL")
-                    or os.environ.get("AUTOCEDAR_OPENAI_MODEL")
-                    or DEFAULT_OPENAI_MODEL
-                )
-        else:
-            raise ValueError("Provider must be codex, anthropic, or local.")
-        os.environ["AUTOCEDAR_PROVIDER"] = self.llm_provider
-        os.environ["AUTOCEDAR_MODEL"] = self.llm_model
-        os.environ["AUTOCEDAR_CHAT_MODEL"] = self.llm_model
-        os.environ["AUTOCEDAR_AUTHOR_MODEL"] = self.llm_model
-        if is_codex_provider(self.llm_provider):
+        try:
+            canonical = canonical_provider_id(provider)
+        except Exception as exc:
+            raise ValueError(str(exc)) from exc
+        self.provider_settings = self.provider_settings.with_default_provider(canonical)
+        self.settings_store.save(self.provider_settings)
+        self.session_provider_selected = True
+        session_options = self.session_provider_options.get(canonical, ProviderOptions())
+        resolved = resolve_provider_config(
+            session=SessionOverrides(
+                provider=canonical,
+                model=session_options.model,
+                base_url=session_options.base_url,
+                reasoning_effort=session_options.reasoning_effort,
+            ),
+            settings=self.provider_settings,
+        )
+        if (
+            session_options.model is None
+            and resolved.source_for("model")
+            in {
+                "environment:AUTOCEDAR_MODEL",
+                "environment:AUTOCEDAR_AUTHOR_MODEL",
+                "environment:AUTOCEDAR_CHAT_MODEL",
+            }
+        ):
+            # A generic model from the provider we just left must not leak
+            # into an explicit TUI provider switch. Provider-specific env
+            # variables still retain their documented precedence.
+            saved_model = self.provider_settings.options_for(canonical).model
+            resolved = resolve_provider_config(
+                session=SessionOverrides(
+                    provider=canonical,
+                    model=saved_model or DEFAULT_MODELS[canonical],
+                    base_url=session_options.base_url,
+                    reasoning_effort=session_options.reasoning_effort,
+                ),
+                settings=self.provider_settings,
+            )
+        self.llm_provider = resolved.provider
+        self.llm_model = resolved.model
+        self.llm_effort = resolved.reasoning_effort or DEFAULT_EFFORT
+        self.llm_endpoint = resolved.base_url
+        if self.llm_provider == "codex":
             auth_note = (
                 "Codex OAuth is available."
-                if codex_auth_available()
-                else "Run `codex login` before natural-language planning."
+                if _cli_auth_status("codex")[0]
+                else "Run /login codex before natural-language planning."
             )
             self._say(
                 f"Provider set to [bold {AMBER}]Codex[/] with model "
                 f"[bold {AMBER}]{escape(self.llm_model)}[/]. {auth_note}",
             )
-        elif is_openai_compatible_provider(self.llm_provider):
-            info = openai_runtime_info()
-            state = "Server is reachable." if info.available else "Start vLLM on this node first."
+        elif self.llm_provider == "local":
             self._say(
                 f"Provider set to [bold {AMBER}]Local[/] with model "
                 f"[bold {AMBER}]{escape(self.llm_model)}[/] at "
-                f"{escape(info.base_url)}. {state}",
+                f"{escape(self.llm_endpoint or '(endpoint unset)')}. Use /models to test it.",
             )
         else:
+            definition = get_provider_definition(self.llm_provider)
+            login_note = (
+                f"Run /login {self.llm_provider} if authentication is not configured."
+            )
             self._say(
-                f"Provider set to [bold {AMBER}]Anthropic[/] with model "
-                f"[bold {AMBER}]{escape(self.llm_model)}[/].",
+                f"Provider set to [bold {AMBER}]{escape(definition.display_name)}[/] with model "
+                f"[bold {AMBER}]{escape(self.llm_model)}[/]. {login_note}",
             )
         self._update_status()
 
     def _show_models(self) -> None:
-        if is_codex_provider(self.llm_provider):
+        if self.llm_provider == "codex":
             info = codex_runtime_info()
             if info.auth_available:
                 body = _codex_models_text(info)
@@ -1486,45 +1583,54 @@ class AutoCedarApp(App[None]):
                 ),
             )
             return
-        if is_openai_compatible_provider(self.llm_provider):
-            info = openai_runtime_info()
-            if info.available:
-                models = "\n".join(f"• {escape(model)}" for model in info.models) or "(none advertised)"
+        if self.llm_provider == "local":
+            endpoint = self.llm_endpoint or "http://127.0.0.1:8000/v1"
+            try:
+                available = list_openai_models(
+                    base_url=endpoint,
+                    api_key=self._active_api_key("local") or None,
+                    timeout=3.0,
+                )
+                models = "\n".join(f"• {escape(model)}" for model in available)
                 body = "\n".join([
                     f"[dim {MUTED}]provider[/]\n[bold {CREAM}]local[/]",
-                    f"[dim {MUTED}]base URL[/]\n[bold {CREAM}]{escape(info.base_url)}[/]",
+                    f"[dim {MUTED}]base URL[/]\n[bold {CREAM}]{escape(endpoint)}[/]",
                     f"[dim {MUTED}]current model[/]\n[bold {CREAM}]{escape(self.llm_model)}[/]",
                     "",
                     models,
                 ])
-            else:
+                border = TEAL
+            except Exception as exc:
                 body = "\n".join([
                     f"[bold {CORAL}]Local model server is not reachable.[/]",
-                    f"Base URL: {escape(info.base_url)}",
+                    f"Base URL: {escape(endpoint)}",
                     "",
-                    "Start vLLM on this node, then run /models again.",
-                    f"[dim {MUTED}]{escape(info.error or '')}[/]",
+                    "Start the local server or use /endpoint URL, then run /models again.",
+                    f"[dim {MUTED}]{escape(str(exc))}[/]",
                 ])
+                border = CORAL
             self._write(
                 Panel(
                     body,
                     title=f"[bold {COPPER}]Local models[/]",
-                    border_style=TEAL if info.available else CORAL,
+                    border_style=border,
                     padding=(1, 2),
                 ),
             )
             return
+        definition = get_provider_definition(self.llm_provider)
         body = "\n".join([
-            f"[dim {MUTED}]provider[/]\n[bold {CREAM}]anthropic[/]",
+            f"[dim {MUTED}]provider[/]\n[bold {CREAM}]{escape(self.llm_provider)}[/]",
             f"[dim {MUTED}]current model[/]\n[bold {CREAM}]{escape(self.llm_model)}[/]",
             f"[dim {MUTED}]thinking[/]\n[bold {CREAM}]low, medium, high, max[/]",
             "",
-            "AutoCedar does not call an Anthropic model-list endpoint. Use /model MODEL to set a model.",
+            f"AutoCedar does not query a model-list endpoint for {escape(definition.display_name)}. "
+            "Use /model MODEL to set a model.",
         ])
         self._write(
             Panel(
                 body,
-                title=f"[bold {COPPER}]Anthropic models[/]",
+                title=f"[bold {COPPER}]{escape(definition.display_name)} models[/]",
                 border_style=TEAL,
                 padding=(1, 2),
             ),
@@ -1535,11 +1641,7 @@ class AutoCedarApp(App[None]):
         if not normalized:
             raise ValueError("Model cannot be empty.")
         self.llm_model = normalized
-        os.environ["AUTOCEDAR_MODEL"] = normalized
-        os.environ["AUTOCEDAR_CHAT_MODEL"] = normalized
-        os.environ["AUTOCEDAR_AUTHOR_MODEL"] = normalized
-        if is_openai_compatible_provider(self.llm_provider):
-            os.environ["AUTOCEDAR_LOCAL_MODEL"] = normalized
+        self._persist_provider_options(model=normalized)
         self._say(f"Model set to [bold {AMBER}]{escape(normalized)}[/].")
         self._update_status()
 
@@ -1548,55 +1650,172 @@ class AutoCedarApp(App[None]):
         if normalized is None:
             raise ValueError("Effort must be one of: low, medium, high, max.")
         self.llm_effort = normalized
-        os.environ["AUTOCEDAR_EFFORT"] = normalized
+        self._persist_provider_options(reasoning_effort=normalized)
         self._say(f"Effort set to [bold {AMBER}]{normalized}[/].")
         self._update_status()
 
-    def _set_api_key(self, api_key: str) -> None:
-        value = normalize_anthropic_api_key(api_key)
+    def _set_endpoint(self, endpoint: str) -> None:
+        if self.llm_provider != "local":
+            raise ValueError("/endpoint configures the local provider. Run /provider local first.")
+        try:
+            validated = ProviderOptions(base_url=endpoint).base_url
+        except Exception as exc:
+            raise ValueError(str(exc)) from exc
+        self.llm_endpoint = validated
+        self._persist_provider_options(base_url=validated)
+        self._say(f"Local endpoint set to [bold {AMBER}]{escape(validated or '')}[/].")
+        self._update_status()
+
+    def _persist_provider_options(
+        self,
+        *,
+        model: str | None = None,
+        base_url: str | None = None,
+        reasoning_effort: str | None = None,
+    ) -> None:
+        current = self.provider_settings.options_for(self.llm_provider)
+        options = ProviderOptions(
+            model=model if model is not None else current.model,
+            base_url=base_url if base_url is not None else current.base_url,
+            reasoning_effort=(
+                reasoning_effort
+                if reasoning_effort is not None
+                else current.reasoning_effort
+            ),
+        )
+        self.provider_settings = self.provider_settings.with_provider_options(
+            self.llm_provider,
+            options,
+        )
+        self.settings_store.save(self.provider_settings)
+        session = self.session_provider_options.get(self.llm_provider, ProviderOptions())
+        self.session_provider_options[self.llm_provider] = ProviderOptions(
+            model=model if model is not None else session.model,
+            base_url=base_url if base_url is not None else session.base_url,
+            reasoning_effort=(
+                reasoning_effort
+                if reasoning_effort is not None
+                else session.reasoning_effort
+            ),
+        )
+
+    def _login_provider(self, provider: str) -> None:
+        try:
+            canonical = canonical_provider_id(provider)
+        except Exception as exc:
+            raise ValueError(str(exc)) from exc
+        if canonical in {"codex", "claude-cli"}:
+            command = ["codex", "login"] if canonical == "codex" else ["claude", "auth", "login"]
+            executable = shutil.which(command[0])
+            if executable is None:
+                raise ValueError(f"{command[0]} CLI is not installed or is not on PATH.")
+            with self.suspend():
+                completed = subprocess.run([executable, *command[1:]], check=False)
+            if completed.returncode != 0:
+                raise ValueError(f"{get_provider_definition(canonical).display_name} login failed.")
+            self._say(f"{escape(get_provider_definition(canonical).display_name)} login completed.")
+            self._update_status()
+            return
+        self.pending_secret = f"api_key:{canonical}"
+        command_input = self.query_one(Input)
+        command_input.password = True
+        command_input.placeholder = f"Paste {canonical} API key, or type cancel"
+        optional = " (optional)" if canonical == "local" else ""
+        self._say(
+            f"Paste the {canonical} API key{optional}. I’ll redact it and save it "
+            f"to [dim {MUTED}]{escape(str(self.auth_store.path))}[/]. Type cancel to stop.",
+        )
+
+    def _logout_provider(self, provider: str) -> None:
+        try:
+            canonical = canonical_provider_id(provider)
+        except Exception as exc:
+            raise ValueError(str(exc)) from exc
+        if canonical in {"codex", "claude-cli"}:
+            command = ["codex", "logout"] if canonical == "codex" else ["claude", "auth", "logout"]
+            executable = shutil.which(command[0])
+            if executable is None:
+                raise ValueError(f"{command[0]} CLI is not installed or is not on PATH.")
+            with self.suspend():
+                completed = subprocess.run([executable, *command[1:]], check=False)
+            if completed.returncode != 0:
+                raise ValueError(f"{get_provider_definition(canonical).display_name} logout failed.")
+            self._say(f"{escape(get_provider_definition(canonical).display_name)} logout completed.")
+            self._update_status()
+            return
+        self.auth_store.remove_api_key(canonical)
+        if canonical == "anthropic":
+            self.active_api_key = ""
+        remaining = resolve_api_key(canonical)
+        self._say(
+            f"Removed the saved {canonical} API key from "
+            f"[dim {MUTED}]{escape(str(self.auth_store.path))}[/].",
+        )
+        if remaining.api_key:
+            self._say(
+                f"A {canonical} key is still active from {escape(remaining.source)}; "
+                "unset it there to fully log out.",
+            )
+        self._update_status()
+
+    def _set_api_key(self, api_key: str, *, provider: str | None = None) -> None:
+        canonical = canonical_provider_id(provider or self.llm_provider)
+        if canonical not in {"anthropic", "openai", "local"}:
+            raise ValueError(f"{canonical} uses /login, not an API key.")
+        value = normalize_anthropic_api_key(api_key) if canonical == "anthropic" else api_key.strip()
         if not value:
             raise ValueError("API key cannot be empty.")
-        if not is_real_anthropic_api_key(value):
+        if canonical == "anthropic" and not value.startswith("sk-ant-"):
             raise ValueError(
                 "That does not look like a real Anthropic API key. "
                 "Paste the full key from the Anthropic console, not a redacted value.",
             )
-        self._say("Checking Anthropic API key before saving it...")
-        validation_model = ANTHROPIC_API_KEY_VALIDATION_MODEL
+        if canonical == "anthropic":
+            self._say("Checking Anthropic API key before saving it...")
+            validation_model = ANTHROPIC_API_KEY_VALIDATION_MODEL
+            try:
+                validate_anthropic_api_key(value, model=validation_model)
+            except Exception as exc:
+                raise ValueError(format_api_key_validation_error(exc, model=validation_model)) from exc
         try:
-            validate_anthropic_api_key(value, model=validation_model)
+            self.auth_store.set_api_key(canonical, value)
         except Exception as exc:
-            raise ValueError(format_api_key_validation_error(exc, model=validation_model)) from exc
-        path = write_user_config_value(ANTHROPIC_API_KEY, value)
-        self.active_api_key = value
-        os.environ[ANTHROPIC_API_KEY] = value
+            raise ValueError(str(exc)) from exc
+        if canonical == "anthropic":
+            self.active_api_key = value
         self._say(
-            "Anthropic API key saved "
-            f"([dim {MUTED}]{escape(mask_api_key_for_display(value))}[/]) to "
-            f"[dim {MUTED}]{escape(str(path))}[/].",
+            f"{escape(get_provider_definition(canonical).display_name)} API key saved "
+            f"([dim {MUTED}]{escape(_mask_api_key(value))}[/]) to "
+            f"[dim {MUTED}]{escape(str(self.auth_store.path))}[/].",
         )
         self._update_status()
 
     def _clear_api_key(self) -> None:
-        path = remove_user_config_value(ANTHROPIC_API_KEY)
-        self.active_api_key = ""
-        self._say(f"Anthropic API key removed from [dim {MUTED}]{escape(str(path))}[/].")
-        self._update_status()
+        if self.llm_provider not in {"anthropic", "openai", "local"}:
+            raise ValueError(f"{self.llm_provider} uses /logout, not an API key.")
+        self._logout_provider(self.llm_provider)
 
-    def _active_api_key(self) -> str:
-        if is_real_anthropic_api_key(self.active_api_key):
+    def _active_api_key(self, provider: str | None = None) -> str:
+        canonical = canonical_provider_id(provider or self.llm_provider)
+        if canonical == "anthropic" and self.active_api_key:
             return self.active_api_key
-        return normalize_anthropic_api_key(os.environ.get(ANTHROPIC_API_KEY, ""))
+        try:
+            return resolve_api_key(canonical).api_key or ""
+        except Exception:
+            return ""
 
     def _show_api_key_status(self) -> None:
-        key = self._active_api_key()
-        if is_real_anthropic_api_key(key):
+        if self.llm_provider not in {"anthropic", "openai", "local"}:
+            self._say(f"{self.llm_provider} uses a CLI login. Run /settings or /login.")
+            return
+        key = self._active_api_key(self.llm_provider)
+        if key:
             self._say(
-                "Active Anthropic API key is set for this session "
-                f"([dim {MUTED}]{escape(mask_api_key_for_display(key))}[/]).",
+                f"Active {self.llm_provider} API key is set "
+                f"([dim {MUTED}]{escape(_mask_api_key(key))}[/]).",
             )
         else:
-            self._say("No active Anthropic API key is set for this session.")
+            self._say(f"No active {self.llm_provider} API key is set.")
         self._update_status()
 
     def _show_settings(self) -> None:
@@ -1644,7 +1863,7 @@ class AutoCedarApp(App[None]):
 
         self._write(
             Panel(
-                format_doctor_report(run_doctor()),
+                format_doctor_report(run_doctor(provider_config=self._resolved_runtime_config())),
                 title=f"[bold {COPPER}]Doctor[/]",
                 border_style=TEAL,
                 padding=(1, 2),
@@ -1652,32 +1871,35 @@ class AutoCedarApp(App[None]):
         )
 
     def _settings_text(self) -> str:
-        api_key = self._active_api_key()
-        api_key_is_real = is_real_anthropic_api_key(api_key)
-        codex_selected = is_codex_provider(self.llm_provider)
-        openai_selected = is_openai_compatible_provider(self.llm_provider)
-        codex_auth = codex_auth_available() if codex_selected else False
-        openai_info = openai_runtime_info() if openai_selected else None
-        if codex_selected:
+        api_key = self._active_api_key(self.llm_provider)
+        sources = self._runtime_setting_sources()
+        if self.llm_provider == "codex":
+            codex_auth = _cli_auth_status("codex")[0]
             auth_text = (
                 f"[dim {MUTED}]Codex OAuth[/]\n"
                 f"[bold {TEAL if codex_auth else CORAL}]"
-                f"{'set' if codex_auth else 'not set'}[/]\n"
-                f"[dim {MUTED}]source: {escape(str(codex_auth_path()))}[/]"
+                f"{'logged in' if codex_auth else 'not logged in'}[/]\n"
+                f"[dim {MUTED}]managed by the codex CLI[/]"
             )
-        elif openai_selected:
-            local_ready = bool(openai_info and openai_info.available)
+        elif self.llm_provider == "claude-cli":
+            ready, detail = _cli_auth_status("claude-cli")
+            auth_text = (
+                f"[dim {MUTED}]Claude CLI login[/]\n"
+                f"[bold {TEAL if ready else CORAL}]"
+                f"{'logged in' if ready else 'not logged in'}[/]\n"
+                f"[dim {MUTED}]{escape(detail)}[/]"
+            )
+        elif self.llm_provider == "local":
             auth_text = (
                 f"[dim {MUTED}]local endpoint[/]\n"
-                f"[bold {TEAL if local_ready else CORAL}]"
-                f"{'reachable' if local_ready else 'not reachable'}[/]\n"
-                f"[dim {MUTED}]source: "
-                f"{escape(openai_info.base_url if openai_info else openai_base_url())}[/]"
+                f"[bold {TEAL}]{escape(self.llm_endpoint or '(unset)')}[/]\n"
+                f"[dim {MUTED}]API key: {'set' if api_key else 'not set (optional)'}[/]"
             )
-        elif api_key_is_real:
+        elif api_key:
+            source = resolve_api_key(self.llm_provider).source
             auth_text = (
                 f"[dim {MUTED}]api key[/]\n[bold {TEAL}]set[/] "
-                f"[dim {MUTED}]({_mask_api_key(api_key)})[/]"
+                f"[dim {MUTED}]({_mask_api_key(api_key)}; {escape(source)})[/]"
             )
         else:
             auth_text = f"[dim {MUTED}]api key[/]\n[bold {CORAL}]not set[/]"
@@ -1686,11 +1908,73 @@ class AutoCedarApp(App[None]):
                 f"[dim {MUTED}]provider[/]\n[bold {CREAM}]{escape(self.llm_provider)}[/]",
                 f"[dim {MUTED}]model[/]\n[bold {CREAM}]{escape(self.llm_model)}[/]",
                 f"[dim {MUTED}]effort[/]\n[bold {CREAM}]{escape(self.llm_effort)}[/]",
+                f"[dim {MUTED}]settings[/]\n[bold {CREAM}]{escape(str(self.settings_store.path))}[/]",
+                f"[dim {MUTED}]credentials[/]\n[bold {CREAM}]{escape(str(self.auth_store.path))}[/]",
+                (
+                    f"[dim {MUTED}]effective sources[/]\n"
+                    f"[bold {CREAM}]provider: {escape(sources['provider'])}\n"
+                    f"model: {escape(sources['model'])}\n"
+                    f"effort: {escape(sources['reasoning_effort'])}\n"
+                    f"endpoint: {escape(sources['base_url'])}[/]"
+                ),
                 auth_text,
                 "",
-                f"[dim {MUTED}]Use /provider, /models, /model, /effort, or /apikey to change these.[/]",
+                f"[dim {MUTED}]Use /provider, /models, /model, /effort, /endpoint, /login, or /logout.[/]",
             ],
         )
+
+    def _runtime_setting_sources(self) -> dict[str, str]:
+        """Describe where the effective TUI choices came from."""
+
+        effective = resolve_provider_config(settings=self.provider_settings)
+        underlying = resolve_provider_config(
+            session=SessionOverrides(provider=self.llm_provider),
+            settings=self.provider_settings,
+        )
+        session = self.session_provider_options.get(self.llm_provider, ProviderOptions())
+        provider_source = (
+            "TUI /provider; saved to settings.json"
+            if self.session_provider_selected
+            else effective.source_for("provider")
+        )
+
+        def field_source(
+            field_name: str,
+            session_value: str | None,
+            current_value: str | None,
+            underlying_value: str | None,
+            command: str,
+        ) -> str:
+            if session_value is not None:
+                return f"TUI /{command}; saved to settings.json"
+            if current_value == underlying_value:
+                return underlying.source_for(field_name)
+            return "TUI provider selection/default"
+
+        return {
+            "provider": provider_source,
+            "model": field_source(
+                "model",
+                session.model,
+                self.llm_model,
+                underlying.model,
+                "model",
+            ),
+            "reasoning_effort": field_source(
+                "reasoning_effort",
+                session.reasoning_effort,
+                self.llm_effort,
+                underlying.reasoning_effort or DEFAULT_EFFORT,
+                "effort",
+            ),
+            "base_url": field_source(
+                "base_url",
+                session.base_url,
+                self.llm_endpoint,
+                underlying.base_url,
+                "endpoint",
+            ),
+        }
 
     def _resolve_author_options(self, options: AuthorOptions) -> AuthorOptions:
         return replace(
@@ -2191,11 +2475,6 @@ class AutoCedarApp(App[None]):
         self._write(f"[bold {COPPER}]Starting:[/] {escape(name)}")
         self.run_worker(func, thread=True, exclusive=False, exit_on_error=False)
 
-    def _make_anthropic_client(self) -> Any:
-        import anthropic
-
-        return anthropic.Anthropic(api_key=self._active_api_key())
-
     def _author(self, options: AuthorOptions) -> None:
         try:
             if not options.spec.exists():
@@ -2268,6 +2547,7 @@ class AutoCedarApp(App[None]):
             stage3_synthesizer = make_harness_synthesizer(
                 phase1_model=options.model or self.llm_model,
                 phase2_model=options.model or self.llm_model,
+                provider=self.llm_provider,
                 no_review=True,
                 quiet=True,
                 output_callback=lambda text: self.call_from_thread(
@@ -2427,6 +2707,7 @@ class AutoCedarApp(App[None]):
                         run_dir=str(run_dir),
                         phase1_model=phase1_model,
                         phase2_model=phase2_model,
+                        provider=self.llm_provider,
                         max_iters=max_iters,
                         gen_references=options.gen_references,
                         no_review=options.no_review,
@@ -2546,10 +2827,13 @@ class AutoCedarApp(App[None]):
         drafting_state = "active" if self.drafting_active else "off"
         review_state = "yes" if self.pending_review is not None else "no"
         action_state = "yes" if self.pending_action is not None else "no"
-        if is_codex_provider(self.llm_provider):
+        if self.llm_provider == "codex":
             auth_label = "codex auth"
-            key_state = "set" if codex_auth_available() else "not set"
-        elif is_openai_compatible_provider(self.llm_provider):
+            key_state = "CLI managed"
+        elif self.llm_provider == "claude-cli":
+            auth_label = "claude CLI auth"
+            key_state = "CLI managed"
+        elif self.llm_provider == "local":
             # Status rendering is deliberately network-free. Reachability is
             # checked when the user selects the provider, runs /models or
             # /doctor, or starts a model-backed action.
@@ -2557,12 +2841,12 @@ class AutoCedarApp(App[None]):
             key_state = "configured"
         else:
             auth_label = "api key"
-            key_state = "set" if is_real_anthropic_api_key(self._active_api_key()) else "not set"
+            key_state = "set" if self._active_api_key(self.llm_provider) else "not set"
         busy_color = AMBER if self.busy else TEAL
         drafting_color = GREEN if self.drafting_active else MUTED
         review_color = CORAL if self.pending_review is not None else MUTED
         action_color = AMBER if self.pending_action is not None else MUTED
-        key_color = TEAL if key_state in {"set", "configured"} else CORAL
+        key_color = TEAL if key_state in {"set", "configured", "CLI managed"} else CORAL
         result_state = self.latest_status_summary or "none"
         if len(result_state) > 72:
             result_state = result_state[:69] + "..."
@@ -2571,6 +2855,7 @@ class AutoCedarApp(App[None]):
             f"[bold {COPPER}]Session[/]\n\n"
             f"[dim {MUTED}]current task[/]\n[bold {CREAM}]{escape(self.active_task)}[/]\n\n"
             f"[dim {MUTED}]agent state[/]\n[bold {busy_color}]{'working' if self.busy else 'ready'}[/]\n\n"
+            f"[dim {MUTED}]provider[/]\n[bold {CREAM}]{escape(self.llm_provider)}[/]\n\n"
             f"[dim {MUTED}]model[/]\n[bold {CREAM}]{escape(_short_model(self.llm_model))}[/]\n\n"
             f"[dim {MUTED}]effort[/]\n[bold {CREAM}]{escape(self.llm_effort)}[/]\n\n"
             f"[dim {MUTED}]{auth_label}[/]\n[bold {key_color}]{key_state}[/]\n\n"
@@ -2596,8 +2881,8 @@ class AutoCedarApp(App[None]):
             f"provider: {self.llm_provider}",
             f"model: {self.llm_model}",
             f"effort: {self.llm_effort}",
-            f"api key: {'set' if is_real_anthropic_api_key(self._active_api_key()) else 'not set'}",
-            f"codex auth: {'set' if codex_auth_available() else 'not set'}",
+            f"api key: {'set' if self._active_api_key(self.llm_provider) else 'not set'}",
+            f"codex auth: {'set' if _cli_auth_status('codex')[0] else 'not set'}",
             f"latest session: {self.latest_session_dir or 'none'}",
             f"latest schema: {self.latest_schema_path or 'none'}",
             f"latest policy: {self.latest_policy_path or 'none'}",
@@ -2628,7 +2913,7 @@ class AutoCedarApp(App[None]):
                 "Authoring with a schema path: AutoCedar uses that existing schema directly and skips Stage 1 schema atomization/review.",
                 "Stage 2 property atoms: AutoCedar proposes bounded local bundles from the spec, validated schema, approved prior atoms, and review history; symbolically verifies each atom; and sends each atom through HITL review one by one.",
                 "The authoring engine receives clean inputs: saved spec text, optional schema path, and HITL review decisions. The chat transcript is not passed into authoring.",
-                "Runtime LLM settings are user-selectable inside the TUI through /settings, /provider, /models, /model, /effort, and /apikey. Anthropic uses ANTHROPIC_API_KEY; Codex uses local Codex OAuth; the local provider uses an endpoint such as vLLM running on the same machine or cluster node. The selected model is used for agent planning, authoring atomization, and default synthesis phase models unless an explicit command overrides it. Effort is used for planning and authoring atomization calls that support adaptive thinking.",
+                "Runtime LLM settings are user-selectable through /settings, /provider, /models, /model, /effort, /endpoint, /login, and /logout. Codex and Claude CLI keep authentication in their own CLIs; Anthropic and OpenAI use provider-scoped API keys in AutoCedar auth.json; local uses an OpenAI-compatible endpoint and an optional key. The selected model is used for agent planning, authoring atomization, and default synthesis phase models unless an explicit command overrides it.",
                 "Artifact inspection commands: /artifacts lists latest session/schema/policy paths, /schema shows the latest or provided schema file, /policy shows the latest or provided Cedar policy, and /copy can copy the latest session path, schema text/path, policy text/path, draft, or literal text.",
             ],
         )
@@ -2695,6 +2980,9 @@ def _agent_tool_catalog() -> list[dict[str, str]]:
         {"action": "show_models", "slash": "/models", "description": "show models"},
         {"action": "set_model", "slash": "/model", "description": "set model"},
         {"action": "set_effort", "slash": "/effort", "description": "set reasoning effort"},
+        {"action": "set_endpoint", "slash": "/endpoint URL", "description": "set the local model endpoint"},
+        {"action": "login_provider", "slash": "/login", "description": "authenticate a provider"},
+        {"action": "logout_provider", "slash": "/logout", "description": "log out a provider"},
         {"action": "set_api_key_prompt", "slash": "/apikey", "description": "prompt for an API key"},
         {"action": "set_api_key", "slash": "/apikey KEY", "description": "save an API key"},
         {"action": "clear_api_key", "slash": "/apikey clear", "description": "clear the saved API key"},
@@ -2742,7 +3030,7 @@ def _describe_author_action(options: AuthorOptions, *, from_draft: bool) -> str:
         "I’m going to run HITL authoring.",
         f"spec: {options.spec}",
         f"output: {options.out}",
-        f"model: {options.model or default_model_for_provider(default_provider())}",
+        f"model: {options.model or DEFAULT_MODELS['codex']}",
         f"effort: {options.effort or DEFAULT_EFFORT}",
     ]
     if options.session_id:
@@ -3161,18 +3449,9 @@ def _render_cedar_for_review(atom: Any) -> str:
 
 
 def _initial_model() -> str:
-    provider = default_provider()
-    if is_openai_compatible_provider(provider):
-        # The endpoint-specific variable is authoritative for local servers;
-        # a stale generic model from a prior Codex/Anthropic session must not
-        # override the name advertised by vLLM.
-        return default_model_for_provider(provider)
-    return (
-        os.environ.get("AUTOCEDAR_MODEL")
-        or os.environ.get("AUTOCEDAR_AUTHOR_MODEL")
-        or os.environ.get("AUTOCEDAR_CHAT_MODEL")
-        or default_model_for_provider(provider)
-    )
+    """Backward-compatible helper for the model selected by provider config."""
+
+    return resolve_provider_config().model
 
 
 def _normalize_effort(effort: str | None) -> str | None:
@@ -3182,6 +3461,40 @@ def _normalize_effort(effort: str | None) -> str | None:
     if normalized in {"xhigh", "extra-high", "extra_high"}:
         return "max"
     return normalized if normalized in EFFORT_LEVELS else None
+
+
+def _cli_auth_status(provider: str) -> tuple[bool, str]:
+    canonical = canonical_provider_id(provider)
+    command = (
+        ["codex", "login", "status"]
+        if canonical == "codex"
+        else ["claude", "auth", "status", "--json"]
+    )
+    executable = shutil.which(command[0])
+    if executable is None:
+        return False, f"{command[0]} CLI not found"
+    try:
+        completed = subprocess.run(
+            [executable, *command[1:]],
+            capture_output=True,
+            text=True,
+            timeout=30,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return False, str(exc)
+    if completed.returncode != 0:
+        detail = " ".join((completed.stderr or completed.stdout).split())
+        return False, detail[:180] or "not logged in"
+    if canonical == "claude-cli":
+        try:
+            payload = json.loads(completed.stdout)
+        except json.JSONDecodeError:
+            return False, "Claude CLI returned invalid auth status"
+        if payload.get("loggedIn") is not True:
+            return False, "not logged in"
+        return True, str(payload.get("authMethod") or payload.get("subscriptionType") or "CLI login")
+    return True, "Codex CLI login"
 
 
 def _strip_wrapping_quotes(value: str) -> str:
@@ -3347,12 +3660,13 @@ def _read_latest_synthesis_summary(
 
 def _redact_sensitive_input(raw: str) -> str:
     redacted = re.sub(
-        r"\bANTHROPIC_API_KEY\s*=\s*[^\s]+",
-        "ANTHROPIC_API_KEY=[redacted]",
+        r"\b(ANTHROPIC_API_KEY|OPENAI_API_KEY|AUTOCEDAR_LOCAL_API_KEY)\s*=\s*[^\s]+",
+        r"\1=[redacted]",
         raw,
         flags=re.IGNORECASE,
     )
     redacted = re.sub(r"\bsk-ant-[A-Za-z0-9_\-.]+", "[redacted-api-key]", redacted)
+    redacted = re.sub(r"\bsk-[A-Za-z0-9_\-.]{8,}", "[redacted-api-key]", redacted)
     if redacted.strip().lower().startswith(("/apikey ", "/api-key ")):
         command = redacted.strip().split(maxsplit=1)[0]
         return f"{command} [redacted-api-key]"
@@ -3394,8 +3708,8 @@ def run_tui() -> int:
     return 0
 
 
-def _agent_failure_message(exc: Exception) -> str:
-    if is_anthropic_auth_error(exc):
+def _agent_failure_message(exc: Exception, *, provider: str = "anthropic") -> str:
+    if provider == "anthropic" and is_anthropic_auth_error(exc):
         return (
             "Anthropic rejected the saved API key, so I cleared it from this "
             "session and the AutoCedar user config. Run /apikey again with the "

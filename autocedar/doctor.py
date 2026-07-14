@@ -8,20 +8,24 @@ not just whatever happens to be first on the shell PATH.
 from __future__ import annotations
 
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from autocedar.codex_auth import codex_runtime_info, is_codex_provider
-from autocedar.env import ANTHROPIC_API_KEY, find_dotenv, is_real_anthropic_api_key
+from autocedar.env import find_dotenv
 from autocedar.grounding import CEDAR_PATH, CVC5_PATH, _run_symcc
-from autocedar.llm import default_model_for_provider, default_provider
-from autocedar.openai_compatible import (
-    is_openai_compatible_provider,
-    openai_runtime_info,
+from autocedar.openai_compatible import list_openai_models
+from autocedar.providers import (
+    ProviderConfigurationError,
+    create_backend,
+    get_provider_definition,
+    resolve_api_key,
+    resolve_provider_config,
 )
+from autocedar.providers import ResolvedProviderConfig
 
 
 @dataclass
@@ -45,7 +49,12 @@ class DoctorReport:
         return any(check.status == "WARN" for check in self.checks)
 
 
-def run_doctor(*, live_symcc: bool = True, cwd: Path | None = None) -> DoctorReport:
+def run_doctor(
+    *,
+    live_symcc: bool = True,
+    cwd: Path | None = None,
+    provider_config: ResolvedProviderConfig | None = None,
+) -> DoctorReport:
     """Run local setup checks and return a structured report."""
     cwd = cwd or Path.cwd()
     report = DoctorReport()
@@ -56,7 +65,7 @@ def run_doctor(*, live_symcc: bool = True, cwd: Path | None = None) -> DoctorRep
         detail=sys.version.split()[0],
     ))
     report.checks.append(_dotenv_check(cwd))
-    report.checks.append(_llm_check())
+    report.checks.append(_llm_check(provider_config))
     report.checks.extend(_cedar_checks())
     report.checks.append(_cvc5_check())
     if live_symcc:
@@ -86,96 +95,132 @@ def _dotenv_check(cwd: Path) -> DoctorCheck:
     if env_path is None:
         return DoctorCheck(
             name=".env",
-            status="WARN",
-            detail="not found; shell environment will be used",
-            fix="copy `.env.example` to `.env` or export the needed variables in your shell",
+            status="OK",
+            detail="not found (optional); using saved settings, shell values, and defaults",
         )
     return DoctorCheck(name=".env", status="OK", detail=str(env_path))
 
 
-def _llm_check() -> DoctorCheck:
-    provider = default_provider()
-    if not (
-        is_codex_provider(provider)
-        or is_openai_compatible_provider(provider)
-        or provider == "anthropic"
-    ):
+def _llm_check(config: ResolvedProviderConfig | None = None) -> DoctorCheck:
+    try:
+        config = config or resolve_provider_config()
+    except ProviderConfigurationError as exc:
         return DoctorCheck(
             name="LLM provider",
             status="FAIL",
-            detail=f"unsupported AUTOCEDAR_PROVIDER={provider!r}",
-            fix="set AUTOCEDAR_PROVIDER to codex, anthropic, or local",
+            detail=str(exc),
+            fix=(
+                "run `autocedar config --provider codex`, or choose one of: "
+                "codex, claude-cli, anthropic, openai, local"
+            ),
         )
-    model = default_model_for_provider(provider)
-    if is_codex_provider(provider):
-        info = codex_runtime_info()
-        if info.auth_available:
-            visible = ", ".join(info.models[:6])
-            if len(info.models) > 6:
-                visible += ", ..."
+    provider = config.provider
+    model = config.model
+    if provider == "codex":
+        executable = shutil.which("codex")
+        if executable is None:
+            return DoctorCheck(
+                name="LLM provider",
+                status="FAIL",
+                detail=f"codex using model {model}; codex CLI is not on PATH",
+                fix="install the Codex CLI, then run `autocedar auth login codex`",
+            )
+        status = _run_text([executable, "login", "status"], timeout=30)
+        if status.returncode == 0:
             return DoctorCheck(
                 name="LLM provider",
                 status="OK",
-                detail=(
-                    f"{provider} using model {model}; Codex OAuth found at "
-                    f"{info.auth_source}; visible models: {visible}"
-                ),
+                detail=f"codex using model {model}; {_compact(status.output) or 'CLI login available'}",
             )
         return DoctorCheck(
             name="LLM provider",
             status="FAIL",
-            detail=f"{provider} using model {model}; Codex OAuth is not available at {info.auth_source}",
-            fix="run `codex login`, then retry `autocedar doctor` or use `/provider anthropic` with `/apikey`",
+            detail=f"codex using model {model}; {_compact(status.output) or 'not logged in'}",
+            fix="run `autocedar auth login codex`, then retry `autocedar doctor`",
         )
 
-    if is_openai_compatible_provider(provider):
-        info = openai_runtime_info()
-        if not info.available:
+    if provider == "claude-cli":
+        try:
+            backend = create_backend("claude-cli")
+            status = backend.auth_status()  # type: ignore[attr-defined]
+        except Exception as exc:
             return DoctorCheck(
                 name="LLM provider",
                 status="FAIL",
-                detail=(
-                    f"local using model {model}; server is not reachable "
-                    f"at {info.base_url}"
-                ),
+                detail=f"claude-cli using model {model}; {exc}",
+                fix="install Claude Code, then run `autocedar auth login claude-cli`",
+            )
+        if status.logged_in:
+            return DoctorCheck(
+                name="LLM provider",
+                status="OK",
+                detail=f"claude-cli using model {model}; {status.auth_method or 'CLI login'}",
+            )
+        return DoctorCheck(
+            name="LLM provider",
+            status="FAIL",
+            detail=f"claude-cli using model {model}; {status.error or 'not logged in'}",
+            fix="run `autocedar auth login claude-cli`, then retry `autocedar doctor`",
+        )
+
+    if provider == "local":
+        try:
+            credential = resolve_api_key("local")
+            local_key = credential.api_key
+        except ProviderConfigurationError:
+            local_key = None
+        endpoint = config.base_url or "http://127.0.0.1:8000/v1"
+        try:
+            models = list_openai_models(
+                base_url=endpoint,
+                api_key=local_key,
+                timeout=3.0,
+            )
+        except Exception as exc:
+            return DoctorCheck(
+                name="LLM provider",
+                status="FAIL",
+                detail=f"local using model {model}; server is not reachable at {endpoint}: {exc}",
                 fix=(
-                    "start vLLM on this node, confirm `/v1/models` responds, and set "
-                    "AUTOCEDAR_LOCAL_BASE_URL if it is not on 127.0.0.1:8000"
+                    "start the local server, confirm `/v1/models` responds, and run "
+                    "`autocedar config --provider local --endpoint http://HOST:PORT/v1`"
                 ),
             )
-        if info.models and model not in info.models:
+        if model not in models:
             return DoctorCheck(
                 name="LLM provider",
                 status="FAIL",
                 detail=(
-                    f"local server is reachable at {info.base_url}, but "
-                    f"model {model!r} is not advertised; available: {', '.join(info.models)}"
+                    f"local server is reachable at {endpoint}, but model {model!r} "
+                    f"is not advertised; available: {', '.join(models)}"
                 ),
                 fix=(
-                    "set AUTOCEDAR_MODEL to one of the advertised names, or restart "
-                    "vLLM with `--served-model-name` matching this model"
+                    "run `autocedar config --provider local --model MODEL` with an "
+                    "advertised model, or restart the server with the expected name"
                 ),
             )
         return DoctorCheck(
             name="LLM provider",
             status="OK",
-            detail=(
-                f"local using model {model} at {info.base_url}; "
-                f"available models: {', '.join(info.models) or '(server returned none)'}"
-            ),
+            detail=f"local using model {model} at {endpoint}; available models: {', '.join(models)}",
         )
 
-    if is_real_anthropic_api_key(os.environ.get(ANTHROPIC_API_KEY)):
+    try:
+        credential = resolve_api_key(provider)
+    except ProviderConfigurationError:
+        credential = None
+    definition = get_provider_definition(provider)
+    if credential is not None and credential.api_key:
         return DoctorCheck(
             name="LLM provider",
             status="OK",
-            detail=f"{provider} using model {model}; {ANTHROPIC_API_KEY} is set",
+            detail=f"{provider} using model {model}; API key set from {credential.source}",
         )
     return DoctorCheck(
         name="LLM provider",
         status="WARN",
-        detail=f"{provider} using model {model}; {ANTHROPIC_API_KEY} is not set",
-        fix="run `autocedar apikey`, export `ANTHROPIC_API_KEY`, or use `/apikey` inside the TUI",
+        detail=f"{provider} using model {model}; API key is not set",
+        fix=f"run `autocedar auth login {provider}` for {definition.display_name}",
     )
 
 

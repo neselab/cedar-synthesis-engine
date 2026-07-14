@@ -2,6 +2,9 @@ from __future__ import annotations
 
 import base64
 import json
+import os
+import stat
+import tempfile
 import time
 from pathlib import Path
 from typing import Any
@@ -29,6 +32,9 @@ from autocedar.codex_auth import (
     list_codex_model_details,
     resolve_codex_credentials,
 )
+from autocedar.providers.base import ChatMessage, InstructionPart
+
+import autocedar.codex_auth as codex_auth
 
 
 class _Answer(BaseModel):
@@ -156,6 +162,54 @@ def test_resolve_codex_credentials_refreshes_expiring_token(
     assert saved["tokens"]["access_token"] == "new-access"
     assert saved["tokens"]["refresh_token"] == "new-refresh"
     assert calls
+
+
+def test_codex_auth_token_write_is_private_durable_and_atomic(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    auth_path = tmp_path / "codex" / "auth.json"
+    real_mkstemp = tempfile.mkstemp
+    real_fsync = os.fsync
+    real_replace = os.replace
+    observed: dict[str, object] = {"events": []}
+
+    def tracking_mkstemp(*args, **kwargs):
+        fd, name = real_mkstemp(*args, **kwargs)
+        observed["created_mode"] = stat.S_IMODE(os.fstat(fd).st_mode)
+        return fd, name
+
+    def tracking_fsync(fd: int) -> None:
+        observed["events"].append("fsync")  # type: ignore[union-attr]
+        real_fsync(fd)
+
+    def tracking_replace(source, destination) -> None:
+        observed["replace_source"] = Path(source)
+        observed["replace_destination"] = Path(destination)
+        observed["replace_mode"] = stat.S_IMODE(Path(source).stat().st_mode)
+        observed["events"].append("replace")  # type: ignore[union-attr]
+        real_replace(source, destination)
+
+    monkeypatch.setattr(codex_auth.tempfile, "mkstemp", tracking_mkstemp)
+    monkeypatch.setattr(codex_auth.os, "fsync", tracking_fsync)
+    monkeypatch.setattr(codex_auth.os, "replace", tracking_replace)
+
+    previous_umask = os.umask(0)
+    try:
+        codex_auth._write_auth_payload(
+            auth_path,
+            {"tokens": {"access_token": "new-access", "refresh_token": "new-refresh"}},
+        )
+    finally:
+        os.umask(previous_umask)
+
+    events = observed["events"]
+    assert observed["created_mode"] == 0o600
+    assert observed["replace_mode"] == 0o600
+    assert observed["replace_destination"] == auth_path
+    assert events.index("fsync") < events.index("replace")  # type: ignore[union-attr]
+    assert stat.S_IMODE(auth_path.stat().st_mode) == 0o600
+    assert not observed["replace_source"].exists()  # type: ignore[union-attr]
 
 
 def test_list_codex_models_filters_and_sorts_visible_api_models() -> None:
@@ -512,3 +566,44 @@ def test_request_json_reads_sse_until_terminal_event(
 
     assert status == 200
     assert payload["output_text"] == "autocedar"
+
+
+def test_codex_native_backend_method_does_not_require_messages_shape() -> None:
+    credentials = CodexCredentials(
+        access_token=_codex_jwt("acct_native"),
+        refresh_token="refresh",
+        source="test",
+        auth_path=None,
+        base_url=DEFAULT_CODEX_BASE_URL,
+    )
+    seen: dict[str, Any] = {}
+
+    def requester(method: str, url: str, headers: dict[str, str], body: Any, timeout: float):
+        seen["body"] = body
+        return 200, {
+            "id": "resp_native",
+            "model": "gpt-native",
+            "usage": {
+                "input_tokens": 6,
+                "output_tokens": 2,
+                "input_tokens_details": {"cached_tokens": 4},
+            },
+            "output": [{
+                "type": "message",
+                "content": [{"type": "output_text", "text": "native"}],
+            }],
+        }
+
+    client = CodexAuthClient(credentials=credentials, requester=requester)
+    result = client.generate_text(
+        model="gpt-native",
+        system=(InstructionPart("one"), InstructionPart("two")),
+        messages=(ChatMessage(role="user", content="hello"),),
+        reasoning_effort="max",
+    )
+
+    assert result.text == "native"
+    assert result.usage.cache_read_input_tokens == 4
+    assert result.request_id == "resp_native"
+    assert seen["body"]["instructions"] == "one\n\ntwo"
+    assert seen["body"]["input"] == [{"role": "user", "content": "hello"}]

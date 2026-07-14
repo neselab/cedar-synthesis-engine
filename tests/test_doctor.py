@@ -8,6 +8,14 @@ import pytest
 import autocedar.doctor as doctor
 
 
+def test_doctor_treats_project_dotenv_as_optional(tmp_path: Path) -> None:
+    check = doctor._dotenv_check(tmp_path)
+
+    assert check.status == "OK"
+    assert "optional" in check.detail
+    assert check.fix == ""
+
+
 def test_doctor_reports_ready_toolchain(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -54,6 +62,8 @@ def test_doctor_fails_when_symcc_analysis_flags_are_missing(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
+    monkeypatch.setenv("AUTOCEDAR_PROVIDER", "anthropic")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
     cedar = tmp_path / "cedar"
     cvc5 = tmp_path / "cvc5"
     cedar.write_text("#!/bin/sh\n")
@@ -89,6 +99,8 @@ def test_doctor_fails_when_live_symcc_smoke_test_fails(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
+    monkeypatch.setenv("AUTOCEDAR_PROVIDER", "anthropic")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
     cedar = tmp_path / "cedar"
     cvc5 = tmp_path / "cvc5"
     cedar.write_text("#!/bin/sh\n")
@@ -152,7 +164,7 @@ def test_doctor_treats_placeholder_api_key_as_missing(
 
     assert check.status == "WARN"
     assert "not set" in check.detail
-    assert "autocedar apikey" in check.fix
+    assert "autocedar auth login anthropic" in check.fix
 
 
 def test_doctor_accepts_reachable_openai_compatible_model(
@@ -162,16 +174,8 @@ def test_doctor_accepts_reachable_openai_compatible_model(
     monkeypatch.setenv("AUTOCEDAR_LOCAL_MODEL", "autocedar-local")
     monkeypatch.setattr(
         doctor,
-        "openai_runtime_info",
-        lambda: type(
-            "RuntimeInfo",
-            (),
-            {
-                "available": True,
-                "base_url": "http://127.0.0.1:8000/v1",
-                "models": ["autocedar-local"],
-            },
-        )(),
+        "list_openai_models",
+        lambda **kwargs: ["autocedar-local"],
     )
 
     check = doctor._llm_check()
@@ -187,23 +191,15 @@ def test_doctor_rejects_unadvertised_openai_compatible_model(
     monkeypatch.setenv("AUTOCEDAR_LOCAL_MODEL", "wrong-name")
     monkeypatch.setattr(
         doctor,
-        "openai_runtime_info",
-        lambda: type(
-            "RuntimeInfo",
-            (),
-            {
-                "available": True,
-                "base_url": "http://127.0.0.1:8000/v1",
-                "models": ["autocedar-local"],
-            },
-        )(),
+        "list_openai_models",
+        lambda **kwargs: ["autocedar-local"],
     )
 
     check = doctor._llm_check()
 
     assert check.status == "FAIL"
     assert "not advertised" in check.detail
-    assert "--served-model-name" in check.fix
+    assert "autocedar config --provider local --model" in check.fix
 
 
 def test_doctor_reports_unknown_provider_cleanly(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -212,5 +208,51 @@ def test_doctor_reports_unknown_provider_cleanly(monkeypatch: pytest.MonkeyPatch
     check = doctor._llm_check()
 
     assert check.status == "FAIL"
-    assert "unsupported AUTOCEDAR_PROVIDER" in check.detail
-    assert "codex, anthropic, or local" in check.fix
+    assert "Unknown provider 'typo'" in check.detail
+    assert "codex, claude-cli, anthropic, openai, local" in check.fix
+
+
+def test_doctor_accepts_codex_cli_login(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("AUTOCEDAR_PROVIDER", "codex")
+    monkeypatch.setattr(doctor.shutil, "which", lambda name: "/usr/bin/codex")
+    monkeypatch.setattr(
+        doctor,
+        "_run_text",
+        lambda command, timeout=10: doctor._RunResult(0, "Logged in using ChatGPT"),
+    )
+
+    check = doctor._llm_check()
+
+    assert check.status == "OK"
+    assert "Logged in using ChatGPT" in check.detail
+
+
+def test_doctor_accepts_claude_cli_login(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("AUTOCEDAR_PROVIDER", "claude-cli")
+    backend = type(
+        "Backend",
+        (),
+        {
+            "auth_status": lambda self: type(
+                "Status",
+                (),
+                {"logged_in": True, "auth_method": "subscription", "error": None},
+            )(),
+        },
+    )()
+    monkeypatch.setattr(doctor, "create_backend", lambda provider: backend)
+
+    check = doctor._llm_check()
+
+    assert check.status == "OK"
+    assert "subscription" in check.detail
+
+
+def test_doctor_accepts_openai_api_key(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("AUTOCEDAR_PROVIDER", "openai")
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-openai-test-value")
+
+    check = doctor._llm_check()
+
+    assert check.status == "OK"
+    assert "environment:OPENAI_API_KEY" in check.detail
