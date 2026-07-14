@@ -68,7 +68,8 @@ Use this if you just want to run the AutoCedar agent. This installs a persistent
    Paste the Anthropic key when prompted. AutoCedar writes it to your user config
    (`~/.config/autocedar/.env` by default), redacts it in the terminal output,
    validates it with Anthropic before saving, and uses it immediately and on
-   later launches.
+   later launches. The config directory and key file are stored with private
+   permissions (`0700` and `0600`, respectively).
    You can also run `autocedar apikey sk-ant-...` if you prefer a one-line
    command. Do not share or commit your API key.
 
@@ -1010,7 +1011,7 @@ Authoring writes session artifacts under the `--out` directory, usually
 | Symptom | Fix |
 | --- | --- |
 | Chat says auth is not configured | Default path: run `codex login`, then `autocedar doctor`. Explicit Anthropic path: run `autocedar apikey`, use `/apikey` in the TUI, or export `ANTHROPIC_API_KEY`. |
-| API key works in shell but not TUI | This applies only after `/provider anthropic`. Run `autocedar doctor` to confirm what AutoCedar sees. Shell env wins first; otherwise the saved AutoCedar user config key wins over a stale project `.env` key. |
+| API key works in shell but not TUI | This applies only after `/provider anthropic`. Run `autocedar doctor` to confirm what AutoCedar sees. Shell env wins first; otherwise the nearest project `.env` overrides the saved AutoCedar user config. |
 | Cannot select/copy from the TUI | Textual full-screen apps can intercept mouse selection. Use `/export` for the most reliable path: it writes `schema.cedarschema`, `policy_store.cedar`, `transcript.txt`, and `artifacts.txt` to `autocedar-export/`. Clipboard shortcuts are also available with `/copy last`, `/copy transcript`, `/copy session`, `/copy schema path`, `/copy policy path`, `/copy schema`, or `/copy policy`. Some terminals allow mouse selection while holding Shift. |
 | Verification says Cedar is missing | Set `CEDAR=/path/to/cedar` or install the Cedar CLI. |
 | Verification says CVC5 is missing | Install CVC5, confirm `cvc5 --version` works, then set `CVC5=$(command -v cvc5)` in `.env` if needed. |

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import shlex
+import tempfile
 from pathlib import Path
 
 ANTHROPIC_API_KEY = "ANTHROPIC_API_KEY"
@@ -22,27 +23,25 @@ _PLACEHOLDER_API_KEYS = {
 
 
 def load_dotenv(start: Path | None = None) -> Path | None:
-    """Load project config, then user config for global AutoCedar secrets.
+    """Load user config and project config without overriding the shell.
 
-    Shell-exported values still win. For ``ANTHROPIC_API_KEY``, the user-level
-    AutoCedar config wins over a project ``.env`` value so `autocedar apikey`
-    persists predictably across directories and stale project files do not
-    shadow the saved key.
+    Precedence is shell environment, then the nearest project ``.env``, then
+    the user-level AutoCedar config. This lets a project intentionally select
+    its own credentials and models while preserving explicit shell overrides.
     """
     preexisting_keys = set(os.environ)
     env_path = find_dotenv(start or Path.cwd())
     loaded: Path | None = None
-    if env_path is not None:
-        _load_env_file(env_path)
-        loaded = env_path
-
     user_env = user_config_env_path()
     if user_env.exists():
-        override_keys = set()
-        if ANTHROPIC_API_KEY not in preexisting_keys:
-            override_keys.add(ANTHROPIC_API_KEY)
-        _load_env_file(user_env, override_keys=override_keys)
-        loaded = loaded or user_env
+        _secure_existing_user_config(user_env)
+        _load_env_file(user_env)
+        loaded = user_env
+
+    if env_path is not None:
+        project_overrides = _env_file_keys(env_path) - preexisting_keys
+        _load_env_file(env_path, override_keys=project_overrides)
+        loaded = env_path
     return loaded
 
 
@@ -72,7 +71,7 @@ def write_dotenv_value(
 ) -> Path:
     """Create or update ``key=value`` in the nearest ``.env`` file."""
     target = _resolve_dotenv_for_write(start=start, env_path=env_path)
-    target.parent.mkdir(parents=True, exist_ok=True)
+    _prepare_env_parent(target)
 
     lines = target.read_text().splitlines() if target.exists() else []
     formatted = f"{key}={_format_env_value(value)}"
@@ -90,7 +89,7 @@ def write_dotenv_value(
         if updated and updated[-1].strip():
             updated.append("")
         updated.append(formatted)
-    target.write_text("\n".join(updated) + "\n", encoding="utf-8")
+    _write_private_env_file(target, "\n".join(updated) + "\n")
     os.environ[key] = value
     return target
 
@@ -113,10 +112,13 @@ def remove_dotenv_value(
 ) -> Path:
     """Remove ``key`` from the nearest ``.env`` file, creating it if needed."""
     target = _resolve_dotenv_for_write(start=start, env_path=env_path)
-    target.parent.mkdir(parents=True, exist_ok=True)
+    _prepare_env_parent(target)
     lines = target.read_text().splitlines() if target.exists() else []
     remaining = [line for line in lines if _line_key(line) != key]
-    target.write_text(("\n".join(remaining) + "\n") if remaining else "", encoding="utf-8")
+    _write_private_env_file(
+        target,
+        ("\n".join(remaining) + "\n") if remaining else "",
+    )
     os.environ.pop(key, None)
     return target
 
@@ -163,6 +165,56 @@ def _parse_env_value(value: str) -> str:
     if not parts:
         return ""
     return parts[0]
+
+
+def _env_file_keys(env_path: Path) -> set[str]:
+    """Return the variable names declared by an env file."""
+    return {
+        key
+        for raw_line in env_path.read_text().splitlines()
+        if (key := _line_key(raw_line)) is not None
+    }
+
+
+def _prepare_env_parent(target: Path) -> None:
+    """Create the target parent and secure the user config directory."""
+    user_target = user_config_env_path().expanduser().resolve()
+    is_user_config = target == user_target
+    target.parent.mkdir(
+        mode=0o700 if is_user_config else 0o777,
+        parents=True,
+        exist_ok=True,
+    )
+    if is_user_config:
+        os.chmod(target.parent, 0o700)
+
+
+def _secure_existing_user_config(target: Path) -> None:
+    """Repair permissions left by older AutoCedar releases before reading."""
+    os.chmod(target.parent, 0o700)
+    os.chmod(target, 0o600)
+
+
+def _write_private_env_file(target: Path, contents: str) -> None:
+    """Atomically replace an env file with mode 0600 from its creation."""
+    fd, temporary_name = tempfile.mkstemp(
+        prefix=f".{target.name}.",
+        dir=target.parent,
+        text=True,
+    )
+    temporary = Path(temporary_name)
+    try:
+        os.chmod(temporary, 0o600)
+        with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as handle:
+            fd = -1
+            handle.write(contents)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary, target)
+    finally:
+        if fd >= 0:
+            os.close(fd)
+        temporary.unlink(missing_ok=True)
 
 
 def _resolve_dotenv_for_write(

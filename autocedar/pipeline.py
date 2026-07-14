@@ -147,11 +147,11 @@ def _stub_property_proposer(
 
 
 def _stub_auto_approve(atom: Any) -> AtomDecision:
-    """Test helper: auto-approve with intent acknowledgement."""
+    """Test helper: advance plumbing without claiming human intent review."""
     return AtomDecision(
         atom_name=getattr(atom, "name", "?"),
         action="approve",
-        intent_acknowledged_by_user=True,
+        intent_acknowledged_by_user=False,
         symbolic_verified=getattr(atom, "symbolic_verified", False),
     )
 
@@ -203,7 +203,7 @@ class AuthorResult:
     candidate_path: Path
     plan: VerificationPlanDraft
     schema_text: str
-    final_user_approved: bool = True
+    final_user_approved: bool = False
     notes: list[str] = field(default_factory=list)
 
 
@@ -360,6 +360,7 @@ def author(
     draft: SchemaDraft | None = None
     approved_schema_atoms: list[Stage1AtomT] = []
     approved_schema_names: set[str] = set()
+    stage1_decisions_for_approval: list[AtomDecision] = []
     resume_checkpoint = _load_resume_checkpoint(Path(resume_from)) if resume_from else None
     schema_gaps: list[dict[str, Any]] = (
         list(resume_checkpoint.schema_gaps) if resume_checkpoint else []
@@ -397,6 +398,7 @@ def author(
 
     # ──── Stage 1: schema atomization ────
     if resume_checkpoint is not None:
+        stage1_decisions_for_approval = list(resume_checkpoint.stage1_decisions)
         schema_text = resume_checkpoint.schema_text
         schema_dest = session.base / "stage1" / "final_schema.cedarschema"
         schema_dest.write_text(schema_text)
@@ -567,6 +569,7 @@ def author(
             session.write_stage1_proposed_atoms(schema_atoms)
             session.write_stage1_attribution_decisions(attributions)
         session.write_stage1_decisions(decisions)
+        stage1_decisions_for_approval = decisions
         _notify_review_stage_complete(review_atom, "Schema atom review", decisions)
         schema_path = session.base / "stage1" / "final_schema.cedarschema"
         if draft.entities or draft.actions or draft.type_aliases:
@@ -1130,7 +1133,9 @@ def author(
             if reviewed_atom.name in approved_property_names:
                 decisions2.append(_duplicate_decision(reviewed_atom.name, "property"))
                 continue
-            reviewed_atom.intent_acknowledged_by_user = True
+            reviewed_atom.intent_acknowledged_by_user = (
+                decision.intent_acknowledged_by_user
+            )
             plan.properties.append(reviewed_atom)
             approved_property_names.add(reviewed_atom.name)
             session.write_stage2_approved_atoms(plan.properties)
@@ -1525,7 +1530,26 @@ def author(
     # ──── Stage 2.5: atom-to-policy traceback ────
     traceback = generate_atom_traceback(plan, str(candidate_path))
     session.write_stage2_5_traceback(traceback)
-    session.write_stage2_5_final_decision(approved=True)
+    final_user_approved = _final_user_approval_state(
+        approved_schema_atoms=approved_schema_atoms,
+        approved_properties=plan.properties,
+        stage1_decisions=stage1_decisions_for_approval,
+        stage2_decisions=decisions2,
+        schema_gap_repairs=schema_gap_repairs,
+    )
+    final_approval_reason = (
+        "All accepted schema and property atoms were explicitly acknowledged "
+        "by a user."
+        if final_user_approved
+        else (
+            "Synthesis completed, but automated or plumbing-only approvals do "
+            "not constitute human semantic intent approval."
+        )
+    )
+    session.write_stage2_5_final_decision(
+        approved=final_user_approved,
+        reason=final_approval_reason,
+    )
 
     _write_stage0_artifacts(
         session,
@@ -1545,12 +1569,68 @@ def author(
         candidate_path=candidate_path,
         plan=plan,
         schema_text=schema_text,
+        final_user_approved=final_user_approved,
     )
 
 
 # ---------------------------------------------------------------------------
 # Helpers.
 # ---------------------------------------------------------------------------
+
+def _latest_intent_acknowledgement(
+    decisions: list[AtomDecision],
+    atom_name: str,
+) -> bool:
+    """Return whether the latest decision for ``atom_name`` is human approval."""
+
+    for decision in reversed(decisions):
+        if decision.atom_name == atom_name:
+            return (
+                decision.action == "approve"
+                and decision.intent_acknowledged_by_user
+            )
+    return False
+
+
+def _final_user_approval_state(
+    *,
+    approved_schema_atoms: list[Stage1AtomT],
+    approved_properties: list[PropertyAtom],
+    stage1_decisions: list[AtomDecision],
+    stage2_decisions: list[AtomDecision],
+    schema_gap_repairs: list[dict[str, Any]],
+) -> bool:
+    """Derive final semantic approval only from explicit human decisions.
+
+    Automated reviewers may return ``action="approve"`` so batch runs can
+    exercise composition and synthesis.  That action is not evidence of human
+    intent review.  Every atom in the final accepted target must therefore
+    have a latest approving decision with ``intent_acknowledged_by_user=True``.
+    An empty target has no semantic approval evidence and returns false.
+    """
+
+    schema_decisions = list(stage1_decisions)
+    for repair in schema_gap_repairs:
+        raw_decisions = repair.get("decisions", []) if isinstance(repair, dict) else []
+        for raw in raw_decisions:
+            if isinstance(raw, AtomDecision):
+                schema_decisions.append(raw)
+            elif isinstance(raw, dict):
+                schema_decisions.append(AtomDecision(**raw))
+
+    schema_names = [atom.name for atom in approved_schema_atoms]
+    property_names = [atom.name for atom in approved_properties]
+    if not schema_names and not property_names:
+        return False
+
+    return all(
+        _latest_intent_acknowledgement(schema_decisions, name)
+        for name in schema_names
+    ) and all(
+        _latest_intent_acknowledgement(stage2_decisions, name)
+        for name in property_names
+    )
+
 
 def _load_resume_checkpoint(base: Path) -> _ResumeCheckpoint:
     """Load an incomplete session so `author` can continue in-place."""
@@ -1596,7 +1676,10 @@ def _load_resume_checkpoint(base: Path) -> _ResumeCheckpoint:
         ]
         for atom in approved_properties:
             _canonicalize_resumed_property_atom(atom)
-            atom.intent_acknowledged_by_user = True
+            atom.intent_acknowledged_by_user = _latest_intent_acknowledgement(
+                raw_stage2_decisions,
+                atom.name,
+            )
             atom.symbolic_verified = True
         stage2_decisions = raw_stage2_decisions
         reopened_source_node_ids: set[str] = set()
@@ -1785,7 +1868,9 @@ def _approved_property_atoms_for_resume(
             )
             continue
         if decision.atom_name not in seen_approved:
-            atom.intent_acknowledged_by_user = True
+            atom.intent_acknowledged_by_user = (
+                decision.intent_acknowledged_by_user
+            )
             atom.symbolic_verified = True
             approved.append(atom)
             seen_approved.add(decision.atom_name)
@@ -2049,7 +2134,9 @@ def _repair_named_prior_property(
     session.write_stage2_decisions(decisions)
     if repair_decision.action != "approve" or not isinstance(reviewed_replacement, PropertyAtom):
         return False
-    reviewed_replacement.intent_acknowledged_by_user = True
+    reviewed_replacement.intent_acknowledged_by_user = (
+        repair_decision.intent_acknowledged_by_user
+    )
     plan.properties[prior_index] = reviewed_replacement
     approved_property_names.discard(prior_atom.name)
     approved_property_names.add(reviewed_replacement.name)

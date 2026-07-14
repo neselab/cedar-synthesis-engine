@@ -188,6 +188,8 @@ def test_apikey_command_writes_env_file(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.setenv("AUTOCEDAR_MODEL", "gpt-5.5")
+    monkeypatch.setenv("AUTOCEDAR_CHAT_MODEL", "local-coder-model")
     monkeypatch.setenv("AUTOCEDAR_CONFIG_DIR", str(tmp_path / "config"))
     validated: list[tuple[str, str]] = []
     monkeypatch.setattr(
@@ -207,7 +209,7 @@ def test_apikey_command_writes_env_file(
 
     env_path = tmp_path / "config" / ".env"
     assert rc == 0
-    assert validated == [("sk-ant-test123", cli.default_model_for_provider("anthropic"))]
+    assert validated == [("sk-ant-test123", cli.ANTHROPIC_API_KEY_VALIDATION_MODEL)]
     assert env_path.read_text() == "ANTHROPIC_API_KEY=sk-ant-test123\n"
     assert "sk-ant-test123" not in capsys.readouterr().out
 

@@ -23,6 +23,7 @@ from autocedar.atoms import RequiredSchemaSupport
 from autocedar.corpus import AtomDecision
 from autocedar.grounding import CEDAR_PATH, CVC5_PATH
 from autocedar.pipeline import PropertyRepairPlan, author
+from autocedar.ui.terminal import auto_approve
 
 _HAVE_SOLVERS = (
     os.path.isfile(CEDAR_PATH)
@@ -221,7 +222,9 @@ def test_stage2_and_stage3_use_packets_and_approved_target(
         synthesize=_synthesize_stub,
     )
 
-    assert result.final_user_approved is True
+    # No atom was presented to a human, so successful plumbing is not semantic
+    # user approval.
+    assert result.final_user_approved is False
     assert len(property_calls) == 2
     assert all("<autocedar_source_packet" in call for call in property_calls)
     assert all(call.strip() != spec_text.strip() for call in property_calls)
@@ -415,6 +418,10 @@ def test_author_runs_end_to_end_with_stubs(
     assert result.session_id == "t1"
     assert result.candidate_path.exists()
     assert result.final_user_approved is True
+    final_decision = json.loads(
+        (result.session_dir / "stage2_5" / "final_user_decision.json").read_text(),
+    )
+    assert final_decision["approved"] is True
 
     session_dir = output_dir / "t1"
 
@@ -1286,6 +1293,65 @@ def test_hitl_schema_gap_rejection_repairs_schema_and_continues(
     assert repairs[0]["approved_atoms"][0]["field_name"] == "isCurrent"
     assert (session_dir / "stage2" / "final_plan" / "verification_plan.py").exists()
     assert (session_dir / "stage3" / "final_candidate.cedar").exists()
+
+
+def test_batch_auto_approval_advances_without_human_semantic_approval(
+    tmp_path: Path,
+    workspace: tuple[Path, Path],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Batch plumbing can synthesize, but it cannot manufacture HITL evidence."""
+
+    spec_path, schema_path = workspace
+
+    def fake_symbolic_verify(
+        atom: PropertyAtom,
+        schema_path_arg: str,
+        prior_atoms: list[PropertyAtom] | None = None,
+    ) -> None:
+        _ = schema_path_arg, prior_atoms
+        atom.symbolic_verified = True
+        atom.symbolic_verification_log = ["symbolic checks passed"]
+
+    monkeypatch.setattr("autocedar.pipeline.cedar_validate_schema", lambda path: (True, ""))
+    monkeypatch.setattr("autocedar.pipeline.symbolic_verify_atom", fake_symbolic_verify)
+    monkeypatch.setattr(
+        "autocedar.pipeline.symbolic_consistency_check",
+        lambda *args, **kwargs: SimpleNamespace(
+            unsat=False,
+            core=[],
+            detail="",
+            tool_error=False,
+        ),
+    )
+
+    result = author(
+        spec_path=spec_path,
+        output_dir=tmp_path / "out",
+        session_id="batch-plumbing-only",
+        propose_property_atom=_QueuedPropertyProposer(_owner_only_ceiling()),
+        review_atom=auto_approve,
+        synthesize=_synthesize_stub,
+        schema_path_override=str(schema_path),
+        run_incremental_checks=False,
+    )
+
+    assert result.candidate_path.exists()
+    assert result.final_user_approved is False
+    assert result.plan.properties[0].intent_acknowledged_by_user is False
+
+    decision = json.loads(
+        (result.session_dir / "stage2" / "decisions.json").read_text(),
+    )[0]
+    assert decision["action"] == "approve"
+    assert decision["symbolic_verified"] is True
+    assert decision["intent_acknowledged_by_user"] is False
+
+    final_decision = json.loads(
+        (result.session_dir / "stage2_5" / "final_user_decision.json").read_text(),
+    )
+    assert final_decision["approved"] is False
+    assert "plumbing-only approvals" in final_decision["reason"]
 
 
 def test_schema_gap_repair_patches_supplied_schema_without_llm_rewrite(
@@ -2195,8 +2261,8 @@ def test_pipeline_logs_intent_and_symbolic_separately(
     d = decisions[0]
     assert "intent_acknowledged_by_user" in d
     assert "symbolic_verified" in d
-    # Auto-approve reviewer sets intent_acknowledged_by_user=True;
-    # symbolic_verified mirrors the actual symcc result.
+    # The injected reviewer models an explicit interactive approval;
+    # symbolic_verified independently mirrors the actual symcc result.
     assert d["intent_acknowledged_by_user"] is True
     assert d["symbolic_verified"] is True  # owner-only ceiling passes all four checks
 

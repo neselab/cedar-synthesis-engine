@@ -464,9 +464,10 @@ def auto_approve(atom: Any) -> AtomDecision:
     """Non-interactive reviewer for batch runs.
 
     This is still only a plumbing convenience; it is not semantic HITL
-    validation. It must not approve a property atom whose verifier checks
-    failed, because that would let invalid reference Cedar enter the formal
-    target and later fail as a plan-level tooling error.
+    validation, so an approval returned here deliberately leaves
+    ``intent_acknowledged_by_user`` false. It must also not approve a property
+    atom whose verifier checks failed, because that would let invalid reference
+    Cedar enter the formal target and later fail as a plan-level tooling error.
     """
     if isinstance(atom, PropertyAtom) and not getattr(atom, "symbolic_verified", False):
         log = getattr(atom, "symbolic_verification_log", []) or []
@@ -483,7 +484,7 @@ def auto_approve(atom: Any) -> AtomDecision:
     return AtomDecision(
         atom_name=getattr(atom, "name", "?"),
         action="approve",
-        intent_acknowledged_by_user=True,
+        intent_acknowledged_by_user=False,
         symbolic_verified=getattr(atom, "symbolic_verified", False),
     )
 

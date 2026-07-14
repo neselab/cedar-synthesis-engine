@@ -16,6 +16,7 @@ from autocedar.agent import AgentAction
 from autocedar.atoms import EntityAtom, PropertyAtom
 from autocedar.corpus import AtomDecision
 from autocedar.tui import (
+    ANTHROPIC_API_KEY_VALIDATION_MODEL,
     AutoCedarApp,
     ClipboardResult,
     COMMANDS,
@@ -1231,7 +1232,9 @@ def test_textual_settings_commands_update_runtime(
             app._handle_command_input("/apikey sk-ant-secret123")
             assert os.environ["ANTHROPIC_API_KEY"] == "sk-ant-secret123"
             assert app.active_api_key == "sk-ant-secret123"
-            assert validated == [("sk-ant-secret123", "claude-sonnet-4-6")]
+            assert validated == [
+                ("sk-ant-secret123", ANTHROPIC_API_KEY_VALIDATION_MODEL),
+            ]
             env_path = tmp_path / "config" / ".env"
             assert env_path.read_text() == "ANTHROPIC_API_KEY=sk-ant-secret123\n"
 

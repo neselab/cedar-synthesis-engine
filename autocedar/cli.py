@@ -28,7 +28,13 @@ from autocedar.env import (
     write_user_config_value,
 )
 from autocedar.harness_adapter import make_harness_synthesizer
-from autocedar.llm import DEFAULT_EFFORT, LLMClient, default_model_for_provider, default_provider
+from autocedar.llm import (
+    ANTHROPIC_API_KEY_VALIDATION_MODEL,
+    DEFAULT_EFFORT,
+    LLMClient,
+    default_model_for_provider,
+    default_provider,
+)
 from autocedar.pipeline import author as author_pipeline
 from autocedar.progress import format_property_progress
 from autocedar.property_atomizer import propose_property_atom
@@ -332,7 +338,7 @@ def _cmd_apikey(args: argparse.Namespace) -> int:
         )
 
     if not args.no_validate:
-        model = default_model_for_provider("anthropic")
+        model = ANTHROPIC_API_KEY_VALIDATION_MODEL
         try:
             validate_anthropic_api_key(value, model=model)
         except Exception as exc:
@@ -682,7 +688,7 @@ def _prompt_for_missing_api_key(*, allow_skip: bool) -> bool:
             "That does not look like a real Anthropic API key. "
             "Run `autocedar apikey` again and paste the full key.",
         )
-    model = default_model_for_provider("anthropic")
+    model = ANTHROPIC_API_KEY_VALIDATION_MODEL
     try:
         validate_anthropic_api_key(value, model=model)
     except Exception as exc:
