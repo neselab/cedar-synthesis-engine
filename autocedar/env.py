@@ -33,10 +33,23 @@ def load_dotenv(start: Path | None = None) -> Path | None:
     env_path = find_dotenv(start or Path.cwd())
     loaded: Path | None = None
     user_env = user_config_env_path()
+    # AutoCedar 0.2 stores provider settings and credentials in split JSON
+    # files. Once either store exists, keep loading unrelated operational
+    # settings (CEDAR, CVC5, etc.) from the legacy file but filter every key
+    # owned by the split stores. Otherwise a removed credential or provider
+    # choice could be reintroduced into os.environ and outrank the JSON stores.
     if user_env.exists():
         _secure_existing_user_config(user_env)
-        _load_env_file(user_env)
-        loaded = user_env
+        if _split_provider_config_exists():
+            loaded_keys = _load_env_file(
+                user_env,
+                excluded_keys=_migrated_provider_env_keys(),
+            )
+            if loaded_keys:
+                loaded = user_env
+        else:
+            _load_env_file(user_env)
+            loaded = user_env
 
     if env_path is not None:
         project_overrides = _env_file_keys(env_path) - preexisting_keys
@@ -45,8 +58,31 @@ def load_dotenv(start: Path | None = None) -> Path | None:
     return loaded
 
 
-def _load_env_file(env_path: Path, *, override_keys: set[str] | None = None) -> None:
+def _split_provider_config_exists() -> bool:
+    from autocedar.providers.auth import auth_path
+    from autocedar.providers.config import settings_path
+
+    return settings_path().exists() or auth_path().exists()
+
+
+def _migrated_provider_env_keys() -> frozenset[str]:
+    """Keys whose legacy values are superseded by settings/auth JSON stores."""
+
+    from autocedar.providers.auth import MIGRATED_AUTH_ENV_KEYS
+    from autocedar.providers.config import MIGRATED_SETTINGS_ENV_KEYS
+
+    return MIGRATED_SETTINGS_ENV_KEYS | MIGRATED_AUTH_ENV_KEYS
+
+
+def _load_env_file(
+    env_path: Path,
+    *,
+    override_keys: set[str] | None = None,
+    excluded_keys: frozenset[str] | set[str] | None = None,
+) -> set[str]:
     overrides = override_keys or set()
+    excluded = excluded_keys or set()
+    loaded: set[str] = set()
     for raw_line in env_path.read_text().splitlines():
         line = raw_line.strip()
         if not line or line.startswith("#"):
@@ -57,9 +93,15 @@ def _load_env_file(env_path: Path, *, override_keys: set[str] | None = None) -> 
             continue
         key, value = line.split("=", 1)
         key = key.strip()
-        if not key or (key in os.environ and key not in overrides):
+        if (
+            not key
+            or key in excluded
+            or (key in os.environ and key not in overrides)
+        ):
             continue
         os.environ[key] = _parse_env_value(value)
+        loaded.add(key)
+    return loaded
 
 
 def write_dotenv_value(

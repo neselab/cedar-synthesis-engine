@@ -59,7 +59,7 @@ We are targeting **two papers**:
 eval_harness.py          # main CLI entry (run_scenario, main, CEGIS loop)
 orchestrator.py          # per-check verification orchestration
 solver_wrapper.py        # cedar validate / cedar symcc invocation
-                         # CEDAR_PATH pins /private/tmp/cedar/target/release/cedar
+                         # CEDAR defaults to ~/.cargo/bin/cedar; env-overridable
 docs/harness_fix_log.md  # READ FIRST — §3–§8 document all harness rules
                          # §8.1–§8.11 = the eleven novel contributions
 docs/cegis_algorithm.md  # high-level CEGIS algorithm description

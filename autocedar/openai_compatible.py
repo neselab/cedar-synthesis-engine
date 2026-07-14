@@ -1,8 +1,8 @@
-"""OpenAI-compatible client for local AutoCedar model servers.
+"""Native local-model client for OpenAI-compatible AutoCedar servers.
 
-Current AutoCedar normalizes provider clients behind ``messages.create`` and
-``messages.parse``.  This adapter implements that existing contract using the
-portable OpenAI Chat Completions API exposed by vLLM and similar servers.
+The primary API implements AutoCedar's provider-neutral generation contract
+over the portable Chat Completions endpoint exposed by vLLM and similar
+servers.  A legacy ``messages`` shim remains only for older integrations.
 """
 
 from __future__ import annotations
@@ -14,9 +14,17 @@ import urllib.error
 import urllib.request
 from dataclasses import dataclass, field
 from types import SimpleNamespace
-from typing import Any, Callable
+from typing import Any, Callable, Sequence, TypeVar
 
 from pydantic import BaseModel
+
+from autocedar.providers.base import (
+    ChatMessage,
+    InstructionPart,
+    ModelUsage,
+    StructuredResult,
+    TextResult,
+)
 
 
 DEFAULT_OPENAI_BASE_URL = "http://127.0.0.1:8000/v1"
@@ -55,7 +63,6 @@ def is_openai_compatible_provider(provider: str | None) -> bool:
 def openai_base_url() -> str:
     return (
         os.environ.get("AUTOCEDAR_LOCAL_BASE_URL", "").strip().rstrip("/")
-        or os.environ.get("AUTOCEDAR_OPENAI_BASE_URL", "").strip().rstrip("/")
         or DEFAULT_OPENAI_BASE_URL
     )
 
@@ -63,7 +70,6 @@ def openai_base_url() -> str:
 def openai_model() -> str:
     return (
         os.environ.get("AUTOCEDAR_LOCAL_MODEL", "").strip()
-        or os.environ.get("AUTOCEDAR_OPENAI_MODEL", "").strip()
         or os.environ.get("AUTOCEDAR_MODEL", "").strip()
         or os.environ.get("AUTOCEDAR_AUTHOR_MODEL", "").strip()
         or os.environ.get("AUTOCEDAR_CHAT_MODEL", "").strip()
@@ -145,8 +151,15 @@ def openai_runtime_info(
         )
 
 
+_StructuredT = TypeVar("_StructuredT", bound=BaseModel)
+
+
 class OpenAICompatibleClient:
-    """AutoCedar-compatible client backed by ``/v1/chat/completions``."""
+    """Native AutoCedar client backed by ``/v1/chat/completions``.
+
+    ``messages`` remains as a compatibility shim for older callers; new code
+    uses :meth:`generate_text` and :meth:`generate_structured` directly.
+    """
 
     def __init__(
         self,
@@ -162,6 +175,139 @@ class OpenAICompatibleClient:
         self.timeout = _configured_timeout(timeout)
         self.messages = _OpenAICompatibleMessages(self)
 
+    def generate_text(
+        self,
+        *,
+        model: str,
+        messages: Sequence[ChatMessage],
+        system: str | Sequence[InstructionPart] | None = None,
+        max_tokens: int = 8192,
+        temperature: float | None = None,
+        reasoning_effort: str | None = None,
+    ) -> TextResult:
+        del reasoning_effort  # Portable Chat Completions has no common reasoning knob.
+        payload = self._chat_payload(
+            model=model,
+            messages=messages,
+            system=system,
+            max_tokens=max_tokens,
+            temperature=temperature,
+        )
+        text, usage, response = self._decode(*self._request(payload))
+        return TextResult(
+            text=text,
+            usage=usage,
+            model=_response_string(response, "model") or model,
+            request_id=_response_string(response, "id"),
+        )
+
+    def generate_structured(
+        self,
+        *,
+        model: str,
+        messages: Sequence[ChatMessage],
+        output_type: type[_StructuredT],
+        system: str | Sequence[InstructionPart] | None = None,
+        max_tokens: int = 8192,
+        temperature: float | None = None,
+        reasoning_effort: str | None = None,
+    ) -> StructuredResult[_StructuredT]:
+        del reasoning_effort
+        schema = output_type.model_json_schema()
+        structured_messages = tuple(messages) + (
+            ChatMessage(
+                role="user",
+                content=(
+                    "Return only a JSON object matching this JSON Schema. Do not wrap "
+                    "it in Markdown and do not include explanatory prose.\n\n"
+                    f"{json.dumps(schema, indent=2, sort_keys=True)}"
+                ),
+            ),
+        )
+        payload = self._chat_payload(
+            model=model,
+            messages=structured_messages,
+            system=system,
+            max_tokens=max_tokens,
+            temperature=temperature,
+        )
+        if _structured_output_mode() != "prompt":
+            payload["response_format"] = {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": output_type.__name__,
+                    "schema": schema,
+                },
+            }
+        status, response = self._request(payload)
+        if "response_format" in payload and _structured_output_unsupported(status, response):
+            payload = dict(payload)
+            payload.pop("response_format", None)
+            status, response = self._request(payload)
+        text, usage, decoded = self._decode(status, response)
+        try:
+            parsed = output_type.model_validate(_extract_json_object(text))
+        except Exception as exc:
+            raise OpenAICompatibleError(
+                f"Local model returned invalid {output_type.__name__} JSON: {exc}",
+            ) from exc
+        return StructuredResult(
+            parsed=parsed,
+            usage=usage,
+            model=_response_string(decoded, "model") or model,
+            request_id=_response_string(decoded, "id"),
+        )
+
+    def _chat_payload(
+        self,
+        *,
+        model: str,
+        messages: Sequence[ChatMessage],
+        system: str | Sequence[InstructionPart] | None,
+        max_tokens: int,
+        temperature: float | None,
+    ) -> dict[str, Any]:
+        payload_messages: list[dict[str, str]] = []
+        system_text = _render_provider_system(system)
+        if system_text:
+            payload_messages.append({"role": "system", "content": system_text})
+        payload_messages.extend(
+            {"role": message.role, "content": message.content}
+            for message in messages
+        )
+        payload: dict[str, Any] = {
+            "model": model or openai_model(),
+            "messages": payload_messages,
+            "stream": False,
+            "max_tokens": _configured_max_tokens(max_tokens),
+        }
+        if temperature is not None:
+            payload["temperature"] = float(temperature)
+        return payload
+
+    def _request(self, payload: dict[str, Any]) -> tuple[int, Any]:
+        return self._requester(
+            "POST",
+            f"{self.base_url}/chat/completions",
+            _request_headers(self.api_key, content_type="application/json"),
+            payload,
+            self.timeout,
+        )
+
+    def _decode(self, status: int, response: Any) -> tuple[str, ModelUsage, dict[str, Any]]:
+        if status != 200 or not isinstance(response, dict):
+            raise OpenAICompatibleError(_format_error(status, response, self.base_url))
+        choices = response.get("choices")
+        if not isinstance(choices, list) or not choices or not isinstance(choices[0], dict):
+            raise OpenAICompatibleError(f"{self.base_url} returned no choices.")
+        message = choices[0].get("message")
+        if not isinstance(message, dict):
+            raise OpenAICompatibleError(f"{self.base_url} returned no message.")
+        text = _render_content(message.get("content"))
+        if not text.strip():
+            raise OpenAICompatibleError(f"{self.base_url} returned an empty response.")
+        return text, _extract_usage(response), response
+
 
 class _OpenAICompatibleMessages:
     def __init__(self, parent: OpenAICompatibleClient) -> None:
@@ -171,97 +317,84 @@ class _OpenAICompatibleMessages:
         output_format = kwargs.get("output_format")
         if not isinstance(output_format, type) or not issubclass(output_format, BaseModel):
             raise TypeError("OpenAICompatibleClient.parse requires a Pydantic output_format")
-
-        schema = output_format.model_json_schema()
-        messages = list(kwargs.get("messages") or [])
-        messages.append({
-            "role": "user",
-            "content": (
-                "Return only a JSON object matching this JSON Schema. Do not wrap "
-                "it in Markdown and do not include explanatory prose.\n\n"
-                f"{json.dumps(schema, indent=2, sort_keys=True)}"
-            ),
-        })
-        payload = self._chat_payload(dict(kwargs, messages=messages))
-        if _structured_output_mode() != "prompt":
-            payload["response_format"] = {
-                "type": "json_schema",
-                "json_schema": {
-                    "name": output_format.__name__,
-                    "schema": schema,
-                },
-            }
-
-        status, response = self._request(payload)
-        if "response_format" in payload and _structured_output_unsupported(status, response):
-            payload = dict(payload)
-            payload.pop("response_format", None)
-            status, response = self._request(payload)
-        text, usage = self._decode(status, response)
-        try:
-            parsed = output_format.model_validate(_extract_json_object(text))
-        except Exception as exc:
-            raise OpenAICompatibleError(
-                f"Local model returned invalid {output_format.__name__} JSON: {exc}",
-            ) from exc
-        return SimpleNamespace(parsed_output=parsed, usage=usage)
+        result = self._parent.generate_structured(
+            **_legacy_request_kwargs(kwargs),
+            output_type=output_format,
+        )
+        return SimpleNamespace(parsed_output=result.parsed, usage=result.usage)
 
     def create(self, **kwargs: Any) -> Any:
-        text, usage = self._decode(*self._request(self._chat_payload(kwargs)))
+        result = self._parent.generate_text(**_legacy_request_kwargs(kwargs))
         return SimpleNamespace(
-            content=[SimpleNamespace(type="text", text=text)],
-            usage=usage,
+            content=[SimpleNamespace(type="text", text=result.text)],
+            usage=result.usage,
         )
 
-    def _chat_payload(self, kwargs: dict[str, Any]) -> dict[str, Any]:
-        messages: list[dict[str, str]] = []
-        system_text = _render_content(kwargs.get("system"))
-        if system_text:
-            messages.append({"role": "system", "content": system_text})
-        for message in kwargs.get("messages") or []:
+
+def _legacy_request_kwargs(kwargs: dict[str, Any]) -> dict[str, Any]:
+    messages: list[ChatMessage] = []
+    raw_messages = kwargs.get("messages")
+    if isinstance(raw_messages, list):
+        for message in raw_messages:
             if not isinstance(message, dict):
                 continue
-            messages.append({
-                "role": str(message.get("role") or "user"),
-                "content": _render_content(message.get("content")),
-            })
-        payload: dict[str, Any] = {
-            "model": str(kwargs.get("model") or openai_model()),
-            "messages": messages,
-            "stream": False,
-        }
-        max_tokens = kwargs.get("max_tokens")
-        if isinstance(max_tokens, int) and max_tokens > 0:
-            payload["max_tokens"] = _configured_max_tokens(max_tokens)
-        temperature = kwargs.get("temperature")
-        if isinstance(temperature, (int, float)) and not isinstance(temperature, bool):
-            payload["temperature"] = float(temperature)
-        return payload
+            role = str(message.get("role") or "user")
+            if role == "developer":
+                role = "system"
+            if role not in {"user", "assistant", "system"}:
+                role = "user"
+            content = _render_content(message.get("content"))
+            if content:
+                messages.append(ChatMessage(role=role, content=content))  # type: ignore[arg-type]
+    max_tokens = kwargs.get("max_tokens")
+    temperature = kwargs.get("temperature")
+    output_config = kwargs.get("output_config")
+    effort = output_config.get("effort") if isinstance(output_config, dict) else None
+    return {
+        "model": str(kwargs.get("model") or openai_model()),
+        "messages": tuple(messages),
+        "system": _legacy_system(kwargs.get("system")),
+        "max_tokens": (
+            max_tokens
+            if isinstance(max_tokens, int) and max_tokens > 0
+            else 8192
+        ),
+        "temperature": (
+            float(temperature)
+            if isinstance(temperature, (int, float)) and not isinstance(temperature, bool)
+            else None
+        ),
+        "reasoning_effort": effort if isinstance(effort, str) else None,
+    }
 
-    def _request(self, payload: dict[str, Any]) -> tuple[int, Any]:
-        return self._parent._requester(
-            "POST",
-            f"{self._parent.base_url}/chat/completions",
-            _request_headers(self._parent.api_key, content_type="application/json"),
-            payload,
-            self._parent.timeout,
-        )
 
-    def _decode(self, status: int, response: Any) -> tuple[str, Any]:
-        if status != 200 or not isinstance(response, dict):
-            raise OpenAICompatibleError(
-                _format_error(status, response, self._parent.base_url),
-            )
-        choices = response.get("choices")
-        if not isinstance(choices, list) or not choices or not isinstance(choices[0], dict):
-            raise OpenAICompatibleError(f"{self._parent.base_url} returned no choices.")
-        message = choices[0].get("message")
-        if not isinstance(message, dict):
-            raise OpenAICompatibleError(f"{self._parent.base_url} returned no message.")
-        text = _render_content(message.get("content"))
-        if not text.strip():
-            raise OpenAICompatibleError(f"{self._parent.base_url} returned an empty response.")
-        return text, _extract_usage(response)
+def _legacy_system(value: Any) -> str | tuple[InstructionPart, ...] | None:
+    if isinstance(value, str):
+        return value or None
+    if not isinstance(value, list):
+        return None
+    parts: list[InstructionPart] = []
+    for item in value:
+        if isinstance(item, str):
+            if item:
+                parts.append(InstructionPart(text=item))
+            continue
+        if not isinstance(item, dict):
+            continue
+        text = item.get("text") or item.get("content")
+        if not isinstance(text, str) or not text:
+            continue
+        cache_hint = "ephemeral" if item.get("cache_control") else "none"
+        parts.append(InstructionPart(text=text, cache_hint=cache_hint))
+    return tuple(parts) or None
+
+
+def _render_provider_system(
+    system: str | Sequence[InstructionPart] | None,
+) -> str:
+    if isinstance(system, str):
+        return system
+    return "\n\n".join(part.text for part in (system or ()))
 
 
 def _render_content(content: Any) -> str:
@@ -301,14 +434,20 @@ def _extract_json_object(text: str) -> Any:
         return json.loads(stripped[start : end + 1])
 
 
-def _extract_usage(response: dict[str, Any]) -> Any:
+def _extract_usage(response: dict[str, Any]) -> ModelUsage:
     usage = response.get("usage") if isinstance(response.get("usage"), dict) else {}
-    return SimpleNamespace(
+    details = usage.get("prompt_tokens_details")
+    cache_read = details.get("cached_tokens") if isinstance(details, dict) else 0
+    return ModelUsage(
         input_tokens=_integer(usage.get("prompt_tokens")),
         output_tokens=_integer(usage.get("completion_tokens")),
-        cache_read_input_tokens=0,
-        cache_creation_input_tokens=0,
+        cache_read_input_tokens=_integer(cache_read),
     )
+
+
+def _response_string(response: dict[str, Any], name: str) -> str | None:
+    value = response.get(name)
+    return value if isinstance(value, str) and value else None
 
 
 def _integer(value: Any) -> int:

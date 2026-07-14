@@ -3,17 +3,15 @@
 See ``docs/HITL_STEP_C_PLAN.md`` for the implementation contract.
 Per §2 of that plan:
 
-- Default provider is the local Codex OAuth bridge. Anthropic remains an
-  explicit opt-in provider for deployments that set ``AUTOCEDAR_PROVIDER``.
+- Default provider is the local Codex OAuth bridge. Claude CLI, Anthropic API,
+  OpenAI API, and local OpenAI-compatible servers are explicit alternatives.
 - Adaptive thinking is on; ``effort`` defaults to ``"high"``.
 - The system prompt + the spec text are sent as cache-controlled
   blocks so repeated calls in one session amortize the input-token
   cost. Per-turn user content stays uncached.
-- The constructor accepts an optional ``client`` (an
-    ``anthropic.Anthropic`` instance, the Codex OAuth adapter, or any
-    object with the same ``messages.parse`` shape) so tests inject a mock
-    without touching the network. The minimum cacheable prefix on Opus 4.7 is
-    4096 tokens — short specs will silently bypass caching, which is fine.
+- The constructor accepts a provider-neutral ``backend``. The older ``client``
+  injection remains a compatibility seam and is wrapped at the Anthropic
+  adapter boundary so provider-specific SDK calls never leak into this module.
 
 Structured output is provided via Pydantic schemas at this layer; the
 schemas are then translated into the existing dataclasses in
@@ -24,7 +22,6 @@ grounding, etc.) stays unchanged.
 from __future__ import annotations
 
 import json
-import os
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Annotated, Any, Literal, Optional, Union
@@ -42,12 +39,19 @@ from autocedar.atoms import (
     SchemaSupportKind,
     TypeAliasAtom,
 )
-from autocedar.codex_auth import DEFAULT_CODEX_MODEL, CodexAuthClient, is_codex_provider
-from autocedar.openai_compatible import (
-    OpenAICompatibleClient,
-    is_openai_compatible_provider,
-    openai_model,
+from autocedar.codex_auth import DEFAULT_CODEX_MODEL
+from autocedar.providers import (
+    ChatMessage,
+    InstructionPart,
+    ModelBackend,
+    ResolvedProviderConfig,
+    SessionOverrides,
+    canonical_provider_id,
+    create_backend,
+    resolve_api_key,
+    resolve_provider_config,
 )
+from autocedar.providers.anthropic_api import AnthropicAPIBackend
 
 
 # ---------------------------------------------------------------------------
@@ -64,30 +68,55 @@ DEFAULT_PROVIDER = "codex"
 
 
 def default_provider() -> str:
-    configured = os.environ.get("AUTOCEDAR_PROVIDER", DEFAULT_PROVIDER).strip().lower()
-    if is_codex_provider(configured):
-        return "codex"
-    if is_openai_compatible_provider(configured):
-        return "local"
-    return configured
+    return resolve_provider_config().provider
 
 
 def default_model_for_provider(provider: str | None = None) -> str:
-    resolved = (provider or default_provider()).strip().lower()
-    if is_codex_provider(resolved):
-        return os.environ.get("AUTOCEDAR_CODEX_MODEL") or DEFAULT_CODEX_MODEL
-    if is_openai_compatible_provider(resolved):
-        return openai_model()
-    if resolved != "anthropic":
-        raise ValueError(
-            f"Unsupported AUTOCEDAR_PROVIDER={resolved!r}; expected codex, anthropic, or local.",
+    session = SessionOverrides(provider=provider) if provider is not None else None
+    return resolve_provider_config(session=session).model
+
+
+def create_runtime_backend(
+    config: ResolvedProviderConfig | None = None,
+    *,
+    session_api_key: str | None = None,
+) -> ModelBackend:
+    """Construct the effective backend from resolved settings and credentials."""
+
+    resolved = config or resolve_provider_config()
+    kwargs: dict[str, Any] = {}
+    if resolved.provider in {"anthropic", "openai", "local"}:
+        credential = resolve_api_key(
+            resolved.provider,
+            session_api_key=session_api_key,
         )
-    return (
-        os.environ.get("AUTOCEDAR_MODEL")
-        or os.environ.get("AUTOCEDAR_AUTHOR_MODEL")
-        or os.environ.get("AUTOCEDAR_CHAT_MODEL")
-        or DEFAULT_ANTHROPIC_MODEL
-    )
+        if credential.api_key:
+            kwargs["api_key"] = credential.api_key
+    if resolved.provider == "local":
+        if resolved.base_url:
+            kwargs["base_url"] = resolved.base_url
+    return create_backend(resolved.provider, **kwargs)
+
+
+def _coerce_backend(
+    *,
+    backend: ModelBackend | None,
+    client: Any | None,
+    config: ResolvedProviderConfig,
+) -> ModelBackend:
+    if backend is not None and client is not None:
+        raise ValueError("Pass either backend or client, not both.")
+    if backend is not None:
+        return backend
+    if client is None:
+        return create_runtime_backend(config)
+    if callable(getattr(client, "generate_text", None)) and callable(
+        getattr(client, "generate_structured", None),
+    ):
+        return client
+    # Backward compatibility for older tests and embedders. The only code that
+    # touches the vendor-specific Messages API remains inside this adapter.
+    return AnthropicAPIBackend(client=client)
 
 
 def _load_prompt(name: str) -> str:
@@ -274,7 +303,6 @@ def _translate_entity(llm: _LLMEntityAtom) -> EntityAtom:
         enum_values=list(llm.enum_values) if llm.enum_values is not None else None,
     )
 
-
 def _translate_attribute(llm: _LLMAttributeAtom) -> AttributeAtom:
     return AttributeAtom(
         name=llm.name,
@@ -436,11 +464,11 @@ class LLMClient:
     """Thin wrapper around AutoCedar's configured LLM provider.
 
     Construction:
-      - ``client``: an ``anthropic.Anthropic`` instance, ``CodexAuthClient``,
-        or any object exposing ``.messages.parse(**kwargs)``.
-      - ``provider``: ``"codex"``, ``"anthropic"``, or ``"local"`` for an
-        OpenAI-compatible local endpoint. When omitted, reads ``AUTOCEDAR_PROVIDER``
-        and defaults to Codex.
+      - ``backend``: a provider-neutral :class:`ModelBackend`.
+      - ``client``: deprecated compatibility injection for older tests and
+        embedders; wrapped behind the Anthropic backend boundary.
+      - ``provider``: one of ``codex``, ``claude-cli``, ``anthropic``,
+        ``openai``, or ``local``. When omitted, uses resolved AutoCedar config.
       - ``model``: optional model identifier; when omitted, defaults to the selected provider's
         default model. For Codex this is ``AUTOCEDAR_CODEX_MODEL`` or
         ``gpt-5.5``; for Anthropic this is ``claude-opus-4-7`` unless
@@ -452,44 +480,34 @@ class LLMClient:
         ``"high"`` per the skill guidance for intelligence-sensitive
         workloads.
 
-    Tests pass a mock ``client`` whose ``.messages.parse(...)`` returns
-    a hand-crafted response with ``.parsed_output`` populated. No
-    network access required.
+    Tests may pass a mock provider-neutral backend or a legacy SDK-shaped
+    client. No network access is required.
     """
 
     def __init__(
         self,
         *,
+        backend: ModelBackend | None = None,
         client: Optional[Any] = None,
         provider: str | None = None,
         model: str | None = None,
         max_tokens: int = DEFAULT_MAX_TOKENS,
-        effort: str = DEFAULT_EFFORT,
+        effort: str | None = None,
     ) -> None:
-        resolved_provider = (provider or default_provider()).strip().lower()
-        if model is None:
-            model = default_model_for_provider(resolved_provider)
-        if client is None:
-            if is_codex_provider(resolved_provider):
-                client = CodexAuthClient()
-            elif is_openai_compatible_provider(resolved_provider):
-                client = OpenAICompatibleClient()
-            elif resolved_provider == "anthropic":
-                # Lazy-import the SDK so tests can run without ANTHROPIC_API_KEY
-                # set; only the live path requires it.
-                import anthropic
-
-                client = anthropic.Anthropic()
-            else:
-                raise ValueError(
-                    f"Unsupported AUTOCEDAR_PROVIDER={resolved_provider!r}; "
-                    "expected codex, anthropic, or local.",
-                )
-        self._client = client
-        self._provider = resolved_provider
-        self._model = model
+        session = SessionOverrides(
+            provider=provider,
+            model=model,
+            reasoning_effort=effort,
+        )
+        config = resolve_provider_config(session=session)
+        self._backend = _coerce_backend(backend=backend, client=client, config=config)
+        # Retain the old attribute for embedders that introspect it, but runtime
+        # generation exclusively uses ``_backend``.
+        self._client = client if client is not None else self._backend
+        self._provider = config.provider
+        self._model = config.model
         self._max_tokens = max_tokens
-        self._effort = effort
+        self._effort = config.reasoning_effort or DEFAULT_EFFORT
 
     # ------------------------------------------------------------------
     # Stage 1: schema atom proposal.
@@ -857,7 +875,7 @@ class LLMClient:
         output_format: type[BaseModel],
         effort_override: str | None = None,
     ) -> Any:
-        """Call ``messages.parse`` with cache-controlled system+spec block.
+        """Generate structured output with a cache-hinted instruction prefix.
 
         Caching layout (per skill §Prompt Caching):
 
@@ -874,57 +892,19 @@ class LLMClient:
         Only one breakpoint is needed; the system+spec is the entire
         cached prefix.
         """
-        kwargs = self._message_kwargs(
+        system = self._system_instructions(
             system_prompt=system_prompt,
             spec_text=spec_text,
-            effort_override=effort_override,
         )
-        try:
-            return self._client.messages.parse(
-                **kwargs,
-                messages=[{"role": "user", "content": user_turn}],
-                output_format=output_format,
-            )
-        except Exception as exc:
-            if not _is_grammar_compilation_timeout(exc):
-                raise
-            return self._call_parse_json_fallback(
-                system_prompt=system_prompt,
-                spec_text=spec_text,
-                user_turn=user_turn,
-                output_format=output_format,
-                effort_override=effort_override,
-            )
-
-    def _call_parse_json_fallback(
-        self,
-        *,
-        system_prompt: str,
-        spec_text: str,
-        user_turn: str,
-        output_format: type[BaseModel],
-        effort_override: str | None = None,
-    ) -> Any:
-        """Fallback when provider-side structured-output grammar compilation times out."""
-        schema_json = json.dumps(output_format.model_json_schema(), indent=2)
-        fallback_turn = (
-            f"{user_turn}\n\n"
-            "The structured-output grammar compiler timed out. Return only a JSON "
-            "object matching this JSON Schema. Do not wrap it in Markdown and do "
-            "not include explanatory prose.\n\n"
-            f"```json\n{schema_json}\n```"
+        result = self._backend.generate_structured(
+            model=self._model,
+            max_tokens=self._max_tokens,
+            reasoning_effort=effort_override or self._effort,
+            system=system,
+            messages=(ChatMessage(role="user", content=user_turn),),
+            output_type=output_format,
         )
-        response = self._client.messages.create(
-            **self._message_kwargs(
-                system_prompt=system_prompt,
-                spec_text=spec_text,
-                effort_override=effort_override,
-            ),
-            messages=[{"role": "user", "content": fallback_turn}],
-        )
-        text = _first_text_block(response)
-        payload = _loads_json_object(text)
-        return SimpleNamespace(parsed_output=output_format.model_validate(payload))
+        return SimpleNamespace(parsed_output=result.parsed, usage=result.usage)
 
     def _call_text(
         self,
@@ -933,46 +913,42 @@ class LLMClient:
         spec_text: str,
         user_turn: str,
     ) -> str:
-        """Call ``messages.create`` for plain-text output (no Pydantic schema).
+        """Generate plain text through the provider-neutral backend.
 
         Used by ``answer_question_about_atom``. The cache layout is
         identical to ``_call_parse`` so the system+spec cache is shared
         across propose / fix / answer calls in one session.
         """
-        response = self._client.messages.create(
-            **self._message_kwargs(system_prompt=system_prompt, spec_text=spec_text),
-            messages=[{"role": "user", "content": user_turn}],
+        result = self._backend.generate_text(
+            model=self._model,
+            max_tokens=self._max_tokens,
+            reasoning_effort=self._effort,
+            system=self._system_instructions(
+                system_prompt=system_prompt,
+                spec_text=spec_text,
+            ),
+            messages=(ChatMessage(role="user", content=user_turn),),
         )
-        return _first_text_block(response)
+        return result.text
 
-    def _message_kwargs(
+    def _system_instructions(
         self,
         *,
         system_prompt: str,
         spec_text: str,
-        effort_override: str | None = None,
-    ) -> dict[str, Any]:
-        return {
-            "model": self._model,
-            "max_tokens": self._max_tokens,
-            "thinking": {"type": "adaptive"},
-            "output_config": {
-                "effort": effort_override or self._effort,
-            },
-            "system": [
-                {"type": "text", "text": system_prompt},
-                {
-                    "type": "text",
-                    "text": f"<spec>\n{spec_text}\n</spec>",
-                    "cache_control": {"type": "ephemeral"},
-                },
-            ],
-        }
+    ) -> tuple[InstructionPart, InstructionPart]:
+        return (
+            InstructionPart(text=system_prompt),
+            InstructionPart(
+                text=f"<spec>\n{spec_text}\n</spec>",
+                cache_hint="ephemeral",
+            ),
+        )
 
 
 def _stage2_effort(provider: str, configured_effort: str) -> str:
     """Use cheap bounded reasoning for Codex property-level calls."""
-    if is_codex_provider(provider):
+    if canonical_provider_id(provider) == "codex":
         return "low"
     return configured_effort
 
@@ -1077,27 +1053,3 @@ def _property_coverage_instruction(prior_atoms: list[PropertyAtom]) -> str:
         "a floor for an uncovered positive workflow, a ceiling/disjointness for "
         "an uncovered safety boundary, or empty only when both sides are covered."
     )
-
-
-def _first_text_block(response: Any) -> str:
-    # Extract the first text block (skip any thinking blocks).
-    for block in response.content:
-        if getattr(block, "type", None) == "text":
-            return block.text
-    return ""
-
-
-def _is_grammar_compilation_timeout(exc: Exception) -> bool:
-    text = str(exc).lower()
-    return "grammar compilation timed out" in text
-
-
-def _loads_json_object(text: str) -> Any:
-    try:
-        return json.loads(text)
-    except json.JSONDecodeError:
-        start = text.find("{")
-        end = text.rfind("}")
-        if start == -1 or end == -1 or end <= start:
-            raise
-        return json.loads(text[start : end + 1])

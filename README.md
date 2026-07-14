@@ -48,30 +48,17 @@ Use this if you just want to run the AutoCedar agent. This installs a persistent
    `python3 --version`. AutoCedar requires Python 3.11+, and older Python
    interpreters will not see compatible PyPI releases.
 
-3. Sign in to Codex for model-backed authoring:
+3. Configure a model provider. Codex login is the default path:
 
    ```bash
    codex login
    autocedar doctor
    ```
 
-   AutoCedar uses local Codex OAuth by default and reads the same
-   `~/.codex/auth.json` cache used by Codex. No `OPENAI_API_KEY` is required.
-
-   Anthropic is still available as an explicit opt-in provider. If you want
-   that path, run:
-
-   ```bash
-   autocedar apikey
-   ```
-
-   Paste the Anthropic key when prompted. AutoCedar writes it to your user config
-   (`~/.config/autocedar/.env` by default), redacts it in the terminal output,
-   validates it with Anthropic before saving, and uses it immediately and on
-   later launches. The config directory and key file are stored with private
-   permissions (`0700` and `0600`, respectively).
-   You can also run `autocedar apikey sk-ant-...` if you prefer a one-line
-   command. Do not share or commit your API key.
+   AutoCedar also supports Claude Code subscriptions through `claude -p`,
+   direct Anthropic and OpenAI API keys, and local OpenAI-compatible servers.
+   All five paths can be selected in the TUI. See
+   [Model providers and configuration](https://github.com/neselab/cedar-synthesis-engine/blob/main/docs/provider-configuration.md).
 
 4. Install/check the local verifier tools:
 
@@ -142,9 +129,9 @@ working directly with repo-local examples/datasets.
    uv run autocedar doctor
    ```
 
-   AutoCedar uses Codex OAuth by default. Anthropic is optional and explicit:
-   use `AUTOCEDAR_PROVIDER=anthropic` or `/provider anthropic`, then run
-   `uv run autocedar apikey` only if you intentionally want the Anthropic path.
+   AutoCedar uses Codex OAuth by default. Claude Code, direct Anthropic/OpenAI
+   API keys, and local servers are provider choices in the TUI; see
+   [Model providers and configuration](https://github.com/neselab/cedar-synthesis-engine/blob/main/docs/provider-configuration.md).
 
 3. Install/check the verifier tools:
 
@@ -205,12 +192,16 @@ should see the AutoCedar interactive terminal UI.
 Docker is optional. Use it when you specifically want a containerized runtime
 with Cedar/CVC5 already bundled.
 
-Without cloning the repo:
+From GitHub Container Registry (GitHub authentication may be required while
+the package is private):
 
 ```bash
+mkdir -p "$HOME/.config/autocedar"
+chmod 700 "$HOME/.config/autocedar"
 docker run --rm -it \
   --env-file .env \
   -v "$HOME/.codex:/root/.codex:ro" \
+  -v "$HOME/.config/autocedar:/root/.config/autocedar" \
   -v "$PWD:/work" \
   -w /work \
   ghcr.io/neselab/autocedar:latest
@@ -261,7 +252,7 @@ human review when it proposes schema/property atoms.
 
 | File | What you put there |
 | --- | --- |
-| `.env` | Your local API key and optional runtime settings. Do not commit it. |
+| `.env` | Optional project-specific provider/runtime overrides. Normal interactive API keys are stored with `autocedar auth login`. Do not commit it. |
 | `.env.example` | Template showing supported environment variables. Safe to commit. |
 | `workspace/schema.cedarschema` | Optional existing Cedar schema for authoring/verification. |
 | `workspace/candidate.cedar` | Existing candidate policy for `verify workspace`. |
@@ -569,7 +560,6 @@ console script. Verification also needs the Cedar CLI and CVC5 solver. Use the
 guided setup path:
 
 ```bash
-autocedar apikey
 autocedar setup --yes
 autocedar doctor
 autocedar --version
@@ -620,160 +610,25 @@ cargo install cedar-policy-cli --locked --version 4.10.0 --features analyze --fo
 
 ### LLM Providers And Local Config
 
-AutoCedar supports three live model providers:
+AutoCedar supports five provider IDs:
 
-- **OpenAI Codex** by local Codex OAuth. This is the default provider. It reuses the login cache created by
-  `codex login` and defaults to `gpt-5.5`.
-- **Anthropic** by API key. This is explicit opt-in via
-  `AUTOCEDAR_PROVIDER=anthropic` or `/provider anthropic`.
-- **Local model servers** such as vLLM. This is explicit opt-in via
-  `AUTOCEDAR_PROVIDER=local` or `/provider local`. vLLM's OpenAI-compatible
-  protocol is an internal transport detail; no OpenAI cloud service is used.
+| Provider | Authentication |
+| --- | --- |
+| `codex` | Existing Codex login; default |
+| `claude-cli` | Existing Claude Code login through `claude -p` |
+| `anthropic` | Anthropic API key |
+| `openai` | OpenAI platform API key |
+| `local` | Local OpenAI-compatible endpoint; key optional |
 
-#### Anthropic API Key
+Provider, model, effort, authentication, and the local endpoint are configurable
+inside the TUI. Non-secret settings and API keys are stored separately with
+private permissions; Codex and Claude credential files are never copied. For
+commands, precedence rules, environment variables, migration behavior, and
+security details, see
+[Model providers and configuration](https://github.com/neselab/cedar-synthesis-engine/blob/main/docs/provider-configuration.md).
 
-The easiest explicit Anthropic path is the CLI helper:
-
-```bash
-uv run autocedar apikey
-```
-
-It prompts for the key with hidden input, creates or updates the user-level
-AutoCedar config, and sets `ANTHROPIC_API_KEY` for that process. By default the
-key is stored here:
-
-```text
-~/.config/autocedar/.env
-```
-
-Project `.env` files still work and override the user config when present. To
-write a specific project file:
-
-```bash
-uv run autocedar apikey --env ./policy-project/.env
-```
-
-To remove the persisted key:
-
-```bash
-uv run autocedar apikey clear
-```
-
-You can also export it:
-
-```bash
-export ANTHROPIC_API_KEY=sk-ant-...
-autocedar
-```
-
-Or create a `.env` file in the directory where you run AutoCedar:
-
-```dotenv
-AUTOCEDAR_PROVIDER=codex
-AUTOCEDAR_CODEX_MODEL=gpt-5.5
-AUTOCEDAR_EFFORT=high
-CEDAR=/usr/local/bin/cedar
-CVC5=/usr/bin/cvc5
-```
-
-At startup, `autocedar` loads the nearest `.env` from the current directory or
-one of its parents. Existing shell environment variables are not overridden.
-For a normal project, the path is simply:
-
-```text
-your-policy-project/.env
-```
-
-#### OpenAI Codex OAuth
-
-To use the default Codex provider, sign in once with the Codex CLI:
-
-```bash
-codex login
-```
-
-Codex stores the local login under `~/.codex/auth.json` by default. Treat that
-file like a password; it contains OAuth tokens. AutoCedar reads that cache,
-refreshes it when needed, calls the Codex backend directly, and discovers the
-models visible to that token. No `OPENAI_API_KEY` is required for this path.
-
-Inside AutoCedar, these commands show or adjust the default path:
-
-```text
-/provider codex
-/models
-/model gpt-5.5
-/effort high
-```
-
-`/models` lists the models visible to your Codex OAuth token and shows each
-model's supported reasoning levels, default reasoning level, context window,
-speed/service tiers, and verbosity support. AutoCedar keeps the UI spelling
-`max`; when the selected provider is Codex, `/effort max` sends Codex's
-token-visible `xhigh` reasoning level.
-
-#### Local Models Through vLLM
-
-Start a chat/instruction model with an OpenAI-compatible server such as vLLM,
-then point AutoCedar at that server. The served model name must match the model
-name AutoCedar sends:
-
-```bash
-export AUTOCEDAR_PROVIDER=local
-export AUTOCEDAR_LOCAL_BASE_URL=http://127.0.0.1:8000/v1
-export AUTOCEDAR_LOCAL_API_KEY=autocedar-local
-export AUTOCEDAR_LOCAL_MODEL=autocedar-local
-export AUTOCEDAR_LOCAL_MAX_TOKENS=8192
-
-autocedar doctor
-autocedar author policy_spec.md --out ./autocedar-runs --model autocedar-local
-```
-
-The endpoint-specific key is optional if the local server does not require
-one. AutoCedar never reuses `OPENAI_API_KEY` implicitly for this path. Local
-model calls are reported at zero API cost; GPU allocation cost is outside that
-estimate. When using `127.0.0.1`, the server and AutoCedar must run on the same
-machine or Slurm node. `AUTOCEDAR_LOCAL_MAX_TOKENS` caps only local-model
-responses, which is useful when the served model has a smaller context window.
-
-For a freshman-friendly Slurm walkthrough, including rootless Cedar/CVC5 setup,
-vLLM startup, human review keys, and troubleshooting, see the
-[standalone `autocedar-jarvis` guide](https://github.com/neselab/cedar-synthesis-engine/tree/main/autocedar-jarvis).
-
-To switch to Anthropic explicitly:
-
-```text
-/provider anthropic
-```
-
-If your Codex auth file lives somewhere else, set one of:
-
-```bash
-export CODEX_HOME=/path/to/codex-home
-export AUTOCEDAR_CODEX_AUTH_PATH=/path/to/auth.json
-```
-
-#### TUI Settings
-
-The interactive agent can configure the current session from inside the TUI:
-
-```text
-/settings
-/provider codex|anthropic|local
-/models
-/model gpt-5.5
-/effort low|medium|high|max
-/apikey
-/apikey clear
-```
-
-`/apikey` prompts for the Anthropic key, redacts it in the transcript, and validates it
-with Anthropic before saving. `/apikey sk-ant-...` also works for one-line
-setup. Rejected keys are not persisted. Valid keys save to the same user-level
-AutoCedar config, so the key persists across new `uvx` sessions and package
-upgrades. `/provider codex` uses the Codex OAuth cache instead of the Anthropic
-API key. `/provider local` uses `AUTOCEDAR_LOCAL_BASE_URL`; `/models` queries
-that server's `/v1/models` endpoint.
+Stevens/Jarvis-specific Slurm setup is intentionally isolated in
+[`autocedar-jarvis/`](https://github.com/neselab/cedar-synthesis-engine/tree/main/autocedar-jarvis).
 
 ### Docker
 
@@ -790,10 +645,13 @@ The script builds the image, uses `.env`, and mounts the current repo.
 Manual equivalent:
 
 ```bash
+mkdir -p "$HOME/.config/autocedar"
+chmod 700 "$HOME/.config/autocedar"
 docker build -t autocedar .
 docker run --rm -it \
   --env-file .env \
   -v "$HOME/.codex:/root/.codex:ro" \
+  -v "$HOME/.config/autocedar:/root/.config/autocedar" \
   -v "$PWD:/work" \
   -w /work \
   autocedar
@@ -804,15 +662,18 @@ That error is usually caused by hidden Unicode spaces or broken line
 continuations in a copied multi-line command:
 
 ```bash
-docker run --rm -it --env-file .env -v "$HOME/.codex:/root/.codex:ro" -v "$PWD:/work" -w /work autocedar
+docker run --rm -it --env-file .env -v "$HOME/.codex:/root/.codex:ro" -v "$HOME/.config/autocedar:/root/.config/autocedar" -v "$PWD:/work" -w /work autocedar
 ```
 
-Tagged releases publish the same image to GitHub Container Registry:
+Tagged releases publish the same image to GitHub Container Registry. If the
+container package is private, authenticate first with a GitHub token that can
+read packages; PyPI installation does not require GitHub authentication:
 
 ```bash
 docker run --rm -it \
   --env-file .env \
   -v "$HOME/.codex:/root/.codex:ro" \
+  -v "$HOME/.config/autocedar:/root/.config/autocedar" \
   -v "$PWD:/work" \
   -w /work \
   ghcr.io/neselab/autocedar:latest
@@ -820,9 +681,12 @@ docker run --rm -it \
 
 Docker users who want the default Codex provider should mount their Codex auth
 cache into the container, for example `-v "$HOME/.codex:/root/.codex:ro"`.
-If you explicitly switch to Anthropic, pass `-e ANTHROPIC_API_KEY=...` or mount
-a project directory containing `.env`; AutoCedar will load that mounted `.env`
-from the container working directory.
+Mount `~/.config/autocedar` as shown above to preserve TUI settings and API-key
+logins across `--rm` runs. The helper script creates and mounts this directory
+automatically; set `AUTOCEDAR_DOCKER_CONFIG_DIR` to use an isolated host path.
+For direct API providers, pass the matching key with `-e` or through a mounted,
+gitignored project `.env`. The `claude-cli` provider requires the Claude CLI
+inside the runtime and is therefore intended primarily for normal host installs.
 
 ## How To Use AutoCedar
 
@@ -866,9 +730,8 @@ Start the agent:
 uv run autocedar
 ```
 
-Inside the TUI, normal language is the primary interface once Codex OAuth is
-available through `codex login`, or once you explicitly switch to Anthropic and
-configure an Anthropic key. The live planner maps
+Inside the TUI, normal language is the primary interface once the selected
+provider is authenticated and reachable. The live planner maps
 each message to one validated tool action; AutoCedar does not run a separate
 local phrase router.
 
@@ -898,13 +761,14 @@ Slash shortcuts are available for repeatable control:
 | Command | Purpose |
 | --- | --- |
 | `/settings` | Show selected provider, model, effort, and auth status. |
-| `/provider codex\|anthropic\|local` | Switch between Codex OAuth, Anthropic API-key mode, and a local model server such as vLLM. |
+| `/provider codex\|claude-cli\|anthropic\|openai\|local` | Select and save the active model provider. |
+| `/login` | Start the selected provider's CLI login or secure API-key prompt. |
+| `/logout` | Remove AutoCedar's saved key or invoke the selected provider's CLI logout. |
 | `/models` | Show available models for the active provider. For Codex, this queries the token-backed Codex model endpoint and shows reasoning levels, context windows, and speed/service tiers. |
 | `/model MODEL` | Set the default model for the agent planner, authoring atomization, and default TUI synthesis phases. |
 | `/effort low\|medium\|high\|max` | Set adaptive thinking effort for planner/authoring calls that support it. |
-| `/apikey` | Prompt for `ANTHROPIC_API_KEY`; save it to user config and redact it in the transcript. |
-| `/apikey KEY` | Save `ANTHROPIC_API_KEY` to user config. |
-| `/apikey clear` | Remove the key from user config and the current process. |
+| `/endpoint URL` | Save the OpenAI-compatible base URL for the `local` provider. |
+| `/apikey` | Compatibility alias for API-key login; new users should use `/login`. |
 | `/draft` | Start draft capture when empty, otherwise show the current prose draft with line numbers. |
 | `/draft edit LINE TEXT` | Replace one draft/spec line from inside the TUI. |
 | `/draft delete LINE` | Delete one draft/spec line from inside the TUI. |
@@ -1010,8 +874,8 @@ Authoring writes session artifacts under the `--out` directory, usually
 
 | Symptom | Fix |
 | --- | --- |
-| Chat says auth is not configured | Default path: run `codex login`, then `autocedar doctor`. Explicit Anthropic path: run `autocedar apikey`, use `/apikey` in the TUI, or export `ANTHROPIC_API_KEY`. |
-| API key works in shell but not TUI | This applies only after `/provider anthropic`. Run `autocedar doctor` to confirm what AutoCedar sees. Shell env wins first; otherwise the nearest project `.env` overrides the saved AutoCedar user config. |
+| Chat says auth is not configured | Select the intended provider, run `/login`, then run `/doctor`. Codex and Claude CLI use their own login; Anthropic/OpenAI use provider-scoped API keys; `local` needs a reachable endpoint. |
+| API key works in shell but not TUI | Run `/settings` and `autocedar doctor` to confirm the active provider and source. Existing shell/project `.env` values outrank saved `auth.json`; make sure the key belongs to the selected provider. |
 | Cannot select/copy from the TUI | Textual full-screen apps can intercept mouse selection. Use `/export` for the most reliable path: it writes `schema.cedarschema`, `policy_store.cedar`, `transcript.txt`, and `artifacts.txt` to `autocedar-export/`. Clipboard shortcuts are also available with `/copy last`, `/copy transcript`, `/copy session`, `/copy schema path`, `/copy policy path`, `/copy schema`, or `/copy policy`. Some terminals allow mouse selection while holding Shift. |
 | Verification says Cedar is missing | Set `CEDAR=/path/to/cedar` or install the Cedar CLI. |
 | Verification says CVC5 is missing | Install CVC5, confirm `cvc5 --version` works, then set `CVC5=$(command -v cvc5)` in `.env` if needed. |
@@ -1039,10 +903,10 @@ uv build
 uvx twine check dist/*
 ```
 
-The release workflow template lives at `docs/release-workflow.yml`. Install it
-as `.github/workflows/release.yml` using a GitHub token with `workflow` scope,
-then pushing a `vX.Y.Z` tag builds the Python distributions, publishes to PyPI
-through trusted publishing, and publishes the Docker image to GHCR.
+The active release workflow lives at `.github/workflows/release.yml`. Pushing a
+`vX.Y.Z` tag that matches `pyproject.toml` runs the full tests, builds and checks
+the Python distributions, publishes to PyPI through trusted publishing, and
+publishes the Docker image to GHCR.
 
 ## The reference policies *are* the security contract
 

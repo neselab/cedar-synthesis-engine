@@ -82,6 +82,64 @@ def test_load_dotenv_repairs_existing_user_config_permissions(
     assert stat.S_IMODE(user_env.stat().st_mode) == 0o600
 
 
+def test_load_dotenv_does_not_reimport_legacy_user_key_after_split_migration(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.delenv(ANTHROPIC_API_KEY, raising=False)
+    monkeypatch.setenv("AUTOCEDAR_CONFIG_DIR", str(tmp_path / "config"))
+    user_env = user_config_env_path()
+    user_env.parent.mkdir(parents=True)
+    user_env.write_text("ANTHROPIC_API_KEY=legacy-key\n")
+    (user_env.parent / "auth.json").write_text(
+        '{"version":1,"legacy_env_migrated":true,"providers":{}}\n',
+    )
+
+    loaded = load_dotenv(start=tmp_path / "project")
+
+    assert loaded is None
+    assert ANTHROPIC_API_KEY not in os.environ
+
+
+def test_load_dotenv_keeps_legacy_runtime_tools_but_filters_migrated_provider_keys(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    managed_keys = {
+        "ANTHROPIC_API_KEY": "deleted-anthropic-key",
+        "OPENAI_API_KEY": "deleted-openai-key",
+        "AUTOCEDAR_PROVIDER": "anthropic",
+        "AUTOCEDAR_MODEL": "deleted-model",
+        "AUTOCEDAR_LOCAL_BASE_URL": "http://deleted:8000/v1",
+        "AUTOCEDAR_EFFORT": "max",
+    }
+    for key in (*managed_keys, "CEDAR", "CVC5"):
+        monkeypatch.delenv(key, raising=False)
+    monkeypatch.setenv("AUTOCEDAR_CONFIG_DIR", str(tmp_path / "config"))
+    user_env = user_config_env_path()
+    user_env.parent.mkdir(parents=True)
+    user_env.write_text(
+        "".join(f"{key}={value}\n" for key, value in managed_keys.items())
+        + "CEDAR=/opt/autocedar/bin/cedar\n"
+        + "CVC5=/opt/autocedar/bin/cvc5\n",
+    )
+    (user_env.parent / "settings.json").write_text(
+        '{"version":1,"default_provider":"codex",'
+        '"legacy_env_migrated":true,"providers":{}}\n',
+    )
+    (user_env.parent / "auth.json").write_text(
+        '{"version":1,"legacy_env_migrated":true,"providers":{}}\n',
+    )
+
+    loaded = load_dotenv(start=tmp_path / "project")
+
+    assert loaded == user_env
+    assert os.environ["CEDAR"] == "/opt/autocedar/bin/cedar"
+    assert os.environ["CVC5"] == "/opt/autocedar/bin/cvc5"
+    for key in managed_keys:
+        assert key not in os.environ
+
+
 def test_project_env_overrides_user_config_without_overriding_shell(
     tmp_path: Path,
     monkeypatch,

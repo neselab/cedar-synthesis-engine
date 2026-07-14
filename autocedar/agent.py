@@ -12,7 +12,10 @@ import json
 from dataclasses import asdict, dataclass, field
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError
+from pydantic import BaseModel, ConfigDict, Field
+
+from autocedar.providers import ChatMessage, ModelBackend
+from autocedar.providers.anthropic_api import AnthropicAPIBackend
 
 
 AgentActionKind = Literal[
@@ -42,6 +45,9 @@ AgentActionKind = Literal[
     "set_provider",
     "set_model",
     "set_effort",
+    "set_endpoint",
+    "login_provider",
+    "logout_provider",
     "set_api_key",
     "set_api_key_prompt",
     "clear_api_key",
@@ -185,7 +191,11 @@ Critical rules:
   should choose the same actions as the matching slash shortcut instead of
   describing what the user could type.
 - Use show_models when users ask what models are available, and set_provider
-  when they ask to switch between Codex, Anthropic, and a local model server.
+  when they ask to switch among codex, claude-cli, anthropic, openai, and local.
+- Use login_provider or logout_provider when users ask to sign in or out of a
+  provider. Put the canonical provider name in `provider`.
+- Use set_endpoint when users ask to configure the local OpenAI-compatible
+  server URL. Put the absolute HTTP(S) URL in `value`.
 - Use the current state fields to answer workflow-status questions. If
   latest_authoring_complete is true and latest_candidate_validated is true,
   you may say the generated candidate passed the recorded verification checks.
@@ -202,12 +212,25 @@ class ProviderAgentPlanner:
     def __init__(
         self,
         *,
-        client: Any,
+        backend: ModelBackend | None = None,
+        client: Any | None = None,
         model: str,
         effort: str,
         max_tokens: int = 1400,
     ) -> None:
-        self.client = client
+        if backend is not None and client is not None:
+            raise ValueError("Pass either backend or client, not both.")
+        if backend is None:
+            if client is None:
+                raise ValueError("ProviderAgentPlanner requires a backend.")
+            if callable(getattr(client, "generate_text", None)) and callable(
+                getattr(client, "generate_structured", None),
+            ):
+                backend = client
+            else:
+                backend = AnthropicAPIBackend(client=client)
+        self.backend = backend
+        self.client = client if client is not None else backend
         self.model = model
         self.effort = effort
         self.max_tokens = max_tokens
@@ -219,68 +242,12 @@ class ProviderAgentPlanner:
             "User input:\n"
             f"{user_input}"
         )
-        try:
-            response = self.client.messages.parse(
-                model=self.model,
-                max_tokens=self.max_tokens,
-                thinking={"type": "adaptive"},
-                output_config={"effort": self.effort},
-                system=AGENT_PLANNER_SYSTEM,
-                messages=[{"role": "user", "content": prompt}],
-                output_format=AgentPlanResponse,
-            )
-            return response.parsed_output.action
-        except Exception as exc:
-            if not _should_use_json_retry(exc):
-                raise
-            return self._plan_with_json_retry(user_input, state)
-
-    def _plan_with_json_retry(self, user_input: str, state: AgentState) -> AgentAction:
-        schema_json = json.dumps(AgentPlanResponse.model_json_schema(), indent=2)
-        prompt = (
-            "Current AutoCedar state:\n"
-            f"{state.to_prompt_json()}\n\n"
-            "User input:\n"
-            f"{user_input}\n\n"
-            "Return only a JSON object matching this JSON Schema. Do not wrap it "
-            "in Markdown and do not include explanatory prose.\n\n"
-            f"{schema_json}"
-        )
-        response = self.client.messages.create(
+        response = self.backend.generate_structured(
             model=self.model,
             max_tokens=self.max_tokens,
-            thinking={"type": "adaptive"},
-            output_config={"effort": self.effort},
+            reasoning_effort=self.effort,
             system=AGENT_PLANNER_SYSTEM,
-            messages=[{"role": "user", "content": prompt}],
+            messages=(ChatMessage(role="user", content=prompt),),
+            output_type=AgentPlanResponse,
         )
-        payload = _loads_json_object(_first_text_block(response))
-        try:
-            return AgentPlanResponse.model_validate(payload).action
-        except ValidationError:
-            if isinstance(payload, dict) and "kind" in payload:
-                return AgentAction.model_validate(payload)
-            raise
-
-
-def _should_use_json_retry(exc: Exception) -> bool:
-    text = str(exc).lower()
-    return "grammar compilation timed out" in text or "messages.parse" in text
-
-
-def _first_text_block(response: Any) -> str:
-    for block in getattr(response, "content", []):
-        if getattr(block, "type", None) == "text":
-            return str(getattr(block, "text", ""))
-    return ""
-
-
-def _loads_json_object(text: str) -> Any:
-    try:
-        return json.loads(text)
-    except json.JSONDecodeError:
-        start = text.find("{")
-        end = text.rfind("}")
-        if start == -1 or end == -1 or end <= start:
-            raise
-        return json.loads(text[start : end + 1])
+        return response.parsed.action

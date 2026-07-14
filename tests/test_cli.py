@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -241,7 +242,7 @@ def test_setup_yes_executes_plan(
     assert "setup commands finished" in capsys.readouterr().out
 
 
-def test_apikey_command_writes_env_file(
+def test_apikey_command_writes_private_auth_file(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
@@ -266,14 +267,15 @@ def test_apikey_command_writes_env_file(
         ),
     )
 
-    env_path = tmp_path / "config" / ".env"
+    auth_path = tmp_path / "config" / "auth.json"
     assert rc == 0
     assert validated == [("sk-ant-test123", cli.ANTHROPIC_API_KEY_VALIDATION_MODEL)]
-    assert env_path.read_text() == "ANTHROPIC_API_KEY=sk-ant-test123\n"
+    assert '"api_key": "sk-ant-test123"' in auth_path.read_text()
+    assert auth_path.stat().st_mode & 0o777 == 0o600
     assert "sk-ant-test123" not in capsys.readouterr().out
 
 
-def test_apikey_command_replaces_existing_user_config_value(
+def test_apikey_command_migrates_without_rewriting_legacy_env(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
@@ -292,7 +294,10 @@ def test_apikey_command_replaces_existing_user_config_value(
         ),
     )
 
-    assert env_path.read_text() == "ANTHROPIC_API_KEY=sk-ant-realvalue\nAUTOCEDAR_EFFORT=high\n"
+    assert env_path.read_text() == "ANTHROPIC_API_KEY=sk-ant-...\nAUTOCEDAR_EFFORT=high\n"
+    assert '"api_key": "sk-ant-realvalue"' in (
+        tmp_path / "config" / "auth.json"
+    ).read_text()
 
 
 def test_apikey_command_still_supports_explicit_env_file(tmp_path: Path) -> None:
@@ -374,3 +379,161 @@ def test_local_provider_does_not_prompt_for_anthropic_key(
     )
 
     cli._require_api_key_for_llm_command()
+
+
+def test_parser_exposes_provider_overrides_for_llm_commands() -> None:
+    parser = cli._build_parser()
+
+    author = parser.parse_args([
+        "author",
+        "spec.md",
+        "--out",
+        "runs",
+        "--provider",
+        "openai",
+        "--model",
+        "gpt-test",
+    ])
+    resume = parser.parse_args([
+        "resume",
+        "prior",
+        "--out",
+        "runs",
+        "--provider",
+        "claude-cli",
+    ])
+    synthesize = parser.parse_args([
+        "synthesize",
+        "scenario",
+        "--provider",
+        "local",
+        "--model",
+        "served-model",
+    ])
+
+    assert (author.provider, author.model) == ("openai", "gpt-test")
+    assert resume.provider == "claude-cli"
+    assert (synthesize.provider, synthesize.model) == ("local", "served-model")
+
+
+def test_config_persists_local_endpoint_without_mutating_environment(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("AUTOCEDAR_CONFIG_DIR", str(tmp_path / "config"))
+    monkeypatch.delenv("AUTOCEDAR_PROVIDER", raising=False)
+    monkeypatch.delenv("AUTOCEDAR_LOCAL_BASE_URL", raising=False)
+
+    rc = cli._cmd_config(
+        argparse.Namespace(
+            provider="local",
+            model="jarvis-model",
+            effort="high",
+            endpoint="http://127.0.0.1:9000/v1",
+        ),
+    )
+
+    assert rc == 0
+    contents = (tmp_path / "config" / "settings.json").read_text()
+    assert '"default_provider": "local"' in contents
+    assert '"base_url": "http://127.0.0.1:9000/v1"' in contents
+    assert '"model": "jarvis-model"' in contents
+    assert "AUTOCEDAR_PROVIDER" not in os.environ
+    assert "AUTOCEDAR_LOCAL_BASE_URL" not in os.environ
+
+
+def test_config_without_provider_targets_effective_provider_and_reports_source(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setenv("AUTOCEDAR_CONFIG_DIR", str(tmp_path / "config"))
+    monkeypatch.setenv("AUTOCEDAR_PROVIDER", "local")
+    for name in (
+        "AUTOCEDAR_MODEL",
+        "AUTOCEDAR_AUTHOR_MODEL",
+        "AUTOCEDAR_CHAT_MODEL",
+        "AUTOCEDAR_LOCAL_MODEL",
+        "AUTOCEDAR_OPENAI_MODEL",
+    ):
+        monkeypatch.delenv(name, raising=False)
+
+    rc = cli._cmd_config(
+        argparse.Namespace(
+            provider=None,
+            model="effective-local-model",
+            effort=None,
+            endpoint=None,
+        ),
+    )
+
+    assert rc == 0
+    contents = (tmp_path / "config" / "settings.json").read_text()
+    assert '"local"' in contents
+    assert '"model": "effective-local-model"' in contents
+    output = capsys.readouterr().out
+    assert "provider: local (environment:AUTOCEDAR_PROVIDER)" in output
+    assert "provider: local (session)" not in output
+
+
+def test_auth_login_openai_saves_key_in_auth_json(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("AUTOCEDAR_CONFIG_DIR", str(tmp_path / "config"))
+
+    rc = cli._cmd_auth_login(
+        argparse.Namespace(provider="openai", api_key="sk-openai-test-value"),
+    )
+
+    assert rc == 0
+    auth_path = tmp_path / "config" / "auth.json"
+    assert '"openai"' in auth_path.read_text()
+    assert '"api_key": "sk-openai-test-value"' in auth_path.read_text()
+    assert auth_path.stat().st_mode & 0o777 == 0o600
+
+
+def test_auth_login_anthropic_normalizes_and_validates_before_saving(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("AUTOCEDAR_CONFIG_DIR", str(tmp_path / "config"))
+    validated: list[tuple[str, str]] = []
+    monkeypatch.setattr(
+        cli,
+        "validate_anthropic_api_key",
+        lambda value, *, model: validated.append((value, model)),
+    )
+
+    rc = cli._cmd_auth_login(
+        argparse.Namespace(
+            provider="anthropic",
+            api_key='"sk-ant-\u200bsecret 123"',
+        ),
+    )
+
+    assert rc == 0
+    assert validated == [
+        ("sk-ant-secret123", cli.ANTHROPIC_API_KEY_VALIDATION_MODEL),
+    ]
+    assert '"api_key": "sk-ant-secret123"' in (
+        tmp_path / "config" / "auth.json"
+    ).read_text()
+
+
+def test_auth_login_claude_uses_cli_without_shell(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: list[tuple[list[str], dict[str, object]]] = []
+    monkeypatch.setattr(cli.shutil, "which", lambda name: f"/usr/bin/{name}")
+
+    def fake_run(command: list[str], **kwargs: object) -> SimpleNamespace:
+        captured.append((command, kwargs))
+        return SimpleNamespace(returncode=0)
+
+    monkeypatch.setattr(cli.subprocess, "run", fake_run)
+
+    rc = cli._cmd_auth_login(argparse.Namespace(provider="claude-cli", api_key=None))
+
+    assert rc == 0
+    assert captured == [(["/usr/bin/claude", "auth", "login"], {"check": False})]

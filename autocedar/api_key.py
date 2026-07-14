@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from autocedar.providers import ChatMessage
+from autocedar.providers.anthropic_api import AnthropicAPIBackend
+
 
 _INVISIBLE_KEY_CHARS = {
     "\ufeff",  # byte order mark
@@ -39,13 +42,11 @@ def validate_anthropic_api_key(api_key: str, *, model: str) -> None:
     placeholder, expired key, or wrong-provider token does not poison future
     AutoCedar sessions.
     """
-    import anthropic
-
-    client = anthropic.Anthropic(api_key=api_key)
-    client.messages.create(
+    backend = AnthropicAPIBackend(api_key=api_key)
+    backend.generate_text(
         model=model,
         max_tokens=1,
-        messages=[{"role": "user", "content": "Reply with OK."}],
+        messages=(ChatMessage(role="user", content="Reply with OK."),),
     )
 
 

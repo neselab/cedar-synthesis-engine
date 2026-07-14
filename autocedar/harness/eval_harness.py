@@ -44,21 +44,24 @@ import sys
 import time
 from dataclasses import dataclass, asdict
 from datetime import datetime, timezone
-from typing import Any, Literal
+from typing import Literal
 
-from anthropic import Anthropic
-
-from autocedar.codex_auth import CodexAuthClient, is_codex_provider
 from autocedar.harness.orchestrator import load_checks, run_verification
 from autocedar.harness.solver_wrapper import (
     CheckResult,
     VerificationResult,
     run_syntax_check,
 )
-from autocedar.llm import default_model_for_provider, default_provider
-from autocedar.openai_compatible import (
-    OpenAICompatibleClient,
-    is_openai_compatible_provider,
+from autocedar.llm import (
+    create_runtime_backend,
+    default_model_for_provider,
+    default_provider,
+)
+from autocedar.providers import (
+    ChatMessage,
+    ModelBackend,
+    SessionOverrides,
+    resolve_provider_config,
 )
 
 # In the packaged harness, default run/discovery paths are relative to the
@@ -121,24 +124,18 @@ MODEL_PRICING = {
 }
 
 
-def _make_harness_llm_client() -> Any:
-    """Return the configured provider client for Phase 1 and Stage 3.
+def _make_harness_llm_client(provider: str | None = None) -> ModelBackend:
+    """Return the configured provider-neutral backend for Phase 1 and Stage 3.
 
     The harness uses a small provider-neutral compatibility interface
     internally. Codex OAuth, Anthropic opt-in, and OpenAI-compatible local
     clients implement that interface so the synthesis loop remains independent
     of each provider's wire protocol.
     """
-    provider = default_provider()
-    if is_codex_provider(provider):
-        return CodexAuthClient()
-    if is_openai_compatible_provider(provider):
-        return OpenAICompatibleClient()
-    if provider == "anthropic":
-        return Anthropic()
-    raise ValueError(
-        f"Unsupported AUTOCEDAR_PROVIDER={provider!r}; expected codex, anthropic, or local.",
+    config = resolve_provider_config(
+        session=SessionOverrides(provider=provider) if provider else None,
     )
+    return create_runtime_backend(config)
 
 
 def _harness_output_config() -> dict[str, str] | None:
@@ -148,9 +145,20 @@ def _harness_output_config() -> dict[str, str] | None:
     return None
 
 
-def _estimate_cost(model: str, input_tokens: int, output_tokens: int) -> float:
+def _harness_reasoning_effort() -> str | None:
+    output_config = _harness_output_config()
+    return output_config.get("effort") if output_config else None
+
+
+def _estimate_cost(
+    model: str,
+    input_tokens: int,
+    output_tokens: int,
+    *,
+    provider: str | None = None,
+) -> float:
     """Estimate cost in USD for given token counts."""
-    if is_openai_compatible_provider(default_provider()):
+    if (provider or default_provider()) == "local":
         return 0.0
     pricing = MODEL_PRICING.get(model, {"input": 3.00, "output": 15.00})
     return (input_tokens * pricing["input"] + output_tokens * pricing["output"]) / 1_000_000
@@ -312,7 +320,7 @@ def _extract_json(text: str) -> dict:
 
 
 def generate_references(
-    client: Any,
+    client: ModelBackend,
     model: str,
     schema: str,
     policy_spec: str,
@@ -358,15 +366,15 @@ def generate_references(
 
 Revise the verification plan and reference policies to address the feedback above.
 """
-    response = client.messages.create(
+    response = client.generate_text(
         model=model,
         max_tokens=8192,
         system=PHASE1_SYSTEM,
-        messages=[{"role": "user", "content": prompt}],
-        output_config=_harness_output_config(),
+        messages=(ChatMessage(role="user", content=prompt),),
+        reasoning_effort=_harness_reasoning_effort(),
     )
     usage = (response.usage.input_tokens, response.usage.output_tokens)
-    return _extract_json(response.content[0].text), usage
+    return _extract_json(response.text), usage
 
 
 def write_phase1_artifacts(workspace: str, plan_data: dict) -> None:
@@ -499,7 +507,7 @@ def _format_phase1_validation_feedback(
 
 
 def self_validate_references(
-    client,
+    client: ModelBackend,
     model: str,
     workspace: str,
     schema: str,
@@ -561,7 +569,13 @@ def self_validate_references(
 # Phase 1.5: Human-in-the-loop Reference Review
 # ---------------------------------------------------------------------------
 
-def review_references(workspace: str, schema: str) -> tuple[bool, str]:
+def review_references(
+    workspace: str,
+    schema: str,
+    *,
+    backend: ModelBackend,
+    model: str,
+) -> tuple[bool, str]:
     """
     Interactive review of verification plan + reference policies.
 
@@ -600,14 +614,10 @@ def review_references(workspace: str, schema: str) -> tuple[bool, str]:
         else []
     )
 
-    # Try to import NL translator (optional — graceful degradation)
-    _policy_to_nl = None
-    if os.environ.get("ANTHROPIC_API_KEY"):
-        try:
-            from autocedar.harness.translator import policy_to_nl
-            _policy_to_nl = policy_to_nl
-        except ImportError:
-            pass
+    # Translation is provider-neutral and uses the same backend/model selected
+    # for this run. A failed summary must never bypass or automate the human
+    # semantic approval gate, so individual failures degrade to raw Cedar.
+    from autocedar.harness.translator import policy_to_nl
 
     for ref_file in ref_files:
         ref_path = os.path.join(refs_dir, ref_file)
@@ -630,16 +640,18 @@ def review_references(workspace: str, schema: str) -> tuple[bool, str]:
         for line in policy_text.strip().split("\n"):
             print(f"      {line}")
 
-        if _policy_to_nl:
-            try:
-                nl = _policy_to_nl(policy_text, schema)
-                print(f"\n    Plain language summary:")
-                for line in nl.strip().split("\n"):
-                    print(f"      {line}")
-            except Exception as e:
-                print(f"\n    (NL summary unavailable: {e})")
-        else:
-            print(f"\n    (NL summary unavailable — set ANTHROPIC_API_KEY)")
+        try:
+            nl = policy_to_nl(
+                policy_text,
+                schema,
+                backend=backend,
+                model=model,
+            )
+            print(f"\n    Plain language summary:")
+            for line in nl.strip().split("\n"):
+                print(f"      {line}")
+        except Exception as e:
+            print(f"\n    (NL summary unavailable: {e})")
 
     # ── Approval prompt ──
     print(f"\n  {'─' * 56}")
@@ -1697,6 +1709,8 @@ def run_scenario(
     max_iters: int,
     gen_references: bool,
     no_review: bool = False,
+    backend: ModelBackend | None = None,
+    provider: str | None = None,
 ) -> ScenarioResult:
     """Run the full two-phase evaluation for a single scenario."""
     scenario_name = os.path.basename(os.path.normpath(scenario_path))
@@ -1796,7 +1810,8 @@ def run_scenario(
                 "from the schema alone. First line: " + first_real[:120]
             )
 
-    client = _make_harness_llm_client()
+    client = backend or _make_harness_llm_client(provider)
+    resolved_provider = getattr(client, "provider_id", None) or provider or default_provider()
 
     # ── Phase 1: Reference Generation ─────────────────────────────────────
     phase1_time = 0.0
@@ -1872,7 +1887,12 @@ def run_scenario(
             plan_data = _load_plan_data_from_workspace(workspace)
 
         while True:
-            approved, feedback = review_references(workspace, schema)
+            approved, feedback = review_references(
+                workspace,
+                schema,
+                backend=client,
+                model=os.environ.get("CEDAR_TRANSLATE_MODEL") or phase1_model,
+            )
             if approved:
                 break
             if feedback == "SKIP":
@@ -1932,7 +1952,7 @@ def run_scenario(
         initial_prompt = _format_schema_only_prompt(schema, policy_spec)
     else:
         initial_prompt = _format_initial_prompt(schema, policy_spec, checks)
-    messages = [{"role": "user", "content": initial_prompt}]
+    messages = [ChatMessage(role="user", content=initial_prompt)]
 
     iteration_log = []
     candidate_text = None
@@ -1953,18 +1973,18 @@ def run_scenario(
         iter_in_tok = 0
         iter_out_tok = 0
         try:
-            response = client.messages.create(
+            response = client.generate_text(
                 model=phase2_model,
                 max_tokens=4096,
                 system=PHASE2_SYSTEM,
                 messages=messages,
-                output_config=_harness_output_config(),
+                reasoning_effort=_harness_reasoning_effort(),
             )
             iter_in_tok = response.usage.input_tokens
             iter_out_tok = response.usage.output_tokens
             phase2_in_tok += iter_in_tok
             phase2_out_tok += iter_out_tok
-            candidate_text = _strip_cedar_fencing(response.content[0].text)
+            candidate_text = _strip_cedar_fencing(response.text)
         except Exception as e:
             print(f"  LLM error: {e}")
             iteration_log.append(asdict(IterationLog(
@@ -1974,7 +1994,7 @@ def run_scenario(
             )))
             break
 
-        messages.append({"role": "assistant", "content": candidate_text})
+        messages.append(ChatMessage(role="assistant", content=candidate_text))
 
         # ── Write candidate + verify ──
         with open(os.path.join(workspace, "candidate.cedar"), "w") as f:
@@ -2076,7 +2096,7 @@ def run_scenario(
             ablation_mode=ablation_mode,
         )
         prev_failed = None if ablation_mode == "no_oscillation" else set(current_failed)
-        messages.append({"role": "user", "content": feedback})
+        messages.append(ChatMessage(role="user", content=feedback))
 
         # Trim conversation to avoid context limits: keep first message + last 8
         if len(messages) > 12:
@@ -2088,8 +2108,20 @@ def run_scenario(
 
     total_in = phase1_in_tok + phase2_in_tok
     total_out = phase1_out_tok + phase2_out_tok
-    cost = (_estimate_cost(phase1_model, phase1_in_tok, phase1_out_tok)
-            + _estimate_cost(phase2_model, phase2_in_tok, phase2_out_tok))
+    cost = (
+        _estimate_cost(
+            phase1_model,
+            phase1_in_tok,
+            phase1_out_tok,
+            provider=resolved_provider,
+        )
+        + _estimate_cost(
+            phase2_model,
+            phase2_in_tok,
+            phase2_out_tok,
+            provider=resolved_provider,
+        )
+    )
 
     result = ScenarioResult(
         scenario=scenario_name,

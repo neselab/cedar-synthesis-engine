@@ -5,7 +5,10 @@ from __future__ import annotations
 import argparse
 import datetime
 import getpass
+import json
 import os
+import shutil
+import subprocess
 import sys
 from pathlib import Path
 from typing import Sequence
@@ -22,24 +25,30 @@ from autocedar.env import (
     is_real_anthropic_api_key,
     load_dotenv,
     remove_dotenv_value,
-    remove_user_config_value,
-    user_config_env_path,
     write_dotenv_value,
-    write_user_config_value,
 )
 from autocedar.harness_adapter import make_harness_synthesizer
 from autocedar.llm import (
     ANTHROPIC_API_KEY_VALIDATION_MODEL,
     DEFAULT_EFFORT,
     LLMClient,
-    default_model_for_provider,
-    default_provider,
 )
 from autocedar.pipeline import author as author_pipeline
 from autocedar.progress import format_property_progress
 from autocedar.property_atomizer import propose_property_atom
 from autocedar.schema_atomizer import propose_schema_atoms
 from autocedar.ui.terminal import auto_approve, interactive_review_loop
+from autocedar.providers import (
+    AuthStore,
+    CANONICAL_PROVIDER_IDS,
+    ProviderOptions,
+    SessionOverrides,
+    SettingsStore,
+    canonical_provider_id,
+    get_provider_definition,
+    resolve_api_key,
+    resolve_provider_config,
+)
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -81,7 +90,7 @@ def _build_parser() -> argparse.ArgumentParser:
 
     doctor_p = sub.add_parser(
         "doctor",
-        help="Check API-key, Cedar SymCC, and CVC5 setup before authoring.",
+        help="Check provider authentication, Cedar SymCC, and CVC5 setup.",
     )
     doctor_p.add_argument(
         "--no-live-symcc",
@@ -117,10 +126,50 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     setup_p.set_defaults(func=_cmd_setup)
 
+    config_p = sub.add_parser(
+        "config",
+        help="Show or persist provider, model, effort, and endpoint settings.",
+    )
+    config_p.add_argument(
+        "--provider",
+        choices=CANONICAL_PROVIDER_IDS,
+        help="Set the default provider and select which provider to configure.",
+    )
+    config_p.add_argument("--model", help="Save the model for the selected provider.")
+    config_p.add_argument(
+        "--effort",
+        choices=["low", "medium", "high", "max"],
+        help="Save the reasoning effort for the selected provider.",
+    )
+    config_p.add_argument(
+        "--endpoint",
+        help="Save an OpenAI-compatible endpoint for the local provider.",
+    )
+    config_p.set_defaults(func=_cmd_config)
+
+    auth_p = sub.add_parser(
+        "auth",
+        help="Inspect, add, or remove authentication for a provider.",
+    )
+    auth_sub = auth_p.add_subparsers(dest="auth_action", required=True)
+    auth_status_p = auth_sub.add_parser("status", help="Show provider authentication status.")
+    auth_status_p.add_argument("provider", nargs="?", choices=CANONICAL_PROVIDER_IDS)
+    auth_status_p.set_defaults(func=_cmd_auth_status)
+    auth_login_p = auth_sub.add_parser("login", help="Authenticate the selected provider.")
+    auth_login_p.add_argument("provider", nargs="?", choices=CANONICAL_PROVIDER_IDS)
+    auth_login_p.add_argument(
+        "--api-key",
+        help="API key for anthropic, openai, or local; omit to enter it securely.",
+    )
+    auth_login_p.set_defaults(func=_cmd_auth_login)
+    auth_logout_p = auth_sub.add_parser("logout", help="Remove provider authentication.")
+    auth_logout_p.add_argument("provider", nargs="?", choices=CANONICAL_PROVIDER_IDS)
+    auth_logout_p.set_defaults(func=_cmd_auth_logout)
+
     api_p = sub.add_parser(
         "apikey",
         aliases=["api-key"],
-        help="Save, update, or clear ANTHROPIC_API_KEY in the user config.",
+        help="Deprecated alias for `auth login anthropic`.",
     )
     api_p.add_argument(
         "key",
@@ -136,12 +185,18 @@ def _build_parser() -> argparse.ArgumentParser:
     api_p.add_argument(
         "--clear",
         action="store_true",
-        help="Remove ANTHROPIC_API_KEY from .env and this process.",
+        help="Remove the saved provider API key.",
     )
     api_p.add_argument(
         "--no-validate",
         action="store_true",
         help="Save the key without making a live Anthropic validation request.",
+    )
+    api_p.add_argument(
+        "--provider",
+        choices=["anthropic", "openai", "local"],
+        default="anthropic",
+        help="API-key provider to configure (default: anthropic).",
     )
     api_p.set_defaults(func=_cmd_apikey)
 
@@ -158,6 +213,12 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Use an existing schema and skip Stage 1 atom proposal.",
     )
     author_p.add_argument(
+        "--provider",
+        choices=CANONICAL_PROVIDER_IDS,
+        default=None,
+        help="Provider for this run without changing saved settings.",
+    )
+    author_p.add_argument(
         "--model",
         default=None,
         help="Model for schema/property atomization and Stage 3 synthesis (default: provider default).",
@@ -165,8 +226,8 @@ def _build_parser() -> argparse.ArgumentParser:
     author_p.add_argument(
         "--effort",
         choices=["low", "medium", "high", "max"],
-        default=os.environ.get("AUTOCEDAR_EFFORT", DEFAULT_EFFORT),
-        help=f"Adaptive thinking effort for Stage 1/2 atomization (default: {DEFAULT_EFFORT}).",
+        default=None,
+        help="Adaptive thinking effort for Stage 1/2 atomization (default: provider setting).",
     )
     author_p.add_argument(
         "--auto-approve",
@@ -195,6 +256,12 @@ def _build_parser() -> argparse.ArgumentParser:
     resume_p.add_argument("--out", required=True, help="Directory for the resumed session output.")
     resume_p.add_argument("--session-id", default=None, help="Stable resumed session id.")
     resume_p.add_argument(
+        "--provider",
+        choices=CANONICAL_PROVIDER_IDS,
+        default=None,
+        help="Provider for this run without changing saved settings.",
+    )
+    resume_p.add_argument(
         "--model",
         default=None,
         help="Model for continued atomization and Stage 3 synthesis (default: provider default).",
@@ -202,8 +269,8 @@ def _build_parser() -> argparse.ArgumentParser:
     resume_p.add_argument(
         "--effort",
         choices=["low", "medium", "high", "max"],
-        default=os.environ.get("AUTOCEDAR_EFFORT", DEFAULT_EFFORT),
-        help=f"Adaptive thinking effort for continued authoring (default: {DEFAULT_EFFORT}).",
+        default=None,
+        help="Adaptive thinking effort for continued authoring (default: provider setting).",
     )
     resume_p.add_argument(
         "--auto-approve",
@@ -233,6 +300,17 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Run the v1 CEGIS synthesis harness for one or more scenarios.",
     )
     synth_p.add_argument("scenario", nargs="+", help="Scenario directory path(s).")
+    synth_p.add_argument(
+        "--provider",
+        choices=CANONICAL_PROVIDER_IDS,
+        default=None,
+        help="Provider for this run without changing saved settings.",
+    )
+    synth_p.add_argument(
+        "--model",
+        default=None,
+        help="Model for both synthesis phases unless a phase-specific model is set.",
+    )
     synth_p.add_argument("--out", default="eval_runs", help="Output directory for runs.")
     synth_p.add_argument("--run-id", default=None, help="Run id directory name.")
     synth_p.add_argument(
@@ -313,57 +391,265 @@ def _cmd_setup(args: argparse.Namespace) -> int:
     return 1 if any(step.status == "FAIL" for step in results) else 0
 
 
-def _cmd_apikey(args: argparse.Namespace) -> int:
-    value = normalize_anthropic_api_key(args.key or "")
-    if args.clear or value.lower() in {"clear", "unset", "remove", "delete"}:
-        path = (
-            remove_dotenv_value(ANTHROPIC_API_KEY, env_path=args.env)
-            if args.env
-            else remove_user_config_value(ANTHROPIC_API_KEY)
+def _cmd_config(args: argparse.Namespace) -> int:
+    """Show or persist non-secret provider settings."""
+
+    store = SettingsStore()
+    settings = store.load()
+    effective = resolve_provider_config(settings=settings)
+    provider = canonical_provider_id(args.provider or effective.provider)
+    changed = any((args.provider, args.model, args.effort, args.endpoint))
+    if args.provider:
+        settings = settings.with_default_provider(provider)
+    if any((args.model, args.effort, args.endpoint)):
+        if args.endpoint and provider != "local":
+            raise SystemExit("--endpoint is only supported for --provider local.")
+        current = settings.options_for(provider)
+        settings = settings.with_provider_options(
+            provider,
+            ProviderOptions(
+                model=args.model or current.model,
+                base_url=args.endpoint or current.base_url,
+                reasoning_effort=args.effort or current.reasoning_effort,
+            ),
         )
-        print(f"Removed ANTHROPIC_API_KEY from {path}.")
+    if changed:
+        store.save(settings)
+
+    session = SessionOverrides(provider=provider) if args.provider else None
+    resolved = resolve_provider_config(session=session, settings=settings)
+    print(f"settings: {store.path}")
+    print(f"provider: {resolved.provider} ({resolved.source_for('provider')})")
+    print(f"model:    {resolved.model} ({resolved.source_for('model')})")
+    print(
+        "effort:   "
+        f"{resolved.reasoning_effort or '(provider default)'} "
+        f"({resolved.source_for('reasoning_effort')})",
+    )
+    print(
+        "endpoint: "
+        f"{resolved.base_url or '(provider managed)'} "
+        f"({resolved.source_for('base_url')})",
+    )
+    if changed:
+        print("Saved non-secret provider settings.")
+    return 0
+
+
+def _cmd_auth_status(args: argparse.Namespace) -> int:
+    providers = (
+        [canonical_provider_id(args.provider)]
+        if args.provider
+        else [_selected_provider(None)]
+    )
+    failed = False
+    for provider in providers:
+        ready, detail = _provider_auth_status(provider)
+        print(f"{provider}: {'ready' if ready else 'not ready'} ({detail})")
+        if provider != "local" and not ready:
+            failed = True
+    return 1 if failed else 0
+
+
+def _cmd_auth_login(args: argparse.Namespace) -> int:
+    provider = _selected_provider(args.provider)
+    definition = get_provider_definition(provider)
+    if provider in {"codex", "claude-cli"}:
+        command = ["codex", "login"] if provider == "codex" else ["claude", "auth", "login"]
+        executable = shutil.which(command[0])
+        if executable is None:
+            raise SystemExit(
+                f"{definition.display_name} CLI is not installed or is not on PATH.",
+            )
+        completed = subprocess.run([executable, *command[1:]], check=False)
+        return completed.returncode
+
+    value = (args.api_key or "").strip()
+    if not value:
+        if not _can_prompt_for_secret():
+            raise SystemExit(
+                f"No {definition.display_name} API key was provided. Use --api-key or run interactively.",
+            )
+        value = getpass.getpass(f"Paste {definition.display_name} API key (input hidden): ").strip()
+    if not value:
+        raise SystemExit("API key cannot be empty.")
+    if provider == "anthropic":
+        value = normalize_anthropic_api_key(value)
+        if not is_real_anthropic_api_key(value):
+            raise SystemExit(
+                "That does not look like a real Anthropic API key. Paste the full key, "
+                "not a placeholder or redacted value.",
+            )
+        model = ANTHROPIC_API_KEY_VALIDATION_MODEL
+        try:
+            validate_anthropic_api_key(value, model=model)
+        except Exception as exc:
+            raise SystemExit(format_api_key_validation_error(exc, model=model)) from exc
+    path = AuthStore().path
+    AuthStore(path).set_api_key(provider, value)
+    print(f"Saved {definition.display_name} API key to {path} ({_mask_secret(value)}).")
+    return 0
+
+
+def _cmd_auth_logout(args: argparse.Namespace) -> int:
+    provider = _selected_provider(args.provider)
+    definition = get_provider_definition(provider)
+    if provider in {"codex", "claude-cli"}:
+        command = ["codex", "logout"] if provider == "codex" else ["claude", "auth", "logout"]
+        executable = shutil.which(command[0])
+        if executable is None:
+            raise SystemExit(
+                f"{definition.display_name} CLI is not installed or is not on PATH.",
+            )
+        completed = subprocess.run([executable, *command[1:]], check=False)
+        return completed.returncode
+
+    store = AuthStore()
+    store.remove_api_key(provider)
+    print(f"Removed the saved {definition.display_name} API key from {store.path}.")
+    credential = resolve_api_key(provider)
+    if credential.api_key:
+        print(f"An API key is still active from {credential.source}; unset it there to fully log out.")
+    return 0
+
+
+def _selected_provider(value: str | None) -> str:
+    if value:
+        return canonical_provider_id(value)
+    return resolve_provider_config().provider
+
+
+def _provider_auth_status(provider: str) -> tuple[bool, str]:
+    """Return provider auth state without reading external credential files."""
+
+    canonical = canonical_provider_id(provider)
+    if canonical == "codex":
+        return _external_auth_status(["codex", "login", "status"], json_output=False)
+    if canonical == "claude-cli":
+        return _external_auth_status(
+            ["claude", "auth", "status", "--json"],
+            json_output=True,
+        )
+    credential = resolve_api_key(canonical)
+    if credential.api_key:
+        return True, credential.source
+    if canonical == "local":
+        return True, "API key optional; endpoint authentication is unset"
+    return False, "API key unset"
+
+
+def _external_auth_status(
+    command: list[str],
+    *,
+    json_output: bool,
+) -> tuple[bool, str]:
+    executable = shutil.which(command[0])
+    if executable is None:
+        return False, f"{command[0]} CLI not found"
+    try:
+        completed = subprocess.run(
+            [executable, *command[1:]],
+            capture_output=True,
+            text=True,
+            timeout=30,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return False, str(exc)
+    output = (completed.stdout or completed.stderr).strip()
+    if completed.returncode != 0:
+        return False, _compact_cli_output(output) or "not logged in"
+    if json_output:
+        try:
+            payload = json.loads(completed.stdout)
+        except (TypeError, json.JSONDecodeError):
+            return False, "CLI returned invalid authentication status"
+        if payload.get("loggedIn") is not True:
+            return False, "not logged in"
+        method = str(payload.get("authMethod") or payload.get("subscriptionType") or "CLI login")
+        return True, method
+    return True, _compact_cli_output(output) or "CLI login available"
+
+
+def _compact_cli_output(value: str, *, limit: int = 180) -> str:
+    text = " ".join(value.split())
+    return text if len(text) <= limit else text[: limit - 3].rstrip() + "..."
+
+
+def _mask_secret(value: str) -> str:
+    if len(value) <= 10:
+        return "[set]"
+    return f"{value[:4]}...{value[-4:]}"
+
+
+def _cmd_apikey(args: argparse.Namespace) -> int:
+    provider = canonical_provider_id(getattr(args, "provider", "anthropic"))
+    env_key = {
+        "anthropic": ANTHROPIC_API_KEY,
+        "openai": "OPENAI_API_KEY",
+        "local": "AUTOCEDAR_LOCAL_API_KEY",
+    }[provider]
+    value = (
+        normalize_anthropic_api_key(args.key or "")
+        if provider == "anthropic"
+        else (args.key or "").strip()
+    )
+    if args.clear or value.lower() in {"clear", "unset", "remove", "delete"}:
+        if args.env:
+            path = remove_dotenv_value(env_key, env_path=args.env)
+        else:
+            store = AuthStore()
+            store.remove_api_key(provider)
+            path = store.path
+        print(f"Removed the saved {provider} API key from {path}.")
         return 0
 
     if not value:
         if not _can_prompt_for_secret():
             raise SystemExit(
-                "ANTHROPIC_API_KEY is not configured. Run "
-                "`autocedar apikey sk-ant-...` or rerun from an interactive terminal.",
+                f"The {provider} API key is not configured. Run "
+                f"`autocedar auth login {provider}` or rerun from an interactive terminal.",
             )
-        value = normalize_anthropic_api_key(
-            getpass.getpass("Paste Anthropic API key (input hidden): "),
-        )
+        entered = getpass.getpass(f"Paste {provider} API key (input hidden): ")
+        value = normalize_anthropic_api_key(entered) if provider == "anthropic" else entered.strip()
 
-    if not is_real_anthropic_api_key(value):
+    if provider == "anthropic" and not is_real_anthropic_api_key(value):
         raise SystemExit(
             "That does not look like a real Anthropic API key. "
             "Run `autocedar apikey` again and paste the full key.",
         )
 
-    if not args.no_validate:
+    if provider == "anthropic" and not args.no_validate:
         model = ANTHROPIC_API_KEY_VALIDATION_MODEL
         try:
             validate_anthropic_api_key(value, model=model)
         except Exception as exc:
             raise SystemExit(format_api_key_validation_error(exc, model=model)) from exc
 
-    path = (
-        write_dotenv_value(ANTHROPIC_API_KEY, value, env_path=args.env)
-        if args.env
-        else write_user_config_value(ANTHROPIC_API_KEY, value)
-    )
-    print(f"Saved ANTHROPIC_API_KEY to {path} ({mask_api_key_for_display(value)}).")
+    if args.env:
+        path = write_dotenv_value(env_key, value, env_path=args.env)
+    else:
+        store = AuthStore()
+        try:
+            store.set_api_key(provider, value)
+        except Exception as exc:
+            raise SystemExit(f"Could not save API key: {exc}") from exc
+        path = store.path
+    masked = mask_api_key_for_display(value) if provider == "anthropic" else _mask_secret(value)
+    print(f"Saved {provider} API key to {path} ({masked}).")
     return 0
 
 
 def _cmd_author(args: argparse.Namespace) -> int:
-    _require_api_key_for_llm_command()
+    config = _command_provider_config(args)
+    _require_provider_auth(config.provider)
     spec_path = Path(args.spec)
     if not spec_path.exists():
         raise SystemExit(f"spec not found: {spec_path}")
 
-    model = args.model or default_model_for_provider()
-    llm = LLMClient(provider=default_provider(), model=model, effort=args.effort)
+    model = config.model
+    effort = config.reasoning_effort or DEFAULT_EFFORT
+    llm = LLMClient(provider=config.provider, model=model, effort=effort)
 
     spec_text = spec_path.read_text()
 
@@ -452,6 +738,7 @@ def _cmd_author(args: argparse.Namespace) -> int:
         synthesize=make_harness_synthesizer(
             phase1_model=model,
             phase2_model=model,
+            provider=config.provider,
             no_review=True,
         ),
         schema_path_override=args.schema,
@@ -472,7 +759,8 @@ def _cmd_author(args: argparse.Namespace) -> int:
 
 
 def _cmd_resume(args: argparse.Namespace) -> int:
-    _require_api_key_for_llm_command()
+    config = _command_provider_config(args)
+    _require_provider_auth(config.provider)
     session_dir = Path(args.session)
     if not session_dir.exists():
         raise SystemExit(f"session not found: {session_dir}")
@@ -481,8 +769,9 @@ def _cmd_resume(args: argparse.Namespace) -> int:
         raise SystemExit(f"resume session has no input spec under: {session_dir / 'input'}")
     spec_path = input_files[0]
 
-    model = args.model or default_model_for_provider()
-    llm = LLMClient(provider=default_provider(), model=model, effort=args.effort)
+    model = config.model
+    effort = config.reasoning_effort or DEFAULT_EFFORT
+    llm = LLMClient(provider=config.provider, model=model, effort=effort)
     spec_text = spec_path.read_text()
 
     def schema_proposer(text: str):
@@ -570,6 +859,7 @@ def _cmd_resume(args: argparse.Namespace) -> int:
         synthesize=make_harness_synthesizer(
             phase1_model=model,
             phase2_model=model,
+            provider=config.provider,
             no_review=True,
         ),
         resume_from=session_dir,
@@ -610,7 +900,8 @@ def _cmd_verify(args: argparse.Namespace) -> int:
 
 
 def _cmd_synthesize(args: argparse.Namespace) -> int:
-    _require_api_key_for_llm_command()
+    config = _command_provider_config(args)
+    _require_provider_auth(config.provider)
     from autocedar.harness.eval_harness import (
         DEFAULT_MODEL,
         DEFAULT_PHASE1_MODEL,
@@ -624,8 +915,9 @@ def _cmd_synthesize(args: argparse.Namespace) -> int:
     run_dir = Path(args.out) / run_id
     run_dir.mkdir(parents=True, exist_ok=True)
 
-    phase1_model = args.phase1_model or DEFAULT_PHASE1_MODEL
-    phase2_model = args.phase2_model or DEFAULT_MODEL
+    shared_model = getattr(args, "model", None) or config.model
+    phase1_model = args.phase1_model or shared_model or DEFAULT_PHASE1_MODEL
+    phase2_model = args.phase2_model or shared_model or DEFAULT_MODEL
     max_iters = args.max_iters or MAX_ITERATIONS
 
     results = []
@@ -635,6 +927,7 @@ def _cmd_synthesize(args: argparse.Namespace) -> int:
             run_dir=str(run_dir),
             phase1_model=phase1_model,
             phase2_model=phase2_model,
+            provider=config.provider,
             max_iters=max_iters,
             gen_references=args.gen_references,
             no_review=args.no_review,
@@ -659,7 +952,17 @@ def _cmd_synthesize(args: argparse.Namespace) -> int:
 
 
 def _provider_uses_anthropic_key() -> bool:
-    return default_provider() == "anthropic"
+    return resolve_provider_config().provider == "anthropic"
+
+
+def _command_provider_config(args: argparse.Namespace):
+    return resolve_provider_config(
+        session=SessionOverrides(
+            provider=getattr(args, "provider", None),
+            model=getattr(args, "model", None),
+            reasoning_effort=getattr(args, "effort", None),
+        ),
+    )
 
 
 def _authoring_completed(result: object) -> bool:
@@ -683,49 +986,62 @@ def _can_prompt_for_secret() -> bool:
 
 
 def _prompt_for_missing_api_key(*, allow_skip: bool) -> bool:
-    if not _provider_uses_anthropic_key():
+    provider = resolve_provider_config().provider
+    if provider not in {"anthropic", "openai"}:
         return True
-    if is_real_anthropic_api_key(os.environ.get(ANTHROPIC_API_KEY)):
+    credential = resolve_api_key(provider)
+    if credential.api_key:
         return True
     if not _can_prompt_for_secret():
         return False
 
     print(
-        "ANTHROPIC_API_KEY is not configured in the environment, project .env, "
-        f"or user config ({user_config_env_path()}).",
+        f"The {provider} API key is not configured in the environment, project .env, "
+        f"or user auth store ({AuthStore().path}).",
     )
-    value = normalize_anthropic_api_key(
-        getpass.getpass(
-            "Paste Anthropic API key to save to user config, or press Enter to continue without it: ",
-        ),
+    entered = getpass.getpass(
+        f"Paste {provider} API key to save, or press Enter to continue without it: ",
     )
+    value = normalize_anthropic_api_key(entered) if provider == "anthropic" else entered.strip()
     if not value:
         if allow_skip:
             print("Continuing without an API key. Open-ended chat/model calls will be limited.")
             return False
-        raise SystemExit("Cancelled. Run `autocedar apikey` when you have the key.")
-    if not is_real_anthropic_api_key(value):
+        raise SystemExit(f"Cancelled. Run `autocedar auth login {provider}` when you have the key.")
+    if provider == "anthropic" and not is_real_anthropic_api_key(value):
         raise SystemExit(
             "That does not look like a real Anthropic API key. "
             "Run `autocedar apikey` again and paste the full key.",
         )
-    model = ANTHROPIC_API_KEY_VALIDATION_MODEL
-    try:
-        validate_anthropic_api_key(value, model=model)
-    except Exception as exc:
-        raise SystemExit(format_api_key_validation_error(exc, model=model)) from exc
-    path = write_user_config_value(ANTHROPIC_API_KEY, value)
-    print(f"Saved ANTHROPIC_API_KEY to {path} ({mask_api_key_for_display(value)}).")
+    if provider == "anthropic":
+        model = ANTHROPIC_API_KEY_VALIDATION_MODEL
+        try:
+            validate_anthropic_api_key(value, model=model)
+        except Exception as exc:
+            raise SystemExit(format_api_key_validation_error(exc, model=model)) from exc
+    store = AuthStore()
+    store.set_api_key(provider, value)
+    print(f"Saved {provider} API key to {store.path} ({_mask_secret(value)}).")
     return True
 
 
 def _require_api_key_for_llm_command() -> None:
-    if _prompt_for_missing_api_key(allow_skip=False):
+    _require_provider_auth(resolve_provider_config().provider)
+
+
+def _require_provider_auth(provider: str) -> None:
+    canonical = canonical_provider_id(provider)
+    if canonical not in {"anthropic", "openai"}:
+        return
+    credential = resolve_api_key(canonical)
+    if credential.api_key:
+        return
+    if canonical == resolve_provider_config().provider and _prompt_for_missing_api_key(allow_skip=False):
         return
     raise SystemExit(
-        "ANTHROPIC_API_KEY is not configured. Run `autocedar apikey`, "
-        "set AUTOCEDAR_PROVIDER=codex for Codex OAuth, or configure the "
-        "local provider for a vLLM server.",
+        f"{canonical} API authentication is not configured. "
+        f"Run `autocedar auth login {canonical}`, choose codex/claude-cli, "
+        "or configure the local provider.",
     )
 
 

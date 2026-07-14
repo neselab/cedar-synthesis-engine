@@ -56,7 +56,7 @@ This document gives the new agent everything it needs to build Phase 1.
   `docs/harness_fix_log.md`. These are the technical novelty: directional
   feedback framing, hash oscillation detection, syntax-mismatch detectors,
   structural trap detectors.
-- **Paper LaTeX project** at `/Users/zeitgeist/research/cedar-synthesis-paper/`
+- **Paper LaTeX project** in the separate `cedar-synthesis-paper` repository
   (separate repo, builds 35-page PDF). Currently framed around the v1
   harness only. Will need restructuring per §6 of this document.
 
@@ -630,7 +630,7 @@ The story of the paper becomes:
 
 ### Step G — Paper restructure (~1 week)
 
-The Cedar paper at `/Users/zeitgeist/research/cedar-synthesis-paper/`
+The Cedar paper in the separate `cedar-synthesis-paper` repository
 needs to be restructured per §6 of this document.
 
 ---
@@ -790,8 +790,8 @@ discussion.
   function the new agent's Stage 3 will call.
 - `orchestrator.py:run_verification()` — per-property verifier.
 - `solver_wrapper.py:CEDAR_PATH` — pinned path to the Cedar binary.
-  Currently `/private/tmp/cedar/target/release/cedar`. May need
-  updating to `/Users/zeitgeist/.cargo/bin/cedar` per recent findings.
+  Defaults to `~/.cargo/bin/cedar` and can be overridden with the `CEDAR`
+  environment variable.
 - `docs/harness_fix_log.md` — full §8.1–§8.11 documentation.
 - `cedarbench/PROPOSED_HARD_SCENARIOS.md` — design doc for the v2
   scenarios. Mostly transcription tasks (per §2 above). Useful for

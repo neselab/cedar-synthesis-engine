@@ -20,7 +20,7 @@ You are an autonomous agent synthesizing a formally verified Cedar policy.
 ### Loop (until loss == 0 or 20 iterations)
 
 1. **Write** `workspace/candidate.cedar`
-2. **Run**: `cd /Users/zeitgeist/research/cedar-synthesis-engine && CVC5=~/.local/bin/cvc5 python orchestrator.py`
+2. **Run**: from the repository root, use `CVC5=~/.local/bin/cvc5 uv run python orchestrator.py`.
 3. **Read** output:
    - `✓ PASS` / `✗ FAIL` per check
    - `loss: N` — number of failed checks

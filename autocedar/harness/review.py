@@ -5,7 +5,10 @@ Interactive CLI for security administrators to review, approve, and modify
 reference policies (ceilings + floors) in natural language before synthesis.
 
 Usage:
-    ANTHROPIC_API_KEY=... python review.py
+    python -m autocedar.harness.review
+
+The configured AutoCedar provider performs optional plain-language
+translation. Human approval remains an explicit interactive decision.
 """
 import os
 import sys
@@ -141,12 +144,6 @@ def main():
     print("=" * 60)
     print("  CEDAR SYNTHESIS ENGINE — ADMIN REVIEW")
     print("=" * 60)
-
-    # Check API key
-    if not os.environ.get("ANTHROPIC_API_KEY"):
-        print("\n  ERROR: ANTHROPIC_API_KEY not set.")
-        print("  Export your API key: export ANTHROPIC_API_KEY=sk-...")
-        sys.exit(1)
 
     # Read schema
     with open(SCHEMA_PATH) as f:

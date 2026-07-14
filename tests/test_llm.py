@@ -42,7 +42,9 @@ from autocedar.llm import (
     _property_coverage_instruction,
     _translate_atom,
     _translate_property_atom,
+    create_runtime_backend,
 )
+from autocedar.providers import ResolvedProviderConfig
 
 
 # ---------------------------------------------------------------------------
@@ -105,10 +107,17 @@ def _make_response(parsed: Any) -> Any:
 # ---------------------------------------------------------------------------
 
 
-def test_default_construction_uses_codex(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_default_construction_uses_codex(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+) -> None:
     """LLMClient defaults to the local Codex OAuth provider."""
     monkeypatch.delenv("AUTOCEDAR_PROVIDER", raising=False)
     monkeypatch.delenv("AUTOCEDAR_CODEX_MODEL", raising=False)
+    monkeypatch.delenv("AUTOCEDAR_MODEL", raising=False)
+    monkeypatch.delenv("AUTOCEDAR_AUTHOR_MODEL", raising=False)
+    monkeypatch.delenv("AUTOCEDAR_CHAT_MODEL", raising=False)
+    monkeypatch.setenv("AUTOCEDAR_CONFIG_DIR", str(tmp_path / "config"))
     # Inject a stub client so we don't actually hit anthropic.Anthropic().
     fake = _FakeAnthropic(_make_response(SchemaAtomsResponse(atoms=[])))
     client = LLMClient(client=fake)
@@ -144,46 +153,45 @@ def test_default_effort_is_high() -> None:
     assert client._effort == DEFAULT_EFFORT == "high"
 
 
-def test_codex_provider_uses_codex_default_model(monkeypatch: pytest.MonkeyPatch) -> None:
-    class FakeCodex:
-        messages = _FakeMessages(_make_response(SchemaAtomsResponse(atoms=[])))
+def test_omitted_effort_uses_resolved_provider_setting(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fake = _FakeAnthropic(_make_response(SchemaAtomsResponse(atoms=[])))
+    monkeypatch.setenv("AUTOCEDAR_EFFORT", "medium")
 
+    client = LLMClient(client=fake)
+
+    assert client._effort == "medium"
+
+
+def test_codex_provider_uses_codex_default_model(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("AUTOCEDAR_PROVIDER", "codex")
     monkeypatch.setenv("AUTOCEDAR_CODEX_MODEL", "gpt-test")
-    monkeypatch.setattr("autocedar.llm.CodexAuthClient", lambda: FakeCodex())
 
-    client = LLMClient()
+    client = LLMClient(backend=object())  # type: ignore[arg-type]
 
     assert client._provider == "codex"
     assert client._model == "gpt-test"
 
 
-def test_openai_alias_preserves_codex_oauth_path(monkeypatch: pytest.MonkeyPatch) -> None:
-    class FakeCodex:
-        messages = _FakeMessages(_make_response(SchemaAtomsResponse(atoms=[])))
-
+def test_openai_provider_is_direct_api_not_codex_alias(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("AUTOCEDAR_PROVIDER", "openai")
-    monkeypatch.setenv("AUTOCEDAR_CODEX_MODEL", "gpt-test")
-    monkeypatch.setattr("autocedar.llm.CodexAuthClient", lambda: FakeCodex())
+    monkeypatch.setenv("AUTOCEDAR_OPENAI_MODEL", "gpt-api-test")
 
-    client = LLMClient()
+    client = LLMClient(backend=object())  # type: ignore[arg-type]
 
-    assert client._provider == "codex"
-    assert client._model == "gpt-test"
+    assert client._provider == "openai"
+    assert client._model == "gpt-api-test"
 
 
 def test_openai_compatible_provider_uses_local_client_and_model(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    class FakeLocal:
-        messages = _FakeMessages(_make_response(SchemaAtomsResponse(atoms=[])))
-
-    sentinel = FakeLocal()
+    sentinel = object()
     monkeypatch.setenv("AUTOCEDAR_PROVIDER", "local")
     monkeypatch.setenv("AUTOCEDAR_LOCAL_MODEL", "served-local-model")
-    monkeypatch.setattr("autocedar.llm.OpenAICompatibleClient", lambda: sentinel)
 
-    client = LLMClient()
+    client = LLMClient(backend=sentinel)  # type: ignore[arg-type]
 
     assert client._client is sentinel
     assert client._provider == "local"
@@ -193,8 +201,37 @@ def test_openai_compatible_provider_uses_local_client_and_model(
 def test_unknown_provider_is_rejected(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("AUTOCEDAR_PROVIDER", "mystery")
 
-    with pytest.raises(ValueError, match="Unsupported AUTOCEDAR_PROVIDER"):
+    with pytest.raises(ValueError, match="Unknown provider"):
         LLMClient()
+
+
+def test_create_runtime_backend_threads_local_endpoint_and_key(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    config = ResolvedProviderConfig(
+        provider="local",
+        model="served-model",
+        base_url="http://node:8000/v1",
+        reasoning_effort=None,
+        sources={},
+    )
+    seen: dict[str, Any] = {}
+    sentinel = object()
+    monkeypatch.setattr(
+        "autocedar.llm.resolve_api_key",
+        lambda provider, *, session_api_key=None: SimpleNamespace(api_key="local-key"),
+    )
+    monkeypatch.setattr(
+        "autocedar.llm.create_backend",
+        lambda provider, **kwargs: seen.update(provider=provider, **kwargs) or sentinel,
+    )
+
+    assert create_runtime_backend(config) is sentinel
+    assert seen == {
+        "provider": "local",
+        "base_url": "http://node:8000/v1",
+        "api_key": "local-key",
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -959,7 +996,7 @@ def test_propose_property_atom_falls_back_when_grammar_compilation_times_out() -
     assert fake.messages.create_kwargs is not None
     assert "The structured-output grammar compiler timed out" in fake.messages.create_kwargs[
         "messages"
-    ][0]["content"]
+    ][-1]["content"]
 
 
 # ---------------------------------------------------------------------------

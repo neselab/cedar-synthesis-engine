@@ -13,6 +13,7 @@ import json
 import os
 import socket
 import stat
+import tempfile
 import time
 import urllib.error
 import urllib.parse
@@ -20,9 +21,17 @@ import urllib.request
 from dataclasses import dataclass, field
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any, Callable
+from typing import Any, Callable, Sequence, TypeVar
 
 from pydantic import BaseModel
+
+from autocedar.providers.base import (
+    ChatMessage,
+    InstructionPart,
+    ModelUsage,
+    StructuredResult,
+    TextResult,
+)
 
 
 DEFAULT_CODEX_MODEL = "gpt-5.5"
@@ -379,8 +388,15 @@ def codex_runtime_info(*, requester: _JSONRequester | None = None) -> CodexRunti
         )
 
 
+_StructuredT = TypeVar("_StructuredT", bound=BaseModel)
+
+
 class CodexAuthClient:
-    """Anthropic-message-shaped client backed by the Codex Responses endpoint."""
+    """Native AutoCedar client backed by the Codex Responses endpoint.
+
+    ``messages`` remains as a compatibility shim for older callers; new code
+    uses :meth:`generate_text` and :meth:`generate_structured` directly.
+    """
 
     def __init__(
         self,
@@ -399,6 +415,140 @@ class CodexAuthClient:
             return self._credentials
         self._credentials = resolve_codex_credentials(requester=self._requester)
         return self._credentials
+
+    def generate_text(
+        self,
+        *,
+        model: str,
+        messages: Sequence[ChatMessage],
+        system: str | Sequence[InstructionPart] | None = None,
+        max_tokens: int = 8192,
+        temperature: float | None = None,
+        reasoning_effort: str | None = None,
+    ) -> TextResult:
+        del max_tokens, temperature  # The Codex OAuth endpoint does not expose these controls.
+        text, usage, response = self._run_generation(
+            model=model,
+            messages=messages,
+            system=system,
+            reasoning_effort=reasoning_effort,
+        )
+        return TextResult(
+            text=text,
+            usage=usage,
+            model=_response_string(response, "model") or model,
+            request_id=_response_string(response, "id"),
+        )
+
+    def generate_structured(
+        self,
+        *,
+        model: str,
+        messages: Sequence[ChatMessage],
+        output_type: type[_StructuredT],
+        system: str | Sequence[InstructionPart] | None = None,
+        max_tokens: int = 8192,
+        temperature: float | None = None,
+        reasoning_effort: str | None = None,
+    ) -> StructuredResult[_StructuredT]:
+        del max_tokens, temperature
+        schema_json = json.dumps(
+            _codex_strict_schema(output_type.model_json_schema()),
+            indent=2,
+        )
+        structured_messages = tuple(messages) + (
+            ChatMessage(
+                role="user",
+                content=(
+                    "Return only a JSON object matching this JSON Schema. Do not wrap it "
+                    "in Markdown and do not include explanatory prose.\n\n"
+                    f"```json\n{schema_json}\n```"
+                ),
+            ),
+        )
+        text, usage, response = self._run_generation(
+            model=model,
+            messages=structured_messages,
+            system=system,
+            reasoning_effort=reasoning_effort,
+        )
+        try:
+            parsed = output_type.model_validate(_loads_json_object(text))
+        except Exception as exc:
+            raise CodexAuthError(
+                f"Codex returned invalid {output_type.__name__} JSON: {exc}",
+            ) from exc
+        return StructuredResult(
+            parsed=parsed,
+            usage=usage,
+            model=_response_string(response, "model") or model,
+            request_id=_response_string(response, "id"),
+        )
+
+    def _run_generation(
+        self,
+        *,
+        model: str,
+        messages: Sequence[ChatMessage],
+        system: str | Sequence[InstructionPart] | None,
+        reasoning_effort: str | None,
+    ) -> tuple[str, ModelUsage, dict[str, Any]]:
+        credentials = self._credentials_for_call()
+        effort = codex_reasoning_effort(reasoning_effort)
+        payload = {
+            "model": model or DEFAULT_CODEX_MODEL,
+            "instructions": _render_provider_system(system),
+            "input": _chat_messages_to_responses_input(messages),
+            "store": False,
+            "stream": True,
+            "reasoning": {"effort": effort, "summary": "auto"},
+            "include": ["reasoning.encrypted_content"],
+        }
+        status, response = self._requester(
+            "POST",
+            f"{credentials.base_url.rstrip('/')}/responses",
+            _codex_request_headers(credentials, content_type="application/json"),
+            payload,
+            self._timeout,
+        )
+        if status in {401, 403}:
+            self._credentials = resolve_codex_credentials(
+                force_refresh=True,
+                requester=self._requester,
+            )
+            credentials = self._credentials
+            status, response = self._requester(
+                "POST",
+                f"{credentials.base_url.rstrip('/')}/responses",
+                _codex_request_headers(credentials, content_type="application/json"),
+                payload,
+                self._timeout,
+            )
+        if (
+            status != 200
+            or not isinstance(response, dict)
+            or response.get("error") is not None
+        ):
+            raise CodexAuthError(_format_codex_response_error(status, response))
+        try:
+            return _extract_response_text(response), _extract_response_usage(response), response
+        except CodexAuthError as exc:
+            if "no text output" not in str(exc):
+                raise
+            status, response = self._requester(
+                "POST",
+                f"{credentials.base_url.rstrip('/')}/responses",
+                _codex_request_headers(credentials, content_type="application/json"),
+                payload,
+                self._timeout,
+            )
+            if (
+                status != 200
+                or not isinstance(response, dict)
+                or response.get("error") is not None
+            ):
+                raise CodexAuthError(_format_codex_response_error(status, response)) from exc
+            return _extract_response_text(response), _extract_response_usage(response), response
 
 
 def _configured_timeout(default: float) -> float:
@@ -420,29 +570,21 @@ class _CodexMessages:
         output_format = kwargs.get("output_format")
         if not isinstance(output_format, type) or not issubclass(output_format, BaseModel):
             raise TypeError("CodexAuthClient.parse requires a Pydantic output_format")
-
-        schema_json = json.dumps(_codex_strict_schema(output_format.model_json_schema()), indent=2)
-        user_messages = list(kwargs.get("messages") or [])
-        user_messages.append({
-            "role": "user",
-            "content": (
-                "Return only a JSON object matching this JSON Schema. Do not wrap it "
-                "in Markdown and do not include explanatory prose.\n\n"
-                f"```json\n{schema_json}\n```"
-            ),
-        })
-        text, usage = self._run_response_with_usage(dict(kwargs, messages=user_messages))
-        payload = _loads_json_object(text)
+        request = _legacy_request_kwargs(kwargs)
+        result = self._parent.generate_structured(
+            **request,
+            output_type=output_format,
+        )
         return SimpleNamespace(
-            parsed_output=output_format.model_validate(payload),
-            usage=usage,
+            parsed_output=result.parsed,
+            usage=result.usage,
         )
 
     def create(self, **kwargs: Any) -> Any:
-        text, usage = self._run_response_with_usage(kwargs)
+        result = self._parent.generate_text(**_legacy_request_kwargs(kwargs))
         return SimpleNamespace(
-            content=[SimpleNamespace(type="text", text=text)],
-            usage=usage,
+            content=[SimpleNamespace(type="text", text=result.text)],
+            usage=result.usage,
         )
 
     def _run_response(self, kwargs: dict[str, Any]) -> str:
@@ -450,63 +592,8 @@ class _CodexMessages:
         return text
 
     def _run_response_with_usage(self, kwargs: dict[str, Any]) -> tuple[str, Any]:
-        credentials = self._parent._credentials_for_call()
-        model = str(kwargs.get("model") or DEFAULT_CODEX_MODEL)
-        effort = codex_reasoning_effort(_extract_effort(kwargs))
-        payload = {
-            "model": model,
-            "instructions": _render_content(kwargs.get("system")),
-            "input": _messages_to_responses_input(kwargs.get("messages")),
-            "store": False,
-            "stream": True,
-            "reasoning": {"effort": effort, "summary": "auto"},
-            "include": ["reasoning.encrypted_content"],
-        }
-        status, response = self._parent._requester(
-            "POST",
-            f"{credentials.base_url.rstrip('/')}/responses",
-            _codex_request_headers(credentials, content_type="application/json"),
-            payload,
-            self._parent._timeout,
-        )
-        if status in {401, 403}:
-            self._parent._credentials = resolve_codex_credentials(
-                force_refresh=True,
-                requester=self._parent._requester,
-            )
-            credentials = self._parent._credentials
-            status, response = self._parent._requester(
-                "POST",
-                f"{credentials.base_url.rstrip('/')}/responses",
-                _codex_request_headers(credentials, content_type="application/json"),
-                payload,
-                self._parent._timeout,
-            )
-        if (
-            status != 200
-            or not isinstance(response, dict)
-            or response.get("error") is not None
-        ):
-            raise CodexAuthError(_format_codex_response_error(status, response))
-        try:
-            return _extract_response_text(response), _extract_response_usage(response)
-        except CodexAuthError as exc:
-            if "no text output" not in str(exc):
-                raise
-            status, response = self._parent._requester(
-                "POST",
-                f"{credentials.base_url.rstrip('/')}/responses",
-                _codex_request_headers(credentials, content_type="application/json"),
-                payload,
-                self._parent._timeout,
-            )
-            if (
-                status != 200
-                or not isinstance(response, dict)
-                or response.get("error") is not None
-            ):
-                raise CodexAuthError(_format_codex_response_error(status, response)) from exc
-            return _extract_response_text(response), _extract_response_usage(response)
+        result = self._parent.generate_text(**_legacy_request_kwargs(kwargs))
+        return result.text, result.usage
 
 
 def _request_json(
@@ -699,14 +786,46 @@ def _read_auth_payload(path: Path) -> dict[str, Any]:
 
 
 def _write_auth_payload(path: Path, payload: dict[str, Any]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_name(f"{path.name}.tmp.{os.getpid()}.{int(time.time() * 1000)}")
-    tmp.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
-    os.replace(tmp, path)
+    path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    contents = json.dumps(payload, indent=2) + "\n"
+    fd, temporary_name = tempfile.mkstemp(
+        prefix=f".{path.name}.",
+        dir=path.parent,
+        text=True,
+    )
+    temporary = Path(temporary_name)
     try:
-        path.chmod(stat.S_IRUSR | stat.S_IWUSR)
+        # mkstemp creates the inode with 0600; reinforce that contract on the
+        # open descriptor before writing any token bytes.
+        os.fchmod(fd, stat.S_IRUSR | stat.S_IWUSR)
+        with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as handle:
+            fd = -1
+            handle.write(contents)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary, path)
+        os.chmod(path, stat.S_IRUSR | stat.S_IWUSR)
+        _fsync_directory(path.parent)
+    finally:
+        if fd >= 0:
+            os.close(fd)
+        temporary.unlink(missing_ok=True)
+
+
+def _fsync_directory(path: Path) -> None:
+    """Best-effort durability for the atomic auth-file rename."""
+
+    try:
+        descriptor = os.open(path, os.O_RDONLY)
     except OSError:
+        return
+    try:
+        os.fsync(descriptor)
+    except OSError:
+        # Some filesystems do not support fsync on directory descriptors.
         pass
+    finally:
+        os.close(descriptor)
 
 
 def _clean_token(value: Any) -> str:
@@ -830,6 +949,78 @@ def _extract_effort(kwargs: dict[str, Any]) -> str | None:
     return None
 
 
+def _legacy_request_kwargs(kwargs: dict[str, Any]) -> dict[str, Any]:
+    messages: list[ChatMessage] = []
+    raw_messages = kwargs.get("messages")
+    if isinstance(raw_messages, list):
+        for message in raw_messages:
+            if not isinstance(message, dict):
+                continue
+            role = str(message.get("role") or "user")
+            if role == "developer":
+                role = "system"
+            if role not in {"user", "assistant", "system"}:
+                role = "user"
+            content = _render_content(message.get("content"))
+            if content:
+                messages.append(ChatMessage(role=role, content=content))  # type: ignore[arg-type]
+    max_tokens = kwargs.get("max_tokens")
+    temperature = kwargs.get("temperature")
+    return {
+        "model": str(kwargs.get("model") or DEFAULT_CODEX_MODEL),
+        "messages": tuple(messages),
+        "system": _legacy_system(kwargs.get("system")),
+        "max_tokens": max_tokens if isinstance(max_tokens, int) else 8192,
+        "temperature": (
+            float(temperature)
+            if isinstance(temperature, (int, float)) and not isinstance(temperature, bool)
+            else None
+        ),
+        "reasoning_effort": _extract_effort(kwargs),
+    }
+
+
+def _legacy_system(value: Any) -> str | tuple[InstructionPart, ...] | None:
+    if isinstance(value, str):
+        return value or None
+    if not isinstance(value, list):
+        return None
+    parts: list[InstructionPart] = []
+    for item in value:
+        if isinstance(item, str):
+            if item:
+                parts.append(InstructionPart(text=item))
+            continue
+        if not isinstance(item, dict):
+            continue
+        text = item.get("text")
+        if not isinstance(text, str) or not text:
+            continue
+        cache_hint = "ephemeral" if item.get("cache_control") else "none"
+        parts.append(InstructionPart(text=text, cache_hint=cache_hint))
+    return tuple(parts) or None
+
+
+def _render_provider_system(
+    system: str | Sequence[InstructionPart] | None,
+) -> str:
+    if isinstance(system, str):
+        return system
+    return "\n\n".join(part.text for part in (system or ()))
+
+
+def _chat_messages_to_responses_input(
+    messages: Sequence[ChatMessage],
+) -> list[dict[str, Any]]:
+    return [
+        {
+            "role": "developer" if message.role == "system" else message.role,
+            "content": message.content,
+        }
+        for message in messages
+    ]
+
+
 def _codex_strict_schema(schema: dict[str, Any]) -> dict[str, Any]:
     copied = json.loads(json.dumps(schema))
     _add_no_extra_properties(copied)
@@ -912,10 +1103,10 @@ def _extract_response_text(response: dict[str, Any]) -> str:
     return text
 
 
-def _extract_response_usage(response: dict[str, Any]) -> Any:
+def _extract_response_usage(response: dict[str, Any]) -> ModelUsage:
     usage = response.get("usage")
     if not isinstance(usage, dict):
-        return SimpleNamespace(input_tokens=0, output_tokens=0)
+        return ModelUsage()
 
     def _int_token(*keys: str) -> int:
         for key in keys:
@@ -928,10 +1119,22 @@ def _extract_response_usage(response: dict[str, Any]) -> Any:
                 return int(value)
         return 0
 
-    return SimpleNamespace(
+    input_details = usage.get("input_tokens_details")
+    cache_read = 0
+    if isinstance(input_details, dict):
+        value = input_details.get("cached_tokens")
+        if isinstance(value, (int, float)) and not isinstance(value, bool):
+            cache_read = max(int(value), 0)
+    return ModelUsage(
         input_tokens=_int_token("input_tokens", "prompt_tokens"),
         output_tokens=_int_token("output_tokens", "completion_tokens"),
+        cache_read_input_tokens=cache_read,
     )
+
+
+def _response_string(response: dict[str, Any], name: str) -> str | None:
+    value = response.get(name)
+    return value if isinstance(value, str) and value else None
 
 
 def _format_codex_response_error(status: int, response: Any) -> str:

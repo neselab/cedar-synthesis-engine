@@ -27,7 +27,10 @@ The harness consists of three layers:
 Liveness checks use `expect_denies=False` to assert that at least one scenario must be permitted. The original pipeline reported the raw symbolic result, which inverted the pass/fail label — a correctly permitted scenario was scored as failing. Fix: `passed = not passed_raw` in the orchestrator when `expect_denies=False`.
 
 ### 3.2 Cedar CLI rebuild with `analyze` feature
-The packaged `cedar` binary did not expose the `symcc` subcommand. We rebuilt Cedar from source at `/private/tmp/cedar/target/release/cedar` with `--features analyze`. `solver_wrapper.py::CEDAR_PATH` pins this binary for all downstream calls.
+The packaged `cedar` binary did not expose the `symcc` subcommand. During the
+original investigation we rebuilt Cedar from source with `--features analyze`.
+The current runtime defaults to `~/.cargo/bin/cedar` and accepts `CEDAR` as an
+environment override; it no longer pins a developer-specific build path.
 
 ### 3.3 Parse-vs-type-check error bifurcation *(novel, §8.4)*
 `cedar validate` emits returncode 1 for grammar errors and returncode 3 for type-checker rejections. Both were originally collapsed into a single `"syntax"` check, so unguarded-optional-attribute errors produced feedback instructing the model to "fix parse errors." Fix: `run_syntax_check` now returns `(is_valid, error_msg, error_kind)` with `error_kind ∈ {"", "parse", "validation", "other"}`, and `orchestrator.py::run_verification` routes returncode 3 to `CheckResult(check_type="validation")`.

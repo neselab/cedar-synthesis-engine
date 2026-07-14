@@ -1,6 +1,6 @@
 [project]
 name = "autocedar"
-version = "0.1.29"
+version = "0.2.0"
 description = "Human-in-the-loop Cedar policy authoring with symbolic verification."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -33,9 +33,10 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    "anthropic",
-    "pydantic",
-    "textual",
+    "anthropic>=0.84,<1",
+    "openai>=2.45,<3",
+    "pydantic>=2.12,<3",
+    "textual>=8.2,<9",
 ]
 
 [project.urls]
@@ -43,6 +44,7 @@ Homepage = "https://github.com/neselab/cedar-synthesis-engine"
 Repository = "https://github.com/neselab/cedar-synthesis-engine"
 Issues = "https://github.com/neselab/cedar-synthesis-engine/issues"
 Documentation = "https://github.com/neselab/cedar-synthesis-engine#readme"
+Changelog = "https://github.com/neselab/cedar-synthesis-engine/blob/main/CHANGELOG.md"
 
 [project.scripts]
 autocedar = "autocedar.cli:main"

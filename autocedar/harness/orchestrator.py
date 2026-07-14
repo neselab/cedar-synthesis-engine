@@ -157,7 +157,7 @@ def main():
     parser = argparse.ArgumentParser(description="Cedar Synthesis Engine Evaluator")
     parser.add_argument(
         "--translate", action="store_true",
-        help="Enable NL translation of counterexamples (requires ANTHROPIC_API_KEY)",
+        help="Enable provider-neutral NL translation of counterexamples",
     )
     parser.add_argument(
         "--workspace", type=str, default=DEFAULT_WORKSPACE,
@@ -176,9 +176,6 @@ def main():
             from autocedar.harness.translator import counterexample_to_nl, policy_to_nl
         except ImportError:
             print("WARNING: translator module not found, disabling --translate")
-            translate = False
-        if not os.environ.get("ANTHROPIC_API_KEY"):
-            print("WARNING: ANTHROPIC_API_KEY not set, disabling --translate")
             translate = False
 
     print("=" * 60)

@@ -7,6 +7,7 @@ from types import SimpleNamespace
 import pytest
 
 from autocedar.harness_adapter import make_harness_synthesizer
+from autocedar.providers import ModelUsage, TextResult
 
 
 def test_harness_synthesizer_returns_actual_candidate(
@@ -38,6 +39,7 @@ def test_harness_synthesizer_returns_actual_candidate(
     monkeypatch.setattr(eval_harness, "run_scenario", fake_run_scenario)
 
     synthesize = make_harness_synthesizer(
+        provider="local",
         phase1_model="phase-one",
         phase2_model="phase-two",
         max_iters=3,
@@ -49,6 +51,7 @@ def test_harness_synthesizer_returns_actual_candidate(
     assert candidate.read_text() == "permit (principal, action, resource);\n"
     assert calls["phase1_model"] == "phase-one"
     assert calls["phase2_model"] == "phase-two"
+    assert calls["provider"] == "local"
     assert calls["max_iters"] == 3
     assert calls["gen_references"] is False
     assert calls["no_review"] is True
@@ -85,10 +88,16 @@ def test_eval_harness_uses_codex_client_by_default(
     import autocedar.harness.eval_harness as eval_harness
 
     sentinel = object()
-    monkeypatch.delenv("AUTOCEDAR_PROVIDER", raising=False)
-    monkeypatch.setattr(eval_harness, "CodexAuthClient", lambda: sentinel)
+    seen: dict[str, str] = {}
+    monkeypatch.setenv("AUTOCEDAR_PROVIDER", "codex")
+    monkeypatch.setattr(
+        eval_harness,
+        "create_runtime_backend",
+        lambda config: seen.setdefault("provider", config.provider) and sentinel,
+    )
 
     assert eval_harness._make_harness_llm_client() is sentinel
+    assert seen["provider"] == "codex"
 
 
 def test_eval_harness_uses_anthropic_only_when_explicit(
@@ -96,13 +105,11 @@ def test_eval_harness_uses_anthropic_only_when_explicit(
 ) -> None:
     import autocedar.harness.eval_harness as eval_harness
 
-    class FakeAnthropic:
-        pass
-
+    sentinel = object()
     monkeypatch.setenv("AUTOCEDAR_PROVIDER", "anthropic")
-    monkeypatch.setattr(eval_harness, "Anthropic", FakeAnthropic)
+    monkeypatch.setattr(eval_harness, "create_runtime_backend", lambda config: sentinel)
 
-    assert isinstance(eval_harness._make_harness_llm_client(), FakeAnthropic)
+    assert eval_harness._make_harness_llm_client() is sentinel
 
 
 def test_eval_harness_uses_openai_compatible_client_when_explicit(
@@ -112,7 +119,7 @@ def test_eval_harness_uses_openai_compatible_client_when_explicit(
 
     sentinel = object()
     monkeypatch.setenv("AUTOCEDAR_PROVIDER", "local")
-    monkeypatch.setattr(eval_harness, "OpenAICompatibleClient", lambda: sentinel)
+    monkeypatch.setattr(eval_harness, "create_runtime_backend", lambda config: sentinel)
 
     assert eval_harness._make_harness_llm_client() is sentinel
     assert eval_harness._estimate_cost("served-local-model", 1000, 500) == 0.0
@@ -125,16 +132,16 @@ def test_translator_resolves_provider_and_model_at_call_time(
 
     local_client = object()
     codex_client = object()
-    monkeypatch.setattr(translator, "OpenAICompatibleClient", lambda: local_client)
-    monkeypatch.setattr(translator, "CodexAuthClient", lambda: codex_client)
 
     monkeypatch.setenv("AUTOCEDAR_PROVIDER", "local")
     monkeypatch.setenv("AUTOCEDAR_LOCAL_MODEL", "local-v1")
+    monkeypatch.setattr(translator, "create_runtime_backend", lambda: local_client)
     assert translator._get_client() is local_client
     assert translator._model() == "local-v1"
 
-    monkeypatch.setenv("AUTOCEDAR_PROVIDER", "openai")
+    monkeypatch.setenv("AUTOCEDAR_PROVIDER", "codex")
     monkeypatch.setenv("AUTOCEDAR_CODEX_MODEL", "gpt-test")
+    monkeypatch.setattr(translator, "create_runtime_backend", lambda: codex_client)
     assert translator._get_client() is codex_client
     assert translator._model() == "gpt-test"
 
@@ -145,6 +152,34 @@ def test_stage3_prompt_prefers_explicit_type_guards() -> None:
     assert "Prefer auditable, explicit permit guards" in eval_harness.PHASE2_SYSTEM
     assert "principal is Registrar" in eval_harness.PHASE2_SYSTEM
     assert "Avoid broad-looking unconditional permits" in eval_harness.PHASE2_SYSTEM
+
+
+def test_generate_references_uses_provider_neutral_backend() -> None:
+    import autocedar.harness.eval_harness as eval_harness
+
+    class FakeBackend:
+        provider_id = "codex"
+
+        def generate_text(self, **kwargs):
+            assert kwargs["messages"][0].role == "user"
+            assert kwargs["system"] == eval_harness.PHASE1_SYSTEM
+            return TextResult(
+                text='{"checks": [], "references": {}}',
+                usage=ModelUsage(input_tokens=4, output_tokens=2),
+            )
+
+        def generate_structured(self, **kwargs):
+            raise AssertionError(kwargs)
+
+    plan, usage = eval_harness.generate_references(
+        FakeBackend(),
+        "gpt-test",
+        "entity User;",
+        "Users may read.",
+    )
+
+    assert plan == {"checks": [], "references": {}}
+    assert usage == (4, 2)
 
 
 def test_harness_symcc_retries_without_cvc5_path_when_cedar_rejects_flag(
