@@ -158,6 +158,45 @@ def test_codex_provider_uses_codex_default_model(monkeypatch: pytest.MonkeyPatch
     assert client._model == "gpt-test"
 
 
+def test_openai_alias_preserves_codex_oauth_path(monkeypatch: pytest.MonkeyPatch) -> None:
+    class FakeCodex:
+        messages = _FakeMessages(_make_response(SchemaAtomsResponse(atoms=[])))
+
+    monkeypatch.setenv("AUTOCEDAR_PROVIDER", "openai")
+    monkeypatch.setenv("AUTOCEDAR_CODEX_MODEL", "gpt-test")
+    monkeypatch.setattr("autocedar.llm.CodexAuthClient", lambda: FakeCodex())
+
+    client = LLMClient()
+
+    assert client._provider == "codex"
+    assert client._model == "gpt-test"
+
+
+def test_openai_compatible_provider_uses_local_client_and_model(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FakeLocal:
+        messages = _FakeMessages(_make_response(SchemaAtomsResponse(atoms=[])))
+
+    sentinel = FakeLocal()
+    monkeypatch.setenv("AUTOCEDAR_PROVIDER", "local")
+    monkeypatch.setenv("AUTOCEDAR_LOCAL_MODEL", "served-local-model")
+    monkeypatch.setattr("autocedar.llm.OpenAICompatibleClient", lambda: sentinel)
+
+    client = LLMClient()
+
+    assert client._client is sentinel
+    assert client._provider == "local"
+    assert client._model == "served-local-model"
+
+
+def test_unknown_provider_is_rejected(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("AUTOCEDAR_PROVIDER", "mystery")
+
+    with pytest.raises(ValueError, match="Unsupported AUTOCEDAR_PROVIDER"):
+        LLMClient()
+
+
 # ---------------------------------------------------------------------------
 # Cache-control placement on the system+spec block.
 # ---------------------------------------------------------------------------

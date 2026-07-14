@@ -153,3 +153,64 @@ def test_doctor_treats_placeholder_api_key_as_missing(
     assert check.status == "WARN"
     assert "not set" in check.detail
     assert "autocedar apikey" in check.fix
+
+
+def test_doctor_accepts_reachable_openai_compatible_model(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("AUTOCEDAR_PROVIDER", "local")
+    monkeypatch.setenv("AUTOCEDAR_LOCAL_MODEL", "autocedar-local")
+    monkeypatch.setattr(
+        doctor,
+        "openai_runtime_info",
+        lambda: type(
+            "RuntimeInfo",
+            (),
+            {
+                "available": True,
+                "base_url": "http://127.0.0.1:8000/v1",
+                "models": ["autocedar-local"],
+            },
+        )(),
+    )
+
+    check = doctor._llm_check()
+
+    assert check.status == "OK"
+    assert "autocedar-local" in check.detail
+
+
+def test_doctor_rejects_unadvertised_openai_compatible_model(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("AUTOCEDAR_PROVIDER", "local")
+    monkeypatch.setenv("AUTOCEDAR_LOCAL_MODEL", "wrong-name")
+    monkeypatch.setattr(
+        doctor,
+        "openai_runtime_info",
+        lambda: type(
+            "RuntimeInfo",
+            (),
+            {
+                "available": True,
+                "base_url": "http://127.0.0.1:8000/v1",
+                "models": ["autocedar-local"],
+            },
+        )(),
+    )
+
+    check = doctor._llm_check()
+
+    assert check.status == "FAIL"
+    assert "not advertised" in check.detail
+    assert "--served-model-name" in check.fix
+
+
+def test_doctor_reports_unknown_provider_cleanly(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("AUTOCEDAR_PROVIDER", "typo")
+
+    check = doctor._llm_check()
+
+    assert check.status == "FAIL"
+    assert "unsupported AUTOCEDAR_PROVIDER" in check.detail
+    assert "codex, anthropic, or local" in check.fix

@@ -51,7 +51,20 @@ from autocedar.env import (
     write_user_config_value,
 )
 from autocedar.harness_adapter import make_harness_synthesizer
-from autocedar.llm import DEFAULT_EFFORT, LLMClient, default_model_for_provider, default_provider
+from autocedar.llm import (
+    DEFAULT_ANTHROPIC_MODEL,
+    DEFAULT_EFFORT,
+    LLMClient,
+    default_model_for_provider,
+    default_provider,
+)
+from autocedar.openai_compatible import (
+    DEFAULT_OPENAI_MODEL,
+    OpenAICompatibleClient,
+    is_openai_compatible_provider,
+    openai_base_url,
+    openai_runtime_info,
+)
 from autocedar.pipeline import author as author_pipeline
 from autocedar.progress import format_property_progress
 from autocedar.property_atomizer import propose_property_atom
@@ -112,7 +125,7 @@ SLASH_COMMAND_DESCRIPTIONS = {
     "/setup": "show Cedar/CVC5 install steps",
     "/doctor": "check API key and verifier setup",
     "/settings": "show provider, model, effort, and auth status",
-    "/provider": "switch Anthropic or Codex",
+    "/provider": "switch Codex, Anthropic, or a local model server",
     "/models": "show models available to the active provider",
     "/model": "set the default LLM model",
     "/effort": "set low, medium, high, or max effort",
@@ -166,7 +179,7 @@ Slash shortcuts are also available:
   [#f0c678]/setup[/]                 show local Cedar/CVC5 install steps
   [#f0c678]/doctor[/]                check API-key, Cedar SymCC, and CVC5 setup
   [#f0c678]/settings[/]              show provider, model, effort, and auth status
-  [#f0c678]/provider anthropic|codex[/]
+  [#f0c678]/provider codex|anthropic|local[/]
   [#f0c678]/models[/]                show available models for the active provider
   [#f0c678]/model MODEL[/]           set the default LLM model
   [#f0c678]/effort low|medium|high|max[/]
@@ -935,6 +948,12 @@ class AutoCedarApp(App[None]):
                 "OAuth session is available. Run `codex login`, then try again, "
                 "or switch providers with /provider anthropic.",
             )
+        elif is_openai_compatible_provider(self.llm_provider):
+            self._say(
+                "Natural-language control is set to the local model "
+                f"server, but it is not reachable at {openai_base_url()}. Start "
+                "vLLM on this node, then try again.",
+            )
         else:
             self._say(
                 "Natural-language control needs the live agent planner. Run /apikey "
@@ -945,6 +964,8 @@ class AutoCedarApp(App[None]):
     def _planner_provider_ready(self) -> bool:
         if is_codex_provider(self.llm_provider):
             return codex_auth_available()
+        if is_openai_compatible_provider(self.llm_provider):
+            return openai_runtime_info().available
         return is_real_anthropic_api_key(self._active_api_key())
 
     def _start_agent_planning(self, raw: str) -> None:
@@ -1008,6 +1029,8 @@ class AutoCedarApp(App[None]):
     def _make_provider_client(self) -> Any:
         if is_codex_provider(self.llm_provider):
             return CodexAuthClient()
+        if is_openai_compatible_provider(self.llm_provider):
+            return OpenAICompatibleClient()
         return self._make_anthropic_client()
 
     def _agent_state(self) -> AgentState:
@@ -1293,7 +1316,7 @@ class AutoCedarApp(App[None]):
                 self._show_settings()
             elif action.kind == "set_provider":
                 if not action.provider:
-                    raise ValueError("Provider must be anthropic or codex.")
+                    raise ValueError("Provider must be codex, anthropic, or local.")
                 self._set_provider(action.provider)
             elif action.kind == "set_model":
                 if not action.model:
@@ -1390,16 +1413,25 @@ class AutoCedarApp(App[None]):
 
     def _set_provider(self, provider: str) -> None:
         normalized = provider.strip().lower()
+        previous_provider = self.llm_provider
         if normalized in {"anthropic", "claude"}:
             self.llm_provider = "anthropic"
-            if self.llm_model.startswith("gpt-"):
-                self.llm_model = default_model_for_provider("anthropic")
-        elif normalized in {"codex", "openai-codex", "openai"}:
+            if previous_provider != self.llm_provider:
+                self.llm_model = DEFAULT_ANTHROPIC_MODEL
+        elif normalized in {"codex", "openai", "openai-codex"}:
             self.llm_provider = "codex"
-            if self.llm_model.startswith("claude-"):
+            if previous_provider != self.llm_provider:
                 self.llm_model = os.environ.get("AUTOCEDAR_CODEX_MODEL", DEFAULT_CODEX_MODEL)
+        elif is_openai_compatible_provider(normalized):
+            self.llm_provider = "local"
+            if previous_provider != self.llm_provider:
+                self.llm_model = (
+                    os.environ.get("AUTOCEDAR_LOCAL_MODEL")
+                    or os.environ.get("AUTOCEDAR_OPENAI_MODEL")
+                    or DEFAULT_OPENAI_MODEL
+                )
         else:
-            raise ValueError("Provider must be anthropic or codex.")
+            raise ValueError("Provider must be codex, anthropic, or local.")
         os.environ["AUTOCEDAR_PROVIDER"] = self.llm_provider
         os.environ["AUTOCEDAR_MODEL"] = self.llm_model
         os.environ["AUTOCEDAR_CHAT_MODEL"] = self.llm_model
@@ -1413,6 +1445,14 @@ class AutoCedarApp(App[None]):
             self._say(
                 f"Provider set to [bold {AMBER}]Codex[/] with model "
                 f"[bold {AMBER}]{escape(self.llm_model)}[/]. {auth_note}",
+            )
+        elif is_openai_compatible_provider(self.llm_provider):
+            info = openai_runtime_info()
+            state = "Server is reachable." if info.available else "Start vLLM on this node first."
+            self._say(
+                f"Provider set to [bold {AMBER}]Local[/] with model "
+                f"[bold {AMBER}]{escape(self.llm_model)}[/] at "
+                f"{escape(info.base_url)}. {state}",
             )
         else:
             self._say(
@@ -1445,6 +1485,34 @@ class AutoCedarApp(App[None]):
                 ),
             )
             return
+        if is_openai_compatible_provider(self.llm_provider):
+            info = openai_runtime_info()
+            if info.available:
+                models = "\n".join(f"• {escape(model)}" for model in info.models) or "(none advertised)"
+                body = "\n".join([
+                    f"[dim {MUTED}]provider[/]\n[bold {CREAM}]local[/]",
+                    f"[dim {MUTED}]base URL[/]\n[bold {CREAM}]{escape(info.base_url)}[/]",
+                    f"[dim {MUTED}]current model[/]\n[bold {CREAM}]{escape(self.llm_model)}[/]",
+                    "",
+                    models,
+                ])
+            else:
+                body = "\n".join([
+                    f"[bold {CORAL}]Local model server is not reachable.[/]",
+                    f"Base URL: {escape(info.base_url)}",
+                    "",
+                    "Start vLLM on this node, then run /models again.",
+                    f"[dim {MUTED}]{escape(info.error or '')}[/]",
+                ])
+            self._write(
+                Panel(
+                    body,
+                    title=f"[bold {COPPER}]Local models[/]",
+                    border_style=TEAL if info.available else CORAL,
+                    padding=(1, 2),
+                ),
+            )
+            return
         body = "\n".join([
             f"[dim {MUTED}]provider[/]\n[bold {CREAM}]anthropic[/]",
             f"[dim {MUTED}]current model[/]\n[bold {CREAM}]{escape(self.llm_model)}[/]",
@@ -1469,6 +1537,8 @@ class AutoCedarApp(App[None]):
         os.environ["AUTOCEDAR_MODEL"] = normalized
         os.environ["AUTOCEDAR_CHAT_MODEL"] = normalized
         os.environ["AUTOCEDAR_AUTHOR_MODEL"] = normalized
+        if is_openai_compatible_provider(self.llm_provider):
+            os.environ["AUTOCEDAR_LOCAL_MODEL"] = normalized
         self._say(f"Model set to [bold {AMBER}]{escape(normalized)}[/].")
         self._update_status()
 
@@ -1583,25 +1653,38 @@ class AutoCedarApp(App[None]):
         api_key = self._active_api_key()
         api_key_is_real = is_real_anthropic_api_key(api_key)
         codex_selected = is_codex_provider(self.llm_provider)
+        openai_selected = is_openai_compatible_provider(self.llm_provider)
         codex_auth = codex_auth_available() if codex_selected else False
-        auth_label = "Codex OAuth"
-        auth_state = "set" if codex_auth else "not set"
-        auth_color = TEAL if codex_auth else CORAL
+        openai_info = openai_runtime_info() if openai_selected else None
+        if codex_selected:
+            auth_text = (
+                f"[dim {MUTED}]Codex OAuth[/]\n"
+                f"[bold {TEAL if codex_auth else CORAL}]"
+                f"{'set' if codex_auth else 'not set'}[/]\n"
+                f"[dim {MUTED}]source: {escape(str(codex_auth_path()))}[/]"
+            )
+        elif openai_selected:
+            local_ready = bool(openai_info and openai_info.available)
+            auth_text = (
+                f"[dim {MUTED}]local endpoint[/]\n"
+                f"[bold {TEAL if local_ready else CORAL}]"
+                f"{'reachable' if local_ready else 'not reachable'}[/]\n"
+                f"[dim {MUTED}]source: "
+                f"{escape(openai_info.base_url if openai_info else openai_base_url())}[/]"
+            )
+        elif api_key_is_real:
+            auth_text = (
+                f"[dim {MUTED}]api key[/]\n[bold {TEAL}]set[/] "
+                f"[dim {MUTED}]({_mask_api_key(api_key)})[/]"
+            )
+        else:
+            auth_text = f"[dim {MUTED}]api key[/]\n[bold {CORAL}]not set[/]"
         return "\n".join(
             [
                 f"[dim {MUTED}]provider[/]\n[bold {CREAM}]{escape(self.llm_provider)}[/]",
                 f"[dim {MUTED}]model[/]\n[bold {CREAM}]{escape(self.llm_model)}[/]",
                 f"[dim {MUTED}]effort[/]\n[bold {CREAM}]{escape(self.llm_effort)}[/]",
-                (
-                    f"[dim {MUTED}]{auth_label}[/]\n[bold {auth_color}]{auth_state}[/]\n"
-                    f"[dim {MUTED}]source: {escape(str(codex_auth_path()))}[/]"
-                    if codex_selected
-                    else
-                    f"[dim {MUTED}]api key[/]\n[bold {TEAL}]set[/] "
-                    f"[dim {MUTED}]({_mask_api_key(api_key)})[/]"
-                    if api_key_is_real
-                    else f"[dim {MUTED}]api key[/]\n[bold {CORAL}]not set[/]"
-                ),
+                auth_text,
                 "",
                 f"[dim {MUTED}]Use /provider, /models, /model, /effort, or /apikey to change these.[/]",
             ],
@@ -2464,6 +2547,12 @@ class AutoCedarApp(App[None]):
         if is_codex_provider(self.llm_provider):
             auth_label = "codex auth"
             key_state = "set" if codex_auth_available() else "not set"
+        elif is_openai_compatible_provider(self.llm_provider):
+            # Status rendering is deliberately network-free. Reachability is
+            # checked when the user selects the provider, runs /models or
+            # /doctor, or starts a model-backed action.
+            auth_label = "local endpoint"
+            key_state = "configured"
         else:
             auth_label = "api key"
             key_state = "set" if is_real_anthropic_api_key(self._active_api_key()) else "not set"
@@ -2471,7 +2560,7 @@ class AutoCedarApp(App[None]):
         drafting_color = GREEN if self.drafting_active else MUTED
         review_color = CORAL if self.pending_review is not None else MUTED
         action_color = AMBER if self.pending_action is not None else MUTED
-        key_color = TEAL if key_state == "set" else CORAL
+        key_color = TEAL if key_state in {"set", "configured"} else CORAL
         result_state = self.latest_status_summary or "none"
         if len(result_state) > 72:
             result_state = result_state[:69] + "..."
@@ -2537,7 +2626,7 @@ class AutoCedarApp(App[None]):
                 "Authoring with a schema path: AutoCedar uses that existing schema directly and skips Stage 1 schema atomization/review.",
                 "Stage 2 property atoms: AutoCedar proposes bounded local bundles from the spec, validated schema, approved prior atoms, and review history; symbolically verifies each atom; and sends each atom through HITL review one by one.",
                 "The authoring engine receives clean inputs: saved spec text, optional schema path, and HITL review decisions. The chat transcript is not passed into authoring.",
-                "Runtime LLM settings are user-selectable inside the TUI through /settings, /provider, /models, /model, /effort, and /apikey. Anthropic uses ANTHROPIC_API_KEY; Codex uses local Codex OAuth from the Codex auth cache. The selected model is used for agent planning, authoring atomization, and default synthesis phase models unless an explicit command overrides it. Effort is used for planning and authoring atomization calls that support adaptive thinking.",
+                "Runtime LLM settings are user-selectable inside the TUI through /settings, /provider, /models, /model, /effort, and /apikey. Anthropic uses ANTHROPIC_API_KEY; Codex uses local Codex OAuth; the local provider uses an endpoint such as vLLM running on the same machine or cluster node. The selected model is used for agent planning, authoring atomization, and default synthesis phase models unless an explicit command overrides it. Effort is used for planning and authoring atomization calls that support adaptive thinking.",
                 "Artifact inspection commands: /artifacts lists latest session/schema/policy paths, /schema shows the latest or provided schema file, /policy shows the latest or provided Cedar policy, and /copy can copy the latest session path, schema text/path, policy text/path, draft, or literal text.",
             ],
         )
@@ -3070,11 +3159,17 @@ def _render_cedar_for_review(atom: Any) -> str:
 
 
 def _initial_model() -> str:
+    provider = default_provider()
+    if is_openai_compatible_provider(provider):
+        # The endpoint-specific variable is authoritative for local servers;
+        # a stale generic model from a prior Codex/Anthropic session must not
+        # override the name advertised by vLLM.
+        return default_model_for_provider(provider)
     return (
         os.environ.get("AUTOCEDAR_MODEL")
         or os.environ.get("AUTOCEDAR_AUTHOR_MODEL")
         or os.environ.get("AUTOCEDAR_CHAT_MODEL")
-        or default_model_for_provider(default_provider())
+        or default_model_for_provider(provider)
     )
 
 
