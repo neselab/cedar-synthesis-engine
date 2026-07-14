@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import stat
 from pathlib import Path
 
 from autocedar.env import (
@@ -63,7 +64,25 @@ def test_load_dotenv_uses_user_config_when_project_env_missing(
     assert os.environ["ANTHROPIC_API_KEY"] == "from-user"
 
 
-def test_user_config_api_key_overrides_project_env_key(
+def test_load_dotenv_repairs_existing_user_config_permissions(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.delenv(ANTHROPIC_API_KEY, raising=False)
+    monkeypatch.setenv("AUTOCEDAR_CONFIG_DIR", str(tmp_path / "config"))
+    user_env = user_config_env_path()
+    user_env.parent.mkdir(parents=True)
+    user_env.write_text("ANTHROPIC_API_KEY=from-user\n")
+    user_env.parent.chmod(0o755)
+    user_env.chmod(0o644)
+
+    load_dotenv(start=tmp_path / "project")
+
+    assert stat.S_IMODE(user_env.parent.stat().st_mode) == 0o700
+    assert stat.S_IMODE(user_env.stat().st_mode) == 0o600
+
+
+def test_project_env_overrides_user_config_without_overriding_shell(
     tmp_path: Path,
     monkeypatch,
 ) -> None:
@@ -72,7 +91,9 @@ def test_user_config_api_key_overrides_project_env_key(
     monkeypatch.setenv("AUTOCEDAR_CONFIG_DIR", str(tmp_path / "config"))
     user_env = user_config_env_path()
     user_env.parent.mkdir(parents=True)
-    user_env.write_text("ANTHROPIC_API_KEY=from-user\n")
+    user_env.write_text(
+        "ANTHROPIC_API_KEY=from-user\nAUTOCEDAR_CHAT_MODEL=claude-user\n",
+    )
     (tmp_path / ".env").write_text(
         "ANTHROPIC_API_KEY=from-project\nAUTOCEDAR_CHAT_MODEL=claude-project\n",
     )
@@ -80,22 +101,28 @@ def test_user_config_api_key_overrides_project_env_key(
 
     load_dotenv()
 
-    assert os.environ["ANTHROPIC_API_KEY"] == "from-user"
+    assert os.environ["ANTHROPIC_API_KEY"] == "from-project"
     assert os.environ["AUTOCEDAR_CHAT_MODEL"] == "claude-project"
 
 
 def test_shell_api_key_still_overrides_user_config(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setenv("ANTHROPIC_API_KEY", "from-shell")
+    monkeypatch.setenv("AUTOCEDAR_CHAT_MODEL", "claude-shell")
     monkeypatch.setenv("AUTOCEDAR_CONFIG_DIR", str(tmp_path / "config"))
     user_env = user_config_env_path()
     user_env.parent.mkdir(parents=True)
-    user_env.write_text("ANTHROPIC_API_KEY=from-user\n")
-    (tmp_path / ".env").write_text("ANTHROPIC_API_KEY=from-project\n")
+    user_env.write_text(
+        "ANTHROPIC_API_KEY=from-user\nAUTOCEDAR_CHAT_MODEL=claude-user\n",
+    )
+    (tmp_path / ".env").write_text(
+        "ANTHROPIC_API_KEY=from-project\nAUTOCEDAR_CHAT_MODEL=claude-project\n",
+    )
     monkeypatch.chdir(tmp_path)
 
     load_dotenv()
 
     assert os.environ["ANTHROPIC_API_KEY"] == "from-shell"
+    assert os.environ["AUTOCEDAR_CHAT_MODEL"] == "claude-shell"
 
 
 def test_write_user_config_value_uses_autocedar_config_dir(
@@ -110,6 +137,26 @@ def test_write_user_config_value_uses_autocedar_config_dir(
     assert written == tmp_path / "config" / ".env"
     assert written.read_text() == "ANTHROPIC_API_KEY=sk-ant-user\n"
     assert os.environ[ANTHROPIC_API_KEY] == "sk-ant-user"
+    assert stat.S_IMODE(written.parent.stat().st_mode) == 0o700
+    assert stat.S_IMODE(written.stat().st_mode) == 0o600
+
+
+def test_write_user_config_value_repairs_permissive_modes(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.setenv("AUTOCEDAR_CONFIG_DIR", str(tmp_path / "config"))
+    config_dir = tmp_path / "config"
+    config_dir.mkdir(mode=0o755)
+    env_path = config_dir / ".env"
+    env_path.write_text("ANTHROPIC_API_KEY=old\n")
+    env_path.chmod(0o644)
+
+    write_user_config_value(ANTHROPIC_API_KEY, "new")
+
+    assert stat.S_IMODE(config_dir.stat().st_mode) == 0o700
+    assert stat.S_IMODE(env_path.stat().st_mode) == 0o600
+    assert env_path.read_text() == "ANTHROPIC_API_KEY=new\n"
 
 
 def test_write_dotenv_value_creates_file_and_sets_process_env(

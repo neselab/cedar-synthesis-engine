@@ -46,6 +46,7 @@ def test_version_parser_does_not_resolve_invalid_provider_model(
 def test_author_command_injects_harness_synthesizer(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test123")
     spec = tmp_path / "spec.md"
@@ -65,10 +66,13 @@ def test_author_command_injects_harness_synthesizer(
 
     def fake_author_pipeline(**kwargs: object) -> SimpleNamespace:
         captured.update(kwargs)
+        candidate_path = tmp_path / "out" / "session" / "candidate.cedar"
+        candidate_path.parent.mkdir(parents=True)
+        candidate_path.write_text("permit (principal, action, resource);\n")
         return SimpleNamespace(
             session_dir=tmp_path / "out" / "session",
-            candidate_path=tmp_path / "out" / "session" / "candidate.cedar",
-            final_user_approved=True,
+            candidate_path=candidate_path,
+            final_user_approved=False,
             notes=[],
         )
 
@@ -91,6 +95,61 @@ def test_author_command_injects_harness_synthesizer(
     assert captured["schema_path_override"] == str(schema)
     assert "propose_property_atom" in captured
     assert "repair_property_atom" in captured
+    assert "approved:  False" in capsys.readouterr().out
+
+
+def test_authoring_completion_requires_final_candidate_file(tmp_path: Path) -> None:
+    missing = SimpleNamespace(candidate_path=tmp_path / "missing.cedar")
+    directory = SimpleNamespace(candidate_path=tmp_path)
+    candidate = tmp_path / "candidate.cedar"
+    candidate.write_text("permit (principal, action, resource);\n")
+
+    assert cli._authoring_completed(missing) is False
+    assert cli._authoring_completed(directory) is False
+    assert cli._authoring_completed(SimpleNamespace(candidate_path=candidate)) is True
+
+
+def test_resume_auto_approve_success_is_not_human_approval(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test123")
+    prior_session = tmp_path / "prior-session"
+    input_dir = prior_session / "input"
+    input_dir.mkdir(parents=True)
+    (input_dir / "spec.md").write_text("Owners can read their own resources.")
+
+    monkeypatch.setattr(cli, "LLMClient", lambda **kwargs: object())
+    monkeypatch.setattr(cli, "make_harness_synthesizer", lambda **kwargs: object())
+
+    def fake_author_pipeline(**kwargs: object) -> SimpleNamespace:
+        candidate_path = tmp_path / "out" / "resumed" / "candidate.cedar"
+        candidate_path.parent.mkdir(parents=True)
+        candidate_path.write_text("permit (principal, action, resource);\n")
+        return SimpleNamespace(
+            session_dir=candidate_path.parent,
+            candidate_path=candidate_path,
+            final_user_approved=False,
+            notes=[],
+        )
+
+    monkeypatch.setattr(cli, "author_pipeline", fake_author_pipeline)
+
+    rc = cli._cmd_resume(
+        argparse.Namespace(
+            session=str(prior_session),
+            out=str(tmp_path / "out"),
+            session_id="resumed",
+            model="claude-test",
+            effort="high",
+            auto_approve=True,
+            max_schema_gap_repairs=None,
+        ),
+    )
+
+    assert rc == 0
+    assert "approved:  False" in capsys.readouterr().out
 
 
 def test_doctor_command_returns_nonzero_on_failed_check(
@@ -188,6 +247,8 @@ def test_apikey_command_writes_env_file(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.setenv("AUTOCEDAR_MODEL", "gpt-5.5")
+    monkeypatch.setenv("AUTOCEDAR_CHAT_MODEL", "local-coder-model")
     monkeypatch.setenv("AUTOCEDAR_CONFIG_DIR", str(tmp_path / "config"))
     validated: list[tuple[str, str]] = []
     monkeypatch.setattr(
@@ -207,7 +268,7 @@ def test_apikey_command_writes_env_file(
 
     env_path = tmp_path / "config" / ".env"
     assert rc == 0
-    assert validated == [("sk-ant-test123", cli.default_model_for_provider("anthropic"))]
+    assert validated == [("sk-ant-test123", cli.ANTHROPIC_API_KEY_VALIDATION_MODEL)]
     assert env_path.read_text() == "ANTHROPIC_API_KEY=sk-ant-test123\n"
     assert "sk-ant-test123" not in capsys.readouterr().out
 

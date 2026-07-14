@@ -52,6 +52,7 @@ from autocedar.env import (
 )
 from autocedar.harness_adapter import make_harness_synthesizer
 from autocedar.llm import (
+    ANTHROPIC_API_KEY_VALIDATION_MODEL,
     DEFAULT_ANTHROPIC_MODEL,
     DEFAULT_EFFORT,
     LLMClient,
@@ -1561,10 +1562,11 @@ class AutoCedarApp(App[None]):
                 "Paste the full key from the Anthropic console, not a redacted value.",
             )
         self._say("Checking Anthropic API key before saving it...")
+        validation_model = ANTHROPIC_API_KEY_VALIDATION_MODEL
         try:
-            validate_anthropic_api_key(value, model=self.llm_model)
+            validate_anthropic_api_key(value, model=validation_model)
         except Exception as exc:
-            raise ValueError(format_api_key_validation_error(exc, model=self.llm_model)) from exc
+            raise ValueError(format_api_key_validation_error(exc, model=validation_model)) from exc
         path = write_user_config_value(ANTHROPIC_API_KEY, value)
         self.active_api_key = value
         os.environ[ANTHROPIC_API_KEY] = value

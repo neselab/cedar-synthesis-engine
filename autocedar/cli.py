@@ -28,7 +28,13 @@ from autocedar.env import (
     write_user_config_value,
 )
 from autocedar.harness_adapter import make_harness_synthesizer
-from autocedar.llm import DEFAULT_EFFORT, LLMClient, default_model_for_provider, default_provider
+from autocedar.llm import (
+    ANTHROPIC_API_KEY_VALIDATION_MODEL,
+    DEFAULT_EFFORT,
+    LLMClient,
+    default_model_for_provider,
+    default_provider,
+)
 from autocedar.pipeline import author as author_pipeline
 from autocedar.progress import format_property_progress
 from autocedar.property_atomizer import propose_property_atom
@@ -165,7 +171,10 @@ def _build_parser() -> argparse.ArgumentParser:
     author_p.add_argument(
         "--auto-approve",
         action="store_true",
-        help="Approve atoms without interactive review, for scripted runs.",
+        help=(
+            "Advance atoms without interactive review, for plumbing tests only; "
+            "this does not count as human semantic approval."
+        ),
     )
     author_p.add_argument(
         "--max-schema-gap-repairs",
@@ -332,7 +341,7 @@ def _cmd_apikey(args: argparse.Namespace) -> int:
         )
 
     if not args.no_validate:
-        model = default_model_for_provider("anthropic")
+        model = ANTHROPIC_API_KEY_VALIDATION_MODEL
         try:
             validate_anthropic_api_key(value, model=model)
         except Exception as exc:
@@ -450,15 +459,16 @@ def _cmd_author(args: argparse.Namespace) -> int:
         max_schema_gap_repairs=getattr(args, "max_schema_gap_repairs", None),
     )
 
+    completed = _authoring_completed(result)
     print(f"session:   {result.session_dir}")
-    if result.candidate_path:
+    if completed:
         print(f"candidate: {result.candidate_path}")
     print(f"approved:  {result.final_user_approved}")
     if result.notes:
         print("notes:")
         for note in result.notes:
             print(f"  - {note}")
-    return 0 if result.final_user_approved else 1
+    return 0 if completed else 1
 
 
 def _cmd_resume(args: argparse.Namespace) -> int:
@@ -567,15 +577,16 @@ def _cmd_resume(args: argparse.Namespace) -> int:
         max_schema_gap_repairs=getattr(args, "max_schema_gap_repairs", None),
     )
 
+    completed = _authoring_completed(result)
     print(f"session:   {result.session_dir}")
-    if result.candidate_path:
+    if completed:
         print(f"candidate: {result.candidate_path}")
     print(f"approved:  {result.final_user_approved}")
     if result.notes:
         print("notes:")
         for note in result.notes:
             print(f"  - {note}")
-    return 0 if result.final_user_approved else 1
+    return 0 if completed else 1
 
 
 def _cmd_verify(args: argparse.Namespace) -> int:
@@ -651,6 +662,22 @@ def _provider_uses_anthropic_key() -> bool:
     return default_provider() == "anthropic"
 
 
+def _authoring_completed(result: object) -> bool:
+    """Return true when the pipeline produced its final candidate artifact.
+
+    Process completion and human semantic approval are intentionally separate:
+    an ``--auto-approve`` plumbing run may complete successfully while its
+    ``final_user_approved`` field remains false.
+    """
+    candidate_path = getattr(result, "candidate_path", None)
+    if candidate_path is None:
+        return False
+    try:
+        return Path(candidate_path).is_file()
+    except TypeError:
+        return False
+
+
 def _can_prompt_for_secret() -> bool:
     return sys.stdin.isatty() and sys.stdout.isatty()
 
@@ -682,7 +709,7 @@ def _prompt_for_missing_api_key(*, allow_skip: bool) -> bool:
             "That does not look like a real Anthropic API key. "
             "Run `autocedar apikey` again and paste the full key.",
         )
-    model = default_model_for_provider("anthropic")
+    model = ANTHROPIC_API_KEY_VALIDATION_MODEL
     try:
         validate_anthropic_api_key(value, model=model)
     except Exception as exc:

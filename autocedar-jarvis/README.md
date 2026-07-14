@@ -94,11 +94,11 @@ Install the Jarvis/local-model release directly from PyPI. You do not need to
 clone the repository:
 
 ```bash
-uv tool install autocedar==0.1.28
+uv tool install autocedar==0.1.29
 autocedar --version
 ```
 
-The version command must print `autocedar 0.1.28`. Clone the GitHub repository
+The version command must print `autocedar 0.1.29`. Clone the GitHub repository
 only if your lab mentor specifically asks you to modify AutoCedar itself.
 
 ### 4. Install Cedar CLI

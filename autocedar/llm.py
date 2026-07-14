@@ -55,6 +55,8 @@ from autocedar.openai_compatible import (
 # ---------------------------------------------------------------------------
 
 DEFAULT_ANTHROPIC_MODEL = "claude-opus-4-7"
+# API-key validation must never inherit a stale Codex/local runtime model.
+ANTHROPIC_API_KEY_VALIDATION_MODEL = DEFAULT_ANTHROPIC_MODEL
 DEFAULT_MODEL = DEFAULT_CODEX_MODEL
 DEFAULT_MAX_TOKENS = 16000
 DEFAULT_EFFORT = "high"
