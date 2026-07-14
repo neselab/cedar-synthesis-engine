@@ -22,7 +22,7 @@ from autocedar.atoms import ActionAtom, AttributeAtom, EntityAtom, PropertyAtom
 from autocedar.atoms import RequiredSchemaSupport
 from autocedar.corpus import AtomDecision
 from autocedar.grounding import CEDAR_PATH, CVC5_PATH
-from autocedar.pipeline import PropertyRepairPlan, author
+from autocedar.pipeline import PropertyRepairPlan, _latest_intent_acknowledgement, author
 from autocedar.ui.terminal import auto_approve
 
 _HAVE_SOLVERS = (
@@ -151,6 +151,33 @@ def _repair_schema_plan(summary: str) -> PropertyRepairPlan:
         repair_instruction=summary,
         schema_gap_summary=summary,
     )
+
+
+def test_duplicate_skip_does_not_erase_human_approval() -> None:
+    decisions = [
+        AtomDecision(
+            atom_name="owner_only_read",
+            action="approve",
+            intent_acknowledged_by_user=True,
+        ),
+        AtomDecision(
+            atom_name="owner_only_read",
+            action="reject",
+            reason="Duplicate property atom name already approved earlier",
+            edit_delta={"duplicate_skipped": True},
+        ),
+    ]
+
+    assert _latest_intent_acknowledgement(decisions, "owner_only_read") is True
+
+    decisions.append(
+        AtomDecision(
+            atom_name="owner_only_read",
+            action="reject",
+            reason="The user withdrew this atom.",
+        ),
+    )
+    assert _latest_intent_acknowledgement(decisions, "owner_only_read") is False
 
 
 def test_stage1_schema_atomization_uses_source_packets_not_full_spec(tmp_path: Path) -> None:

@@ -1585,6 +1585,11 @@ def _latest_intent_acknowledgement(
 
     for decision in reversed(decisions):
         if decision.atom_name == atom_name:
+            # A duplicate proposal is skipped to preserve the already accepted
+            # artifact.  That internal bookkeeping record is not a semantic
+            # rejection of the accepted atom and must not erase its approval.
+            if decision.edit_delta.get("duplicate_skipped"):
+                continue
             return (
                 decision.action == "approve"
                 and decision.intent_acknowledged_by_user

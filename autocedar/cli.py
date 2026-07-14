@@ -171,7 +171,10 @@ def _build_parser() -> argparse.ArgumentParser:
     author_p.add_argument(
         "--auto-approve",
         action="store_true",
-        help="Approve atoms without interactive review, for scripted runs.",
+        help=(
+            "Advance atoms without interactive review, for plumbing tests only; "
+            "this does not count as human semantic approval."
+        ),
     )
     author_p.add_argument(
         "--max-schema-gap-repairs",
@@ -456,15 +459,16 @@ def _cmd_author(args: argparse.Namespace) -> int:
         max_schema_gap_repairs=getattr(args, "max_schema_gap_repairs", None),
     )
 
+    completed = _authoring_completed(result)
     print(f"session:   {result.session_dir}")
-    if result.candidate_path:
+    if completed:
         print(f"candidate: {result.candidate_path}")
     print(f"approved:  {result.final_user_approved}")
     if result.notes:
         print("notes:")
         for note in result.notes:
             print(f"  - {note}")
-    return 0 if result.final_user_approved else 1
+    return 0 if completed else 1
 
 
 def _cmd_resume(args: argparse.Namespace) -> int:
@@ -573,15 +577,16 @@ def _cmd_resume(args: argparse.Namespace) -> int:
         max_schema_gap_repairs=getattr(args, "max_schema_gap_repairs", None),
     )
 
+    completed = _authoring_completed(result)
     print(f"session:   {result.session_dir}")
-    if result.candidate_path:
+    if completed:
         print(f"candidate: {result.candidate_path}")
     print(f"approved:  {result.final_user_approved}")
     if result.notes:
         print("notes:")
         for note in result.notes:
             print(f"  - {note}")
-    return 0 if result.final_user_approved else 1
+    return 0 if completed else 1
 
 
 def _cmd_verify(args: argparse.Namespace) -> int:
@@ -655,6 +660,22 @@ def _cmd_synthesize(args: argparse.Namespace) -> int:
 
 def _provider_uses_anthropic_key() -> bool:
     return default_provider() == "anthropic"
+
+
+def _authoring_completed(result: object) -> bool:
+    """Return true when the pipeline produced its final candidate artifact.
+
+    Process completion and human semantic approval are intentionally separate:
+    an ``--auto-approve`` plumbing run may complete successfully while its
+    ``final_user_approved`` field remains false.
+    """
+    candidate_path = getattr(result, "candidate_path", None)
+    if candidate_path is None:
+        return False
+    try:
+        return Path(candidate_path).is_file()
+    except TypeError:
+        return False
 
 
 def _can_prompt_for_secret() -> bool:
