@@ -3,6 +3,12 @@
 All notable user-facing changes are recorded here. AutoCedar follows semantic
 versioning while the public provider and CLI interfaces stabilize.
 
+## Unreleased
+
+- Added a maintained Qwen3.6 FP8 setup path for Stevens Jarvis, including
+  secure Hugging Face cache separation, a CPU model-preparation job, and real
+  chat/JSON-schema model smoke checks.
+
 ## 0.2.0 - 2026-07-14
 
 - Added provider-neutral model backends for Codex login, Claude Code

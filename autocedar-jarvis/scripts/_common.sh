@@ -39,6 +39,25 @@ require_positive_integer() {
   [[ "$value" =~ ^[1-9][0-9]*$ ]] || fail "$name must be a positive integer (found: ${value:-empty})"
 }
 
+configure_huggingface_paths() {
+  AUTOCEDAR_HF_HOME="${AUTOCEDAR_HF_HOME:-$HOME/.config/autocedar/huggingface}"
+  require_value AUTOCEDAR_MODEL_CACHE
+  require_value AUTOCEDAR_HF_HOME
+  [[ "$AUTOCEDAR_MODEL_CACHE" == /* ]] || fail \
+    "AUTOCEDAR_MODEL_CACHE must be an absolute path."
+  [[ "$AUTOCEDAR_HF_HOME" == /* ]] || fail \
+    "AUTOCEDAR_HF_HOME must be an absolute path after shell expansion."
+
+  # Keep credentials in the user's private home-backed directory even when
+  # weights live in a shared or project scratch cache.
+  export HF_HOME="$AUTOCEDAR_HF_HOME"
+  export HF_TOKEN_PATH="$AUTOCEDAR_HF_HOME/token"
+  export HF_HUB_CACHE="$AUTOCEDAR_MODEL_CACHE/hub"
+  export HF_XET_CACHE="$AUTOCEDAR_MODEL_CACHE/xet"
+  mkdir -p "$HF_HOME" "$HF_HUB_CACHE" "$HF_XET_CACHE"
+  chmod 700 "$HF_HOME"
+}
+
 add_optional_slurm_identity_args() {
   require_value JARVIS_SLURM_ACCOUNT
   case "$JARVIS_SLURM_ACCOUNT" in

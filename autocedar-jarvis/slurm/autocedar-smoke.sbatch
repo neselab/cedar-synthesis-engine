@@ -6,5 +6,5 @@ BUNDLE_ROOT="$(cd "$SLURM_DIR/.." && pwd -P)"
 
 exec bash -l \
   "$BUNDLE_ROOT/scripts/run-on-node.sh" \
-  --doctor-only \
+  --smoke-test \
   "${1:?Pass the absolute path to config/jarvis.env}"
