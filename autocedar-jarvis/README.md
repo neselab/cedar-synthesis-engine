@@ -28,8 +28,9 @@ Copy this list into a message to the administrator:
 2. Which **GPU partition** and **Slurm account** should I use? Is a QOS needed?
 3. Which **CPU partition** should I use for one-time software compilation?
 4. Which CUDA or cuDNN **module name** should I load on the GPU node?
-5. Which Hugging Face model repository or shared model path is approved for
-   AutoCedar, and how many GPUs does it need?
+5. Which vLLM-compatible **instruction/chat model** is approved for AutoCedar?
+   Ask for its Hugging Face repository or shared model path, confirm that it
+   includes a chat template, and ask how many GPUs it needs.
 6. What absolute scratch/cache directory should hold the model weights? Does it
    have enough quota?
 7. Is the model already cached? If it is gated, how should I authenticate to
@@ -73,16 +74,19 @@ nano config/jarvis.env
 
 Replace every value beginning with `REPLACE_WITH_`. Use `none` only where the
 comments say it is allowed. In `nano`, save with `Ctrl-O`, press Enter, then
-exit with `Ctrl-X`.
+exit with `Ctrl-X`. Also change the GPU count and the CPU/GPU memory, CPU, and
+time values if the administrator gave you different ones. Leave the vLLM and
+request-tuning values alone unless the administrator tells you to change them.
 
 Check that no placeholder remains:
 
 ```bash
-grep -n REPLACE_WITH_ config/jarvis.env
+grep -nE '^[A-Z_][A-Z0-9_]*=.*REPLACE_WITH_' config/jarvis.env
 ```
 
-No output means the file is ready. `config/jarvis.env` is ignored by Git.
-Do not put a Stevens password, API key, or Hugging Face token in it.
+No output means no assignment still has a placeholder. `config/jarvis.env` is
+ignored by Git. Do not put a Stevens password, API key, or Hugging Face token
+in it.
 
 ### 4. Install `uv` and AutoCedar 0.2
 
@@ -130,19 +134,22 @@ That is the only launch command you normally need. Slurm will print the GPU
 node name. The first model download may take several minutes; its log is saved
 under `logs/`.
 
-When the TUI opens, these commands show the active local configuration:
+When the TUI opens, the launcher has already selected the local provider and
+passed the model name, endpoint, and temporary server key to AutoCedar. Check
+the live configuration with:
 
 ```text
-/provider local
-/endpoint http://127.0.0.1:8000/v1
-/model autocedar-local
-/models
 /settings
+/models
 ```
 
-The launcher already supplies the endpoint and model, so the commands are
-mainly useful for learning and checking the configuration. To author from a
-lab-provided specification:
+`/settings` should report provider `local`, the model from
+`AUTOCEDAR_MODEL_NAME`, and an endpoint using the port from
+`AUTOCEDAR_MODEL_PORT`. `/models` should list that model. Do not type
+`/provider`, `/endpoint`, or `/model` during a normal Jarvis launch; those
+commands change settings rather than merely displaying them.
+
+To author from a lab-provided specification:
 
 ```text
 /author /full/path/to/policy_spec.md --out /full/path/to/autocedar-runs
@@ -160,8 +167,16 @@ If a forgotten job is still running, stop it with `scancel JOB_ID`.
 
 ## Optional: save the local provider as your default
 
-The launcher works without this step. For a new AutoCedar installation, you
-may copy the non-secret settings example:
+The launcher works without this step. The supplied settings example assumes
+the model name is `autocedar-local` and the port is `8000`. Check your actual
+values first:
+
+```bash
+grep -E '^(AUTOCEDAR_MODEL_NAME|AUTOCEDAR_MODEL_PORT)=' config/jarvis.env
+```
+
+If those two values still match the example and this is a new AutoCedar
+installation, you may copy it:
 
 ```bash
 install -d -m 700 "$HOME/.config/autocedar"
@@ -170,11 +185,15 @@ install -m 600 config/settings.local.json.example \
 ```
 
 If `~/.config/autocedar/settings.json` already exists, do not overwrite it.
-Use `/provider`, `/endpoint`, and `/model` inside the TUI instead.
+If the model name or port differs, skip the copy; the normal Jarvis launcher
+already passes the correct values. To save custom defaults for use outside the
+launcher, use `/provider`, `/endpoint`, and `/model` inside the TUI.
 
 ## Optional: submit a non-interactive smoke test
 
-This checks only the Slurm allocation, model server, and verifier plumbing:
+This checks only the Slurm allocation, model-server reachability, advertised
+model name, and verifier plumbing. It does not ask the model to generate a
+response or prove that a policy is correct:
 
 ```bash
 ./scripts/submit-smoke-test.sh config/jarvis.env
@@ -192,8 +211,8 @@ meaning.
 
 ## Your responsibility during human review
 
-AutoCedar pauses on proposed schema and policy atoms. Before approving one,
-compare:
+AutoCedar pauses on proposed schema atoms and verification-property atoms.
+Before approving one, compare:
 
 1. the full natural-language requirement;
 2. the proposed atom; and
@@ -223,15 +242,21 @@ silently switch models during a run.
 ## What is in this folder
 
 ```text
-config/jarvis.env.example          values to get from the lab administrator
-config/settings.local.json.example optional non-secret AutoCedar settings
-scripts/install-verifiers.sh       one-time CPU Slurm setup
-scripts/install-vllm.sh            one-time GPU Slurm setup
-scripts/run-interactive.sh         normal interactive launcher
-scripts/submit-smoke-test.sh       optional batch plumbing test
-slurm/autocedar-smoke.sbatch       batch job used by the smoke-test wrapper
+README.md                              this guide
+.gitignore                             keeps local config and logs out of Git
+config/jarvis.env.example              values to get from the lab administrator
+config/settings.local.json.example     optional non-secret AutoCedar settings
+scripts/install-verifiers.sh           one-time CPU Slurm setup
+scripts/install-verifiers-on-node.sh   internal helper called by the setup script
+scripts/install-vllm.sh                one-time GPU Slurm setup
+scripts/install-vllm-on-node.sh        internal helper called by the setup script
+scripts/run-interactive.sh             normal interactive launcher
+scripts/run-on-node.sh                 internal helper called inside the GPU job
+scripts/submit-smoke-test.sh           optional batch plumbing test
+scripts/_common.sh                     shared internal launcher functions
+slurm/autocedar-smoke.sbatch           batch job used by the smoke-test wrapper
 ```
 
-The scripts have been syntax-checked locally, but the complete workflow has
-not yet been run on Jarvis because Stevens VPN access was unavailable. That is
-why cluster-specific values remain explicit placeholders.
+Run only the wrapper commands named in the setup and launch steps above. The
+`*-on-node.sh`, `run-on-node.sh`, `_common.sh`, and `.sbatch` files are called
+automatically inside Slurm jobs.
