@@ -7,17 +7,25 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 source "$SCRIPT_DIR/_common.sh"
 
 MODE="interactive"
-if [[ "${1:-}" == "--doctor-only" ]]; then
-  MODE="doctor-only"
+if [[ "${1:-}" == "--smoke-test" ]]; then
+  MODE="smoke-test"
   shift
 fi
 load_config "${1:-}"
 require_slurm_job
 
+# Keep older local config files usable after the model-specific switches were
+# added to the template.
+AUTOCEDAR_MODEL_REVISION="${AUTOCEDAR_MODEL_REVISION:-none}"
+AUTOCEDAR_VLLM_LANGUAGE_MODEL_ONLY="${AUTOCEDAR_VLLM_LANGUAGE_MODEL_ONLY:-false}"
+AUTOCEDAR_VLLM_REASONING_PARSER="${AUTOCEDAR_VLLM_REASONING_PARSER:-none}"
+AUTOCEDAR_VLLM_ENABLE_THINKING="${AUTOCEDAR_VLLM_ENABLE_THINKING:-default}"
+
 for name in \
   AUTOCEDAR_VLLM_ENV \
   AUTOCEDAR_MODEL_REPO \
   AUTOCEDAR_MODEL_NAME \
+  AUTOCEDAR_MODEL_REVISION \
   AUTOCEDAR_MODEL_CACHE \
   AUTOCEDAR_MODEL_PORT \
   AUTOCEDAR_MAX_MODEL_LEN \
@@ -34,15 +42,29 @@ require_positive_integer AUTOCEDAR_MAX_MODEL_LEN
 require_positive_integer AUTOCEDAR_STARTUP_TIMEOUT_SECONDS
 require_positive_integer AUTOCEDAR_LOCAL_MAX_TOKENS
 require_positive_integer AUTOCEDAR_LOCAL_TIMEOUT_SECONDS
-[[ "$AUTOCEDAR_MODEL_CACHE" == /* ]] || fail "AUTOCEDAR_MODEL_CACHE must be an absolute path."
+case "$AUTOCEDAR_VLLM_LANGUAGE_MODEL_ONLY" in
+  true|false) ;;
+  *) fail "AUTOCEDAR_VLLM_LANGUAGE_MODEL_ONLY must be true or false." ;;
+esac
+case "$AUTOCEDAR_VLLM_ENABLE_THINKING" in
+  default|true|false) ;;
+  *) fail "AUTOCEDAR_VLLM_ENABLE_THINKING must be default, true, or false." ;;
+esac
+if [[ "$AUTOCEDAR_VLLM_REASONING_PARSER" != "none" ]] && \
+  [[ ! "$AUTOCEDAR_VLLM_REASONING_PARSER" =~ ^[A-Za-z0-9][A-Za-z0-9_-]*$ ]]; then
+  fail "AUTOCEDAR_VLLM_REASONING_PARSER contains unsupported characters."
+fi
+if [[ "$AUTOCEDAR_MODEL_REPO" == /* && "$AUTOCEDAR_MODEL_REVISION" != "none" ]]; then
+  fail "Set AUTOCEDAR_MODEL_REVISION=none when AUTOCEDAR_MODEL_REPO is a local path."
+fi
 
 load_gpu_module
 export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
 export CEDAR="${CEDAR:-$HOME/.cargo/bin/cedar}"
 export CVC5="${CVC5:-$HOME/.local/bin/cvc5}"
-export HF_HOME="$AUTOCEDAR_MODEL_CACHE"
+configure_huggingface_paths
 
-command -v autocedar >/dev/null 2>&1 || fail "autocedar is not installed. Complete README step 4 first."
+command -v autocedar >/dev/null 2>&1 || fail "autocedar is not installed. Complete README step 5 first."
 command -v curl >/dev/null 2>&1 || fail "curl is required on the GPU node."
 command -v nvidia-smi >/dev/null 2>&1 || fail "nvidia-smi is unavailable in this GPU job."
 VLLM_BIN="$AUTOCEDAR_VLLM_ENV/bin/vllm"
@@ -50,7 +72,6 @@ VLLM_PYTHON="$AUTOCEDAR_VLLM_ENV/bin/python"
 [[ -x "$VLLM_BIN" && -x "$VLLM_PYTHON" ]] || fail \
   "vLLM is not installed at $AUTOCEDAR_VLLM_ENV. Run scripts/install-vllm.sh first."
 
-mkdir -p "$AUTOCEDAR_MODEL_CACHE"
 mkdir -m 700 -p "$BUNDLE_ROOT/logs"
 VLLM_LOG="$BUNDLE_ROOT/logs/vllm-${SLURM_JOB_ID}.log"
 : >"$VLLM_LOG"
@@ -72,6 +93,23 @@ VLLM_COMMAND=(
 if (( JARVIS_GPU_COUNT > 1 )); then
   VLLM_COMMAND+=(--tensor-parallel-size "$JARVIS_GPU_COUNT")
 fi
+if [[ "$AUTOCEDAR_MODEL_REPO" != /* && "$AUTOCEDAR_MODEL_REVISION" != "none" ]]; then
+  VLLM_COMMAND+=(--revision "$AUTOCEDAR_MODEL_REVISION")
+fi
+if [[ "$AUTOCEDAR_VLLM_LANGUAGE_MODEL_ONLY" == "true" ]]; then
+  VLLM_COMMAND+=(--language-model-only)
+fi
+if [[ "$AUTOCEDAR_VLLM_REASONING_PARSER" != "none" ]]; then
+  VLLM_COMMAND+=(--reasoning-parser "$AUTOCEDAR_VLLM_REASONING_PARSER")
+fi
+case "$AUTOCEDAR_VLLM_ENABLE_THINKING" in
+  true)
+    VLLM_COMMAND+=(--default-chat-template-kwargs '{"enable_thinking": true}')
+    ;;
+  false)
+    VLLM_COMMAND+=(--default-chat-template-kwargs '{"enable_thinking": false}')
+    ;;
+esac
 
 VLLM_PID=""
 cleanup() {
@@ -142,8 +180,10 @@ export AUTOCEDAR_CHAT_MODEL="$AUTOCEDAR_MODEL_NAME"
 printf 'Local model server is ready. Running AutoCedar doctor...\n'
 autocedar doctor
 
-if [[ "$MODE" == "doctor-only" ]]; then
-  printf 'Smoke test passed. This validates plumbing only, not policy meaning.\n'
+if [[ "$MODE" == "smoke-test" ]]; then
+  printf 'Testing ordinary and JSON-schema model generation...\n'
+  "$VLLM_PYTHON" "$SCRIPT_DIR/model_smoke.py"
+  printf 'Smoke test passed. This validates model plumbing only, not policy meaning.\n'
   exit 0
 fi
 
