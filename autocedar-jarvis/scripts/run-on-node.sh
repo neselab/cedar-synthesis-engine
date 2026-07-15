@@ -109,9 +109,9 @@ unset VLLM_API_KEY
 deadline=$((SECONDS + AUTOCEDAR_STARTUP_TIMEOUT_SECONDS))
 ready="false"
 while (( SECONDS < deadline )); do
-  if curl -fsS \
-    -H "Authorization: Bearer $LOCAL_API_KEY" \
-    "$LOCAL_BASE_URL/models" >/dev/null; then
+  # Pass the temporary key over stdin so it never appears in curl's argv.
+  if printf '%s\n' "header = \"Authorization: Bearer $LOCAL_API_KEY\"" | \
+    curl -fsS --config - "$LOCAL_BASE_URL/models" >/dev/null; then
     ready="true"
     break
   fi
