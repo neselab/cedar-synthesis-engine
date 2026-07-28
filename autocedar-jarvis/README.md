@@ -6,6 +6,11 @@ each command exactly. Do not skip a numbered step.
 You will run AutoCedar with the local `Qwen/Qwen3.6-27B-FP8` model on one
 Jarvis L40S GPU. You do not need an OpenAI key or an Anthropic key.
 
+This guide covers the Jarvis setup only. After AutoCedar opens, it works the
+same way it does on any other computer. Use the main
+[Interactive Agent Usage guide](../README.md#interactive-agent-usage) for the
+complete and current AutoCedar instructions.
+
 ## Five words used in this guide
 
 - **Jarvis** is Stevens' shared group of powerful computers.
@@ -235,46 +240,10 @@ On your laptop:
 ssh YOUR_STEVENS_USERNAME@jarvis.stevens.edu
 ```
 
-### 2. Put your requirements file on Jarvis
-
-AutoCedar needs a plain-text or Markdown file containing the policy
-requirements. This guide calls it `policy_spec.md`.
-
-The easiest method is to create it on Jarvis:
-
-```bash
-nano ~/policy_spec.md
-```
-
-Paste the requirements. Save with `Ctrl-O`, press Enter, and exit with
-`Ctrl-X`.
-
-If the file already exists on your laptop, leave the Jarvis window open. Open
-a second laptop Terminal while the Stevens VPN is connected. Run this command
-**on your laptop**, replacing both uppercase parts:
-
-```bash
-scp /FULL/PATH/ON/YOUR/LAPTOP/policy_spec.md YOUR_STEVENS_USERNAME@jarvis.stevens.edu:~/policy_spec.md
-```
-
-### 3. Enter the AutoCedar folder
+### 2. Enter the AutoCedar folder and launch
 
 ```bash
 cd ~/cedar-synthesis-engine/autocedar-jarvis
-```
-
-On Jarvis, print the exact paths you will use:
-
-```bash
-realpath ~/policy_spec.md
-printf '%s\n' "$HOME/autocedar-runs"
-```
-
-Keep those two printed paths. You will paste them into AutoCedar.
-
-### 4. Launch
-
-```bash
 ./scripts/run-interactive.sh config/jarvis.env
 ```
 
@@ -282,40 +251,58 @@ This one command gets the L40S GPU, starts Qwen, waits until Qwen is ready, and
 opens AutoCedar's text screen. It stops Qwen and gives back the GPU when you
 quit.
 
-Inside AutoCedar, verify the live settings:
+### 3. Use AutoCedar normally
+
+Nothing after this point is Jarvis-specific. Inside AutoCedar, you can type
+normal sentences instead of preparing a file first.
+
+For a first run, type:
 
 ```text
-/settings
-/models
+start a policy draft
 ```
 
-`/settings` should show provider `local`. `/models` should list
+AutoCedar will explain the action and ask for confirmation. After it says
+drafting is active, paste or type the natural-language requirements you want
+in the policy. Then type:
+
+```text
+show the draft
+author this
+```
+
+AutoCedar asks for confirmation before authoring. It then proposes small schema
+and policy pieces for human review.
+
+You may also use the slash-command versions:
+
+```text
+/draft
+/author
+```
+
+`/draft` starts or shows the current draft. `/author` authors the current
+draft. `/settings` should show provider `local`, and `/models` should list
 `autocedar-local`.
 
-To author a policy from a specification:
+If you already have a requirements file on Jarvis, you can still use:
 
 ```text
-/author /home/YOUR_USERNAME/policy_spec.md --out /home/YOUR_USERNAME/autocedar-runs
+/author /full/path/to/policy_spec.md --out /full/path/to/autocedar-runs
 ```
 
-Replace the two example paths with the paths printed before launch. AutoCedar
-does not expand `$HOME` in this command, so paste the full `/home/...` paths.
+See the main [Interactive Agent Usage guide](../README.md#interactive-agent-usage)
+for draft editing, saving, existing files, generated artifacts, review
+commands, exporting, and troubleshooting.
 
-### 5. Review carefully
+### 4. Review carefully
 
-AutoCedar breaks the requirements into small pieces, called “atoms.” It also
-proposes checks for the final policy. AutoCedar pauses and asks you to approve
-these pieces. Before approving one, compare:
-
-1. the complete natural-language requirement;
-2. the proposed atom; and
-3. what the proposed Cedar rule really means.
-
-Approve only when all three agree. Edit or reject anything that changes,
+Before approving a proposed piece, compare it with the complete natural-language
+requirements and the Cedar meaning. Edit or reject anything that changes,
 removes, or invents a requirement. Never use `--auto-approve` for real policy
 work or a research result.
 
-### 6. Quit cleanly
+### 5. Quit cleanly
 
 Quit AutoCedar normally or press `Ctrl-C`. Back on the login node:
 

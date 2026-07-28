@@ -316,3 +316,13 @@ def test_jarvis_guide_requires_portable_full_ssh_command() -> None:
     assert "\nssh jarvis\n" not in guide
     assert "Host jarvis" not in guide
     assert "id_ed25519" not in guide
+
+
+def test_jarvis_guide_hands_off_to_current_interactive_agent() -> None:
+    guide = (JARVIS / "README.md").read_text()
+    assert "../README.md#interactive-agent-usage" in guide
+    assert "start a policy draft" in guide
+    assert "show the draft" in guide
+    assert "author this" in guide
+    assert "Nothing after this point is Jarvis-specific." in guide
+    assert "AutoCedar needs a plain-text or Markdown file" not in guide
