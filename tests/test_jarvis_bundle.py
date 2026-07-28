@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -213,6 +214,68 @@ def test_jarvis_preflight_omits_account_and_qos(tmp_path: Path) -> None:
     assert "PASS:" in result.stdout
 
 
+def test_jarvis_wrappers_work_from_a_fresh_user_home(tmp_path: Path) -> None:
+    bundle = tmp_path / "autocedar-jarvis"
+    shutil.copytree(
+        JARVIS,
+        bundle,
+        ignore=shutil.ignore_patterns("__pycache__", "logs", "jarvis.env"),
+    )
+    config = bundle / "config" / "jarvis.env"
+    shutil.copy2(bundle / "config" / "jarvis.env.example", config)
+
+    fake_bin = tmp_path / "bin"
+    fake_bin.mkdir()
+    slurm_log = tmp_path / "slurm.log"
+    fake_slurm = (
+        "#!/bin/sh\n"
+        'printf "%s %s\\n" "$(basename "$0")" "$*" >> "$SLURM_LOG"\n'
+        'if [ "$(basename "$0")" = "sbatch" ]; then\n'
+        '  printf "Submitted batch job 12345\\n"\n'
+        "fi\n"
+    )
+    for name in ("srun", "sbatch"):
+        path = fake_bin / name
+        path.write_text(fake_slurm)
+        path.chmod(0o755)
+
+    student_home = tmp_path / "student-home"
+    student_scratch = tmp_path / "student-scratch"
+    student_home.mkdir()
+    student_scratch.mkdir()
+    env = os.environ.copy()
+    env["HOME"] = str(student_home)
+    env["SCRATCH"] = str(student_scratch)
+    env["PATH"] = f"{fake_bin}:{env['PATH']}"
+    env["SLURM_LOG"] = str(slurm_log)
+
+    wrappers = (
+        "install-verifiers.sh",
+        "install-vllm.sh",
+        "prepare-model.sh",
+        "run-interactive.sh",
+        "submit-smoke-test.sh",
+    )
+    for wrapper in wrappers:
+        subprocess.run(
+            [str(bundle / "scripts" / wrapper), str(config)],
+            check=True,
+            capture_output=True,
+            text=True,
+            env=env,
+        )
+
+    requests = slurm_log.read_text()
+    assert requests.count("\n") == len(wrappers)
+    assert requests.count("--partition=compute") == 2
+    assert requests.count("--partition=gpu-l40s") == 3
+    assert "--pty" in requests
+    assert "--account" not in requests
+    assert "--qos" not in requests
+    assert "/Users/" not in requests
+    assert "jarvis-password" not in requests
+
+
 def test_jarvis_guide_has_exact_qwen_starting_profile() -> None:
     guide = (JARVIS / "README.md").read_text()
     env_text = (JARVIS / "config" / "jarvis.env.example").read_text()
@@ -243,3 +306,23 @@ def test_jarvis_bundle_has_no_personal_paths() -> None:
             text = path.read_text(errors="replace")
             assert "/Users/" not in text
             assert "Saachi" not in text
+
+
+def test_jarvis_guide_requires_portable_full_ssh_command() -> None:
+    guide = (JARVIS / "README.md").read_text()
+    full_command = "ssh YOUR_STEVENS_USERNAME@jarvis.stevens.edu"
+    assert guide.count(full_command) >= 3
+    assert "\njarvis\n" not in guide
+    assert "\nssh jarvis\n" not in guide
+    assert "Host jarvis" not in guide
+    assert "id_ed25519" not in guide
+
+
+def test_jarvis_guide_hands_off_to_current_interactive_agent() -> None:
+    guide = (JARVIS / "README.md").read_text()
+    assert "../README.md#interactive-agent-usage" in guide
+    assert "start a policy draft" in guide
+    assert "show the draft" in guide
+    assert "author this" in guide
+    assert "Nothing after this point is Jarvis-specific." in guide
+    assert "AutoCedar needs a plain-text or Markdown file" not in guide

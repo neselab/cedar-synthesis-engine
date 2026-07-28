@@ -11,7 +11,7 @@ require_value AUTOCEDAR_VLLM_ENV
 load_gpu_module
 
 export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
-command -v uv >/dev/null 2>&1 || fail "uv is not installed. Complete README step 5 first."
+command -v uv >/dev/null 2>&1 || fail "uv is not installed. Complete README step 4 first."
 command -v nvidia-smi >/dev/null 2>&1 || fail "nvidia-smi is unavailable in this GPU job."
 nvidia-smi --query-gpu=name,memory.total --format=csv,noheader
 

@@ -64,7 +64,7 @@ export CEDAR="${CEDAR:-$HOME/.cargo/bin/cedar}"
 export CVC5="${CVC5:-$HOME/.local/bin/cvc5}"
 configure_huggingface_paths
 
-command -v autocedar >/dev/null 2>&1 || fail "autocedar is not installed. Complete README step 5 first."
+command -v autocedar >/dev/null 2>&1 || fail "autocedar is not installed. Complete README step 4 first."
 command -v curl >/dev/null 2>&1 || fail "curl is required on the GPU node."
 command -v nvidia-smi >/dev/null 2>&1 || fail "nvidia-smi is unavailable in this GPU job."
 VLLM_BIN="$AUTOCEDAR_VLLM_ENV/bin/vllm"
