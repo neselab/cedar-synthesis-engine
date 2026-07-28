@@ -8,6 +8,9 @@ versioning while the public provider and CLI interfaces stabilize.
 - Added a maintained Qwen3.6 FP8 setup path for Stevens Jarvis, including
   secure Hugging Face cache separation, a CPU model-preparation job, and real
   chat/JSON-schema model smoke checks.
+- Made the Jarvis student configuration ready to copy with the documented
+  `compute`/`gpu-l40s` defaults and added a no-allocation preflight that checks
+  each user's live Slurm access, CUDA module, and model storage.
 
 ## 0.2.0 - 2026-07-14
 
