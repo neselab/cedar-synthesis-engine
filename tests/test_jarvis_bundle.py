@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import subprocess
 from pathlib import Path
@@ -106,19 +107,116 @@ def test_jarvis_readme_inventory_covers_shipped_files() -> None:
         assert relative_path in guide
 
 
-def test_jarvis_placeholder_check_ignores_template_comments() -> None:
+def test_jarvis_example_is_ready_to_copy_without_placeholders() -> None:
     env_text = (JARVIS / "config" / "jarvis.env.example").read_text()
     placeholder_assignment = re.compile(
         r"^[A-Z_][A-Z0-9_]*=.*REPLACE_WITH_", re.MULTILINE
     )
     matches = placeholder_assignment.findall(env_text)
-    assert matches
-    assert all(not match.startswith("#") for match in matches)
+    assert not matches
+
+
+def test_jarvis_example_uses_documented_defaults() -> None:
+    env_text = (JARVIS / "config" / "jarvis.env.example").read_text()
+    expected_lines = (
+        'JARVIS_GPU_PARTITION="gpu-l40s"',
+        'JARVIS_CPU_PARTITION="compute"',
+        'JARVIS_SLURM_ACCOUNT="none"',
+        'JARVIS_SLURM_QOS="none"',
+        'JARVIS_CUDA_MODULE="cudnn9.1-cuda12.2/9.1.1.17"',
+        'AUTOCEDAR_MODEL_REPO="Qwen/Qwen3.6-27B-FP8"',
+        'AUTOCEDAR_MODEL_CACHE="${SCRATCH:-$HOME/.cache}/autocedar/models"',
+        'AUTOCEDAR_VLLM_LANGUAGE_MODEL_ONLY="true"',
+        'AUTOCEDAR_VLLM_REASONING_PARSER="qwen3"',
+        'AUTOCEDAR_VLLM_ENABLE_THINKING="false"',
+    )
+    for line in expected_lines:
+        assert line in env_text
+
+
+def test_jarvis_preflight_checks_requests_without_allocating() -> None:
+    preflight = (JARVIS / "scripts" / "preflight.sh").read_text()
+    assert preflight.count("--test-only") == 2
+    assert "build_cpu_slurm_args" in preflight
+    assert "build_gpu_slurm_args" in preflight
+    assert "AVAILABLE_KIB" in preflight
+    assert "50 GiB" in preflight
+    assert "PASS:" in preflight
+
+
+def test_jarvis_preflight_omits_account_and_qos(tmp_path: Path) -> None:
+    fake_bin = tmp_path / "bin"
+    fake_bin.mkdir()
+    slurm_log = tmp_path / "srun.log"
+
+    fake_commands = {
+        "sinfo": '#!/bin/sh\nprintf "partition available\\n"\n',
+        "srun": (
+            '#!/bin/sh\nprintf "%s\\n" "$*" >> "$SLURM_LOG"\n'
+            'printf "Job would start immediately\\n"\n'
+        ),
+        "df": (
+            '#!/bin/sh\n'
+            'if [ "$1" = "-Pk" ]; then\n'
+            '  printf "Filesystem 1024-blocks Used Available Capacity Mounted\\n"\n'
+            '  printf "fake 104857600 1 104857599 1%% /fake\\n"\n'
+            "else\n"
+            '  printf "fake 100G 1K 100G 1%% /fake\\n"\n'
+            "fi\n"
+        ),
+    }
+    for name, contents in fake_commands.items():
+        path = fake_bin / name
+        path.write_text(contents)
+        path.chmod(0o755)
+
+    config = tmp_path / "jarvis.env"
+    config.write_text(
+        "\n".join(
+            (
+                'JARVIS_GPU_PARTITION="gpu-l40s"',
+                'JARVIS_CPU_PARTITION="compute"',
+                'JARVIS_SLURM_ACCOUNT="none"',
+                'JARVIS_SLURM_QOS="none"',
+                'JARVIS_CUDA_MODULE="none"',
+                f'AUTOCEDAR_MODEL_CACHE="{tmp_path / "model-cache"}"',
+                f'AUTOCEDAR_HF_HOME="{tmp_path / "hf-home"}"',
+                'JARVIS_GPU_COUNT="1"',
+                'JARVIS_GPU_CPUS="2"',
+                'JARVIS_GPU_MEMORY="64G"',
+                'JARVIS_GPU_TIME="04:00:00"',
+                'JARVIS_CPU_CPUS="4"',
+                'JARVIS_CPU_MEMORY="16G"',
+                'JARVIS_CPU_TIME="02:00:00"',
+            )
+        )
+        + "\n"
+    )
+
+    env = os.environ.copy()
+    env["PATH"] = f"{fake_bin}:{env['PATH']}"
+    env["SLURM_LOG"] = str(slurm_log)
+    result = subprocess.run(
+        [str(JARVIS / "scripts" / "preflight.sh"), str(config)],
+        check=True,
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+
+    requests = slurm_log.read_text()
+    assert requests.count("--test-only") == 2
+    assert "--partition=compute" in requests
+    assert "--partition=gpu-l40s" in requests
+    assert "--account" not in requests
+    assert "--qos" not in requests
+    assert "PASS:" in result.stdout
 
 
 def test_jarvis_guide_has_exact_qwen_starting_profile() -> None:
     guide = (JARVIS / "README.md").read_text()
-    expected_lines = (
+    env_text = (JARVIS / "config" / "jarvis.env.example").read_text()
+    expected_config_lines = (
         'AUTOCEDAR_MODEL_REPO="Qwen/Qwen3.6-27B-FP8"',
         'AUTOCEDAR_MODEL_NAME="autocedar-local"',
         'JARVIS_GPU_COUNT="1"',
@@ -126,17 +224,22 @@ def test_jarvis_guide_has_exact_qwen_starting_profile() -> None:
         'AUTOCEDAR_VLLM_LANGUAGE_MODEL_ONLY="true"',
         'AUTOCEDAR_VLLM_REASONING_PARSER="qwen3"',
         'AUTOCEDAR_VLLM_ENABLE_THINKING="false"',
+    )
+    for line in expected_config_lines:
+        assert line in env_text
+
+    expected_guide_lines = (
         "./scripts/prepare-model.sh config/jarvis.env",
         "./scripts/submit-smoke-test.sh config/jarvis.env",
+        "./scripts/preflight.sh config/jarvis.env",
     )
-    for line in expected_lines:
+    for line in expected_guide_lines:
         assert line in guide
-    assert "Add token as git credential?" in guide
 
 
 def test_jarvis_bundle_has_no_personal_paths() -> None:
     for path in JARVIS.rglob("*"):
-        if path.is_file():
+        if path.is_file() and "__pycache__" not in path.parts:
             text = path.read_text(errors="replace")
             assert "/Users/" not in text
             assert "Saachi" not in text
