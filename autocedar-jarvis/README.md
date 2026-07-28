@@ -65,6 +65,11 @@ Replace `YOUR_STEVENS_USERNAME` with your own username. Enter your Stevens
 password if SSH asks for it. A Jarvis prompt usually contains a login-node name
 such as `l001` or `l002`.
 
+Important: a new student does not have a `jarvis` command. Do not type
+`jarvis` by itself. Always use the full
+`ssh YOUR_STEVENS_USERNAME@jarvis.stevens.edu` command. This setup does not
+depend on another person's laptop, username, SSH alias, or SSH key.
+
 Confirm where you are:
 
 ```bash
@@ -326,28 +331,6 @@ scancel JOB_ID
 
 Run `exit` to leave Jarvis. If you first land back on a login node from an
 interactive compute node, run `exit` a second time to return to your laptop.
-
-## Optional: make SSH shorter
-
-First confirm the full SSH command works. Then, on your laptop—not on
-Jarvis—add this to `~/.ssh/config`, replacing the username:
-
-```sshconfig
-Host jarvis
-  HostName jarvis.stevens.edu
-  User YOUR_STEVENS_USERNAME
-  ServerAliveInterval 30
-  ServerAliveCountMax 4
-```
-
-After that, the login command is:
-
-```bash
-ssh jarvis
-```
-
-This shortcut may still ask for your Stevens password. That is normal. SSH key
-setup is optional and is not needed to use AutoCedar.
 
 ## Why this Qwen configuration is used (you may skip this section)
 
