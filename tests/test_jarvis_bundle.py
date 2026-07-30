@@ -51,6 +51,87 @@ def test_jarvis_installs_qwen_compatible_vllm_version() -> None:
     assert 'bin/hf" --version' not in installer
 
 
+def test_jarvis_handles_cuda_122_with_newer_gcc(tmp_path: Path) -> None:
+    fake_bin = tmp_path / "bin"
+    fake_bin.mkdir()
+    commands = {
+        "nvcc": (
+            "#!/bin/sh\n"
+            'printf "Cuda compilation tools, release 12.2, V12.2.140\\n"\n'
+        ),
+        "gcc": (
+            "#!/bin/sh\n"
+            'if [ "$1" = "-dumpfullversion" ]; then\n'
+            '  printf "13.2.1\\n"\n'
+            "fi\n"
+        ),
+    }
+    for name, contents in commands.items():
+        path = fake_bin / name
+        path.write_text(contents)
+        path.chmod(0o755)
+
+    script = (
+        f'source "{JARVIS / "scripts" / "_common.sh"}"\n'
+        "configure_cuda_122_host_compiler\n"
+        'printf "NVCC_FLAGS=%s\\n" "$NVCC_PREPEND_FLAGS"\n'
+    )
+    env = os.environ.copy()
+    env["PATH"] = f"{fake_bin}:/usr/bin:/bin"
+    env.pop("NVCC_PREPEND_FLAGS", None)
+    result = subprocess.run(
+        ["bash", "-c", script],
+        check=True,
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+
+    assert "CUDA 12.2 detected with GCC 13.2.1" in result.stdout
+    assert "NVCC_FLAGS=-allow-unsupported-compiler" in result.stdout
+
+
+def test_jarvis_does_not_override_supported_cuda_122_gcc(tmp_path: Path) -> None:
+    fake_bin = tmp_path / "bin"
+    fake_bin.mkdir()
+    commands = {
+        "nvcc": (
+            "#!/bin/sh\n"
+            'printf "Cuda compilation tools, release 12.2, V12.2.140\\n"\n'
+        ),
+        "gcc": (
+            "#!/bin/sh\n"
+            'if [ "$1" = "-dumpfullversion" ]; then\n'
+            '  printf "12.2.0\\n"\n'
+            "fi\n"
+        ),
+    }
+    for name, contents in commands.items():
+        path = fake_bin / name
+        path.write_text(contents)
+        path.chmod(0o755)
+
+    script = (
+        f'source "{JARVIS / "scripts" / "_common.sh"}"\n'
+        "configure_cuda_122_host_compiler\n"
+        'printf "NVCC_FLAGS=%s\\n" "${NVCC_PREPEND_FLAGS:-}"\n'
+    )
+    env = os.environ.copy()
+    env["PATH"] = f"{fake_bin}:/usr/bin:/bin"
+    env.pop("NVCC_PREPEND_FLAGS", None)
+    result = subprocess.run(
+        ["bash", "-c", script],
+        check=True,
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+
+    assert "compatibility override" not in result.stdout
+    assert "NVCC_FLAGS=" in result.stdout
+    assert "-allow-unsupported-compiler" not in result.stdout
+
+
 def test_jarvis_launcher_builds_only_typed_model_specific_flags() -> None:
     launcher = (JARVIS / "scripts" / "run-on-node.sh").read_text()
     assert "--language-model-only" in launcher

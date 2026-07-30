@@ -9,6 +9,7 @@ load_config "${1:-}"
 require_slurm_job
 require_value AUTOCEDAR_VLLM_ENV
 load_gpu_module
+configure_cuda_122_host_compiler
 
 export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
 command -v uv >/dev/null 2>&1 || fail "uv is not installed. Complete README step 4 first."

@@ -59,6 +59,7 @@ if [[ "$AUTOCEDAR_MODEL_REPO" == /* && "$AUTOCEDAR_MODEL_REVISION" != "none" ]];
 fi
 
 load_gpu_module
+configure_cuda_122_host_compiler
 export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
 export CEDAR="${CEDAR:-$HOME/.cargo/bin/cedar}"
 export CVC5="${CVC5:-$HOME/.local/bin/cvc5}"
