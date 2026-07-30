@@ -350,6 +350,7 @@ technical settings. Ask the project maintainer to update the configuration.
 | Preflight says a partition is unavailable | Send the full preflight output to your supervisor or Stevens Research Computing. |
 | `Invalid account or account/partition combination` | Jarvis has not connected your username to the requested computer group. Send the full error to Stevens Research Computing; do not guess an account name. |
 | CUDA/cuDNN module is not found | Ask Stevens Research Computing for the module replacing `cudnn9.1-cuda12.2/9.1.1.17`, edit `JARVIS_CUDA_MODULE`, and rerun preflight. |
+| vLLM reports `unsupported GNU version` | Update the launcher with `cd ~/cedar-synthesis-engine && git pull --ff-only`, then rerun the smoke test. The launcher now applies CUDA 12.2's documented host-compiler override automatically when Jarvis supplies GCC 13 or newer. |
 | Model cache has less than 50 GiB or download hits quota | Set `AUTOCEDAR_MODEL_CACHE` to a larger absolute scratch/project path and rerun preflight. |
 | Job says `queued and waiting for resources` | Nothing is broken. Wait, or check with `squeue -u "$USER"`. |
 | vLLM exits while loading | Read `logs/vllm-JOB_ID.log`. Check the first error, not only the last line. |
