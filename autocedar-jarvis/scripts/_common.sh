@@ -121,32 +121,6 @@ load_gpu_module() {
   module load "$JARVIS_CUDA_MODULE"
 }
 
-configure_cuda_122_host_compiler() {
-  command -v nvcc >/dev/null 2>&1 || fail \
-    "nvcc is unavailable after loading the CUDA module."
-  command -v gcc >/dev/null 2>&1 || fail \
-    "gcc is unavailable after loading the CUDA module."
-
-  local cuda_release
-  local gcc_version
-  local gcc_major
-  cuda_release="$(nvcc --version | sed -nE 's/.*release ([0-9]+\.[0-9]+).*/\1/p' | head -n 1)"
-  gcc_version="$(gcc -dumpfullversion -dumpversion)"
-  gcc_major="${gcc_version%%.*}"
-
-  if [[ "$cuda_release" == "12.2" ]] && \
-    [[ "$gcc_major" =~ ^[0-9]+$ ]] && (( gcc_major > 12 )); then
-    case " ${NVCC_PREPEND_FLAGS:-} " in
-      *" -allow-unsupported-compiler "*) ;;
-      *)
-        export NVCC_PREPEND_FLAGS="-allow-unsupported-compiler${NVCC_PREPEND_FLAGS:+ $NVCC_PREPEND_FLAGS}"
-        ;;
-    esac
-    printf 'CUDA 12.2 detected with GCC %s; enabling the NVIDIA host-compiler compatibility override.\n' \
-      "$gcc_version"
-  fi
-}
-
 require_slurm_job() {
   [[ -n "${SLURM_JOB_ID:-}" ]] || fail \
     "This helper must run inside a Slurm job. Use the wrapper command from README.md."
