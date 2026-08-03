@@ -107,6 +107,20 @@ def test_jarvis_smoke_invokes_generation_helper_without_key_argument() -> None:
     assert "--smoke-test" in batch
 
 
+def test_jarvis_smoke_wrapper_waits_and_prints_the_right_log() -> None:
+    wrapper = (JARVIS / "scripts" / "submit-smoke-test.sh").read_text()
+    guide = (JARVIS / "README.md").read_text()
+
+    assert "--parsable" in wrapper
+    assert 'job_id="${submission%%;*}"' in wrapper
+    assert 'squeue --noheader --user="$USER"' in wrapper
+    assert 'cat "$output_file"' in wrapper
+    assert "SUCCESS: AutoCedar can talk to the local Qwen model." in wrapper
+    assert "replace `12345`" not in guide
+    assert "cat logs/autocedar-smoke-12345.out" not in guide
+    assert "You do **not** need to copy the job number" in guide
+
+
 def test_jarvis_readme_inventory_covers_shipped_files() -> None:
     guide = (JARVIS / "README.md").read_text()
     tracked = subprocess.run(
@@ -247,13 +261,17 @@ def test_jarvis_wrappers_work_from_a_fresh_user_home(tmp_path: Path) -> None:
         "#!/bin/sh\n"
         'printf "%s %s\\n" "$(basename "$0")" "$*" >> "$SLURM_LOG"\n'
         'if [ "$(basename "$0")" = "sbatch" ]; then\n'
-        '  printf "Submitted batch job 12345\\n"\n'
+        '  printf "Smoke test passed.\\n" > "$FAKE_SMOKE_OUTPUT"\n'
+        '  printf "12345\\n"\n'
         "fi\n"
     )
     for name in ("srun", "sbatch"):
         path = fake_bin / name
         path.write_text(fake_slurm)
         path.chmod(0o755)
+    squeue = fake_bin / "squeue"
+    squeue.write_text("#!/bin/sh\nexit 0\n")
+    squeue.chmod(0o755)
 
     student_home = tmp_path / "student-home"
     student_scratch = tmp_path / "student-scratch"
@@ -264,6 +282,9 @@ def test_jarvis_wrappers_work_from_a_fresh_user_home(tmp_path: Path) -> None:
     env["SCRATCH"] = str(student_scratch)
     env["PATH"] = f"{fake_bin}:{env['PATH']}"
     env["SLURM_LOG"] = str(slurm_log)
+    env["FAKE_SMOKE_OUTPUT"] = str(
+        bundle / "logs" / "autocedar-smoke-12345.out"
+    )
 
     wrappers = (
         "install-verifiers.sh",

@@ -201,34 +201,34 @@ Qwen3.6-27B-FP8 is public and does not require a Hugging Face account or token.
 
 ### 6. Test everything
 
-Submit the smoke test:
+Run this one command:
 
 ```bash
 ./scripts/submit-smoke-test.sh config/jarvis.env
 ```
 
-Slurm will print something like:
+Then leave the terminal open. The command does everything else for you:
+
+- submits the test to Slurm;
+- prints the job number that Slurm creates;
+- waits while the job is `PENDING` or `RUNNING`; and
+- prints the complete test output when the job finishes.
+
+You do **not** need to copy the job number, run `squeue`, replace `JOB_ID`, or
+find a log file yourself. Waiting for a GPU can take time. A `PENDING` message
+means the job is waiting its turn; it does not mean the command is broken.
+
+A successful run ends with this line:
 
 ```text
-Submitted batch job 12345
+SUCCESS: AutoCedar can talk to the local Qwen model.
 ```
 
-`12345` is the automatically assigned job ID. Check it with:
-
-```bash
-squeue -u "$USER"
-```
-
-When that job disappears from the queue, replace `12345` below with the real
-job ID:
-
-```bash
-cat logs/autocedar-smoke-12345.out
-```
-
-The output contains two generation tests. Both must say `OK`. This proves that
-AutoCedar can talk to the local Qwen setup. It does not prove that a policy is
-correct; a person must still review the meaning.
+The output also contains two generation tests. Both must say `OK`. If the test
+does not pass, the command prints the exact two log-file paths to send to your
+supervisor. Do not send a password or token. This test proves that AutoCedar
+can talk to the local Qwen setup. It does not prove that a policy is correct;
+a person must still review the meaning.
 
 ## Every time you use AutoCedar
 
@@ -354,7 +354,7 @@ technical settings. Ask the project maintainer to update the configuration.
 | vLLM reports `unsupported GNU version`, `_Float32` errors, or an error compiling `flashinfer/.../renorm.cu` | Pull the latest code, rerun `./scripts/install-vllm.sh config/jarvis.env`, and submit the smoke test again. The launcher disables FlashInfer's optional sampler and uses vLLM's built-in PyTorch sampler, which does not compile that CUDA file. |
 | Model cache has less than 50 GiB or download hits quota | Set `AUTOCEDAR_MODEL_CACHE` to a larger absolute scratch/project path and rerun preflight. |
 | Job says `queued and waiting for resources` | Nothing is broken. Wait, or check with `squeue -u "$USER"`. |
-| vLLM exits while loading | Read `logs/vllm-JOB_ID.log`. Check the first error, not only the last line. |
+| vLLM exits while loading | The smoke-test command prints the exact vLLM log-file path. Send that file to your supervisor, or read it and check the first error rather than only the last line. |
 | GPU out of memory | Set `AUTOCEDAR_MAX_MODEL_LEN="16384"` in `config/jarvis.env` and retry. If it still fails, send the vLLM log file to your supervisor. |
 | Smoke output does not contain both `OK` lines | Confirm the Qwen defaults were not changed, rerun `install-vllm.sh`, and repeat the smoke test. |
 | `autocedar doctor` reports Cedar/CVC5 failure | Rerun `install-verifiers.sh` and keep its complete output. |
