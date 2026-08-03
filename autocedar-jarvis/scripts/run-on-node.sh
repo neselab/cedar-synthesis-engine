@@ -59,10 +59,14 @@ if [[ "$AUTOCEDAR_MODEL_REPO" == /* && "$AUTOCEDAR_MODEL_REVISION" != "none" ]];
 fi
 
 load_gpu_module
-configure_cuda_122_host_compiler
 export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
 export CEDAR="${CEDAR:-$HOME/.cargo/bin/cedar}"
 export CVC5="${CVC5:-$HOME/.local/bin/cvc5}"
+# Jarvis currently exposes CUDA 12.2 with GCC 13. FlashInfer's sampler tries
+# to JIT-compile CUDA code with that unsupported pairing and fails in glibc's
+# _Float32 declarations. vLLM supports disabling only this sampler and then
+# uses its PyTorch-native top-k/top-p implementation instead.
+export VLLM_USE_FLASHINFER_SAMPLER="0"
 configure_huggingface_paths
 
 command -v autocedar >/dev/null 2>&1 || fail "autocedar is not installed. Complete README step 4 first."

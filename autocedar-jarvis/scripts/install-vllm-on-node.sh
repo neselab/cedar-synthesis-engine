@@ -9,7 +9,6 @@ load_config "${1:-}"
 require_slurm_job
 require_value AUTOCEDAR_VLLM_ENV
 load_gpu_module
-configure_cuda_122_host_compiler
 
 export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
 command -v uv >/dev/null 2>&1 || fail "uv is not installed. Complete README step 4 first."
@@ -25,6 +24,7 @@ uv pip install \
   "vllm>=0.19.0" \
   "huggingface-hub>=0.34.0" \
   "jinja2>=3.1.0" \
+  "ninja>=1.11.0" \
   --torch-backend=auto
 
 "$AUTOCEDAR_VLLM_ENV/bin/vllm" --version
