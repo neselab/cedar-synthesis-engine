@@ -332,6 +332,8 @@ The Qwen settings also:
 
 - do not load image features that AutoCedar does not use;
 - tell vLLM how to read Qwen's output; and
+- limit simultaneous sequences to `128` so the model's Mamba cache fits on the
+  L40S; and
 - turn off extra internal thinking that can use up the answer length before
   AutoCedar receives the JSON it needs.
 
@@ -352,6 +354,7 @@ technical settings. Ask the project maintainer to update the configuration.
 | CUDA/cuDNN module is not found | Ask Stevens Research Computing for the module replacing `cudnn9.1-cuda12.2/9.1.1.17`, edit `JARVIS_CUDA_MODULE`, and rerun preflight. |
 | Installation says `ninja` is missing | Pull the latest code, then rerun `./scripts/install-vllm.sh config/jarvis.env`. The installer now includes `ninja`. |
 | vLLM reports `unsupported GNU version`, `_Float32` errors, or an error compiling `flashinfer/.../renorm.cu` | Pull the latest code, rerun `./scripts/install-vllm.sh config/jarvis.env`, and submit the smoke test again. The launcher disables FlashInfer's optional sampler and uses vLLM's built-in PyTorch sampler, which does not compile that CUDA file. |
+| `max_num_seqs` exceeds available Mamba cache blocks | Pull the latest code and submit the smoke test again. The launcher now uses `128`, below the `181` blocks observed on the Jarvis L40S. Existing `config/jarvis.env` files receive this safe default automatically. |
 | Model cache has less than 50 GiB or download hits quota | Set `AUTOCEDAR_MODEL_CACHE` to a larger absolute scratch/project path and rerun preflight. |
 | Job says `queued and waiting for resources` | Nothing is broken. Wait, or check with `squeue -u "$USER"`. |
 | vLLM exits while loading | The smoke-test command prints the exact vLLM log-file path. Send that file to your supervisor, or read it and check the first error rather than only the last line. |

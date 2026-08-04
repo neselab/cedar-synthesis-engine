@@ -69,6 +69,8 @@ def test_jarvis_avoids_flashinfer_sampler_cuda_jit() -> None:
 
 def test_jarvis_launcher_builds_only_typed_model_specific_flags() -> None:
     launcher = (JARVIS / "scripts" / "run-on-node.sh").read_text()
+    assert 'AUTOCEDAR_MAX_NUM_SEQS="${AUTOCEDAR_MAX_NUM_SEQS:-128}"' in launcher
+    assert '--max-num-seqs "$AUTOCEDAR_MAX_NUM_SEQS"' in launcher
     assert "--language-model-only" in launcher
     assert '--reasoning-parser "$AUTOCEDAR_VLLM_REASONING_PARSER"' in launcher
     assert "--default-chat-template-kwargs" in launcher
@@ -321,6 +323,7 @@ def test_jarvis_guide_has_exact_qwen_starting_profile() -> None:
         'AUTOCEDAR_MODEL_NAME="autocedar-local"',
         'JARVIS_GPU_COUNT="1"',
         'AUTOCEDAR_MAX_MODEL_LEN="32768"',
+        'AUTOCEDAR_MAX_NUM_SEQS="128"',
         'AUTOCEDAR_VLLM_LANGUAGE_MODEL_ONLY="true"',
         'AUTOCEDAR_VLLM_REASONING_PARSER="qwen3"',
         'AUTOCEDAR_VLLM_ENABLE_THINKING="false"',
