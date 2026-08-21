@@ -195,8 +195,10 @@ def _llm_check(config: ResolvedProviderConfig | None = None) -> DoctorCheck:
                     f"is not advertised; available: {', '.join(models)}"
                 ),
                 fix=(
-                    "run `autocedar config --provider local --model MODEL` with an "
-                    "advertised model, or restart the server with the expected name"
+                    "confirm that the intended server owns this endpoint (a shared "
+                    "machine may already have another server on that port), then run "
+                    "`autocedar config --provider local --model MODEL` with an "
+                    "advertised model or restart the intended server"
                 ),
             )
         return DoctorCheck(

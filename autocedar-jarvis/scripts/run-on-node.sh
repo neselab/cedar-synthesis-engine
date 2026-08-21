@@ -73,7 +73,6 @@ export VLLM_USE_FLASHINFER_SAMPLER="0"
 configure_huggingface_paths
 
 command -v autocedar >/dev/null 2>&1 || fail "autocedar is not installed. Complete README step 4 first."
-command -v curl >/dev/null 2>&1 || fail "curl is required on the GPU node."
 command -v nvidia-smi >/dev/null 2>&1 || fail "nvidia-smi is unavailable in this GPU job."
 VLLM_BIN="$AUTOCEDAR_VLLM_ENV/bin/vllm"
 VLLM_PYTHON="$AUTOCEDAR_VLLM_ENV/bin/python"
@@ -85,10 +84,26 @@ VLLM_LOG="$BUNDLE_ROOT/logs/vllm-${SLURM_JOB_ID}.log"
 : >"$VLLM_LOG"
 chmod 600 "$VLLM_LOG"
 LOCAL_API_KEY="$($VLLM_PYTHON -c 'import secrets; print(secrets.token_urlsafe(32))')"
+PREFERRED_MODEL_PORT="$AUTOCEDAR_MODEL_PORT"
+AUTOCEDAR_MODEL_PORT="$(
+  "$VLLM_PYTHON" "$SCRIPT_DIR/select_port.py" \
+    --preferred "$PREFERRED_MODEL_PORT" \
+    --job-id "$SLURM_JOB_ID"
+)" || fail "Could not choose a free loopback port for this model-server job."
 LOCAL_BASE_URL="http://127.0.0.1:${AUTOCEDAR_MODEL_PORT}/v1"
 # vLLM supports VLLM_API_KEY directly. Keep the per-job secret out of the
 # process argument list, which can be visible to other users on a shared node.
 export VLLM_API_KEY="$LOCAL_API_KEY"
+export AUTOCEDAR_PROVIDER="local"
+export AUTOCEDAR_LOCAL_BASE_URL="$LOCAL_BASE_URL"
+export AUTOCEDAR_LOCAL_API_KEY="$LOCAL_API_KEY"
+export AUTOCEDAR_LOCAL_MODEL="$AUTOCEDAR_MODEL_NAME"
+export AUTOCEDAR_LOCAL_MAX_TOKENS
+export AUTOCEDAR_LOCAL_TIMEOUT_SECONDS
+export AUTOCEDAR_LOCAL_STRUCTURED_OUTPUT
+export AUTOCEDAR_MODEL="$AUTOCEDAR_MODEL_NAME"
+export AUTOCEDAR_AUTHOR_MODEL="$AUTOCEDAR_MODEL_NAME"
+export AUTOCEDAR_CHAT_MODEL="$AUTOCEDAR_MODEL_NAME"
 
 VLLM_COMMAND=(
   "$VLLM_BIN" serve "$AUTOCEDAR_MODEL_REPO"
@@ -147,7 +162,12 @@ trap 'exit 143' TERM
 
 printf 'GPU node: %s\n' "$(hostname)"
 nvidia-smi --query-gpu=name,memory.total --format=csv,noheader
+if [[ "$AUTOCEDAR_MODEL_PORT" != "$PREFERRED_MODEL_PORT" ]]; then
+  printf 'Port %s is already in use on this shared node; using private job port %s instead.\n' \
+    "$PREFERRED_MODEL_PORT" "$AUTOCEDAR_MODEL_PORT"
+fi
 printf 'Starting local model %s...\n' "$AUTOCEDAR_MODEL_REPO"
+printf 'Local endpoint for this job: %s\n' "$LOCAL_BASE_URL"
 printf 'vLLM log: %s\n' "$VLLM_LOG"
 "${VLLM_COMMAND[@]}" >"$VLLM_LOG" 2>&1 &
 VLLM_PID=$!
@@ -156,16 +176,17 @@ unset VLLM_API_KEY
 deadline=$((SECONDS + AUTOCEDAR_STARTUP_TIMEOUT_SECONDS))
 ready="false"
 while (( SECONDS < deadline )); do
-  # Pass the temporary key over stdin so it never appears in curl's argv.
-  if printf '%s\n' "header = \"Authorization: Bearer $LOCAL_API_KEY\"" | \
-    curl -fsS --config - "$LOCAL_BASE_URL/models" >/dev/null; then
-    ready="true"
-    break
-  fi
   if ! kill -0 "$VLLM_PID" 2>/dev/null; then
     printf 'vLLM exited before becoming ready. Last log lines:\n' >&2
     tail -n 80 "$VLLM_LOG" >&2 || true
     fail "Local model server failed to start."
+  fi
+  # A shared node may already have another user's server. Readiness therefore
+  # requires this job's expected served-model name, not merely any HTTP 200.
+  if "$VLLM_PYTHON" "$SCRIPT_DIR/model_smoke.py" --readiness-check \
+    >/dev/null 2>&1; then
+    ready="true"
+    break
   fi
   printf 'Model is still loading; checking again in 5 seconds...\n'
   sleep 5
@@ -174,17 +195,6 @@ if [[ "$ready" != "true" ]]; then
   tail -n 80 "$VLLM_LOG" >&2 || true
   fail "Model server did not become ready within $AUTOCEDAR_STARTUP_TIMEOUT_SECONDS seconds."
 fi
-
-export AUTOCEDAR_PROVIDER="local"
-export AUTOCEDAR_LOCAL_BASE_URL="$LOCAL_BASE_URL"
-export AUTOCEDAR_LOCAL_API_KEY="$LOCAL_API_KEY"
-export AUTOCEDAR_LOCAL_MODEL="$AUTOCEDAR_MODEL_NAME"
-export AUTOCEDAR_LOCAL_MAX_TOKENS
-export AUTOCEDAR_LOCAL_TIMEOUT_SECONDS
-export AUTOCEDAR_LOCAL_STRUCTURED_OUTPUT
-export AUTOCEDAR_MODEL="$AUTOCEDAR_MODEL_NAME"
-export AUTOCEDAR_AUTHOR_MODEL="$AUTOCEDAR_MODEL_NAME"
-export AUTOCEDAR_CHAT_MODEL="$AUTOCEDAR_MODEL_NAME"
 
 printf 'Local model server is ready. Running AutoCedar doctor...\n'
 autocedar doctor

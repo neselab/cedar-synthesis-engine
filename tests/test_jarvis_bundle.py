@@ -1,15 +1,24 @@
 from __future__ import annotations
 
+import importlib.util
 import json
 import os
 import re
 import shutil
+import socket
 import subprocess
+import sys
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
 JARVIS = ROOT / "autocedar-jarvis"
+PORT_SCRIPT = JARVIS / "scripts" / "select_port.py"
+PORT_SPEC = importlib.util.spec_from_file_location("jarvis_select_port", PORT_SCRIPT)
+assert PORT_SPEC is not None and PORT_SPEC.loader is not None
+select_port_module = importlib.util.module_from_spec(PORT_SPEC)
+sys.modules[PORT_SPEC.name] = select_port_module
+PORT_SPEC.loader.exec_module(select_port_module)
 
 
 def test_jarvis_shell_files_parse() -> None:
@@ -36,10 +45,149 @@ def test_jarvis_example_settings_match_default_launcher_values() -> None:
     )
 
 
-def test_jarvis_readiness_key_is_not_passed_in_curl_argv() -> None:
+def test_jarvis_readiness_requires_this_jobs_model_without_key_in_argv() -> None:
     launcher = (JARVIS / "scripts" / "run-on-node.sh").read_text()
-    assert '-H "Authorization: Bearer $LOCAL_API_KEY"' not in launcher
-    assert 'curl -fsS --config - "$LOCAL_BASE_URL/models"' in launcher
+    assert '"$SCRIPT_DIR/model_smoke.py" --readiness-check' in launcher
+    assert '"$SCRIPT_DIR/select_port.py"' in launcher
+    assert "curl" not in launcher
+    assert "--api-key" not in launcher
+
+
+def test_jarvis_port_selector_keeps_a_free_preferred_port() -> None:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as temporary:
+        temporary.bind(("127.0.0.1", 0))
+        preferred = temporary.getsockname()[1]
+    assert select_port_module.select_port(preferred, 12345) == preferred
+
+
+def test_jarvis_port_selector_avoids_an_occupied_shared_port() -> None:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as occupied:
+        occupied.bind(("127.0.0.1", 0))
+        occupied.listen()
+        preferred = occupied.getsockname()[1]
+        selected = select_port_module.select_port(preferred, 1104639)
+
+    assert selected != preferred
+    assert 20_000 <= selected <= 59_999
+
+
+def test_run_on_node_isolates_autocedar_from_an_occupied_shared_port(
+    tmp_path: Path,
+) -> None:
+    bundle = tmp_path / "autocedar-jarvis"
+    shutil.copytree(
+        JARVIS,
+        bundle,
+        ignore=shutil.ignore_patterns("__pycache__", "logs", "jarvis.env"),
+    )
+    fake_bin = tmp_path / "bin"
+    fake_bin.mkdir()
+    capture = tmp_path / "autocedar-environment.txt"
+
+    autocedar = fake_bin / "autocedar"
+    autocedar.write_text(
+        "#!/bin/sh\n"
+        'printf "%s|%s|%s|%s\\n" "${1:-interactive}" '
+        '"$AUTOCEDAR_PROVIDER" "$AUTOCEDAR_LOCAL_MODEL" '
+        '"$AUTOCEDAR_LOCAL_BASE_URL" >> "$AUTOCEDAR_CAPTURE"\n',
+    )
+    autocedar.chmod(0o755)
+    nvidia_smi = fake_bin / "nvidia-smi"
+    nvidia_smi.write_text('#!/bin/sh\nprintf "Fake L40S, 46068 MiB\\n"\n')
+    nvidia_smi.chmod(0o755)
+
+    vllm_env = tmp_path / "vllm-env"
+    (vllm_env / "bin").mkdir(parents=True)
+    (vllm_env / "bin" / "python").symlink_to(sys.executable)
+    vllm = vllm_env / "bin" / "vllm"
+    vllm.write_text(
+        f"#!{sys.executable}\n"
+        "import json, os, sys\n"
+        "from http.server import BaseHTTPRequestHandler, HTTPServer\n"
+        "args = sys.argv[1:]\n"
+        "port = int(args[args.index('--port') + 1])\n"
+        "model = args[args.index('--served-model-name') + 1]\n"
+        "key = os.environ['VLLM_API_KEY']\n"
+        "class Handler(BaseHTTPRequestHandler):\n"
+        "    def do_GET(self):\n"
+        "        if self.path != '/v1/models' or self.headers.get('Authorization') != f'Bearer {key}':\n"
+        "            self.send_response(401)\n"
+        "            self.end_headers()\n"
+        "            return\n"
+        "        body = json.dumps({'data': [{'id': model}]}).encode()\n"
+        "        self.send_response(200)\n"
+        "        self.send_header('Content-Type', 'application/json')\n"
+        "        self.send_header('Content-Length', str(len(body)))\n"
+        "        self.end_headers()\n"
+        "        self.wfile.write(body)\n"
+        "    def log_message(self, *args):\n"
+        "        pass\n"
+        "HTTPServer(('127.0.0.1', port), Handler).serve_forever()\n",
+    )
+    vllm.chmod(0o755)
+
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as occupied:
+        occupied.bind(("127.0.0.1", 0))
+        occupied.listen()
+        preferred = occupied.getsockname()[1]
+        config = bundle / "config" / "jarvis.env"
+        config.write_text(
+            "\n".join(
+                (
+                    'JARVIS_SLURM_ACCOUNT="none"',
+                    'JARVIS_SLURM_QOS="none"',
+                    'JARVIS_CUDA_MODULE="none"',
+                    'JARVIS_GPU_COUNT="1"',
+                    f'AUTOCEDAR_VLLM_ENV="{vllm_env}"',
+                    'AUTOCEDAR_MODEL_REPO="fake/qwen"',
+                    'AUTOCEDAR_MODEL_NAME="autocedar-local"',
+                    'AUTOCEDAR_MODEL_REVISION="none"',
+                    f'AUTOCEDAR_MODEL_CACHE="{tmp_path / "model-cache"}"',
+                    f'AUTOCEDAR_HF_HOME="{tmp_path / "hf-home"}"',
+                    f'AUTOCEDAR_MODEL_PORT="{preferred}"',
+                    'AUTOCEDAR_MAX_MODEL_LEN="1024"',
+                    'AUTOCEDAR_MAX_NUM_SEQS="4"',
+                    'AUTOCEDAR_GPU_MEMORY_UTILIZATION="0.5"',
+                    'AUTOCEDAR_STARTUP_TIMEOUT_SECONDS="15"',
+                    'AUTOCEDAR_LOCAL_MAX_TOKENS="256"',
+                    'AUTOCEDAR_LOCAL_TIMEOUT_SECONDS="10"',
+                    'AUTOCEDAR_LOCAL_STRUCTURED_OUTPUT="auto"',
+                    'AUTOCEDAR_VLLM_LANGUAGE_MODEL_ONLY="false"',
+                    'AUTOCEDAR_VLLM_REASONING_PARSER="none"',
+                    'AUTOCEDAR_VLLM_ENABLE_THINKING="default"',
+                )
+            )
+            + "\n",
+        )
+        env = os.environ.copy()
+        env.update(
+            {
+                "AUTOCEDAR_CAPTURE": str(capture),
+                "HOME": str(tmp_path / "home"),
+                "PATH": f"{fake_bin}:{env['PATH']}",
+                "SLURM_JOB_ID": "1104639",
+            }
+        )
+        (tmp_path / "home").mkdir()
+        result = subprocess.run(
+            [str(bundle / "scripts" / "run-on-node.sh"), str(config)],
+            check=True,
+            capture_output=True,
+            text=True,
+            env=env,
+            timeout=25,
+        )
+
+    assert f"Port {preferred} is already in use" in result.stdout
+    records = capture.read_text().splitlines()
+    assert len(records) == 2
+    for record in records:
+        command, provider, model, endpoint = record.split("|")
+        assert command in {"doctor", "interactive"}
+        assert provider == "local"
+        assert model == "autocedar-local"
+        assert endpoint.startswith("http://127.0.0.1:")
+        assert endpoint != f"http://127.0.0.1:{preferred}/v1"
 
 
 def test_jarvis_installs_qwen_compatible_vllm_version() -> None:

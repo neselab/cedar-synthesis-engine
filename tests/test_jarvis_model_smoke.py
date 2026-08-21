@@ -59,6 +59,37 @@ def test_run_smoke_sends_plain_and_json_schema_requests() -> None:
     assert schema["additionalProperties"] is False
 
 
+def test_check_model_ready_requires_expected_advertised_name() -> None:
+    def getter(url, headers, timeout):
+        assert url == "http://gpu-node:8123/v1/models"
+        assert headers["Authorization"] == "Bearer local-secret"
+        assert timeout == 2
+        return 200, {"data": [{"id": "autocedar-local"}]}
+
+    models = model_smoke.check_model_ready(
+        base_url="http://gpu-node:8123/v1/",
+        api_key="local-secret",
+        model="autocedar-local",
+        timeout=2,
+        getter=getter,
+    )
+
+    assert models == ["autocedar-local"]
+
+
+def test_check_model_ready_rejects_another_users_server() -> None:
+    def getter(*args):
+        return 200, {"data": [{"id": "/home/other-user/qwen3-8b"}]}
+
+    with pytest.raises(model_smoke.SmokeError, match="expected model.*not advertised"):
+        model_smoke.check_model_ready(
+            base_url="http://127.0.0.1:8000/v1",
+            api_key="job-secret",
+            model="autocedar-local",
+            getter=getter,
+        )
+
+
 def test_run_smoke_rejects_empty_plain_text_before_structured_request() -> None:
     calls = 0
 
@@ -130,3 +161,26 @@ def test_main_reads_local_model_environment(
     output = capsys.readouterr().out
     assert "Backend plumbing passed" in output
     assert "Cedar semantics still require human review" in output
+
+
+def test_readiness_main_uses_local_model_environment(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    seen: dict[str, Any] = {}
+
+    def fake_check_model_ready(**kwargs):
+        seen.update(kwargs)
+        return ["env-model"]
+
+    monkeypatch.setenv("AUTOCEDAR_LOCAL_BASE_URL", "http://node:9123/v1")
+    monkeypatch.setenv("AUTOCEDAR_LOCAL_API_KEY", "env-key")
+    monkeypatch.setenv("AUTOCEDAR_LOCAL_MODEL", "env-model")
+    monkeypatch.setattr(model_smoke, "check_model_ready", fake_check_model_ready)
+
+    model_smoke.main(["--readiness-check"])
+
+    assert seen == {
+        "base_url": "http://node:9123/v1",
+        "api_key": "env-key",
+        "model": "env-model",
+    }

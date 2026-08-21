@@ -1,4 +1,4 @@
-"""Exercise a local OpenAI-compatible model server with two tiny requests.
+"""Check a local OpenAI-compatible server and exercise two tiny requests.
 
 This is a backend plumbing check only.  It does not validate Cedar policies or
 replace the manual semantic review required by AutoCedar's HITL workflow.
@@ -9,8 +9,10 @@ from __future__ import annotations
 import json
 import os
 import socket
+import sys
 import urllib.error
 import urllib.request
+from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Any, Callable
 
@@ -23,6 +25,7 @@ _JSONRequester = Callable[
     [str, dict[str, str], dict[str, Any], float],
     tuple[int, Any],
 ]
+_JSONGetter = Callable[[str, dict[str, str], float], tuple[int, Any]]
 
 
 class SmokeError(RuntimeError):
@@ -35,6 +38,50 @@ class SmokeResult:
 
     text: str
     structured: dict[str, str]
+
+
+def check_model_ready(
+    *,
+    base_url: str,
+    api_key: str,
+    model: str,
+    timeout: float = 3.0,
+    getter: _JSONGetter | None = None,
+) -> list[str]:
+    """Require the expected model name at an OpenAI-compatible endpoint."""
+
+    resolved_base_url = base_url.strip().rstrip("/")
+    expected = model.strip()
+    if not resolved_base_url:
+        raise ValueError("base_url must not be empty")
+    if not expected:
+        raise ValueError("model must not be empty")
+    if timeout <= 0:
+        raise ValueError("timeout must be greater than zero")
+
+    headers = {"Accept": "application/json"}
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
+    status, response = (getter or _get_json)(
+        f"{resolved_base_url}/models",
+        headers,
+        timeout,
+    )
+    if status != 200:
+        raise SmokeError(f"model-list request failed with HTTP {status}")
+    if not isinstance(response, dict) or not isinstance(response.get("data"), list):
+        raise SmokeError("model-list request returned an invalid response")
+    models = [
+        item["id"]
+        for item in response["data"]
+        if isinstance(item, dict) and isinstance(item.get("id"), str)
+    ]
+    if expected not in models:
+        available = ", ".join(models) if models else "none"
+        raise SmokeError(
+            f"expected model {expected!r} is not advertised; available: {available}",
+        )
+    return models
 
 
 def run_smoke(
@@ -180,6 +227,29 @@ def _request_json(
         raise SmokeError("local model server returned invalid response JSON") from None
 
 
+def _get_json(
+    url: str,
+    headers: dict[str, str],
+    timeout: float,
+) -> tuple[int, Any]:
+    request = urllib.request.Request(url, headers=headers, method="GET")
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            raw = response.read().decode("utf-8")
+            return response.status, json.loads(raw) if raw else {}
+    except urllib.error.HTTPError as exc:
+        return exc.code, _decode_error_body(exc.read())
+    except (TimeoutError, socket.timeout):
+        raise SmokeError(f"request timed out after {timeout:g} seconds") from None
+    except urllib.error.URLError as exc:
+        reason = getattr(exc, "reason", None)
+        if isinstance(reason, (TimeoutError, socket.timeout)):
+            raise SmokeError(f"request timed out after {timeout:g} seconds") from None
+        raise SmokeError(f"could not reach the local model server: {reason or exc}") from None
+    except json.JSONDecodeError:
+        raise SmokeError("local model server returned invalid response JSON") from None
+
+
 def _decode_error_body(raw: bytes) -> Any:
     text = raw.decode("utf-8", errors="replace")
     try:
@@ -201,14 +271,32 @@ def _environment_timeout() -> float:
     return timeout
 
 
-def main() -> None:
-    """Read endpoint settings from the environment and run the plumbing check."""
+def main(argv: Sequence[str] = ()) -> None:
+    """Read endpoint settings from the environment and run the requested check."""
+
+    readiness_check = list(argv) == ["--readiness-check"]
+    if argv and not readiness_check:
+        raise SystemExit("usage: model_smoke.py [--readiness-check]")
+
+    base_url = os.environ.get("AUTOCEDAR_LOCAL_BASE_URL", DEFAULT_BASE_URL)
+    api_key = os.environ.get("AUTOCEDAR_LOCAL_API_KEY", "")
+    model = os.environ.get("AUTOCEDAR_LOCAL_MODEL", DEFAULT_MODEL)
+    if readiness_check:
+        try:
+            check_model_ready(
+                base_url=base_url,
+                api_key=api_key,
+                model=model,
+            )
+        except (SmokeError, ValueError) as exc:
+            raise SystemExit(f"Local model is not ready: {exc}") from None
+        return
 
     try:
         run_smoke(
-            base_url=os.environ.get("AUTOCEDAR_LOCAL_BASE_URL", DEFAULT_BASE_URL),
-            api_key=os.environ.get("AUTOCEDAR_LOCAL_API_KEY", ""),
-            model=os.environ.get("AUTOCEDAR_LOCAL_MODEL", DEFAULT_MODEL),
+            base_url=base_url,
+            api_key=api_key,
+            model=model,
             timeout=_environment_timeout(),
         )
     except (SmokeError, ValueError) as exc:
@@ -220,4 +308,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv[1:])

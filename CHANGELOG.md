@@ -11,6 +11,8 @@ versioning while the public provider and CLI interfaces stabilize.
 - Made the Jarvis student configuration ready to copy with the documented
   `compute`/`gpu-l40s` defaults and added a no-allocation preflight that checks
   each user's live Slurm access, CUDA module, and model storage.
+- Isolated Jarvis model-server jobs from ports already occupied on shared GPU
+  nodes and made startup require the model name configured for the current job.
 
 ## 0.2.0 - 2026-07-14
 
