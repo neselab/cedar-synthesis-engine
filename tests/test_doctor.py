@@ -199,6 +199,7 @@ def test_doctor_rejects_unadvertised_openai_compatible_model(
 
     assert check.status == "FAIL"
     assert "not advertised" in check.detail
+    assert "another server on that port" in check.fix
     assert "autocedar config --provider local --model" in check.fix
 
 

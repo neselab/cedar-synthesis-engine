@@ -251,6 +251,10 @@ This one command gets the L40S GPU, starts Qwen, waits until Qwen is ready, and
 opens AutoCedar's text screen. It stops Qwen and gives back the GPU when you
 quit.
 
+Jarvis GPU nodes are shared. If another user's model already occupies port
+`8000`, the launcher automatically chooses a different free port for your job
+and gives that endpoint to AutoCedar. You do not need to edit the configuration.
+
 ### 3. Use AutoCedar normally
 
 Nothing after this point is Jarvis-specific. Inside AutoCedar, you can type
@@ -361,6 +365,7 @@ technical settings. Ask the project maintainer to update the configuration.
 | GPU out of memory | Set `AUTOCEDAR_MAX_MODEL_LEN="16384"` in `config/jarvis.env` and retry. If it still fails, send the vLLM log file to your supervisor. |
 | Smoke output does not contain both `OK` lines | Confirm the Qwen defaults were not changed, rerun `install-vllm.sh`, and repeat the smoke test. |
 | `autocedar doctor` reports Cedar/CVC5 failure | Rerun `install-verifiers.sh` and keep its complete output. |
+| Doctor lists another user's model or a path such as `/home/SOMEONE/...` | Pull the latest code and launch again with `run-interactive.sh`. The launcher now isolates each job from model servers already using port `8000`; do not change your model name to the other user's path. |
 | AutoCedar cannot reach the model | Always launch through `run-interactive.sh`; do not run AutoCedar or vLLM separately. |
 
 When asking for help, send:
@@ -391,6 +396,7 @@ scripts/prepare-model-on-node.sh       internal model helper
 scripts/run-interactive.sh             normal launch command
 scripts/run-on-node.sh                 internal GPU-node launcher
 scripts/model_smoke.py                 chat and JSON-schema plumbing check
+scripts/select_port.py                 internal shared-node port selector
 scripts/submit-smoke-test.sh           batch smoke-test wrapper
 scripts/_common.sh                     shared launcher functions
 slurm/autocedar-smoke.sbatch           internal smoke-test batch job
