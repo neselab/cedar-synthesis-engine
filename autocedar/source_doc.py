@@ -170,12 +170,17 @@ class SourcePacket:
             "prior_decisions": list(self.prior_decisions),
         }
 
-    def to_prompt_text(self) -> str:
+    def to_prompt_text(self, *, include_review_context: bool = True) -> str:
         focus = "\n\n".join(_format_source_node(node) for node in self.nodes)
         related = "\n\n".join(_format_source_node(node) for node in self.related_nodes)
         schema_atoms = "\n".join(f"- {name}" for name in self.approved_schema_atoms) or "- none yet"
         property_atoms = "\n".join(f"- {name}" for name in self.approved_property_atoms) or "- none yet"
         decisions = "\n".join(f"- {item}" for item in self.prior_decisions[-12:]) or "- none yet"
+        review_context = (
+            "Approved schema atoms so far:\n" + schema_atoms + "\n\n"
+            "Approved property atoms so far:\n" + property_atoms + "\n\n"
+            "Recent review decisions:\n" + decisions + "\n"
+        ) if include_review_context else ""
         return (
             f"<autocedar_source_packet id=\"{self.id}\" kind=\"{self.kind}\">\n"
             "This is a bounded packet from a larger requirements document. "
@@ -186,12 +191,7 @@ class SourcePacket:
             f"{focus}\n\n"
             "Related source nodes from the intent DAG neighborhood:\n"
             f"{related or '- none'}\n\n"
-            "Approved schema atoms so far:\n"
-            f"{schema_atoms}\n\n"
-            "Approved property atoms so far:\n"
-            f"{property_atoms}\n\n"
-            "Recent review decisions:\n"
-            f"{decisions}\n"
+            f"{review_context}"
             "</autocedar_source_packet>\n"
         )
 

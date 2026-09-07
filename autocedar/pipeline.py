@@ -12,10 +12,12 @@ components are missing; they never silently produce placeholder policies.
 from __future__ import annotations
 
 import datetime
+import hashlib
 import json
 import os
 import re
 import shutil
+import uuid
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any, Callable, Literal, Optional
@@ -44,6 +46,7 @@ from autocedar.critic import (
     stub_llm_scorer,
 )
 from autocedar.grounding import symbolic_verify_atom
+from autocedar.persistence import session_spec, write_json
 from autocedar.plan_verification import (
     generate_atom_traceback,
     symbolic_consistency_check,
@@ -226,6 +229,8 @@ class _ResumeCheckpoint:
     schema_gap_repairs: list[dict[str, Any]]
     verification_logs: dict[str, list[str]]
     reopened_source_node_ids: set[str] = field(default_factory=set)
+    pending_properties: list[tuple[PropertyAtom, bool]] = field(default_factory=list)
+    active_source_id: str | None = None
 
 
 def _write_stage0_artifacts(
@@ -337,7 +342,7 @@ def author(
     ),
     schema_path_override: Optional[str] = None,
     resume_from: Optional[str | Path] = None,
-    run_incremental_checks: bool = True,
+    run_incremental_checks: bool = False,
     max_property_proposals: int = DEFAULT_MAX_PROPERTY_PROPOSALS,
     max_schema_gap_repairs: int | None = None,
 ) -> AuthorResult:
@@ -355,13 +360,20 @@ def author(
     spec_path = Path(spec_path)
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
-    session_id = session_id or datetime.datetime.utcnow().strftime("session-%Y%m%d-%H%M%S")
+    spec_text = spec_path.read_text()
+    if resume_from and session_spec(Path(resume_from)).read_text() != spec_text:
+        raise ValueError("The input spec differs from the saved session; start a new authoring session for changed requirements.")
+    stage1_checkpoint = _read_json(Path(resume_from) / "stage1" / "checkpoint.json", {}) if resume_from else {}
+    stage1_only = bool(resume_from and not (Path(resume_from) / "stage1" / "final_schema.cedarschema").exists())
+    if stage1_only and not stage1_checkpoint:
+        raise ValueError("This session has no recoverable schema checkpoint.")
+    resume_checkpoint = _load_resume_checkpoint(Path(resume_from)) if resume_from and not stage1_only else None
+    session_id = session_id or (datetime.datetime.utcnow().strftime("session-%Y%m%d-%H%M%S-") + uuid.uuid4().hex[:8])
     session = Session(session_id, output_dir)
     draft: SchemaDraft | None = None
     approved_schema_atoms: list[Stage1AtomT] = []
     approved_schema_names: set[str] = set()
     stage1_decisions_for_approval: list[AtomDecision] = []
-    resume_checkpoint = _load_resume_checkpoint(Path(resume_from)) if resume_from else None
     schema_gaps: list[dict[str, Any]] = (
         list(resume_checkpoint.schema_gaps) if resume_checkpoint else []
     )
@@ -371,8 +383,11 @@ def author(
     schema_gap_repair_count = 0
     schema_gap_repair_limit = max_schema_gap_repairs
 
-    spec_text = spec_path.read_text()
     session.write_input_spec(spec_text, filename=spec_path.name)
+    if resume_from:
+        write_json(session.base / "resumed_from.json", {"session": str(Path(resume_from).resolve())})
+        if stage1_checkpoint and not stage1_only:
+            write_json(session.base / "stage1" / "checkpoint.json", stage1_checkpoint)
     source_doc = compile_source_document(spec_text)
     session.write_stage0_source_index(source_doc.to_index())
     schema_context_packets = []
@@ -489,21 +504,43 @@ def author(
             raise ValueError(
                 "author() requires propose_schema_atoms when no schema_path_override is supplied",
             )
-        schema_atoms: list[Stage1AtomT] = []
-        attributions: list[AttributionDecision] = []
-        decisions: list[AtomDecision] = []
+        schema_atoms = [_load_stage1_atom(item) for item in stage1_checkpoint.get("proposed_atoms", [])]
+        attributions = [AttributionDecision(**item) for item in stage1_checkpoint.get("attributions", [])]
+        decisions = [AtomDecision(**item) for item in stage1_checkpoint.get("decisions", [])]
+        approved_schema_atoms = [_load_stage1_atom(item) for item in stage1_checkpoint.get("approved_atoms", [])]
+        approved_schema_names = {atom.name for atom in approved_schema_atoms}
+        completed_schema_packets = set(stage1_checkpoint.get("completed_packets", []))
         schema_context_packets = build_schema_packets(source_doc)
         _notify_review_stage(review_atom, "Schema atom review", None)
-        draft = SchemaDraft()
+        draft = _draft_from_approved_schema_atoms(approved_schema_atoms)
+
+        def save_schema_checkpoint(packet_id: str, pending: list[Any]) -> None:
+            write_json(session.base / "stage1" / "checkpoint.json", {
+                "proposed_atoms": [to_dict(a) for a in schema_atoms],
+                "approved_atoms": [to_dict(a) for a in approved_schema_atoms],
+                "attributions": [to_dict(a) for a in attributions],
+                "decisions": [to_dict(d) for d in decisions],
+                "completed_packets": sorted(completed_schema_packets),
+                "active_packet": packet_id,
+                "pending_atoms": [to_dict(a) for a in pending],
+            })
+
         for packet in schema_context_packets:
+            if packet.id in completed_schema_packets:
+                continue
             packet.approved_schema_atoms = [atom.name for atom in approved_schema_atoms]
             session.write_stage0_context_packet(packet.id, packet.to_dict())
             packet_text = packet.to_prompt_text()
-            proposed_atoms = [
-                attach_source_ids(atom, packet.node_ids())
-                for atom in propose_schema_atoms(packet_text)
-            ]
-            for atom in proposed_atoms:
+            if stage1_checkpoint.get("active_packet") == packet.id:
+                proposed_atoms = [_load_stage1_atom(item) for item in stage1_checkpoint["pending_atoms"]]
+            else:
+                save_schema_checkpoint("", [])
+                proposed_atoms = [
+                    attach_source_ids(atom, packet.node_ids())
+                    for atom in propose_schema_atoms(packet_text)
+                ]
+            for atom_index, atom in enumerate(proposed_atoms):
+                save_schema_checkpoint(packet.id, proposed_atoms[atom_index:])
                 schema_atoms.append(atom)
                 attributions.append(
                     AttributionDecision(
@@ -565,6 +602,9 @@ def author(
                 _route_into_schema_draft(reviewed_atom, draft)
                 approved_schema_atoms.append(reviewed_atom)
                 approved_schema_names.add(reviewed_atom.name)
+                save_schema_checkpoint(packet.id, proposed_atoms[atom_index + 1:])
+            completed_schema_packets.add(packet.id)
+            save_schema_checkpoint("", [])
         if not schema_atoms:
             session.write_stage1_proposed_atoms(schema_atoms)
             session.write_stage1_attribution_decisions(attributions)
@@ -686,11 +726,39 @@ def author(
     property_frontier_index = {
         node.id: index for index, node in enumerate(property_frontier_nodes, start=1)
     }
-    active_property_node = None
+    active_property_node = next((node for node in property_frontier_nodes
+                                 if resume_checkpoint and node.id == resume_checkpoint.active_source_id), None)
     active_packet = None
     active_spec_text = ""
-    pending_property_atoms: list[tuple[PropertyAtom, bool]] = []
+    pending_property_atoms = list(resume_checkpoint.pending_properties) if resume_checkpoint else []
+    if active_property_node is not None:
+        active_packet = select_property_packet(
+            source_doc, active_property_node, approved_schema_atoms=approved_schema_atoms,
+            approved_property_atoms=plan.properties, prior_decisions=decisions2,
+        )
+        active_spec_text = active_packet.to_prompt_text(include_review_context=False)
+
+    def save_property_checkpoint(retry_atom: PropertyAtom | None = None,
+                                 pending_decision: AtomDecision | None = None) -> None:
+        # One atomic snapshot binds reviewed encodings, decisions, schema and
+        # frontier together. Per-stage corpus files remain available for inspection.
+        write_json(session.base / "stage2" / "checkpoint.json", {
+            "schema_text": schema_text,
+            "property_atoms": [to_dict(a) for a in prop_atoms],
+            "approved_atoms": [to_dict(a) for a in plan.properties],
+            "decisions": [to_dict(d) for d in decisions2] + (
+                [to_dict(pending_decision)] if pending_decision is not None else []
+            ),
+            "attributions": [to_dict(a) for a in attributions2],
+            "verification_logs": verification_logs,
+            "completed_source_ids": sorted(completed_property_node_ids),
+            "active_source_id": active_property_node.id if active_property_node else None,
+            "pending_properties": (
+                [[to_dict(retry_atom), False]] if retry_atom is not None else []
+            ) + [[to_dict(a), batch] for a, batch in pending_property_atoms],
+        })
     property_frontier_exhausted = False
+    repeated_proposals: dict[str, int] = {}
     _notify_review_stage(review_atom, "Property intent review", None)
     _notify_property_progress(
         review_atom,
@@ -704,6 +772,7 @@ def author(
         queued=0,
     )
     for _ in range(max_property_proposals):
+        save_property_checkpoint()
         if active_property_node is None:
             active_property_node = next(
                 (
@@ -741,7 +810,7 @@ def author(
             active_packet.id = f"{active_packet.id}.step{len(property_context_packets) + 1:04d}"
             property_context_packets.append(active_packet)
             session.write_stage0_context_packet(active_packet.id, active_packet.to_dict())
-            active_spec_text = active_packet.to_prompt_text()
+            active_spec_text = active_packet.to_prompt_text(include_review_context=False)
             proposal_result = propose_property_atom(
                 active_spec_text,
                 str(schema_path),
@@ -749,11 +818,25 @@ def author(
                 decisions2,
             )
             proposed = _normalize_property_proposals(proposal_result)
+            fingerprint = hashlib.sha256(json.dumps({
+                "source": active_property_node.id,
+                "schema": schema_text,
+                "approved": [to_dict(a) for a in plan.properties],
+                "proposal": [to_dict(a) for a in proposed],
+            }, sort_keys=True).encode()).hexdigest()
+            repeated_proposals[fingerprint] = repeated_proposals.get(fingerprint, 0) + 1
+            if repeated_proposals[fingerprint] >= 3:
+                raise RuntimeError(
+                    f"Property authoring made no progress on source {active_property_node.id} "
+                    "after three identical proposals. Reviews are saved; inspect the source "
+                    "and review feedback before resuming."
+                )
             proposal_was_batch = isinstance(proposal_result, list)
             pending_property_atoms.extend(
                 (attach_source_ids(atom, active_packet.focus_node_ids), proposal_was_batch)
                 for atom in proposed
             )
+            save_property_checkpoint()
             _notify_property_progress(
                 review_atom,
                 event="bundle_proposed",
@@ -951,6 +1034,7 @@ def author(
         session.write_stage2_attribution_decisions(attributions2)
         if atom.name in approved_property_names:
             decisions2.append(_duplicate_decision(atom.name, "property"))
+            session.write_stage2_decisions(decisions2)
             continue
         current_atom = atom
         rejection_history: list[dict[str, str]] = []
@@ -966,6 +1050,10 @@ def author(
                 review_atom(current_atom),
             )
             if decision.action == "reject" and repairs_attempted < 2:
+                # Persist the user's feedback before calling a potentially slow
+                # repair planner. Recovery may repropose, but must not forget it.
+                session.write_stage2_decisions([*decisions2, decision])
+                save_property_checkpoint(retry_atom=current_atom, pending_decision=decision)
                 reason = decision.reason or "Rejected during HITL property review"
                 repair_plan = plan_property_repair(
                     active_spec_text,
@@ -1019,6 +1107,7 @@ def author(
                         verification_logs=verification_logs,
                     )
                     if prior_repaired:
+                        save_property_checkpoint(retry_atom=current_atom, pending_decision=decision)
                         rejection_history.append(
                             {
                                 "atom_name": reviewed_atom.name,
@@ -1139,6 +1228,11 @@ def author(
             plan.properties.append(reviewed_atom)
             approved_property_names.add(reviewed_atom.name)
             session.write_stage2_approved_atoms(plan.properties)
+        decisions2.append(decision)
+        session.write_stage2_decisions(decisions2)
+        session.write_stage2_symbolic_verification_logs(verification_logs)
+        save_property_checkpoint()
+        if decision.action == "approve":
             if run_incremental_checks:
                 _run_incremental_candidate_check(
                     session=session,
@@ -1150,8 +1244,6 @@ def author(
                     approved_schema_atoms=approved_schema_atoms,
                     score_candidate=score_candidate,
                 )
-        decisions2.append(decision)
-        session.write_stage2_decisions(decisions2)
         _notify_property_progress(
             review_atom,
             event="atom_decision",
@@ -1372,6 +1464,8 @@ def author(
             active_property_node = None
             active_packet = None
             active_spec_text = ""
+    property_frontier_exhausted = all(node.id in completed_property_node_ids for node in property_frontier_nodes)
+    save_property_checkpoint()
     if not property_frontier_exhausted:
         decisions2.append(
             AtomDecision(
@@ -1638,90 +1732,56 @@ def _final_user_approval_state(
 
 
 def _load_resume_checkpoint(base: Path) -> _ResumeCheckpoint:
-    """Load an incomplete session so `author` can continue in-place."""
-    if not base.exists():
-        raise FileNotFoundError(f"resume session not found: {base}")
+    """Restore reviewed state verbatim; resume is not semantic target repair."""
     schema_path = base / "stage1" / "final_schema.cedarschema"
     if not schema_path.exists():
         raise FileNotFoundError(f"resume session has no final schema: {schema_path}")
+    state = _read_json(base / "stage2" / "checkpoint.json", {})
 
-    schema_atoms = [_load_stage1_atom(item) for item in _read_json(base / "stage1" / "proposed_atoms.json", [])]
-    stage1_attributions = [
-        AttributionDecision(**item)
-        for item in _read_json(base / "stage1" / "attribution_decisions.json", [])
-    ]
-    stage1_decisions = [
-        AtomDecision(**item) for item in _read_json(base / "stage1" / "decisions.json", [])
-    ]
-    approved_schema_atoms = _approved_stage1_atoms(schema_atoms, stage1_decisions)
-    approved_schema_atoms.extend(_approved_schema_repair_atoms(base / "stage1_5" / "schema_gap_repairs.json"))
+    def saved(key: str, relative: str, default: Any) -> Any:
+        # Do not read legacy projections when an atomic checkpoint owns the
+        # value: an older interrupted write may have left a corrupt projection.
+        return state[key] if key in state else _read_json(base / relative, default)
 
-    property_atoms = [
-        from_dict(PropertyAtom, item)
-        for item in _read_json(base / "stage2" / "proposed_atoms.json", [])
-    ]
-    for atom in property_atoms:
-        _canonicalize_resumed_property_atom(atom)
-    stage2_attributions = [
-        AttributionDecision(**item)
-        for item in _read_json(base / "stage2" / "attribution_decisions.json", [])
-    ]
-    raw_stage2_decisions = [
-        AtomDecision(**item) for item in _read_json(base / "stage2" / "decisions.json", [])
-    ]
-    verification_logs = _read_json(base / "stage2" / "symbolic_verification_logs.json", {})
-    coverage = _read_json(base / "stage0" / "coverage_ledger.json", {})
-    completed_node_ids = set(coverage.get("completed_property_node_ids", []))
-
-    approved_snapshot_path = base / "stage2" / "approved_atoms.json"
-    if approved_snapshot_path.exists():
-        approved_properties = [
-            from_dict(PropertyAtom, item)
-            for item in _read_json(approved_snapshot_path, [])
-        ]
-        for atom in approved_properties:
-            _canonicalize_resumed_property_atom(atom)
-            atom.intent_acknowledged_by_user = _latest_intent_acknowledgement(
-                raw_stage2_decisions,
-                atom.name,
-            )
-            atom.symbolic_verified = True
-        stage2_decisions = raw_stage2_decisions
-        reopened_source_node_ids: set[str] = set()
-        approved_properties, stage2_decisions = _retire_superseded_resume_ceilings(
-            approved_properties,
-            stage2_decisions,
-        )
+    schema_state = _read_json(base / "stage1" / "checkpoint.json", {})
+    schema_atoms = [_load_stage1_atom(x) for x in _read_json(base / "stage1" / "proposed_atoms.json", [])]
+    stage1_decisions = [AtomDecision(**x) for x in _read_json(base / "stage1" / "decisions.json", [])]
+    if schema_state:
+        approved_schema = [_load_stage1_atom(x) for x in schema_state["approved_atoms"]]
     else:
-        approved_properties, stage2_decisions, reopened_source_node_ids = _approved_property_atoms_for_resume(
-            property_atoms,
-            raw_stage2_decisions,
-            verification_logs if isinstance(verification_logs, dict) else {},
-        )
-    completed_node_ids.difference_update(reopened_source_node_ids)
-
-    schema_text = schema_path.read_text()
-    schema_text = _amend_resumed_schema_actions_for_properties(
-        schema_text,
-        approved_properties,
-    )
-
+        approved_schema = _approved_stage1_atoms(schema_atoms, stage1_decisions)
+    approved_schema.extend(_approved_schema_repair_atoms(base / "stage1_5" / "schema_gap_repairs.json"))
+    proposed = [from_dict(PropertyAtom, x) for x in saved("property_atoms", "stage2/proposed_atoms.json", [])]
+    decisions = [AtomDecision(**x) for x in saved("decisions", "stage2/decisions.json", [])]
+    logs = saved("verification_logs", "stage2/symbolic_verification_logs.json", {})
+    snapshot = saved("approved_atoms", "stage2/approved_atoms.json", None)
+    if snapshot is None:
+        approved, decisions, reopened = _approved_property_atoms_for_resume(proposed, decisions, logs)
+    else:
+        approved = [from_dict(PropertyAtom, x) for x in snapshot]
+        reopened = set()
+        for atom in approved:
+            atom.intent_acknowledged_by_user = _latest_intent_acknowledgement(decisions, atom.name)
+    coverage = _read_json(base / "stage0" / "coverage_ledger.json", {})
+    completed = set(state.get("completed_source_ids", coverage.get("completed_property_node_ids", []))) - reopened
     return _ResumeCheckpoint(
         base=base,
-        schema_text=schema_text,
+        schema_text=state.get("schema_text", schema_path.read_text()),
         schema_atoms=schema_atoms,
-        stage1_attributions=stage1_attributions,
+        stage1_attributions=[AttributionDecision(**x) for x in _read_json(base / "stage1" / "attribution_decisions.json", [])],
         stage1_decisions=stage1_decisions,
-        approved_schema_atoms=approved_schema_atoms,
-        property_atoms=property_atoms,
-        stage2_attributions=stage2_attributions,
-        stage2_decisions=stage2_decisions,
-        approved_property_atoms=approved_properties,
-        completed_property_node_ids=completed_node_ids,
+        approved_schema_atoms=approved_schema,
+        property_atoms=proposed,
+        stage2_attributions=[AttributionDecision(**x) for x in saved("attributions", "stage2/attribution_decisions.json", [])],
+        stage2_decisions=decisions,
+        approved_property_atoms=approved,
+        completed_property_node_ids=completed,
         schema_gaps=_read_json(base / "stage1_5" / "schema_gaps.json", []),
         schema_gap_repairs=_read_json(base / "stage1_5" / "schema_gap_repairs.json", []),
-        verification_logs=verification_logs if isinstance(verification_logs, dict) else {},
-        reopened_source_node_ids=reopened_source_node_ids,
+        verification_logs=logs,
+        reopened_source_node_ids=reopened,
+        pending_properties=[(from_dict(PropertyAtom, atom), batch) for atom, batch in state.get("pending_properties", [])],
+        active_source_id=state.get("active_source_id"),
     )
 
 
@@ -1876,66 +1936,11 @@ def _approved_property_atoms_for_resume(
             atom.intent_acknowledged_by_user = (
                 decision.intent_acknowledged_by_user
             )
-            atom.symbolic_verified = True
+            atom.symbolic_verified = decision.symbolic_verified
             approved.append(atom)
             seen_approved.add(decision.atom_name)
         rewritten_decisions.append(decision)
-    approved, rewritten_decisions = _retire_superseded_resume_ceilings(
-        approved,
-        rewritten_decisions,
-    )
     return approved, rewritten_decisions, reopened_source_node_ids
-
-
-def _retire_superseded_resume_ceilings(
-    approved: list[PropertyAtom],
-    decisions: list[AtomDecision],
-) -> tuple[list[PropertyAtom], list[AtomDecision]]:
-    """Drop older same-action ceilings superseded by later provenance-union ceilings.
-
-    A repaired ceiling can intentionally widen an earlier ceiling into a union
-    after a later floor reveals missing authorized scope. Keeping both ceilings
-    makes the target the intersection and recreates the stale conflict. During
-    resume, retire an older ceiling when a later approved ceiling for the same
-    action cites a strict superset of the older ceiling's source ids.
-    """
-    retired: dict[str, str] = {}
-    for i, older in enumerate(approved):
-        if older.constraint_type != "ceiling":
-            continue
-        older_ids = set(source_ids_from_text(older.source_excerpt))
-        if not older_ids:
-            continue
-        for newer in approved[i + 1 :]:
-            if newer.constraint_type != "ceiling" or newer.action != older.action:
-                continue
-            newer_ids = set(source_ids_from_text(newer.source_excerpt))
-            if older_ids <= newer_ids and older.reference_cedar != newer.reference_cedar:
-                retired[older.name] = newer.name
-                break
-    if not retired:
-        return approved, decisions
-    filtered = [atom for atom in approved if atom.name not in retired]
-    rewritten: list[AtomDecision] = []
-    for decision in decisions:
-        if decision.action == "approve" and decision.atom_name in retired:
-            rewritten.append(
-                AtomDecision(
-                    atom_name=decision.atom_name,
-                    action="reject",
-                    reason=(
-                        "resume audit: retired because later approved ceiling "
-                        f"`{retired[decision.atom_name]}` cites a strict superset "
-                        "of this ceiling's source ids for the same action."
-                    ),
-                    edit_delta={"original_resume_decision": to_dict(decision)},
-                    intent_acknowledged_by_user=decision.intent_acknowledged_by_user,
-                    symbolic_verified=decision.symbolic_verified,
-                ),
-            )
-        else:
-            rewritten.append(decision)
-    return filtered, rewritten
 
 
 def _resume_log_is_invalid_property(log: list[str]) -> bool:
@@ -1965,98 +1970,6 @@ def _resume_log_is_invalid_property(log: list[str]) -> bool:
     )
     return any(marker in text for marker in invalid_markers)
 
-
-def _canonicalize_resumed_property_atom(atom: PropertyAtom) -> None:
-    atom.reference_cedar = _canonicalize_resumed_reference_cedar(atom.reference_cedar)
-    if atom.disjoint_target_body:
-        atom.disjoint_target_body = _canonicalize_type_membership_expr(atom.disjoint_target_body)
-
-
-def _canonicalize_resumed_reference_cedar(cedar: str) -> str:
-    """Normalize stale checkpoint Cedar syntax without changing intent.
-
-    Older AutoCedar runs sometimes wrote type membership as
-    ``principal in SomeType`` / ``resource in SomeResource``. Cedar parses bare
-    identifiers after ``in`` as entity UIDs or template slots, not types. The
-    intended and reviewed form is the Cedar type test ``is``.
-    """
-    return _canonicalize_type_membership_expr(cedar)
-
-
-def _canonicalize_type_membership_expr(cedar: str) -> str:
-    if not cedar:
-        return cedar
-
-    def replace_type_test(match: re.Match[str]) -> str:
-        lhs, rhs = match.group(1), match.group(2)
-        if "::" in rhs or '"' in rhs:
-            return match.group(0)
-        return f"{lhs} is {rhs}"
-
-    return re.sub(
-        r"\b(principal|resource)\s+in\s+([A-Z][A-Za-z0-9_]*)\b",
-        replace_type_test,
-        cedar,
-    )
-
-
-def _amend_resumed_schema_actions_for_properties(
-    schema_text: str,
-    properties: list[PropertyAtom],
-) -> str:
-    """Ensure resumed schema action scopes include approved property scopes."""
-    amended = schema_text
-    for atom in properties:
-        action = atom.action.replace('Action::"', "").rstrip('"')
-        for principal_type in atom.principal_types:
-            amended = _add_type_to_action_scope(
-                amended,
-                action_name=action,
-                field_name="principal",
-                type_name=principal_type,
-            )
-        for resource_type in atom.resource_types:
-            amended = _add_type_to_action_scope(
-                amended,
-                action_name=action,
-                field_name="resource",
-                type_name=resource_type,
-            )
-    return amended
-
-
-def _add_type_to_action_scope(
-    schema_text: str,
-    *,
-    action_name: str,
-    field_name: str,
-    type_name: str,
-) -> str:
-    if not action_name or not type_name:
-        return schema_text
-    if not re.search(rf"\bentity\s+{re.escape(type_name)}\b", schema_text):
-        return schema_text
-    action_re = re.compile(
-        rf"(action\s+{re.escape(action_name)}\s+appliesTo\s*\{{)(?P<body>.*?)(\n\}};)",
-        re.DOTALL,
-    )
-    match = action_re.search(schema_text)
-    if not match:
-        return schema_text
-    body = match.group("body")
-    field_re = re.compile(
-        rf"({re.escape(field_name)}\s*:\s*\[)(?P<types>[^\]]*)(\]\s*,)",
-    )
-    field_match = field_re.search(body)
-    if not field_match:
-        return schema_text
-    existing = [part.strip() for part in field_match.group("types").split(",") if part.strip()]
-    if type_name in existing:
-        return schema_text
-    existing.append(type_name)
-    new_field = field_match.group(1) + ", ".join(existing) + field_match.group(3)
-    new_body = body[: field_match.start()] + new_field + body[field_match.end() :]
-    return schema_text[: match.start("body")] + new_body + schema_text[match.end("body") :]
 
 
 def _draft_from_approved_schema_atoms(atoms: list[Stage1AtomT]) -> SchemaDraft:
@@ -2176,25 +2089,29 @@ def _repair_schema_gap_and_validate(
         return None
 
     repair_spec = _schema_gap_repair_spec(spec_text, schema_text, gap)
-    proposed_atoms = [
-        attach_source_ids(atom, source_ids_from_text(repair_spec))
-        for atom in propose_schema_atoms(repair_spec)
-    ]
-    repair_record: dict[str, Any] = {
-        "gap": gap,
-        "proposed_atoms": [to_dict(atom) for atom in proposed_atoms],
-        "decisions": [],
-        "approved_atoms": [],
-        "schema_validation": [],
-    }
-    repair_records.append(repair_record)
+    repair_record = next((record for record in reversed(repair_records)
+                          if record.get("gap") == gap
+                          and not record.get("schema_validation")), None)
+    if repair_record is not None:
+        proposed_atoms = [_load_stage1_atom(item) for item in repair_record["proposed_atoms"]]
+    else:
+        proposed_atoms = [
+            attach_source_ids(atom, source_ids_from_text(repair_spec))
+            for atom in propose_schema_atoms(repair_spec)
+        ]
+        repair_record = {
+            "gap": gap,
+            "proposed_atoms": [to_dict(atom) for atom in proposed_atoms],
+            "decisions": [], "approved_atoms": [], "schema_validation": [],
+        }
+        repair_records.append(repair_record)
     session.write_stage1_5_schema_gap_repairs(repair_records)
     if not proposed_atoms:
         return None
 
     _notify_review_stage(review_atom, "Schema repair review", len(proposed_atoms))
-    approved_repairs: list[Stage1AtomT] = []
-    for atom in proposed_atoms:
+    approved_repairs = [_load_stage1_atom(item) for item in repair_record["approved_atoms"]]
+    for atom in proposed_atoms[len(repair_record["decisions"]):]:
         reviewed_atom, decision = _normalize_review_result(atom, review_atom(atom))
         repair_record["decisions"].append(to_dict(decision))
         if decision.action != "approve":
@@ -2204,6 +2121,7 @@ def _repair_schema_gap_and_validate(
         approved_schema_atoms.append(reviewed_atom)
         approved_schema_names.add(reviewed_atom.name)
         repair_record["approved_atoms"].append(to_dict(reviewed_atom))
+        session.write_stage1_5_schema_gap_repairs(repair_records)
     _notify_review_stage_complete(
         review_atom,
         "Schema repair review",

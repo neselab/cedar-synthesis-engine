@@ -31,6 +31,7 @@ AgentActionKind = Literal[
     "save_draft",
     "author_current_draft",
     "author_spec",
+    "resume_authoring",
     "verify_workspace",
     "synthesize",
     "show_schema",
@@ -106,6 +107,7 @@ class AgentAction(BaseModel):
     spec: str | None = None
     out: str | None = None
     session_id: str | None = None
+    resume_from: str | None = None
     schema_path: str | None = Field(default=None, alias="schema")
     provider: str | None = None
     model: str | None = None

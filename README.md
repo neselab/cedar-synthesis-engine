@@ -434,10 +434,38 @@ must choose one of these actions:
 | `reject_current` | The atom is not wanted intent and should be skipped. |
 | `ask_user_clarification` | The source packet and review reason are not enough to decide safely. |
 
-After each approved property atom, AutoCedar compiles the approved target so far
-and runs an incremental candidate check. This is an early diagnostic pass: it
-does not replace final Stage 3 synthesis, but it surfaces candidate/schema/atom
-conflicts while the intent target is still being built.
+Each property is symbolically checked and reviewed during target construction.
+Candidate synthesis runs after the reviewed target is complete. The Python API
+can opt into speculative candidate checks with `run_incremental_checks=True`,
+but these expensive extra synthesis runs are disabled by default.
+
+### Recover interrupted authoring
+
+Reviews and pending proposal bundles are checkpointed automatically. `/save`
+saves the prose draft; it is not necessary to save review progress. In the TUI,
+`/resume` continues the last session, or use `/resume PATH_TO_SESSION` to select
+an older run. Repeating `author this` or `/author SPEC` continues an unfinished
+session for the same unchanged input when no different schema is supplied.
+
+From a shell, including recovery of older sessions that contain a final schema:
+
+```bash
+uv run autocedar resume autocedar-runs/SESSION_NAME --out autocedar-runs
+```
+
+Resume creates a new session directory and keeps the original evidence intact.
+Changed requirements require a new authoring session. New checkpoints also
+support interruption during schema review; old runs without a final schema or
+schema checkpoint cannot be reconstructed automatically.
+
+`/pause` stops authoring at the next review/model-call boundary. An active
+provider or solver call finishes or times out first. The activity display shows
+elapsed time, synthesis output appears as it is produced, and `/save` while busy
+shows where progress is stored. TUI structured model calls record timings and
+token usage in `llm_calls.jsonl`; token counts for failed calls are unknown.
+
+See [the reliability and redundancy audit](docs/AUTHORING_RELIABILITY_AUDIT.md)
+for the fixes, measurements, and remaining architecture work.
 
 ### Step 5: Synthesize and verify
 
@@ -785,6 +813,8 @@ Slash shortcuts are available for repeatable control:
 | `/copy policy [path]` | Copy the latest policy text, or use `/copy policy path` to copy its path. |
 | `/export [DIR]` | Write the latest schema, policy, transcript, and artifact index to a normal folder, defaulting to `autocedar-export/`. |
 | `/save [PATH]` | Save the draft, defaulting to `autocedar-spec.md`. |
+| `/resume [SESSION_DIRECTORY]` | Continue saved review progress in a new session. |
+| `/pause` | Pause authoring at the next safe boundary without rejecting the pending atom. |
 | `/new` | Clear the draft and leave drafting mode. |
 | `/author [SPEC] --out DIR [--schema PATH] [--model MODEL] [--effort high]` | Run HITL authoring from a spec file, or from the current draft when no spec is supplied. |
 | `/verify [WORKSPACE]` | Verify an existing workspace, defaulting to `workspace`. |
@@ -864,7 +894,10 @@ Authoring writes session artifacts under the `--out` directory, usually
 | `stage2/proposed_atoms.json` | Property atoms proposed during Stage 2. |
 | `stage2/decisions.json` | HITL decisions, including rejected-property repair history. |
 | `stage2/repair_plans.json` | Structured model repair plans for rejected property atoms. |
-| `stage2/incremental_candidates.json` | Candidate-check results after each approved property atom. |
+| `stage2/incremental_candidates.json` | Optional speculative synthesis results; disabled by default. |
+| `stage1/checkpoint.json`, `stage2/checkpoint.json` | Atomic review and proposal-queue checkpoints. |
+| `events.jsonl` | Durable incremental audit events, including interrupted sessions. |
+| `llm_calls.jsonl` | TUI structured-call timing, effective effort, and provider-reported token counts. |
 | `stage2/final_plan/verification_plan.py` | Compiled checks from approved property atoms. |
 | `stage2/final_plan/references/*.cedar` | Human-reviewed floor/ceiling/disjointness reference policies. |
 | `stage3/final_candidate.cedar` | Final synthesized candidate policy produced by Stage 3. |

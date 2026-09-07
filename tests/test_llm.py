@@ -674,15 +674,11 @@ def test_property_coverage_instruction_audits_scoped_floors_before_stopping() ->
     instruction = _property_coverage_instruction([floor, ceiling])
 
     assert "audit existing floors" in instruction
-    assert "eligible course" in instruction
-    assert "no conflict" in instruction
-    assert "upcoming/not-completed semester boundaries" in instruction
-    assert "A same-action ceiling for only part of the floor body is not enough" in instruction
-    assert "no same-action ceiling/disjointness" in instruction
-    assert "bounded allowed slices" in instruction
-    assert "team membership" in instruction
-    assert "same-action ceiling/disjointness contains that same boundary" in instruction
+    assert "every condition" in instruction
+    assert "named by the source" in instruction
+    assert "Do not invent additional conditions" in instruction
     assert "union of approved slices" in instruction
+    assert "eligible course" not in instruction
 
 
 def test_property_coverage_instruction_does_not_treat_positive_grants_as_floor_only() -> None:

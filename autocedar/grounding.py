@@ -840,6 +840,12 @@ def symbolic_verify_atom(
         result.checks.append(SymbolicCheck(name="type-correct", passed=True, detail="n/a"))
     else:
         result.checks.append(_check_type_correctness(atom, schema_path, workdir))
+        if not result.checks[-1].passed:
+            # Symbolic checks cannot interpret a policy that fails Cedar's
+            # type/parse gate. Preserve the diagnostic and avoid repeated tool work.
+            atom.symbolic_verified = False
+            atom.symbolic_verification_log = result.log_lines()
+            return result
 
     # Check 5: schema-aware identity consistency. Cedar validation can pass
     # even when a policy compares User::"alice" to Patient::"alice".

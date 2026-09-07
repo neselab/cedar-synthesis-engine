@@ -226,7 +226,7 @@ class OpenAICompatibleClient:
         )
         payload = self._chat_payload(
             model=model,
-            messages=structured_messages,
+            messages=structured_messages if _structured_output_mode() == "prompt" else messages,
             system=system,
             max_tokens=max_tokens,
             temperature=temperature,
@@ -243,6 +243,9 @@ class OpenAICompatibleClient:
         if "response_format" in payload and _structured_output_unsupported(status, response):
             payload = dict(payload)
             payload.pop("response_format", None)
+            payload["messages"] = [*payload["messages"], {
+                "role": "user", "content": structured_messages[-1].content,
+            }]
             status, response = self._request(payload)
         text, usage, decoded = self._decode(status, response)
         try:

@@ -12,6 +12,7 @@ import shlex
 import shutil
 import subprocess
 import threading
+import time
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any, Callable, Sequence
@@ -52,8 +53,10 @@ from autocedar.openai_compatible import (
     list_openai_models,
 )
 from autocedar.pipeline import author as author_pipeline
+from autocedar.persistence import append_jsonl, find_resumable_session, session_spec
+from autocedar.ui.persistence import load_session_state, save_session_state
 from autocedar.progress import format_property_progress
-from autocedar.property_atomizer import propose_property_atom
+from autocedar.property_atomizer import plan_property_repair, propose_property_atom
 from autocedar.schema_atomizer import propose_schema_atoms
 from autocedar.ui.terminal import (
     ReviewedAtom,
@@ -88,6 +91,8 @@ GREEN = "#98c379"
 RED = "#e06c75"
 DRAFT_PATH = Path("autocedar-spec.md")
 COMMANDS = {
+    "resume",
+    "pause",
     "api-key",
     "apikey",
     "author",
@@ -120,7 +125,9 @@ COMMANDS = {
 }
 
 SLASH_COMMAND_DESCRIPTIONS = {
-    "/author": "run HITL authoring for a spec or current draft",
+    "/author": "run HITL authoring; continue saved reviews for the same spec",
+    "/resume": "resume the last interrupted session, or /resume SESSION_DIRECTORY",
+    "/pause": "pause authoring at the next saved boundary",
     "/verify": "verify a workspace",
     "/synthesize": "run the synthesis harness",
     "/setup": "show Cedar/CVC5 install steps",
@@ -178,6 +185,7 @@ Talk normally:
 Slash shortcuts are also available:
 
   [#f0c678]/author[/] [SPEC] [--out DIR] [--session-id ID] [--schema PATH] [--model MODEL] [--effort high]
+  [#f0c678]/resume[/] [SESSION_DIRECTORY] continue saved reviews after an interruption
   [#f0c678]/verify[/] [WORKSPACE]
   [#f0c678]/synthesize SCENARIO...[/] [--out DIR] [--max-iters N] [--no-review]
   [#f0c678]/setup[/]                 show local Cedar/CVC5 install steps
@@ -287,6 +295,7 @@ class AuthorOptions:
     model: str | None = None
     effort: str | None = None
     auto_approve: bool = False
+    resume_from: Path | None = None
 
 
 @dataclass
@@ -413,15 +422,7 @@ class TuiAtomReviewer:
         self.app.call_from_thread(self.app.begin_review, request)
         request.event.wait()
         if request.result is None:
-            return ReviewedAtom(
-                atom=request.current,
-                decision=AtomDecision(
-                    atom_name=getattr(request.current, "name", "?"),
-                    action="reject",
-                    reason="TUI review ended without a decision",
-                    edit_delta=request.edit_log,
-                ),
-            )
+            raise RuntimeError("Authoring paused without recording a review decision. Use /resume to continue.")
         return request.result
 
 
@@ -577,6 +578,8 @@ class AutoCedarApp(App[None]):
         self.copyable_transcript: list[str] = []
         self.last_assistant_text = ""
         self.activity_message = ""
+        self.activity_started_at = 0.0
+        self.author_pause_requested = threading.Event()
         self.activity_frame = 0
         self.agent_planner_factory: Callable[[], Any] | None = None
 
@@ -605,6 +608,9 @@ class AutoCedarApp(App[None]):
         yield Footer()
 
     def on_mount(self) -> None:
+        saved = load_session_state(Path("autocedar-runs"))
+        if saved and saved.get("session_dir") and Path(saved["session_dir"]).exists():
+            self.latest_session_dir = Path(saved["session_dir"])
         self._write(
             Panel(
                 WELCOME_TEXT,
@@ -669,6 +675,13 @@ class AutoCedarApp(App[None]):
         )
         if self.pending_secret and self.pending_secret.startswith("api_key"):
             self._handle_pending_api_key(raw)
+            return
+        if raw.lower() == "/pause" and self.busy:
+            self.author_pause_requested.set()
+            if self.pending_review is not None:
+                self.pending_review.event.set()
+                self.pending_review = None
+            self._say("Pausing after the current model or verifier call. Saved reviews will remain available through /resume.")
             return
         if self.pending_review is not None:
             self._handle_review_input(raw)
@@ -926,6 +939,15 @@ class AutoCedarApp(App[None]):
 
     def _handle_busy_input(self, raw: str) -> None:
         lowered = _squash(raw).lower()
+        if lowered in {"/save", "save", "save progress", "save this", "status", "/status", "are u done", "are you done", "how long till then"}:
+            elapsed = time.monotonic() - self.activity_started_at if self.activity_started_at else 0
+            self._say(
+                f"{self.property_progress_summary or self.active_task}. "
+                f"Current step: {self.activity_message} ({elapsed:.0f}s). "
+                f"Review decisions are saved automatically in {self.latest_session_dir or 'the active session'}. "
+                "After an interruption, use /resume to continue."
+            )
+            return
         if lowered in {"status", "what is happening", "what's happening", "wait", "help"}:
             self._say(
                 f"I’m still working on `{self.active_task}`. "
@@ -1237,6 +1259,8 @@ class AutoCedarApp(App[None]):
             return AgentAction(kind="export_artifacts", path=str(args[0]) if args else None)
         if command == "save":
             return AgentAction(kind="save_draft", path=str(args[0]) if args else None)
+        if command == "resume":
+            return AgentAction(kind="resume_authoring", path=str(args[0]) if args else None)
         if command in {"quit", "exit"}:
             return AgentAction(kind="quit")
         if command == "verify":
@@ -1324,6 +1348,14 @@ class AutoCedarApp(App[None]):
                         lambda: self._verify_workspace(workspace),
                     ),
                 )
+            elif action.kind == "resume_authoring":
+                base = Path(action.path) if action.path else self.latest_session_dir
+                if base is None:
+                    raise ValueError("Use /resume SESSION_DIRECTORY to reopen a saved run.")
+                options = self._resolve_author_options(AuthorOptions(
+                    spec=session_spec(base), out=base.parent, resume_from=base,
+                ))
+                self._start_author(options)
             elif action.kind in {"author_current_draft", "author_spec"}:
                 options = self._resolve_author_options(_author_options_from_agent_action(action))
                 from_draft = action.kind == "author_current_draft"
@@ -2453,6 +2485,24 @@ class AutoCedarApp(App[None]):
         self._update_status()
 
     def _start_author(self, options: AuthorOptions) -> None:
+        if self.busy:
+            return
+        self.author_pause_requested.clear()
+        if options.resume_from is None and options.spec.exists() and options.schema is None:
+            options = replace(options, resume_from=find_resumable_session(options.out, options.spec.read_text()))
+        if options.session_id is None:
+            import uuid
+            options = replace(options, session_id=f"session-{time.strftime('%Y%m%d-%H%M%S')}-{uuid.uuid4().hex[:8]}")
+        self.latest_session_dir = options.out / options.session_id
+        save_session_state(Path("autocedar-runs"), {"session_dir": str(self.latest_session_dir.resolve())})
+        self.latest_authoring_complete = False
+        self.latest_authoring_approved = None
+        self.latest_policy_path = None
+        self.latest_schema_path = None
+        if options.resume_from:
+            self._say(f"Resuming saved reviews from {options.resume_from}. New session: {self.latest_session_dir}")
+        else:
+            self._say(f"Reviews will be saved automatically in {self.latest_session_dir}.")
         self._start_task(
             f"author {options.spec}",
             lambda: self._author(options),
@@ -2483,11 +2533,19 @@ class AutoCedarApp(App[None]):
                 provider=self.llm_provider,
                 model=options.model or self.llm_model,
                 effort=options.effort or self.llm_effort,
+                usage_callback=lambda record: append_jsonl(
+                    options.out / str(options.session_id) / "llm_calls.jsonl", record,
+                ),
             )
 
             spec_text = options.spec.read_text()
 
+            def check_paused() -> None:
+                if self.author_pause_requested.is_set():
+                    raise RuntimeError("Authoring paused. Reviews are saved; use /resume to continue.")
+
             def schema_proposer(text: str) -> list[Any]:
+                check_paused()
                 self.call_from_thread(self._start_activity, "schema atomization")
                 return propose_schema_atoms(text, llm)
 
@@ -2497,6 +2555,7 @@ class AutoCedarApp(App[None]):
                 prior_atoms: list[Any],
                 prior_decisions: list[Any],
             ) -> Any:
+                check_paused()
                 self.call_from_thread(self._start_activity, "property atomization")
                 return propose_property_atom(text, schema_path, llm, prior_atoms, prior_decisions)
 
@@ -2507,10 +2566,12 @@ class AutoCedarApp(App[None]):
                 prior_atoms: list[Any],
             ) -> Any:
                 _ = prior_atoms
+                check_paused()
                 self.call_from_thread(self._start_activity, "schema atom repair")
                 return llm.propose_alternative_atom(rejected_atom, reason, text)
 
             def schema_fixer(schema_text: str, cedar_error: str, text: str) -> str:
+                check_paused()
                 self.call_from_thread(self._start_activity, "schema validation repair")
                 return llm.fix_schema(schema_text, cedar_error, text)
 
@@ -2521,6 +2582,7 @@ class AutoCedarApp(App[None]):
                 reason: str,
                 prior_atoms: list[Any],
             ) -> Any:
+                check_paused()
                 self.call_from_thread(self._start_activity, "property repair")
                 schema_text = Path(schema_path).read_text()
                 return llm.propose_alternative_property_atom(
@@ -2531,9 +2593,15 @@ class AutoCedarApp(App[None]):
                     prior_atoms,
                 )
 
+            def property_repair_planner(*args):
+                check_paused()
+                self.call_from_thread(self._start_activity, "property repair planning")
+                return plan_property_repair(*args, llm=llm)
+
             reviewer = TuiAtomReviewer(self)
 
             def review_atom(atom: Any) -> Any:
+                check_paused()
                 if options.auto_approve:
                     return auto_approve(atom)
                 return reviewer(atom)
@@ -2557,6 +2625,7 @@ class AutoCedarApp(App[None]):
             )
 
             def synthesize_with_status(scenario_dir: Path) -> Path:
+                check_paused()
                 self.call_from_thread(self._start_activity, "synthesis iterations")
                 return stage3_synthesizer(scenario_dir)
 
@@ -2570,8 +2639,11 @@ class AutoCedarApp(App[None]):
                 repair_schema_atom=schema_repairer,
                 fix_schema=schema_fixer,
                 repair_property_atom=property_repairer,
+                plan_property_repair=property_repair_planner,
                 synthesize=synthesize_with_status,
                 schema_path_override=str(options.schema) if options.schema else None,
+                resume_from=options.resume_from,
+                run_incremental_checks=False,
             )
             self.call_from_thread(
                 self._register_authoring_artifacts,
@@ -2584,7 +2656,8 @@ class AutoCedarApp(App[None]):
                 result.final_user_approved,
             )
             lines = [
-                f"[bold {GREEN}]Authoring complete.[/]",
+                (f"[bold {GREEN}]Authoring complete.[/]" if self.latest_authoring_complete
+                 else f"[bold {AMBER}]Authoring stopped before producing a policy. Reviews are saved; use /resume.[/]"),
                 f"[bold {AMBER}]session[/]:   {escape(str(result.session_dir))}",
                 f"[bold {AMBER}]schema[/]:    {escape(str(self.latest_schema_path or '(not available)'))}",
                 f"[bold {AMBER}]policy[/]:    {escape(str(self.latest_policy_path or '(not available)'))}",
@@ -2618,7 +2691,8 @@ class AutoCedarApp(App[None]):
         except Exception as exc:
             self.call_from_thread(
                 self._write,
-                f"[bold {RED}]Authoring failed:[/] {escape(str(exc))}",
+                f"[bold {RED}]Authoring interrupted:[/] {escape(str(exc))}\n"
+                f"Saved reviews: {escape(str(self.latest_session_dir))}. Use /resume to continue.",
             )
         finally:
             self.call_from_thread(self._finish_task)
@@ -2636,14 +2710,14 @@ class AutoCedarApp(App[None]):
             self.latest_schema_path = final_schema
         elif schema_override is not None:
             self.latest_schema_path = schema_override
-        if candidate_path and candidate_path.exists():
+        if candidate_path and candidate_path.is_file():
             self.latest_policy_path = candidate_path
         else:
             scenario_candidate = session_dir / "scenario" / "candidate.cedar"
             self.latest_policy_path = scenario_candidate if scenario_candidate.exists() else None
 
     def _record_authoring_result(self, final_user_approved: bool) -> None:
-        self.latest_authoring_complete = True
+        self.latest_authoring_complete = bool(self.latest_policy_path and self.latest_policy_path.is_file())
         self.latest_authoring_approved = final_user_approved
         summary = _read_latest_synthesis_summary(self.latest_session_dir, self.latest_policy_path)
         self.latest_candidate_validated = summary["validated"]
@@ -2785,6 +2859,7 @@ class AutoCedarApp(App[None]):
 
     def _start_activity(self, message: str) -> None:
         self.activity_message = message
+        self.activity_started_at = time.monotonic()
         self.activity_frame = 0
         self._render_activity()
 
@@ -2808,7 +2883,7 @@ class AutoCedarApp(App[None]):
             self._assistant_line(
                 f"[bold {TEAL}]{frame}[/] "
                 f"{escape(self.activity_message)} "
-                f"[dim {MUTED}]waiting for next step...[/]",
+                f"[dim {MUTED}]{time.monotonic() - self.activity_started_at:.0f}s elapsed · reviews autosaved[/]",
             ),
         )
 
@@ -3083,6 +3158,7 @@ def _agent_action_from_author_options(
         spec=str(options.spec),
         out=str(options.out),
         session_id=options.session_id,
+        resume_from=str(options.resume_from) if options.resume_from else None,
         schema_path=str(options.schema) if options.schema else None,
         model=options.model,
         effort=options.effort,
@@ -3105,6 +3181,7 @@ def _author_options_from_agent_action(action: AgentAction) -> AuthorOptions:
         model=action.model,
         effort=action.effort,
         auto_approve=action.auto_approve,
+        resume_from=Path(action.resume_from) if action.resume_from else None,
     )
 
 

@@ -1711,6 +1711,7 @@ def run_scenario(
     no_review: bool = False,
     backend: ModelBackend | None = None,
     provider: str | None = None,
+    fixed_target: bool = False,
 ) -> ScenarioResult:
     """Run the full two-phase evaluation for a single scenario."""
     scenario_name = os.path.basename(os.path.normpath(scenario_path))
@@ -1739,6 +1740,9 @@ def run_scenario(
             phase1_time_s=kw.get("p1", 0.0), phase2_time_s=0.0,
             final_loss=-1, checks_total=0, iteration_log=[], error=msg,
         )
+
+    if fixed_target and (gen_references or not no_review):
+        return _err("Fixed-target synthesis cannot regenerate or replace the reviewed plan.")
 
     # Setup workspace
     workspace = setup_workspace(scenario_path, run_dir)
@@ -1819,6 +1823,8 @@ def run_scenario(
     phase1_out_tok = 0
     vp_exists = os.path.exists(os.path.join(workspace, "verification_plan.py"))
     plan_data = None
+    if fixed_target and not vp_exists:
+        return _err("The reviewed verification plan is missing; return to target construction.")
 
     if gen_references or not vp_exists:
         if not policy_spec:
@@ -1866,6 +1872,8 @@ def run_scenario(
             t1 = time.monotonic()
             _existing_broken = _validate_references(workspace)
             if _existing_broken:
+                if fixed_target:
+                    return _err("Approved references failed validation; return to HITL target repair. " + str(_existing_broken))
                 print(
                     f"  Phase 1.25: existing plan has {len(_existing_broken)} "
                     f"broken reference(s) — running self-correction"

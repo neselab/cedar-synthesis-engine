@@ -1929,8 +1929,7 @@ def test_explicit_prior_repair_failure_does_not_repair_current_property(
     assert repair_calls == [prior_ceiling.name]
     assert [atom.name for atom in result.plan.properties] == [prior_ceiling.name]
     assert result.final_user_approved is False
-    assert len(synth_calls) == 1
-    assert "stage2/incremental" in str(synth_calls[0])
+    assert synth_calls == []  # No speculative synthesis while target repair is unresolved.
     assert not (
         tmp_path
         / "out"

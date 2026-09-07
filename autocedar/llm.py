@@ -22,9 +22,10 @@ grounding, etc.) stays unchanged.
 from __future__ import annotations
 
 import json
+import time
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Annotated, Any, Literal, Optional, Union
+from typing import Annotated, Any, Callable, Literal, Optional, Union
 
 from pydantic import BaseModel, Field
 
@@ -493,6 +494,7 @@ class LLMClient:
         model: str | None = None,
         max_tokens: int = DEFAULT_MAX_TOKENS,
         effort: str | None = None,
+        usage_callback: Callable[[dict[str, Any]], None] | None = None,
     ) -> None:
         session = SessionOverrides(
             provider=provider,
@@ -508,6 +510,7 @@ class LLMClient:
         self._model = config.model
         self._max_tokens = max_tokens
         self._effort = config.reasoning_effort or DEFAULT_EFFORT
+        self._usage_callback = usage_callback
 
     # ------------------------------------------------------------------
     # Stage 1: schema atom proposal.
@@ -560,7 +563,11 @@ class LLMClient:
         prior_decisions = prior_decisions or []
         system_prompt = _load_prompt("property_atomization.md")
         prior_json = [_summarize_property_atom(atom) for atom in prior_atoms]
-        decision_json = [_summarize_atom_decision(decision) for decision in prior_decisions]
+        decision_json = [
+            _summarize_atom_decision(decision) for decision in prior_decisions
+            if getattr(decision, "action", "") != "approve"
+            or getattr(decision, "reason", "") or getattr(decision, "edit_delta", {})
+        ]
         coverage_instruction = _property_coverage_instruction(prior_atoms)
         response = self._call_parse(
             system_prompt=system_prompt,
@@ -569,9 +576,9 @@ class LLMClient:
                 "Use this validated Cedar schema as the grounding context:\n\n"
                 f"```cedarschema\n{schema_text}\n```\n\n"
                 "Already-approved property atoms:\n\n"
-                f"```json\n{json.dumps(prior_json, indent=2)}\n```\n\n"
+                f"```json\n{json.dumps(prior_json, separators=(',', ':'))}\n```\n\n"
                 "Prior review decisions and rejected proposals:\n\n"
-                f"```json\n{json.dumps(decision_json, indent=2)}\n```\n\n"
+                f"```json\n{json.dumps(decision_json, separators=(',', ':'))}\n```\n\n"
                 f"Coverage instruction for this next atom: {coverage_instruction}\n\n"
                 "Propose exactly ONE next Stage 2 property atom for HITL review, "
                 "or return an empty `atoms` list if the approved atoms already "
@@ -612,7 +619,11 @@ class LLMClient:
         prior_decisions = prior_decisions or []
         system_prompt = _load_prompt("property_atomization.md")
         prior_json = [_summarize_property_atom(atom) for atom in prior_atoms]
-        decision_json = [_summarize_atom_decision(decision) for decision in prior_decisions]
+        decision_json = [
+            _summarize_atom_decision(decision) for decision in prior_decisions
+            if getattr(decision, "action", "") != "approve"
+            or getattr(decision, "reason", "") or getattr(decision, "edit_delta", {})
+        ]
         coverage_instruction = _property_coverage_instruction(prior_atoms)
         response = self._call_parse(
             system_prompt=system_prompt,
@@ -621,9 +632,9 @@ class LLMClient:
                 "Use this validated Cedar schema as the grounding context:\n\n"
                 f"```cedarschema\n{schema_text}\n```\n\n"
                 "Already-approved property atoms:\n\n"
-                f"```json\n{json.dumps(prior_json, indent=2)}\n```\n\n"
+                f"```json\n{json.dumps(prior_json, separators=(',', ':'))}\n```\n\n"
                 "Prior review decisions and rejected proposals:\n\n"
-                f"```json\n{json.dumps(decision_json, indent=2)}\n```\n\n"
+                f"```json\n{json.dumps(decision_json, separators=(',', ':'))}\n```\n\n"
                 f"Coverage instruction for this source packet: {coverage_instruction}\n\n"
                 "Propose a COMPLETE LOCAL BUNDLE of materially distinct Stage 2 "
                 "property atoms for this packet's focus source node, or return an "
@@ -657,7 +668,7 @@ class LLMClient:
 
         prior_atoms = prior_atoms or []
         rejected_json = _atom_to_dict(rejected_atom)
-        prior_json = [_atom_to_dict(atom) for atom in prior_atoms]
+        prior_json = [_summarize_property_atom(atom) for atom in prior_atoms]
         user_turn = (
             "Use this validated Cedar schema as the grounding context:\n\n"
             f"```cedarschema\n{schema_text}\n```\n\n"
@@ -666,7 +677,7 @@ class LLMClient:
             f"Their reason: {user_reason}\n\n"
             "Already-approved property atoms, which the replacement must remain "
             "consistent with:\n\n"
-            f"```json\n{json.dumps(prior_json, indent=2)}\n```\n\n"
+            f"```json\n{json.dumps(prior_json, separators=(',', ':'))}\n```\n\n"
             "Propose ONE replacement property atom that addresses the user's "
             "concern. Preserve the same source requirement, action, principal "
             "types, resource types, and constraint_type unless the user's reason "
@@ -703,7 +714,7 @@ class LLMClient:
         """Classify a HITL property rejection into a structured repair action."""
         from autocedar.atoms import to_dict as _atom_to_dict
 
-        prior_json = [_atom_to_dict(atom) for atom in prior_atoms]
+        prior_json = [_summarize_property_atom(atom) for atom in prior_atoms]
         current_json = _atom_to_dict(current_atom)
         user_turn = (
             "A reviewer rejected the current Stage 2 property atom. Decide what "
@@ -740,7 +751,7 @@ class LLMClient:
             "Symbolic verifier log for current atom:\n"
             f"```json\n{json.dumps(symbolic_log, indent=2)}\n```\n\n"
             "Prior approved property atoms:\n"
-            f"```json\n{json.dumps(prior_json, indent=2)}\n```\n\n"
+            f"```json\n{json.dumps(prior_json, separators=(',', ':'))}\n```\n\n"
             "Validated Cedar schema:\n"
             f"```cedarschema\n{schema_text}\n```"
         )
@@ -896,14 +907,30 @@ class LLMClient:
             system_prompt=system_prompt,
             spec_text=spec_text,
         )
-        result = self._backend.generate_structured(
-            model=self._model,
-            max_tokens=self._max_tokens,
-            reasoning_effort=effort_override or self._effort,
-            system=system,
-            messages=(ChatMessage(role="user", content=user_turn),),
-            output_type=output_format,
-        )
+        started = time.monotonic()
+        result = None
+        try:
+            result = self._backend.generate_structured(
+                model=self._model,
+                max_tokens=self._max_tokens,
+                reasoning_effort=effort_override or self._effort,
+                system=system,
+                messages=(ChatMessage(role="user", content=user_turn),),
+                output_type=output_format,
+            )
+        finally:
+            if self._usage_callback:
+                usage = result.usage if result is not None else None
+                self._usage_callback({
+                    "operation": output_format.__name__, "model": self._model,
+                    "effort": effort_override or self._effort,
+                    "elapsed_seconds": round(time.monotonic() - started, 3),
+                    "success": result is not None,
+                    "prompt_characters": len(system_prompt) + len(spec_text) + len(user_turn),
+                    "input_tokens": getattr(usage, "input_tokens", None),
+                    "output_tokens": getattr(usage, "output_tokens", None),
+                    "cached_input_tokens": getattr(usage, "cache_read_input_tokens", None),
+                })
         return SimpleNamespace(parsed_output=result.parsed, usage=result.usage)
 
     def _call_text(
@@ -954,28 +981,29 @@ def _stage2_effort(provider: str, configured_effort: str) -> str:
 
 
 def _summarize_property_atom(atom: PropertyAtom) -> dict[str, Any]:
-    return {
+    from autocedar.source_doc import atom_source_ids
+
+    result = {
         "name": atom.name,
         "constraint_type": atom.constraint_type,
         "action": atom.action,
         "principal_types": list(atom.principal_types),
         "resource_types": list(atom.resource_types),
         "plain_english_summary": atom.plain_english_summary,
-        "source_excerpt": atom.source_excerpt,
+        "source_node_ids": atom_source_ids(atom),
         "reference_cedar": atom.reference_cedar,
-        "required_schema_support": [
-            {
-                "kind": support.kind,
-                "name": support.name,
-                "entity": support.entity,
-                "action": support.action,
-                "field_name": support.field_name,
-                "type_name": support.type_name,
-                "reason": support.reason,
-            }
-            for support in atom.required_schema_support
-        ],
     }
+    # Legacy/unattributed atoms still need their source text.
+    if not result["source_node_ids"]:
+        result["source_excerpt"] = atom.source_excerpt
+    # Compile-down fields are part of the target, even when the reference alone
+    # looks identical (e.g. a disjointness patch affecting sibling floors).
+    for key in ("disjoint_target_body", "disjoint_with", "rate_limit_window",
+                "rate_limit_threshold", "rate_limit_counter_attr"):
+        value = getattr(atom, key, None)
+        if value is not None:
+            result[key] = value
+    return {key: value for key, value in result.items() if value != [] and value != ""}
 
 
 def _summarize_atom_decision(decision: Any) -> dict[str, Any]:
@@ -1039,17 +1067,9 @@ def _property_coverage_instruction(prior_atoms: list[PropertyAtom]) -> str:
         "covering the same approved slice, unless the source text clearly says "
         "the condition is only an example or non-exhaustive. For multi-slice "
         "actions, the ceiling must be a union of approved slices, not a narrow "
-        "local ceiling that would exclude sibling floors. Check each floor body "
-        "for role/resource relationship, ownership, team membership, assigned "
-        "resource, LAN, strong authentication, current/open periods, "
-        "upcoming/not-completed semester boundaries, add/drop windows, eligible "
-        "course, no conflict, registered student, completed semester, or other "
-        "source-named limits. If any floor has such a boundary but no "
-        "same-action ceiling/disjointness contains that same boundary, propose "
-        "the missing stricter safety atom next. A same-action ceiling for only "
-        "part of the floor body is not enough; each named relationship, "
-        "lifecycle, ownership, network, authentication, eligibility, conflict, "
-        "assignment, or completion boundary must be covered. Otherwise propose "
-        "a floor for an uncovered positive workflow, a ceiling/disjointness for "
-        "an uncovered safety boundary, or empty only when both sides are covered."
+        "local ceiling that would exclude sibling floors. Check every condition "
+        "named by the source against the approved floor and safety boundaries. "
+        "Do not invent additional conditions. Return empty only when the focus "
+        "requirement is covered; neighboring source nodes provide context and "
+        "are not additional work for this packet."
     )

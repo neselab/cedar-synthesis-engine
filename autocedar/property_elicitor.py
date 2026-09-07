@@ -54,6 +54,15 @@ class CompiledPlan:
 _WHEN_RE = re.compile(r"\bwhen\s*\{")
 
 
+def _code_mask(text: str) -> str:
+    """Hide strings/comments without changing offsets used for Cedar splices."""
+    return re.sub(
+        r'"(?:\\.|[^"\\])*"|//[^\n]*|/\*[\s\S]*?\*/',
+        lambda match: " " * len(match.group()),
+        text,
+    )
+
+
 def _find_when_block(policy_text: str) -> tuple[int, int, int] | None:
     """Locate the first ``when { ... }`` block.
 
@@ -62,7 +71,8 @@ def _find_when_block(policy_text: str) -> tuple[int, int, int] | None:
     the matching ``}``. Brace counting respects nested braces (e.g.
     record literals inside the body).
     """
-    m = _WHEN_RE.search(policy_text)
+    code = _code_mask(policy_text)
+    m = _WHEN_RE.search(code)
     if m is None:
         return None
     when_start = m.start()
@@ -70,7 +80,7 @@ def _find_when_block(policy_text: str) -> tuple[int, int, int] | None:
     depth = 1
     i = brace_open + 1
     while i < len(policy_text) and depth > 0:
-        ch = policy_text[i]
+        ch = code[i]
         if ch == "{":
             depth += 1
         elif ch == "}":
@@ -126,7 +136,7 @@ def insert_when_with_conjuncts(policy_text: str, conjuncts: list[str]) -> str:
     body = "\n    " + conjuncts[0]
     for c in conjuncts[1:]:
         body += "\n    && " + c
-    semicolon = policy_text.rfind(";")
+    semicolon = _code_mask(policy_text).rfind(";")
     if semicolon == -1:
         # Best-effort: append at end.
         return policy_text + "\nwhen {" + body + "\n};"
@@ -179,8 +189,14 @@ def compile_plan(plan: VerificationPlanDraft) -> CompiledPlan:
 
     references: dict[str, str] = {}
     plan_entries: list[dict] = []
+    seen_names: set[str] = set()
 
     for atom in plan.properties:
+        if not atom.name or atom.name in {".", ".."} or "/" in atom.name or "\\" in atom.name:
+            raise ValueError(f"Property name must be a single safe filename: {atom.name!r}")
+        if atom.name in seen_names:
+            raise ValueError(f"Duplicate property name in verification plan: {atom.name}")
+        seen_names.add(atom.name)
         # 1. Compile to a primitive type for the harness contract.
         primitive_type = _resolve_primitive_type(atom)
 
@@ -202,7 +218,7 @@ def compile_plan(plan: VerificationPlanDraft) -> CompiledPlan:
             if atom.reference_cedar.strip():
                 references[atom.name] = atom.reference_cedar
                 entry["type"] = "liveness-overlap"
-                entry["reference_path"] = f'os.path.join(REFS, "{atom.name}.cedar")'
+                entry["reference_path"] = f'os.path.join(REFS, {_reference_filename(atom.name)})'
                 plan_entries.append(entry)
                 continue
             # Legacy liveness has no reference file in the v1 harness contract.
@@ -218,9 +234,9 @@ def compile_plan(plan: VerificationPlanDraft) -> CompiledPlan:
 
         references[atom.name] = ref_cedar
         if primitive_type == "implies":
-            entry["reference_path"] = f'os.path.join(REFS, "{atom.name}.cedar")'
+            entry["reference_path"] = f'os.path.join(REFS, {_reference_filename(atom.name)})'
         else:  # floor
-            entry["floor_path"] = f'os.path.join(REFS, "{atom.name}.cedar")'
+            entry["floor_path"] = f'os.path.join(REFS, {_reference_filename(atom.name)})'
 
         plan_entries.append(entry)
 
@@ -361,14 +377,14 @@ def _render_verification_plan_py(entries: list[dict]) -> str:
     body_lines: list[str] = []
     for entry in entries:
         body_lines.append("        {")
-        body_lines.append(f'            "name": "{entry["name"]}",')
+        body_lines.append(f'            "name": "{_escape_str(entry["name"])}",')
         body_lines.append(
             f'            "description": "{_escape_str(entry["description"])}",',
         )
-        body_lines.append(f'            "type": "{entry["type"]}",')
-        body_lines.append(f'            "principal_type": "{entry["principal_type"]}",')
+        body_lines.append(f'            "type": "{_escape_str(entry["type"])}",')
+        body_lines.append(f'            "principal_type": "{_escape_str(entry["principal_type"])}",')
         body_lines.append(f'            "action": "{_escape_str(entry["action"])}",')
-        body_lines.append(f'            "resource_type": "{entry["resource_type"]}",')
+        body_lines.append(f'            "resource_type": "{_escape_str(entry["resource_type"])}",')
         if "reference_path" in entry:
             body_lines.append(f'            "reference_path": {entry["reference_path"]},')
         if "floor_path" in entry:
@@ -381,4 +397,9 @@ def _render_verification_plan_py(entries: list[dict]) -> str:
 
 def _escape_str(s: str) -> str:
     """Escape a string for safe inclusion in a Python double-quoted string literal."""
-    return s.replace("\\", "\\\\").replace('"', '\\"')
+    return (s.replace("\\", "\\\\").replace('"', '\\"')
+            .replace("\n", "\\n").replace("\r", "\\r").replace("\x00", "\\x00"))
+
+
+def _reference_filename(name: str) -> str:
+    return '"' + _escape_str(name + ".cedar") + '"'

@@ -5,6 +5,20 @@ versioning while the public provider and CLI interfaces stabilize.
 
 ## Unreleased
 
+- Made schema/property review progress and queued proposals recoverable after
+  interruptions, added TUI `/resume` and `/pause`, and prevented reuse of an
+  existing session directory from overwriting saved work.
+- Disabled speculative synthesis after every property approval; removed
+  duplicated proposal context and added TUI model-call timing/token records.
+- Enforced a deadline on trickling Codex streams and shared it across retries;
+  show elapsed time and stream synthesis progress while it runs.
+- Unified CLI/TUI property-repair routing and preserved approved ceilings,
+  schema scopes, and verification status during resume. Fixed-target synthesis
+  now rejects invalid reviewed references instead of rewriting them.
+- Hardened generated-plan escaping and Cedar condition splicing, stopped
+  repeated identical no-progress proposals, and skipped symbolic work after a
+  failed Cedar type/parse check.
+
 - Added a maintained Qwen3.6 FP8 setup path for Stevens Jarvis, including
   secure Hugging Face cache separation, a CPU model-preparation job, and real
   chat/JSON-schema model smoke checks.

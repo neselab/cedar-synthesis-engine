@@ -19,9 +19,12 @@ from __future__ import annotations
 
 import datetime
 import json
+import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Optional
+
+from autocedar.persistence import atomic_write_text
 
 from autocedar.atoms import (
     PropertyAtom,
@@ -107,6 +110,8 @@ class Session:
     def __init__(self, session_id: str, base_dir: str | Path) -> None:
         self.session_id = session_id
         self.base = Path(base_dir) / session_id
+        if self.base.exists() and any(self.base.iterdir()):
+            raise FileExistsError(f"Session already exists: {self.base}. Resume into a new session instead.")
         self.base.mkdir(parents=True, exist_ok=True)
         (self.base / "input").mkdir(exist_ok=True)
         (self.base / "stage0").mkdir(exist_ok=True)
@@ -127,7 +132,7 @@ class Session:
     # -----------------------------------------------------------------
 
     def write_input_spec(self, spec_text: str, filename: str = "policy_spec.md") -> None:
-        (self.base / "input" / filename).write_text(spec_text)
+        atomic_write_text(self.base / "input" / filename, spec_text)
         self._event("input.spec_written", {"filename": filename, "size": len(spec_text)})
 
     # -----------------------------------------------------------------
@@ -136,20 +141,20 @@ class Session:
 
     def write_stage0_source_index(self, source_index: dict[str, Any]) -> None:
         path = self.base / "stage0" / "source_index.json"
-        path.write_text(json.dumps(source_index, indent=2))
+        atomic_write_text(path, json.dumps(source_index, indent=2))
         summary = source_index.get("summary", {})
         self._event("stage0.source_index", summary if isinstance(summary, dict) else {})
 
     def write_stage0_intent_dag(self, intent_dag: dict[str, Any]) -> None:
         path = self.base / "stage0" / "intent_dag.json"
-        path.write_text(json.dumps(intent_dag, indent=2))
+        atomic_write_text(path, json.dumps(intent_dag, indent=2))
         summary = intent_dag.get("summary", {})
         self._event("stage0.intent_dag", summary if isinstance(summary, dict) else {})
 
     def write_stage0_context_packet(self, packet_id: str, packet: dict[str, Any]) -> None:
         safe_id = "".join(ch if ch.isalnum() or ch in {"-", "_", "."} else "_" for ch in packet_id)
         path = self.base / "stage0" / "context_packets" / f"{safe_id}.json"
-        path.write_text(json.dumps(packet, indent=2))
+        atomic_write_text(path, json.dumps(packet, indent=2))
         self._event(
             "stage0.context_packet",
             {
@@ -161,7 +166,7 @@ class Session:
 
     def write_stage0_coverage_ledger(self, coverage: dict[str, Any]) -> None:
         path = self.base / "stage0" / "coverage_ledger.json"
-        path.write_text(json.dumps(coverage, indent=2))
+        atomic_write_text(path, json.dumps(coverage, indent=2))
         self._event(
             "stage0.coverage_ledger",
             {
@@ -178,28 +183,28 @@ class Session:
 
     def write_stage1_proposed_atoms(self, atoms: list[Any]) -> None:
         path = self.base / "stage1" / "proposed_atoms.json"
-        path.write_text(json.dumps([to_dict(a) for a in atoms], indent=2))
+        atomic_write_text(path, json.dumps([to_dict(a) for a in atoms], indent=2))
         self._event("stage1.proposed", {"count": len(atoms)})
 
     def write_stage1_attribution_decisions(
         self, decisions: list[AttributionDecision],
     ) -> None:
         path = self.base / "stage1" / "attribution_decisions.json"
-        path.write_text(json.dumps([to_dict(d) for d in decisions], indent=2))
+        atomic_write_text(path, json.dumps([to_dict(d) for d in decisions], indent=2))
         self._event("stage1.attributions_logged", {"count": len(decisions)})
 
     def write_stage1_decisions(self, decisions: list[AtomDecision]) -> None:
         path = self.base / "stage1" / "decisions.json"
-        path.write_text(json.dumps([to_dict(d) for d in decisions], indent=2))
+        atomic_write_text(path, json.dumps([to_dict(d) for d in decisions], indent=2))
         self._event("stage1.decisions_logged", {"count": len(decisions)})
 
     def write_stage1_final_schema(self, schema_text: str) -> None:
-        (self.base / "stage1" / "final_schema.cedarschema").write_text(schema_text)
+        atomic_write_text(self.base / "stage1" / "final_schema.cedarschema", schema_text)
         self._event("stage1.schema_written", {"size": len(schema_text)})
 
     def write_stage1_schema_validation(self, attempts: list[dict[str, Any]]) -> None:
         path = self.base / "stage1" / "schema_validation.json"
-        path.write_text(json.dumps(attempts, indent=2))
+        atomic_write_text(path, json.dumps(attempts, indent=2))
         self._event("stage1.schema_validation", {"attempts": len(attempts)})
 
     # -----------------------------------------------------------------
@@ -208,17 +213,17 @@ class Session:
 
     def write_stage1_5_amendments(self, amendments: list[dict[str, Any]]) -> None:
         path = self.base / "stage1_5" / "amendments.json"
-        path.write_text(json.dumps(amendments, indent=2))
+        atomic_write_text(path, json.dumps(amendments, indent=2))
         self._event("stage1_5.amendments", {"count": len(amendments)})
 
     def write_stage1_5_schema_gaps(self, gaps: list[dict[str, Any]]) -> None:
         path = self.base / "stage1_5" / "schema_gaps.json"
-        path.write_text(json.dumps(gaps, indent=2))
+        atomic_write_text(path, json.dumps(gaps, indent=2))
         self._event("stage1_5.schema_gaps", {"count": len(gaps)})
 
     def write_stage1_5_schema_gap_repairs(self, repairs: list[dict[str, Any]]) -> None:
         path = self.base / "stage1_5" / "schema_gap_repairs.json"
-        path.write_text(json.dumps(repairs, indent=2))
+        atomic_write_text(path, json.dumps(repairs, indent=2))
         self._event("stage1_5.schema_gap_repairs", {"count": len(repairs)})
 
     # -----------------------------------------------------------------
@@ -227,29 +232,29 @@ class Session:
 
     def write_stage2_proposed_atoms(self, atoms: list[PropertyAtom]) -> None:
         path = self.base / "stage2" / "proposed_atoms.json"
-        path.write_text(json.dumps([to_dict(a) for a in atoms], indent=2))
+        atomic_write_text(path, json.dumps([to_dict(a) for a in atoms], indent=2))
         self._event("stage2.proposed", {"count": len(atoms)})
 
     def write_stage2_approved_atoms(self, atoms: list[PropertyAtom]) -> None:
         path = self.base / "stage2" / "approved_atoms.json"
-        path.write_text(json.dumps([to_dict(a) for a in atoms], indent=2))
+        atomic_write_text(path, json.dumps([to_dict(a) for a in atoms], indent=2))
         self._event("stage2.approved", {"count": len(atoms)})
 
     def write_stage2_attribution_decisions(
         self, decisions: list[AttributionDecision],
     ) -> None:
         path = self.base / "stage2" / "attribution_decisions.json"
-        path.write_text(json.dumps([to_dict(d) for d in decisions], indent=2))
+        atomic_write_text(path, json.dumps([to_dict(d) for d in decisions], indent=2))
         self._event("stage2.attributions_logged", {"count": len(decisions)})
 
     def write_stage2_decisions(self, decisions: list[AtomDecision]) -> None:
         path = self.base / "stage2" / "decisions.json"
-        path.write_text(json.dumps([to_dict(d) for d in decisions], indent=2))
+        atomic_write_text(path, json.dumps([to_dict(d) for d in decisions], indent=2))
         self._event("stage2.decisions_logged", {"count": len(decisions)})
 
     def write_stage2_intent_graph(self, graph: dict[str, Any]) -> None:
         path = self.base / "stage2" / "intent_graph.json"
-        path.write_text(json.dumps(graph, indent=2))
+        atomic_write_text(path, json.dumps(graph, indent=2))
         summary = graph.get("summary", {})
         self._event("stage2.intent_graph", summary if isinstance(summary, dict) else {})
 
@@ -257,14 +262,14 @@ class Session:
         self, logs: dict[str, list[str]],
     ) -> None:
         path = self.base / "stage2" / "symbolic_verification_logs.json"
-        path.write_text(json.dumps(logs, indent=2))
+        atomic_write_text(path, json.dumps(logs, indent=2))
         self._event("stage2.verification_logged", {"atom_count": len(logs)})
 
     def write_stage2_adversarial_examples(
         self, examples_per_atom: dict[str, list[dict[str, Any]]],
     ) -> None:
         path = self.base / "stage2" / "adversarial_examples.json"
-        path.write_text(json.dumps(examples_per_atom, indent=2))
+        atomic_write_text(path, json.dumps(examples_per_atom, indent=2))
         self._event(
             "stage2.adversarial_examples",
             {"atom_count": len(examples_per_atom)},
@@ -272,23 +277,23 @@ class Session:
 
     def write_stage2_repair_plans(self, plans: list[dict[str, Any]]) -> None:
         path = self.base / "stage2" / "repair_plans.json"
-        path.write_text(json.dumps(plans, indent=2))
+        atomic_write_text(path, json.dumps(plans, indent=2))
         self._event("stage2.repair_plans", {"count": len(plans)})
 
     def write_stage2_incremental_candidates(
         self, candidates: list[dict[str, Any]],
     ) -> None:
         path = self.base / "stage2" / "incremental_candidates.json"
-        path.write_text(json.dumps(candidates, indent=2))
+        atomic_write_text(path, json.dumps(candidates, indent=2))
         self._event("stage2.incremental_candidates", {"count": len(candidates)})
 
     def write_stage2_final_plan(
         self, plan_py_text: str, references: dict[str, str],
     ) -> None:
         plan_dir = self.base / "stage2" / "final_plan"
-        (plan_dir / "verification_plan.py").write_text(plan_py_text)
+        atomic_write_text(plan_dir / "verification_plan.py", plan_py_text)
         for name, cedar in references.items():
-            (plan_dir / "references" / f"{name}.cedar").write_text(cedar)
+            atomic_write_text(plan_dir / "references" / f"{name}.cedar", cedar)
         self._event(
             "stage2.plan_written",
             {"reference_count": len(references)},
@@ -300,7 +305,7 @@ class Session:
 
     def write_stage1_75_unsat_core(self, unsat: bool, core: list[str], detail: str) -> None:
         path = self.base / "stage1_75" / "unsat_core.json"
-        path.write_text(json.dumps({"unsat": unsat, "core": core, "detail": detail}, indent=2))
+        atomic_write_text(path, json.dumps({"unsat": unsat, "core": core, "detail": detail}, indent=2))
         self._event("stage1_75.consistency_check", {"unsat": unsat, "core": core})
 
     # -----------------------------------------------------------------
@@ -310,13 +315,9 @@ class Session:
     def write_stage3_iteration(self, iteration: IterationLog) -> None:
         d = self.base / "stage3" / "iterations" / f"iter_{iteration.iter_number}"
         d.mkdir(exist_ok=True)
-        (d / "candidate.cedar").write_text(iteration.candidate_cedar)
-        (d / "verifier_feedback.json").write_text(
-            json.dumps(iteration.verifier_feedback, indent=2),
-        )
-        (d / "critic_score.json").write_text(
-            json.dumps(iteration.critic_score, indent=2),
-        )
+        atomic_write_text(d / "candidate.cedar", iteration.candidate_cedar)
+        atomic_write_text(d / "verifier_feedback.json", json.dumps(iteration.verifier_feedback, indent=2))
+        atomic_write_text(d / "critic_score.json", json.dumps(iteration.critic_score, indent=2))
         self._event(
             "stage3.iteration",
             {
@@ -327,7 +328,7 @@ class Session:
         )
 
     def write_stage3_final_candidate(self, candidate_text: str) -> None:
-        (self.base / "stage3" / "final_candidate.cedar").write_text(candidate_text)
+        atomic_write_text(self.base / "stage3" / "final_candidate.cedar", candidate_text)
         self._event("stage3.final_candidate", {"size": len(candidate_text)})
 
     # -----------------------------------------------------------------
@@ -336,12 +337,12 @@ class Session:
 
     def write_stage2_5_traceback(self, traceback: list[Any]) -> None:
         path = self.base / "stage2_5" / "traceback.json"
-        path.write_text(json.dumps([to_dict(t) for t in traceback], indent=2))
+        atomic_write_text(path, json.dumps([to_dict(t) for t in traceback], indent=2))
         self._event("stage2_5.traceback", {"atom_count": len(traceback)})
 
     def write_stage2_5_final_decision(self, approved: bool, reason: str = "") -> None:
         path = self.base / "stage2_5" / "final_user_decision.json"
-        path.write_text(json.dumps({"approved": approved, "reason": reason}, indent=2))
+        atomic_write_text(path, json.dumps({"approved": approved, "reason": reason}, indent=2))
         self._event("stage2_5.final_decision", {"approved": approved})
 
     # -----------------------------------------------------------------
@@ -354,7 +355,7 @@ class Session:
         if path.exists():
             existing = json.loads(path.read_text())
         existing.append(edit)
-        path.write_text(json.dumps(existing, indent=2))
+        atomic_write_text(path, json.dumps(existing, indent=2))
         self._event("post_session.edit", {"edit_summary": edit.get("summary", "")})
 
     # -----------------------------------------------------------------
@@ -370,7 +371,13 @@ class Session:
             },
         )
 
+        # Append before returning to the caller; crashes must not erase the audit trail.
+        with (self.base / "events.jsonl").open("a", encoding="utf-8") as stream:
+            stream.write(json.dumps(self._events[-1]) + "\n")
+            stream.flush()
+            os.fsync(stream.fileno())
+
     def flush_transcript(self) -> None:
         """Write transcript.json. Call at session end (or periodically)."""
         path = self.base / "transcript.json"
-        path.write_text(json.dumps(self._events, indent=2))
+        atomic_write_text(path, json.dumps(self._events, indent=2))

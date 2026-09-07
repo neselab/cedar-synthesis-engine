@@ -10,9 +10,11 @@ from __future__ import annotations
 
 import base64
 import json
+import math
 import os
 import socket
 import stat
+import threading
 import tempfile
 import time
 import urllib.error
@@ -493,6 +495,7 @@ class CodexAuthClient:
         system: str | Sequence[InstructionPart] | None,
         reasoning_effort: str | None,
     ) -> tuple[str, ModelUsage, dict[str, Any]]:
+        deadline = time.monotonic() + self._timeout
         credentials = self._credentials_for_call()
         effort = codex_reasoning_effort(reasoning_effort)
         payload = {
@@ -504,26 +507,24 @@ class CodexAuthClient:
             "reasoning": {"effort": effort, "summary": "auto"},
             "include": ["reasoning.encrypted_content"],
         }
-        status, response = self._requester(
-            "POST",
-            f"{credentials.base_url.rstrip('/')}/responses",
-            _codex_request_headers(credentials, content_type="application/json"),
-            payload,
-            self._timeout,
-        )
+        def send_request():
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise CodexAuthError(f"Codex request timed out after {self._timeout:g}s including retries")
+            return self._requester(
+                "POST", f"{credentials.base_url.rstrip('/')}/responses",
+                _codex_request_headers(credentials, content_type="application/json"),
+                payload, remaining,
+            )
+
+        status, response = send_request()
         if status in {401, 403}:
             self._credentials = resolve_codex_credentials(
                 force_refresh=True,
                 requester=self._requester,
             )
             credentials = self._credentials
-            status, response = self._requester(
-                "POST",
-                f"{credentials.base_url.rstrip('/')}/responses",
-                _codex_request_headers(credentials, content_type="application/json"),
-                payload,
-                self._timeout,
-            )
+            status, response = send_request()
         if (
             status != 200
             or not isinstance(response, dict)
@@ -535,13 +536,7 @@ class CodexAuthClient:
         except CodexAuthError as exc:
             if "no text output" not in str(exc):
                 raise
-            status, response = self._requester(
-                "POST",
-                f"{credentials.base_url.rstrip('/')}/responses",
-                _codex_request_headers(credentials, content_type="application/json"),
-                payload,
-                self._timeout,
-            )
+            status, response = send_request()
             if (
                 status != 200
                 or not isinstance(response, dict)
@@ -559,7 +554,7 @@ def _configured_timeout(default: float) -> float:
         value = float(raw)
     except ValueError:
         return default
-    return max(value, 1.0)
+    return max(value, 1.0) if math.isfinite(value) else default
 
 
 class _CodexMessages:
@@ -617,9 +612,13 @@ def _request_json(
         method=method,
     )
     expects_stream = isinstance(body, dict) and body.get("stream") is True
+    deadline = time.monotonic() + timeout
     try:
         with urllib.request.urlopen(request, timeout=timeout) as response:
-            raw = _read_response_body(response, timeout=timeout, expects_stream=expects_stream)
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise TimeoutError()
+            raw = _read_response_body(response, timeout=remaining, expects_stream=expects_stream)
             return response.status, _decode_response_body(raw)
     except urllib.error.HTTPError as exc:
         raw = exc.read().decode("utf-8", errors="replace")
@@ -650,6 +649,37 @@ def _request_json(
 
 
 def _read_response_body(response: Any, *, timeout: float, expects_stream: bool = False) -> str:
+    # A socket timeout alone is an *idle* timeout: a server can trickle bytes
+    # forever without completing readline(). Interrupt that read at the wall
+    # deadline too, including incomplete SSE lines and non-stream bodies.
+    sock = getattr(getattr(getattr(response, "fp", None), "raw", None), "_sock", None)
+    expired = threading.Event()
+
+    def interrupt_read() -> None:
+        expired.set()
+        if sock is not None:
+            try:
+                sock.shutdown(socket.SHUT_RDWR)
+            except OSError:
+                pass
+
+    timer = threading.Timer(max(timeout, 0.001), interrupt_read)
+    timer.daemon = True
+    timer.start()
+    try:
+        result = _read_response_body_until_terminal(response, timeout=timeout, expects_stream=expects_stream)
+        if expired.is_set():
+            raise TimeoutError(f"request timed out after {timeout:g}s")
+        return result
+    except (OSError, ValueError):
+        if expired.is_set():
+            raise TimeoutError(f"request timed out after {timeout:g}s") from None
+        raise
+    finally:
+        timer.cancel()
+
+
+def _read_response_body_until_terminal(response: Any, *, timeout: float, expects_stream: bool = False) -> str:
     """Read a normal response or SSE stream with an overall timeout.
 
     The Codex backend currently requires ``stream: true`` for Responses calls.

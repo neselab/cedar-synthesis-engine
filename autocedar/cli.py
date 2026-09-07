@@ -691,22 +691,11 @@ def _cmd_author(args: argparse.Namespace) -> int:
         schema_text: str,
         symbolic_log,
     ):
-        response = llm.plan_property_rejection(
-            current_atom=current_atom,
-            user_reason=decision.reason,
-            spec_text=text,
-            schema_text=schema_text,
-            prior_atoms=prior_atoms,
-            symbolic_log=symbolic_log,
-        )
-        from autocedar.pipeline import PropertyRepairPlan
+        from autocedar.property_atomizer import plan_property_repair
 
-        return PropertyRepairPlan(
-            action=response.action,
-            target_atom=response.target_atom,
-            reason=response.reason,
-            repair_instruction=response.repair_instruction,
-            schema_gap_summary=response.schema_gap_summary,
+        return plan_property_repair(
+            text, schema_path, current_atom, decision, prior_atoms,
+            schema_text, symbolic_log, llm=llm,
         )
 
     def reviewer(atom):
@@ -812,22 +801,11 @@ def _cmd_resume(args: argparse.Namespace) -> int:
         schema_text: str,
         symbolic_log,
     ):
-        response = llm.plan_property_rejection(
-            current_atom=current_atom,
-            user_reason=decision.reason,
-            spec_text=text,
-            schema_text=schema_text,
-            prior_atoms=prior_atoms,
-            symbolic_log=symbolic_log,
-        )
-        from autocedar.pipeline import PropertyRepairPlan
+        from autocedar.property_atomizer import plan_property_repair
 
-        return PropertyRepairPlan(
-            action=response.action,
-            target_atom=response.target_atom,
-            reason=response.reason,
-            repair_instruction=response.repair_instruction,
-            schema_gap_summary=response.schema_gap_summary,
+        return plan_property_repair(
+            text, schema_path, current_atom, decision, prior_atoms,
+            schema_text, symbolic_log, llm=llm,
         )
 
     def reviewer(atom):

@@ -12,6 +12,29 @@ from pathlib import Path
 OutputCallback = Callable[[str], None]
 
 
+class _ProgressStream(io.StringIO):
+    """Forward complete lines while synthesis runs, including failure output."""
+
+    def __init__(self, callback: OutputCallback | None) -> None:
+        super().__init__()
+        self.callback = callback
+        self.pending = ""
+
+    def write(self, text: str) -> int:
+        if self.callback:
+            self.pending += text
+            while "\n" in self.pending:
+                line, self.pending = self.pending.split("\n", 1)
+                if line.strip():
+                    self.callback(line)
+        return len(text)
+
+    def flush(self) -> None:
+        if self.pending and self.callback:
+            self.callback(self.pending)
+            self.pending = ""
+
+
 def make_harness_synthesizer(
     *,
     provider: str | None = None,
@@ -49,7 +72,7 @@ def make_harness_synthesizer(
         iters = max_iters or MAX_ITERATIONS
 
         if quiet or output_callback is not None:
-            captured = io.StringIO()
+            captured = _ProgressStream(output_callback)
             with contextlib.redirect_stdout(captured), contextlib.redirect_stderr(captured):
                 result = run_scenario(
                     scenario_path=os.path.abspath(scenario_dir),
@@ -60,10 +83,9 @@ def make_harness_synthesizer(
                     gen_references=gen_references,
                     no_review=no_review,
                     provider=provider,
+                    fixed_target=True,
                 )
-            text = captured.getvalue().strip()
-            if text and output_callback is not None:
-                output_callback(text)
+            captured.flush()
         else:
             result = run_scenario(
                 scenario_path=os.path.abspath(scenario_dir),
@@ -74,6 +96,7 @@ def make_harness_synthesizer(
                 gen_references=gen_references,
                 no_review=no_review,
                 provider=provider,
+                fixed_target=True,
             )
 
         candidate_path = run_dir / scenario_dir.name / "candidate.cedar"

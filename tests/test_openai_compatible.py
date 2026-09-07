@@ -202,7 +202,7 @@ def test_parse_uses_json_schema_and_validates_locally() -> None:
     assert response.usage.input_tokens == 8
     assert seen["body"]["response_format"]["type"] == "json_schema"
     assert seen["body"]["response_format"]["json_schema"]["schema"]["type"] == "object"
-    assert "JSON Schema" in seen["body"]["messages"][-1]["content"]
+    assert seen["body"]["messages"][-1]["content"] == "question"
 
 
 def test_parse_retries_prompt_only_when_server_rejects_response_format() -> None:
@@ -224,6 +224,8 @@ def test_parse_retries_prompt_only_when_server_rejects_response_format() -> None
     assert response.parsed_output.answer == "ok"
     assert "response_format" in payloads[0]
     assert "response_format" not in payloads[1]
+    assert "JSON Schema" in payloads[1]["messages"][-1]["content"]
+    assert payloads[0]["messages"][-1]["content"] == "question"
 
 
 def test_parse_rejects_invalid_local_model_json() -> None:
