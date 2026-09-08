@@ -5,6 +5,10 @@ versioning while the public provider and CLI interfaces stabilize.
 
 ## Unreleased
 
+- Added verifier-grounded guidance for undefined Cedar variables and set
+  iteration. Property proposals must expose missing relation hooks for schema
+  review instead of inventing iterator variables or dropping the relation.
+
 - Fixed valid unfenced Cedar being corrupted during response extraction; show
   the actual parser diagnostic and stop repeated failed-candidate loops with
   saved per-attempt evidence and bounded synthesis context.

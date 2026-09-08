@@ -172,3 +172,16 @@ def test_verdict_is_not_inferred_from_counterexample_contents(monkeypatch, modul
     passed, raw = module._run_symcc('schema', 'User', 'Action::"read"', 'Resource', 'implies', [])
     assert not passed and not module._is_symcc_tool_error(raw)
     assert module._is_symcc_tool_error('Could not produce a counterexample: solver unknown')
+
+
+@requires_cedar
+@pytest.mark.parametrize('variable', ['i', 'renamed_witness'])
+def test_unbound_variable_feedback_uses_language_rule_not_domain_names(scenario, variable):
+    candidate = scenario / 'candidate.cedar'
+    candidate.write_text(f'permit(principal, action, resource) when {{ {variable} == resource.owner }};')
+    from autocedar.harness.orchestrator import run_verification, load_checks
+    vr = run_verification(str(scenario))
+    assert vr.loss and 'invalid variable:' in vr.results[0].counterexample
+    feedback = harness._format_feedback(vr, load_checks(str(scenario)))
+    assert 'contains(x) does not bind x' in feedback
+    assert 'Do not drop the relation' in feedback

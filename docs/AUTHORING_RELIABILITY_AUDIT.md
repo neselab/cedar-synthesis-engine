@@ -166,3 +166,37 @@ production source-packet workflow or a completed Retail authorization target.
 No semantic approval was assigned, and the Ubuntu operator's exact source
 version remains unknown. Local artifacts:
 `.tmp/live-authoring-20260907/retail-schema/`.
+
+### Live Retail property failure and repair routing
+
+A subsequent Codex call on one Retail source packet (authenticated information
+access) proposed six properties. Four passed grounding; two failed Cedar parsing
+because their product/order relation used the unbound iterator `i`. This is a
+reproduced Retail syntax defect in newly generated output, not proof that the
+Ubuntu screenshot had the identical candidate. The live repair router selected
+`repair_schema`, preserving the relation with an explicit item witness. Applying
+that suggested change in an isolated structural fixture made both encodings pass
+Cedar and symbolic checks; no human semantic approval was assigned.
+
+Property elicitation and synthesis feedback now explain the
+[Cedar variable grammar](https://docs.cedarpolicy.com/policies/syntax-grammar.html):
+set membership tests do not bind variables. Missing relation support must be
+surfaced for schema review, not erased to get past the parser. The instruction
+is independent of domain vocabulary; regression tests use differently named
+undefined variables and real Cedar parser output.
+
+A live replay of the same packet returned six properties: four passed grounding,
+and two explicitly declared missing schema support, allowing the existing
+pre-review schema-gap path to catch them before synthesis. Their suggested
+Boolean relation hook remains an unreviewed design proposal; it requires a
+trusted host contract and cannot be treated as caller-provided proof. This is
+not a completed Retail target or a human-reviewed result. A follow-up sentence
+in the prompt makes that trust obligation explicit; the replay preceded that
+sentence. The runs took 68.99 and 107.19 seconds respectively; they do not
+establish a latency or token reduction.
+
+Artifacts: `.tmp/live-authoring-20260907/retail-property/`,
+`retail-property-replay/`, and `retail-repair-validation/` in the same parent.
+Regression suite after adding the iterator diagnostics: **512 passed, 1 skipped**.
+The preceding synthesis reliability commit also passed Ubuntu CI on both Python
+3.11 and 3.12.

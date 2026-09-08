@@ -47,6 +47,15 @@ verify and HITL-review each atom one at a time:
 ```
 
 Rules:
+- Cedar has exactly four expression variables: `principal`, `action`,
+  `resource`, and `context`. Set methods such as `.contains(value)` test an
+  already-defined value; they do not bind an iterator. Do not invent local
+  variables, loops, lambdas, or quantified expressions. If a source relation
+  needs a witness or derived relation that the schema does not expose, declare
+  that missing hook in `required_schema_support` and explain it for schema
+  review. For a derived hook, state which trusted host data establishes it;
+  a caller-supplied Boolean is not proof. Preserve the relation; never remove
+  it just to obtain valid syntax.
 - Treat a source packet as the complete visible context for this call. Propose
   only property atoms grounded in the packet's focus node and its listed
   related nodes. Do not infer requirements from unseen document text. If the

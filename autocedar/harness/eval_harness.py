@@ -1403,6 +1403,14 @@ def _format_feedback(
             parts.append(f"  Fix the parse errors below, then resubmit.\n")
             if r.counterexample:
                 parts.append(_format_syntax_feedback(r.counterexample))
+                if "invalid variable:" in r.counterexample:
+                    parts.append(
+                        "Cedar expression variables are principal, action, resource, and context. "
+                        "Set methods test existing values; contains(x) does not bind x. "
+                        "Use an existing schema path for the value and preserve the required relation. "
+                        "If the relation cannot be expressed by the fixed schema, report the missing "
+                        "support for target review. Do not drop the relation or invent an iterator."
+                    )
         elif ctype == "validation":
             # Distinct from "syntax" — the policy parses, but Cedar's validator
             # rejected it (e.g. unguarded optional attribute access).
