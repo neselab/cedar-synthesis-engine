@@ -4,6 +4,8 @@ Solver Wrapper for the Cedar Synthesis Engine.
 Uses Cedar CLI v4.10+ with `symcc` subcommand for formal verification.
 The solver uses CVC5 under the hood — no @domain annotations needed.
 """
+from autocedar.symcc_result import formal_verdict
+
 import json
 import os
 import shutil
@@ -31,6 +33,7 @@ class CheckResult:
     description: str
     passed: bool
     counterexample: str      # Empty if passed
+    tool_error: bool = False
 
 
 @dataclass
@@ -162,10 +165,10 @@ def _run_symcc(
             output = _subprocess_output(result)
         if _is_symcc_tool_error(output, result.returncode):
             return False, _symcc_tool_error_message(output)
-        passed = "VERIFIED" in output
+        passed = formal_verdict(output) is True
         return passed, output
     except subprocess.TimeoutExpired:
-        return False, "CVC5 solver timed out (30s limit)."
+        return False, "Cedar symcc execution error: CVC5 solver timed out (30s limit)."
     except FileNotFoundError:
         return False, f"Cedar CLI not found at {CEDAR_PATH}. Set CEDAR env var."
 
@@ -186,7 +189,7 @@ def _with_plain_error_format(extra_args: list[str]) -> list[str]:
 
 
 def _subprocess_output(result: subprocess.CompletedProcess[str]) -> str:
-    return result.stdout.strip() or result.stderr.strip()
+    return (result.stdout.strip() + "\n" + result.stderr.strip()).strip()
 
 
 def _rejects_cvc5_path(output: str) -> bool:
@@ -203,7 +206,7 @@ def _is_symcc_tool_error(output: str, returncode: int | None = None) -> bool:
         "Cedar symcc setup error:" in output
         or _is_symcc_interface_error(output)
         or _is_cvc5_tool_error(output)
-        or (returncode not in (None, 0) and not _has_symcc_formal_result(output))
+        or not _has_symcc_formal_result(output)
     )
 
 
@@ -216,14 +219,7 @@ def _is_symcc_interface_error(output: str) -> bool:
 
 
 def _has_symcc_formal_result(output: str) -> bool:
-    formal_markers = (
-        "VERIFIED",
-        "DOES NOT HOLD",
-        "Counterexample",
-        "counterexample",
-        "No counterexample found",
-    )
-    return any(marker in output for marker in formal_markers)
+    return formal_verdict(output) is not None
 
 
 def _is_cvc5_tool_error(output: str) -> bool:
@@ -291,6 +287,7 @@ def run_implies_check(
         description=description,
         passed=passed,
         counterexample="" if passed else output,
+        tool_error=_is_symcc_tool_error(output),
     )
 
 
@@ -320,6 +317,7 @@ def run_always_denies_check(
             description=description,
             passed=False,
             counterexample=output,
+            tool_error=True,
         )
     # If expect_denies=False (liveness), we want the check to FAIL (not always deny)
     if expect_denies:
@@ -372,6 +370,7 @@ def run_liveness_overlap_check(
             description=description,
             passed=False,
             counterexample=output,
+            tool_error=True,
         )
     if disjoint:
         return CheckResult(
@@ -412,4 +411,5 @@ def run_never_errors_check(
         description="Policy must not produce runtime errors for any input",
         passed=passed,
         counterexample="" if passed else output,
+        tool_error=_is_symcc_tool_error(output),
     )

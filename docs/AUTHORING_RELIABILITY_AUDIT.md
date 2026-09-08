@@ -95,3 +95,74 @@ these tests.
 - Legacy sessions can restore only evidence actually written by their version.
   New Stage 1 checkpoints cannot recover already-lost edits from an old run.
   The Ubuntu Retail session itself was not available for forensic replay.
+
+## Synthesis follow-up: repeated syntax failures (2026-09-07)
+
+A second Ubuntu screenshot shows `syntax: FAIL` and byte-identical candidates
+repeated from iteration 1 through at least iteration 6. It establishes a parse
+failure loop, but does not contain the candidate, schema, or Cedar diagnostic;
+it cannot establish the original parse error's exact cause.
+
+Additional confirmed defects and fixes:
+
+- The unfenced-response extractor guessed which lines were Cedar from their
+  prefixes. It deleted valid annotations and multiline `if`/`then`/`else`
+  branches (including Boolean literals), potentially corrupting the same valid
+  response on every iteration. Extraction now removes explicit Markdown
+  envelopes and preserves unfenced code. A real-Cedar regression reproduces
+  the former corruption and verifies the intact result.
+- Schema sanity checking ignored validator launch failures and some schema
+  errors. These now stop before any synthesis request. Parse/type diagnostics
+  are printed in the terminal, rather than only `syntax: FAIL`.
+- Repeated failed candidates formerly consumed the whole iteration budget.
+  Synthesis now stops after three consecutive proposals that revisit failed
+  candidates, allowing an intervening novel attempt to reset that counter.
+  Exact repeats reuse verifier results within the unchanged target. The
+  explicit `no_oscillation` research ablation retains its original budget.
+- Candidate text, raw model response, verifier evidence, feedback, and metrics
+  are saved under `harness_runs/scenario/iterations/iter_N/`. Model and verifier
+  failures retain their actual cause in `eval_log.json`. A stalled run remains
+  a failure; no target is dropped or success manufactured.
+- SymCC timeouts, missing tools, and empty/unknown results were not consistently
+  distinguished from counterexamples. Inverting such a result could falsely
+  pass liveness, or send synthesis into a pointless repair loop. Both wrappers
+  now require an explicit formal verdict. Verdict interpretation is shared;
+  the word `VERIFIED` inside a counterexample no longer changes its outcome.
+- Unknown, empty, and duplicate-name verification plans are rejected instead
+  of silently skipping obligations. Verifier failures halt the synthesis loop.
+- Conversation retention is bounded to the fixed initial target and two recent
+  candidate/feedback pairs (at most five messages, previously up to eleven).
+  All attempts remain on disk. This is a structural context reduction, not a
+  claim about measured token savings on successful one-call scenarios.
+
+Validation after these changes: **510 passed, 1 skipped**. Fault injection with
+real Cedar covers repeated parse failures (stops at iteration 4), alternating
+semantic failures (stops at iteration 5, only two verifier runs), recovery after
+one repeat, missing validator, provider timeout, missing/unknown SymCC verdicts,
+and witness text containing `VERIFIED`.
+
+Live Codex `gpt-5.5` plus Cedar/CVC5 runs on the patched code:
+
+| Existing fixed-target fixture | Checks | Iterations | Elapsed | Input / output tokens |
+| --- | ---: | ---: | ---: | ---: |
+| `adversarial_oscillation_bait` | 18 | 1 | 21.69 s | 3,976 / 1,074 |
+| `regression_battery_all_traps` | 12 | 1 | 28.77 s | 4,253 / 1,495 |
+| `content_moderation_escalation` | 12 | 1 | 14.48 s | 2,446 / 720 |
+
+Local artifacts: `.tmp/live-oscillation-20260907-patched/`. The same fixtures also
+passed a baseline live run; they do not establish reproduction of the Ubuntu
+failure. A separate live CLI plumbing run generated a schema and two ownership
+bounds from prose, completed both source packets, and converged in one final
+synthesis call. It correctly reported `approved: False`; automated advancement
+is not human semantic review. Artifacts:
+`.tmp/live-authoring-20260907/runs/ownership-plumbing/`.
+
+A live structural schema test also used the public
+[tau-bench Retail policy](https://github.com/sierra-research/tau-bench/blob/main/tau_bench/envs/retail/wiki.md).
+One Codex call proposed 42 schema atoms; the composed schema passed Cedar
+validation on the first attempt (149.10 seconds, 5,678 input tokens, 8,021 output
+tokens). This tested the entire public document in one schema call, not the
+production source-packet workflow or a completed Retail authorization target.
+No semantic approval was assigned, and the Ubuntu operator's exact source
+version remains unknown. Local artifacts:
+`.tmp/live-authoring-20260907/retail-schema/`.

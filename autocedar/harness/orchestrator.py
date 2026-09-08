@@ -39,7 +39,19 @@ def load_checks(workspace: str) -> list[dict]:
     spec = importlib.util.spec_from_file_location("verification_plan", vp_path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
-    return module.get_checks()
+    checks = module.get_checks()
+    if not isinstance(checks, list) or not checks:
+        raise ValueError("Verification plan must contain at least one check.")
+    supported = {"implies", "floor", "always-denies-liveness", "liveness-overlap", "never-errors"}
+    names = set()
+    for check in checks:
+        if not isinstance(check, dict) or check.get("type") not in supported:
+            raise ValueError(f"Unsupported verification check: {check!r}")
+        name = check.get("name")
+        if not isinstance(name, str) or not name or name in names:
+            raise ValueError(f"Missing or duplicate verification check name: {name!r}")
+        names.add(name)
+    return checks
 
 
 def run_verification(workspace: str) -> VerificationResult:
@@ -59,7 +71,11 @@ def run_verification(workspace: str) -> VerificationResult:
         #   1 → parse error  → kind="parse"      → check_type="syntax"
         #   3 → type-check   → kind="validation" → check_type="validation"
         # The two need very different feedback, so we tag them distinctly.
-        if error_kind == "validation":
+        if error_kind == "other":
+            check_name = "verifier_error"
+            check_type = "verifier_error"
+            description = "Cedar validator could not complete"
+        elif error_kind == "validation":
             check_name = "validation"
             check_type = "validation"
             description = "Cedar type-check / schema validation"
@@ -75,6 +91,7 @@ def run_verification(workspace: str) -> VerificationResult:
                 description=description,
                 passed=False,
                 counterexample=error_msg,
+                tool_error=error_kind == "other",
             )],
         )
 
@@ -140,9 +157,11 @@ def run_verification(workspace: str) -> VerificationResult:
                 description=check["description"],
             )
         else:
-            continue
+            raise ValueError(f"Unsupported verification check type: {ctype!r}")
 
         results.append(result)
+        if result.tool_error:
+            break
 
     solver_time = time.monotonic() - t0
     loss = sum(1 for r in results if not r.passed)

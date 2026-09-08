@@ -36,6 +36,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, Literal, Optional
 
+from autocedar.symcc_result import formal_verdict
+
 from autocedar.atoms import (
     AlternativeEncoding,
     Example,
@@ -273,7 +275,7 @@ def _run_symcc_signal(
             candidate_excerpt=candidate_excerpt,
             reference_excerpt=reference_excerpt,
         )
-    passed = "VERIFIED" in output
+    passed = formal_verdict(output) is True
     return SymccSignal(
         subcommand=subcommand,
         command=final_cmd,
@@ -321,7 +323,7 @@ def _is_symcc_tool_error(output: str, returncode: int | None = None) -> bool:
         "Cedar symcc setup error:" in output
         or _is_symcc_interface_error(output)
         or _is_cvc5_tool_error(output)
-        or (returncode not in (None, 0) and not _has_symcc_formal_result(output))
+        or not _has_symcc_formal_result(output)
     )
 
 
@@ -334,14 +336,7 @@ def _is_symcc_interface_error(output: str) -> bool:
 
 
 def _has_symcc_formal_result(output: str) -> bool:
-    formal_markers = (
-        "VERIFIED",
-        "DOES NOT HOLD",
-        "Counterexample",
-        "counterexample",
-        "No counterexample found",
-    )
-    return any(marker in output for marker in formal_markers)
+    return formal_verdict(output) is not None
 
 
 def _is_cvc5_tool_error(output: str) -> bool:

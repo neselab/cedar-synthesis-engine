@@ -5,6 +5,13 @@ versioning while the public provider and CLI interfaces stabilize.
 
 ## Unreleased
 
+- Fixed valid unfenced Cedar being corrupted during response extraction; show
+  the actual parser diagnostic and stop repeated failed-candidate loops with
+  saved per-attempt evidence and bounded synthesis context.
+- Reject verifier/tool failures before model repair and require explicit SymCC
+  verdicts, preventing timeouts or witness text from falsely passing liveness.
+  Reject unsupported/empty plans instead of silently skipping checks.
+
 - Made schema/property review progress and queued proposals recoverable after
   interruptions, added TUI `/resume` and `/pause`, and prevented reuse of an
   existing session directory from overwriting saved work.

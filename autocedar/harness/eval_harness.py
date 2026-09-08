@@ -45,6 +45,9 @@ import time
 from dataclasses import dataclass, asdict
 from datetime import datetime, timezone
 from typing import Literal
+from pathlib import Path
+
+from autocedar.persistence import atomic_write_text, write_json
 
 from autocedar.harness.orchestrator import load_checks, run_verification
 from autocedar.harness.solver_wrapper import (
@@ -790,57 +793,17 @@ DATETIME / DURATION SYNTAX — Cedar mixes two formats; do not confuse them:
 
 
 def _strip_cedar_fencing(text: str) -> str:
-    """Extract Cedar policy code from LLM output.
+    """Remove explicit Markdown envelopes without guessing which lines are code.
 
-    Handles multiple output formats:
-    1. Raw Cedar code (no fencing)
-    2. Code wrapped in ```cedar ... ``` or ``` ... ```
-    3. Code wrapped with explanatory text before/after the fence
-    4. Multiple code blocks (extracts and joins all of them)
+    Unfenced output must remain intact: Cedar annotations, multiline strings,
+    and if/then/else expressions cannot be recognized by line prefixes.
     """
     text = text.strip()
-
-    # Try to extract fenced code blocks (```cedar ... ``` or ``` ... ```)
-    blocks = re.findall(r"```(?:cedar)?\s*\n(.*?)```", text, re.DOTALL)
+    blocks = re.findall(r"^```(?:cedar)?[ \t]*\n(.*?)^```[ \t]*$", text,
+                        re.DOTALL | re.MULTILINE | re.IGNORECASE)
     if blocks:
-        # Join all code blocks (model might split across multiple fences)
-        return "\n\n".join(b.strip() for b in blocks if b.strip())
-
-    # No fenced blocks found — check if the whole output looks like Cedar
-    # (starts with permit/forbid or a comment)
-    lines = text.split("\n")
-    cedar_lines = []
-    in_cedar = False
-    for line in lines:
-        stripped = line.strip()
-        # Cedar policy lines start with these keywords or are continuations
-        if stripped.startswith(("permit", "forbid", "//", "when", "unless",
-                               "}", "{", "&&", "||", "principal", "action",
-                               "resource", "context")):
-            in_cedar = True
-        elif stripped == "" and in_cedar:
-            pass  # blank lines between rules are fine
-        elif stripped.startswith((")", ");")) and in_cedar:
-            pass  # closing parens
-        elif in_cedar and not stripped[0:1].isalpha():
-            pass  # continuation lines (indented conditions etc.)
-        elif in_cedar and stripped:
-            # Non-Cedar text after Cedar started — might be explanation
-            # Only break if it looks like natural language (no Cedar operators)
-            if not any(kw in stripped for kw in ["==", "in ", "::", ".", "{"]):
-                in_cedar = False
-                continue
-
-        if in_cedar:
-            cedar_lines.append(line)
-
-    if cedar_lines:
-        return "\n".join(cedar_lines).strip()
-
-    # Fallback: return as-is with simple fence removal
-    text = re.sub(r"^```(?:cedar)?\s*\n?", "", text)
-    text = re.sub(r"\n?```\s*$", "", text)
-    return text.strip()
+        return "\n\n".join(block.strip() for block in blocks)
+    return text
 
 
 def _format_initial_prompt(schema: str, policy_spec: str, checks: list[dict]) -> str:
@@ -1273,9 +1236,9 @@ def _classify_repair_classes(
     if ctype == "implies":
         classes.append(
             "ceiling/over-permission failure: candidate allows at least one request "
-            "outside this reference. Tighten the candidate permit, or if this "
-            "reference is superseded by a later approved union ceiling, retire or "
-            "materialize the union reference before synthesis."
+            "outside this reference. Tighten the candidate permit while preserving "
+            "all required floors. The target is fixed during synthesis; a suspected "
+            "target conflict must be returned for review, never silently removed."
         )
         if _same_action_has_multiple_permits(joined_candidate):
             classes.append(
@@ -1414,7 +1377,7 @@ def _format_feedback(
         fixed = prev_failed - failed_now
         regressed = failed_now - prev_failed
         if fixed and regressed:
-            parts.append(f"**WARNING — OSCILLATION DETECTED**")
+            parts.append(f"**REGRESSION: this attempt traded one failure for another**")
             parts.append(f"You fixed: {', '.join(sorted(fixed))}")
             parts.append(f"But broke: {', '.join(sorted(regressed))}")
             parts.append(f"ALL checks must pass simultaneously. "
@@ -1730,8 +1693,10 @@ def run_scenario(
     if prompt_mode != "formal_target":
         print(f"Prompt mode: {prompt_mode}")
 
+    workspace = None
+
     def _err(msg: str, **kw) -> ScenarioResult:
-        return ScenarioResult(
+        result = ScenarioResult(
             scenario=scenario_name, model=phase2_model,
             phase1_model=phase1_model, phase2_model=phase2_model,
             converged=False,
@@ -1740,6 +1705,10 @@ def run_scenario(
             phase1_time_s=kw.get("p1", 0.0), phase2_time_s=0.0,
             final_loss=-1, checks_total=0, iteration_log=[], error=msg,
         )
+        if workspace:
+            write_json(Path(workspace) / "eval_log.json", asdict(result))
+        print(f"  Stopped: {msg}")
+        return result
 
     if fixed_target and (gen_references or not no_review):
         return _err("Fixed-target synthesis cannot regenerate or replace the reviewed plan.")
@@ -1769,13 +1738,9 @@ def run_scenario(
         os.remove(_empty_policy)
     except OSError:
         pass
-    if not _ok and _err_kind == "parse" and "schema" in _err_msg.lower():
-        # cedar validate's parse error against an empty policy is *always*
-        # a schema-level problem (the policy file has nothing to misparse).
-        first_line = _err_msg.strip().split("\n", 1)[0][:200]
-        return _err(
-            f"Scenario schema is malformed (Cedar parse error): {first_line}"
-        )
+    if not _ok:
+        label = "Scenario schema is malformed" if _err_kind != "other" else "Cedar validator could not run"
+        return _err(f"{label}: {_err_msg.strip()[:1800]}")
 
     spec_path = os.path.join(workspace, "policy_spec.md")
     policy_spec = ""
@@ -1973,6 +1938,11 @@ def run_scenario(
     failure_history: list[set[str]] = []     # union-of-failures across all iters
     phase2_in_tok = 0
     phase2_out_tok = 0
+    terminal_error = ""
+    verification_cache: dict[str, VerificationResult] = {}
+    consecutive_repeats = 0
+    history_dir = Path(workspace) / "iterations"
+    history_dir.mkdir(exist_ok=True)
 
     for iteration in range(1, max_iters + 1):
         print(f"\n  --- Iteration {iteration}/{max_iters} ---")
@@ -1980,6 +1950,9 @@ def run_scenario(
         # ── LLM synthesis call ──
         iter_in_tok = 0
         iter_out_tok = 0
+        iter_dir = history_dir / f"iter_{iteration}"
+        iter_dir.mkdir(exist_ok=True)
+        request_chars = len(PHASE2_SYSTEM) + sum(len(m.content) for m in messages)
         try:
             response = client.generate_text(
                 model=phase2_model,
@@ -1992,9 +1965,12 @@ def run_scenario(
             iter_out_tok = response.usage.output_tokens
             phase2_in_tok += iter_in_tok
             phase2_out_tok += iter_out_tok
+            atomic_write_text(iter_dir / "model_response.txt", response.text)
             candidate_text = _strip_cedar_fencing(response.text)
         except Exception as e:
-            print(f"  LLM error: {e}")
+            terminal_error = f"Model request failed: {e}"
+            print(f"  {terminal_error}")
+            write_json(iter_dir / "error.json", {"error": terminal_error, "prompt_characters": request_chars})
             iteration_log.append(asdict(IterationLog(
                 iteration=iteration, loss=-1, checks_passed=0,
                 checks_total=checks_total, solver_time_s=0.0,
@@ -2005,10 +1981,24 @@ def run_scenario(
         messages.append(ChatMessage(role="assistant", content=candidate_text))
 
         # ── Write candidate + verify ──
-        with open(os.path.join(workspace, "candidate.cedar"), "w") as f:
-            f.write(candidate_text)
-
-        vr = run_verification(workspace)
+        atomic_write_text(Path(workspace) / "candidate.cedar", candidate_text)
+        atomic_write_text(iter_dir / "candidate.cedar", candidate_text)
+        cand_hash = hashlib.sha256(candidate_text.encode("utf-8")).hexdigest()
+        reused_verification = ablation_mode != "no_oscillation" and cand_hash in verification_cache
+        if reused_verification:
+            print("  Reusing the saved verifier result for this identical candidate.")
+            vr = verification_cache[cand_hash]
+            consecutive_repeats += 1
+        else:
+            vr = run_verification(workspace)
+            consecutive_repeats = 0
+            if not any(r.tool_error for r in vr.results):
+                verification_cache[cand_hash] = vr
+        verifier_errors = [r for r in vr.results if r.tool_error]
+        write_json(iter_dir / "verification.json", {
+            **asdict(vr), "reused_verification": reused_verification,
+            "prompt_characters": request_chars,
+        })
 
         # Classify result
         gate1_kind = ""
@@ -2023,7 +2013,9 @@ def run_scenario(
         cx_count = sum(1 for r in vr.results if not r.passed and r.counterexample)
         passed = sum(1 for r in vr.results if r.passed)
 
-        if vr.loss == 0:
+        if verifier_errors:
+            status = "verifier_error"
+        elif vr.loss == 0:
             status = "pass"
         elif is_syntax_err:
             status = "syntax_error"
@@ -2037,7 +2029,7 @@ def run_scenario(
             loss=vr.loss,
             checks_passed=passed,
             checks_total=checks_total,
-            solver_time_s=round(vr.solver_time_s, 3),
+            solver_time_s=0.0 if reused_verification else round(vr.solver_time_s, 3),
             counterexample_count=cx_count,
             # syntax_valid is True iff Gate 1 (parse + type-check) accepted it
             syntax_valid=not (is_syntax_err or is_validation_err),
@@ -2057,6 +2049,19 @@ def run_scenario(
         for r in vr.results:
             mark = "PASS" if r.passed else "FAIL"
             print(f"    {r.check_name}: {mark}")
+            if not r.passed and r.check_type in {"syntax", "validation", "verifier_error"}:
+                for line in r.counterexample[:1800].splitlines():
+                    print(f"      {line}")
+
+        write_json(iter_dir / "metrics.json", asdict(log_entry))
+        if verifier_errors:
+            terminal_error = (
+                f"Verifier could not complete {verifier_errors[0].check_name}: "
+                f"{verifier_errors[0].counterexample} "
+                "Synthesis stopped; the target and candidate are saved."
+            )
+            print(f"  {terminal_error}")
+            break
 
         if vr.loss == 0:
             print(f"\n  CONVERGED in {iteration} iteration(s)")
@@ -2073,7 +2078,6 @@ def run_scenario(
         # come back may be from a *different* gate category than last time
         # (e.g. parse vs semantic), which is exactly the cycle Haiku falls
         # into when it removes a `has` guard to satisfy a semantic ceiling.
-        cand_hash = hashlib.sha256(candidate_text.encode("utf-8")).hexdigest()
         current_failed = [r.check_name for r in vr.results if not r.passed]
         failure_history.append(set(current_failed))
         repeat_info = None
@@ -2103,12 +2107,31 @@ def run_scenario(
             candidate_text=candidate_text,
             ablation_mode=ablation_mode,
         )
-        prev_failed = None if ablation_mode == "no_oscillation" else set(current_failed)
+        # A newly reachable gate is not a regression in previously passing
+        # obligations. Parse/type failures never ran the semantic checks.
+        prev_failed = (None if ablation_mode == "no_oscillation" or is_syntax_err or is_validation_err
+                       else set(current_failed))
+        atomic_write_text(iter_dir / "feedback.md", feedback)
         messages.append(ChatMessage(role="user", content=feedback))
 
-        # Trim conversation to avoid context limits: keep first message + last 8
-        if len(messages) > 12:
-            messages = messages[:1] + messages[-8:]
+        if consecutive_repeats >= 3:
+            terminal_error = (
+                "Synthesis stalled: three consecutive proposals repeated previously "
+                "failed candidates without exploring a new candidate. "
+                f"Failed checks: {', '.join(current_failed)}. "
+                f"Candidates and verifier feedback are saved in {history_dir}. "
+                "The reviewed target has not been changed; inspect these diagnostics "
+                "before retrying or returning to target review."
+            )
+            iteration_log[-1]["status"] = "stalled"
+            write_json(iter_dir / "metrics.json", iteration_log[-1])
+            print(f"  {terminal_error}")
+            break
+
+        # Keep the fixed target and two recent candidate/feedback pairs. Full
+        # attempts remain on disk; repeat feedback also retains cycle failures.
+        if len(messages) > 5:
+            messages = messages[:1] + messages[-4:]
 
     phase2_time = time.monotonic() - t2
     total_time = time.monotonic() - t_start
@@ -2136,7 +2159,7 @@ def run_scenario(
         model=phase2_model,
         phase1_model=phase1_model,
         phase2_model=phase2_model,
-        converged=(final_loss == 0),
+        converged=(final_loss == 0 and not terminal_error),
         iterations=len(iteration_log),
         max_iterations=max_iters,
         total_time_s=round(total_time, 2),
@@ -2145,6 +2168,7 @@ def run_scenario(
         final_loss=final_loss,
         checks_total=checks_total,
         iteration_log=iteration_log,
+        error=terminal_error,
         phase1_input_tokens=phase1_in_tok,
         phase1_output_tokens=phase1_out_tok,
         phase2_input_tokens=phase2_in_tok,
@@ -2156,8 +2180,7 @@ def run_scenario(
     )
 
     # Persist per-scenario log
-    with open(os.path.join(workspace, "eval_log.json"), "w") as f:
-        json.dump(asdict(result), f, indent=2)
+    write_json(Path(workspace) / "eval_log.json", asdict(result))
 
     return result
 
