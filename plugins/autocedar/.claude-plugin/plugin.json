@@ -1,0 +1,13 @@
+{
+  "name": "autocedar",
+  "description": "Author Cedar access-control policies from natural-language requirements with human-reviewed targets and symbolic verification (cedar symcc).",
+  "version": "0.1.0",
+  "author": {
+    "name": "AutoCedar Authors",
+    "url": "https://github.com/neselab/cedar-synthesis-engine"
+  },
+  "homepage": "https://github.com/neselab/cedar-synthesis-engine",
+  "repository": "https://github.com/neselab/cedar-synthesis-engine",
+  "license": "Apache-2.0",
+  "keywords": ["cedar", "access-control", "authorization", "policy-synthesis", "verification", "mcp"]
+}

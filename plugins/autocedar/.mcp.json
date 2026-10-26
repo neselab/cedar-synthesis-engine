@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "autocedar": {
+      "command": "uvx",
+      "args": ["--from", "autocedar>=0.3.0", "autocedar", "mcp"]
+    }
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "mcpServers": {
+    "autocedar": {
+      "command": "uvx",
+      "args": ["--from", "autocedar>=0.3.0", "autocedar", "mcp"],
+      "env_vars": [
+        "PATH",
+        "HOME",
+        "CODEX_HOME",
+        "CEDAR",
+        "AUTOCEDAR_PROVIDER",
+        "ANTHROPIC_API_KEY",
+        "OPENAI_API_KEY",
+        "HTTP_PROXY",
+        "HTTPS_PROXY",
+        "NO_PROXY",
+        "SSL_CERT_FILE"
+      ],
+      "tool_timeout_sec": 300
+    }
+  }
+}

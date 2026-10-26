@@ -221,6 +221,37 @@ directory.
 The Docker image pins Cedar CLI 4.10.0 with SymCC `analyze` enabled and installs
 CVC5 in the image. It should not depend on your host machine's Cedar or CVC5.
 
+### Option D: Plugin For Claude Code Or Codex
+
+AutoCedar also ships as an agent plugin. The plugin adds an `autocedar` skill and
+an MCP server (`autocedar mcp`) with six tools:
+
+- `doctor` and `verify`;
+- `author_start`, `author_status`, `author_review` and `author_pause`.
+
+The agent drives the authoring pipeline and shows you each atom. You still decide
+every atom: the agent relays your approve, reject, or edit decision and is told
+never to decide on its own.
+
+Claude Code:
+
+```bash
+claude plugin marketplace add neselab/cedar-synthesis-engine
+claude plugin install autocedar@neselab
+```
+
+Codex:
+
+```bash
+codex plugin marketplace add neselab/cedar-synthesis-engine
+codex plugin add autocedar@neselab
+```
+
+The server starts through `uvx`, so [uv](https://docs.astral.sh/uv/) must be on
+your `PATH`. Ask the agent to run `doctor` first; it reports missing Cedar or CVC5
+with the fix. Inside Claude Code, the `claude-cli` provider reuses your Claude
+Code login; inside Codex, the `codex` provider reuses your Codex login.
+
 ### First Things To Type
 
 Once the TUI opens, try:

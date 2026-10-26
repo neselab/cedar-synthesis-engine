@@ -5,6 +5,15 @@ versioning while the public provider and CLI interfaces stabilize.
 
 ## Unreleased
 
+- Added `autocedar mcp`, a dependency-free stdio MCP server that lets coding
+  agents check setup, verify workspaces, and run human-in-the-loop authoring.
+  The server pauses at every atom until the agent relays the user's decision.
+  Paused or failed runs report their session directory for `resume_session`.
+- Added an AutoCedar plugin for Claude Code and Codex (`plugins/autocedar`),
+  with an `autocedar` skill, plus marketplaces for both agents at the repo root.
+- Moved the model-backed authoring callbacks into one `author_hooks` builder
+  shared by `author`, `resume`, and the MCP server.
+
 - Added verifier-grounded guidance for undefined Cedar variables and set
   iteration. Property proposals must expose missing relation hooks for schema
   review instead of inventing iterator variables or dropping the relation.

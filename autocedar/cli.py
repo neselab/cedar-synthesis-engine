@@ -295,6 +295,12 @@ def _build_parser() -> argparse.ArgumentParser:
     verify_p.add_argument("workspace", help="Directory with schema, candidate, and verification_plan.py.")
     verify_p.set_defaults(func=_cmd_verify)
 
+    mcp_p = sub.add_parser(
+        "mcp",
+        help="Serve AutoCedar tools to coding agents (Claude Code, Codex) over MCP stdio.",
+    )
+    mcp_p.set_defaults(func=_cmd_mcp)
+
     synth_p = sub.add_parser(
         "synthesize",
         help="Run the v1 CEGIS synthesis harness for one or more scenarios.",
@@ -653,51 +659,6 @@ def _cmd_author(args: argparse.Namespace) -> int:
 
     spec_text = spec_path.read_text()
 
-    def schema_proposer(text: str):
-        return propose_schema_atoms(text, llm)
-
-    def property_proposer(text: str, schema_path: str, prior_atoms, prior_decisions):
-        return propose_property_atom(text, schema_path, llm, prior_atoms, prior_decisions)
-
-    def schema_repairer(text: str, rejected_atom, reason: str, prior_atoms):
-        _ = prior_atoms
-        return llm.propose_alternative_atom(rejected_atom, reason, text)
-
-    def schema_fixer(schema_text: str, cedar_error: str, text: str) -> str:
-        return llm.fix_schema(schema_text, cedar_error, text)
-
-    def property_repairer(
-        text: str,
-        schema_path: str,
-        rejected_atom,
-        reason: str,
-        prior_atoms,
-    ):
-        schema_text = Path(schema_path).read_text()
-        return llm.propose_alternative_property_atom(
-            rejected_atom,
-            reason,
-            text,
-            schema_text,
-            prior_atoms,
-        )
-
-    def property_repair_planner(
-        text: str,
-        schema_path: str,
-        current_atom,
-        decision,
-        prior_atoms,
-        schema_text: str,
-        symbolic_log,
-    ):
-        from autocedar.property_atomizer import plan_property_repair
-
-        return plan_property_repair(
-            text, schema_path, current_atom, decision, prior_atoms,
-            schema_text, symbolic_log, llm=llm,
-        )
-
     def reviewer(atom):
         if args.auto_approve:
             return auto_approve(atom)
@@ -718,18 +679,7 @@ def _cmd_author(args: argparse.Namespace) -> int:
         output_dir=Path(args.out),
         session_id=args.session_id,
         review_atom=reviewer,
-        propose_schema_atoms=schema_proposer,
-        propose_property_atom=property_proposer,
-        repair_schema_atom=schema_repairer,
-        fix_schema=schema_fixer,
-        plan_property_repair=property_repair_planner,
-        repair_property_atom=property_repairer,
-        synthesize=make_harness_synthesizer(
-            phase1_model=model,
-            phase2_model=model,
-            provider=config.provider,
-            no_review=True,
-        ),
+        **author_hooks(llm, model=model, provider=config.provider),
         schema_path_override=args.schema,
         run_incremental_checks=False,
         max_schema_gap_repairs=getattr(args, "max_schema_gap_repairs", None),
@@ -763,6 +713,51 @@ def _cmd_resume(args: argparse.Namespace) -> int:
     llm = LLMClient(provider=config.provider, model=model, effort=effort)
     spec_text = spec_path.read_text()
 
+    def reviewer(atom):
+        if args.auto_approve:
+            return auto_approve(atom)
+        reviewed = interactive_review_loop(
+            [atom],
+            llm=llm,
+            spec_text=spec_text,
+        )
+        return reviewed[0]
+
+    def property_progress(payload):
+        print(f"property progress: {format_property_progress(payload)}", flush=True)
+
+    reviewer.property_progress = property_progress  # type: ignore[attr-defined]
+
+    result = author_pipeline(
+        spec_path=spec_path,
+        output_dir=Path(args.out),
+        session_id=args.session_id,
+        review_atom=reviewer,
+        **author_hooks(llm, model=model, provider=config.provider),
+        resume_from=session_dir,
+        run_incremental_checks=False,
+        max_schema_gap_repairs=getattr(args, "max_schema_gap_repairs", None),
+    )
+
+    completed = _authoring_completed(result)
+    print(f"session:   {result.session_dir}")
+    if completed:
+        print(f"candidate: {result.candidate_path}")
+    print(f"approved:  {result.final_user_approved}")
+    if result.notes:
+        print("notes:")
+        for note in result.notes:
+            print(f"  - {note}")
+    return 0 if completed else 1
+
+
+def author_hooks(llm: LLMClient, *, model: str | None, provider: str) -> dict:
+    """Model-backed callbacks for ``pipeline.author``, shared by every front end.
+
+    The CLI, the TUI-free ``resume`` command, and the MCP server all drive the
+    same pipeline; only the atom reviewer differs between them.
+    """
+
     def schema_proposer(text: str):
         return propose_schema_atoms(text, llm)
 
@@ -808,53 +803,27 @@ def _cmd_resume(args: argparse.Namespace) -> int:
             schema_text, symbolic_log, llm=llm,
         )
 
-    def reviewer(atom):
-        if args.auto_approve:
-            return auto_approve(atom)
-        reviewed = interactive_review_loop(
-            [atom],
-            llm=llm,
-            spec_text=spec_text,
-        )
-        return reviewed[0]
-
-    def property_progress(payload):
-        print(f"property progress: {format_property_progress(payload)}", flush=True)
-
-    reviewer.property_progress = property_progress  # type: ignore[attr-defined]
-
-    result = author_pipeline(
-        spec_path=spec_path,
-        output_dir=Path(args.out),
-        session_id=args.session_id,
-        review_atom=reviewer,
-        propose_schema_atoms=schema_proposer,
-        propose_property_atom=property_proposer,
-        repair_schema_atom=schema_repairer,
-        fix_schema=schema_fixer,
-        plan_property_repair=property_repair_planner,
-        repair_property_atom=property_repairer,
-        synthesize=make_harness_synthesizer(
+    return {
+        "propose_schema_atoms": schema_proposer,
+        "propose_property_atom": property_proposer,
+        "repair_schema_atom": schema_repairer,
+        "fix_schema": schema_fixer,
+        "plan_property_repair": property_repair_planner,
+        "repair_property_atom": property_repairer,
+        "synthesize": make_harness_synthesizer(
             phase1_model=model,
             phase2_model=model,
-            provider=config.provider,
+            provider=provider,
             no_review=True,
         ),
-        resume_from=session_dir,
-        run_incremental_checks=False,
-        max_schema_gap_repairs=getattr(args, "max_schema_gap_repairs", None),
-    )
+    }
 
-    completed = _authoring_completed(result)
-    print(f"session:   {result.session_dir}")
-    if completed:
-        print(f"candidate: {result.candidate_path}")
-    print(f"approved:  {result.final_user_approved}")
-    if result.notes:
-        print("notes:")
-        for note in result.notes:
-            print(f"  - {note}")
-    return 0 if completed else 1
+
+def _cmd_mcp(args: argparse.Namespace) -> int:
+    _ = args
+    from autocedar.mcp_server import serve_stdio
+
+    return serve_stdio()
 
 
 def _cmd_verify(args: argparse.Namespace) -> int:

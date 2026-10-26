@@ -1,0 +1,26 @@
+{
+  "name": "autocedar",
+  "version": "0.1.0",
+  "description": "Author Cedar access-control policies from natural-language requirements with human-reviewed targets and symbolic verification (cedar symcc).",
+  "author": {
+    "name": "AutoCedar Authors"
+  },
+  "homepage": "https://github.com/neselab/cedar-synthesis-engine",
+  "repository": "https://github.com/neselab/cedar-synthesis-engine",
+  "license": "Apache-2.0",
+  "keywords": ["cedar", "access-control", "authorization", "policy-synthesis", "verification", "mcp"],
+  "skills": "./skills",
+  "mcpServers": "./codex-mcp.json",
+  "interface": {
+    "displayName": "AutoCedar",
+    "shortDescription": "Verified Cedar policies from requirements",
+    "longDescription": "AutoCedar turns natural-language access-control requirements into Cedar policies. You review small intent atoms (floors, ceilings and workflow slices) in plain English; AutoCedar compiles the approved atoms into a verification target and synthesizes a Cedar policy that cedar symcc proves satisfies it.",
+    "developerName": "AutoCedar Authors",
+    "category": "Developer Tools",
+    "capabilities": ["Interactive", "Read", "Write"],
+    "defaultPrompt": [
+      "Turn these access-control requirements into a verified Cedar policy",
+      "Verify this Cedar policy against its verification plan"
+    ]
+  }
+}
