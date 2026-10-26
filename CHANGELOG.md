@@ -5,6 +5,22 @@ versioning while the public provider and CLI interfaces stabilize.
 
 ## Unreleased
 
+- Fixed verification of property atoms over several principal or resource
+  types: compiled plans now emit one ceiling or floor check per type pair
+  instead of checking only the first, which left the other types unbounded.
+- Fixed Stage 1.75 and admission floor/ceiling checks to compare each pair in
+  the request environments both atoms apply to. Previously every pair on an
+  action was checked in the first floor's environment, which could miss real
+  conflicts or report false ones.
+- Stage 1.75 now also stops before synthesis when a ceiling or disjointness
+  bound shuts out a liveness slice entirely, instead of leaving the run to fail
+  at its iteration budget.
+- Source nodes now join hard-wrapped lines and keep list markers with their
+  item, so a wrapped requirement is one node rather than several fragments.
+  Section numbers such as "§8.8" are no longer split as sentences. Node ids
+  change for documents with wrapped lines, so resume a session only with the
+  version that started it.
+
 - Added verifier-grounded guidance for undefined Cedar variables and set
   iteration. Property proposals must expose missing relation hooks for schema
   review instead of inventing iterator variables or dropping the relation.

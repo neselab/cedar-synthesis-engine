@@ -42,6 +42,7 @@ from autocedar.atoms import (
     AlternativeEncoding,
     Example,
     PropertyAtom,
+    shared_environments,
 )
 from autocedar.identity_model import find_identity_issues, format_identity_issues
 
@@ -623,20 +624,32 @@ def _check_joint_consistency(
         floor_atom = atom if new_role == "floor" else prior
         ceiling_atom = prior if new_role == "floor" else atom
 
+        # Compare the pair only where both bounds apply. The harness checks
+        # each bound in its own request environments, so a ceiling on one
+        # principal type never constrains a floor on another.
+        environments = shared_environments(floor_atom, ceiling_atom)
+        if not environments:
+            continue
+
         floor_path = workdir / f"{floor_atom.name}_floor.cedar"
         ceiling_path = workdir / f"{ceiling_atom.name}_ceiling.cedar"
         floor_path.write_text(floor_atom.reference_cedar)
         ceiling_path.write_text(ceiling_atom.reference_cedar)
-        principal_type, resource_type = _principal_resource(atom)
 
-        passed, output = _run_symcc(
-            schema_path,
-            principal_type,
-            atom.action,
-            resource_type,
-            "implies",
-            ["--policies1", str(floor_path), "--policies2", str(ceiling_path)],
-        )
+        passed, output = True, ""
+        for principal_type, resource_type in environments:
+            env_passed, env_output = _run_symcc(
+                schema_path,
+                principal_type,
+                atom.action,
+                resource_type,
+                "implies",
+                ["--policies1", str(floor_path), "--policies2", str(ceiling_path)],
+            )
+            if not env_passed:
+                passed = False
+                output = f"[principal {principal_type}, resource {resource_type}]\n{env_output}"
+                break
         out.append(
             SymbolicCheck(
                 name=f"joint-consistency-with-{prior.name}",

@@ -82,3 +82,47 @@ def test_attach_source_ids_keeps_visible_excerpt_unchanged() -> None:
 
     assert atom.source_excerpt == "The owner can read the document."
     assert atom_source_ids(atom) == ["src.docs.p0001.l7"]
+
+
+def test_wrapped_list_items_and_prose_become_single_nodes() -> None:
+    spec = (
+        "## Requirements\n"
+        "\n"
+        "7. Reviewers can read other reviewers' reviews for a paper only after submitting\n"
+        "   their own review for that paper.\n"
+        "8. Reviewers can declare conflicts of interest for assigned papers.\n"
+        "\n"
+        "Chairs monitor the review process and may reassign papers when a reviewer\n"
+        "withdraws.\n"
+    )
+
+    doc = compile_source_document(spec)
+
+    assert [node.text for node in doc.nodes] == [
+        "7. Reviewers can read other reviewers' reviews for a paper only after "
+        "submitting their own review for that paper.",
+        "8. Reviewers can declare conflicts of interest for assigned papers.",
+        "Chairs monitor the review process and may reassign papers when a reviewer withdraws.",
+    ]
+    assert (doc.nodes[0].start_line, doc.nodes[0].end_line) == (3, 4)
+
+
+def test_one_requirement_per_line_still_splits_per_line() -> None:
+    spec = "Doctors read records\nNurses update vitals\nPatients view their own records\n"
+
+    doc = compile_source_document(spec)
+
+    assert [node.text for node in doc.nodes] == [
+        "Doctors read records",
+        "Nurses update vitals",
+        "Patients view their own records",
+    ]
+
+
+def test_section_numbers_are_not_sentence_breaks() -> None:
+    doc = compile_source_document("Owners bypass MFA except on confidential files (see §8.8). Admins can audit.")
+
+    assert [node.text for node in doc.nodes] == [
+        "Owners bypass MFA except on confidential files (see §8.8).",
+        "Admins can audit.",
+    ]

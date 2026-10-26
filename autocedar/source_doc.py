@@ -590,17 +590,39 @@ def _normalize_block(text: str) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
 
+_LIST_MARKER = re.compile(r"^\s*(?:[-*+\u2022]|\(?\d{1,3}[.)]|\(?[A-Za-z][)])\s+")
+_BARE_LIST_MARKER = re.compile(r"^\(?(?:\d{1,3}|[A-Za-z])[.)]$")
+_TERMINAL_PUNCTUATION = (".", "!", "?", ":", ";")
+
+
 def _paragraph_blocks(paragraph: list[tuple[int, str]]) -> list[tuple[str, int, int]]:
-    if len(paragraph) <= 1:
-        if not paragraph:
-            return []
-        line_no, text = paragraph[0]
-        return [(_normalize_block(text), line_no, line_no)]
-    return [
-        (_normalize_block(text), line_no, line_no)
-        for line_no, text in paragraph
-        if _normalize_block(text)
-    ]
+    """Group a paragraph's lines into blocks, one per list item or wrapped line.
+
+    A line starts a new block when it opens a list item, or when the previous
+    block already ends a sentence. Otherwise it continues the previous block if
+    it is indented further or starts in lower case, which is how hard-wrapped
+    prose and wrapped list items look. Lines that satisfy none of these keep
+    their own block, so one-requirement-per-line documents split as before.
+    """
+    blocks: list[list[Any]] = []
+    for line_no, raw in paragraph:
+        text = _normalize_block(raw)
+        if not text:
+            continue
+        indent = len(raw) - len(raw.lstrip())
+        if blocks and _continues_block(blocks[-1], raw, text, indent):
+            blocks[-1][0] = f"{blocks[-1][0]} {text}"
+            blocks[-1][2] = line_no
+            continue
+        blocks.append([text, line_no, line_no, indent])
+    return [(text, start, end) for text, start, end, _ in blocks]
+
+
+def _continues_block(block: list[Any], raw: str, text: str, indent: int) -> bool:
+    previous_text, _, _, first_indent = block
+    if _LIST_MARKER.match(raw) or previous_text.endswith(_TERMINAL_PUNCTUATION):
+        return False
+    return indent > first_indent or text[:1].islower()
 
 
 def _split_requirement_block(
@@ -609,11 +631,19 @@ def _split_requirement_block(
     end_line: int,
     max_chars: int = 900,
 ) -> list[tuple[str, int, int]]:
-    sentences = [
-        sentence.strip()
-        for sentence in re.split(r"(?<=[.!?])\s*(?=[A-Z0-9\"'])", text)
-        if sentence.strip()
-    ]
+    sentences: list[str] = []
+    # Split after sentence punctuation. Pasted text may lack the space before
+    # a capital ("team.Nurses"), but a digit needs one, so "§8.8" stays whole.
+    for sentence in re.split(r"(?<=[.!?])(?:\s+(?=[A-Z0-9\"'])|(?=[A-Z\"']))", text):
+        sentence = sentence.strip()
+        if not sentence:
+            continue
+        # A list marker such as "7." ends in a period, so the split above cuts
+        # it off its item; join it back.
+        if sentences and _BARE_LIST_MARKER.match(sentences[-1]):
+            sentences[-1] = f"{sentences[-1]} {sentence}"
+        else:
+            sentences.append(sentence)
     if len(sentences) > 1:
         return [(sentence, start_line, end_line) for sentence in sentences]
     return _split_long_block(text, start_line, end_line, max_chars=max_chars)

@@ -23,11 +23,15 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
-from autocedar.atoms import PropertyAtom, VerificationPlanDraft
+from autocedar.atoms import (
+    PropertyAtom,
+    VerificationPlanDraft,
+    request_environments,
+    shared_environments,
+)
 from autocedar.grounding import (
     _ceiling_or_floor,
     _is_symcc_tool_error,
-    _principal_resource,
     _run_symcc,
 )
 
@@ -53,70 +57,114 @@ def symbolic_consistency_check(
 ) -> ConsistencyResult:
     """Verify the approved plan is jointly satisfiable.
 
-    Pairwise check: for every (floor, ceiling) pair on the same action,
-    ``cedar symcc implies floor⊆ceiling`` must hold. If any pair fails,
-    those two atoms form the unsat core. Multiple failures return all
-    involved atoms as the core.
+    Two pairwise checks, each run only in request environments that both
+    atoms apply to, because the harness checks every bound per environment:
+
+    - every floor must be contained in every ceiling on the same action
+      (``cedar symcc implies floor ceiling``);
+    - no ceiling or disjointness bound may be disjoint from a liveness slice
+      on the same action, since then no candidate can keep that slice live
+      (``cedar symcc disjoint``). A slice is checked in its first environment,
+      the one the harness's liveness check uses.
+
+    The slice check is necessary, not sufficient: a slice can still be shut
+    out by several ceilings together. Failed pairs form the unsat core.
     """
     workdir = workdir or Path(tempfile.mkdtemp(prefix="autocedar_consistency_"))
     workdir.mkdir(parents=True, exist_ok=True)
 
     failed_pairs: list[tuple[str, str, str]] = []
 
-    # Group atoms by action for efficiency.
     by_action: dict[str, list[PropertyAtom]] = {}
     for atom in plan.properties:
         by_action.setdefault(atom.action, []).append(atom)
 
     for action, atoms in by_action.items():
         floors = [a for a in atoms if _ceiling_or_floor(a) == "floor"]
-        ceilings = [a for a in atoms if _ceiling_or_floor(a) == "ceiling"]
-        if not (floors and ceilings):
-            continue
+        ceilings = [
+            a for a in atoms
+            if _ceiling_or_floor(a) == "ceiling" and a.constraint_type != "disjointness"
+        ]
+        bounds = [a for a in atoms if _ceiling_or_floor(a) == "ceiling"]
+        slices = [
+            a for a in atoms
+            if a.constraint_type == "liveness" and a.reference_cedar.strip()
+        ]
 
-        # Need a representative atom for principal/resource type lookup.
-        rep = floors[0] if floors else ceilings[0]
-        try:
-            principal_type, resource_type = _principal_resource(rep)
-        except ValueError as e:
-            return ConsistencyResult(
-                unsat=True,
-                core=[],
-                detail=f"plan misconfigured: {e}",
-            )
+        for atom in [*floors, *bounds, *slices]:
+            if any(not p or not r for p, r in request_environments(atom)):
+                return ConsistencyResult(
+                    unsat=True,
+                    core=[],
+                    detail=f"plan misconfigured: atom {atom.name!r} has no principal or resource type",
+                )
 
         for floor in floors:
             for ceiling in ceilings:
-                floor_path = workdir / f"{floor.name}_floor.cedar"
-                ceiling_path = workdir / f"{ceiling.name}_ceiling.cedar"
-                floor_path.write_text(floor.reference_cedar)
-                ceiling_path.write_text(ceiling.reference_cedar)
+                for principal_type, resource_type in shared_environments(floor, ceiling):
+                    passed, output = _symcc_pair(
+                        workdir, schema_path, principal_type, action, resource_type,
+                        "implies", floor, ceiling,
+                    )
+                    if _is_symcc_tool_error(output):
+                        return ConsistencyResult(unsat=False, detail=output, tool_error=True)
+                    if not passed:
+                        failed_pairs.append((
+                            floor.name,
+                            ceiling.name,
+                            f"{floor.name} not contained in {ceiling.name}",
+                        ))
+                        break
 
-                passed, output = _run_symcc(
-                    schema_path,
-                    principal_type,
-                    action,
-                    resource_type,
-                    "implies",
-                    ["--policies1", str(floor_path), "--policies2", str(ceiling_path)],
+        for slice_atom in slices:
+            environment = request_environments(slice_atom)[0]
+            for bound in bounds:
+                if environment not in request_environments(bound):
+                    continue
+                principal_type, resource_type = environment
+                disjoint, output = _symcc_pair(
+                    workdir, schema_path, principal_type, action, resource_type,
+                    "disjoint", bound, slice_atom,
                 )
                 if _is_symcc_tool_error(output):
-                    return ConsistencyResult(
-                        unsat=False,
-                        detail=output,
-                        tool_error=True,
-                    )
-                if not passed:
-                    failed_pairs.append((floor.name, ceiling.name, output[:200]))
+                    return ConsistencyResult(unsat=False, detail=output, tool_error=True)
+                if disjoint:
+                    failed_pairs.append((
+                        slice_atom.name,
+                        bound.name,
+                        f"liveness slice {slice_atom.name} lies entirely outside {bound.name}",
+                    ))
 
     if not failed_pairs:
         return ConsistencyResult(unsat=False)
 
     core = sorted({n for pair in failed_pairs for n in pair[:2]})
-    detail = "; ".join(
-        f"{floor} not contained in {ceiling}" for floor, ceiling, _ in failed_pairs
-    )
+    detail = "; ".join(message for _, _, message in failed_pairs)
     return ConsistencyResult(unsat=True, core=core, detail=detail)
+
+
+def _symcc_pair(
+    workdir: Path,
+    schema_path: str,
+    principal_type: str,
+    action: str,
+    resource_type: str,
+    subcommand: str,
+    first: PropertyAtom,
+    second: PropertyAtom,
+) -> tuple[bool, str]:
+    first_path = workdir / f"{first.name}_{subcommand}_1.cedar"
+    second_path = workdir / f"{second.name}_{subcommand}_2.cedar"
+    first_path.write_text(first.reference_cedar)
+    second_path.write_text(second.reference_cedar)
+    return _run_symcc(
+        schema_path,
+        principal_type,
+        action,
+        resource_type,
+        subcommand,
+        ["--policies1", str(first_path), "--policies2", str(second_path)],
+    )
 
 
 # ---------------------------------------------------------------------------
