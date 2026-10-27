@@ -11,7 +11,7 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
-from typing import Sequence
+from typing import Any, Sequence
 
 from autocedar import __version__
 from autocedar.api_key import (
@@ -246,6 +246,17 @@ def _build_parser() -> argparse.ArgumentParser:
         help=argparse.SUPPRESS,
     )
     author_p.add_argument(
+        "--review-provider",
+        choices=CANONICAL_PROVIDER_IDS,
+        default=None,
+        help="Provider for --model-review (default: the provider that writes the atoms).",
+    )
+    author_p.add_argument(
+        "--review-model",
+        default=None,
+        help="Model for --model-review (default: the model that writes the atoms).",
+    )
+    author_p.add_argument(
         "--max-schema-gap-repairs",
         type=int,
         default=None,
@@ -296,6 +307,17 @@ def _build_parser() -> argparse.ArgumentParser:
         dest="model_review",
         action="store_true",
         help=argparse.SUPPRESS,
+    )
+    resume_p.add_argument(
+        "--review-provider",
+        choices=CANONICAL_PROVIDER_IDS,
+        default=None,
+        help="Provider for --model-review (default: the provider that writes the atoms).",
+    )
+    resume_p.add_argument(
+        "--review-model",
+        default=None,
+        help="Model for --model-review (default: the model that writes the atoms).",
     )
     resume_p.add_argument(
         "--max-schema-gap-repairs",
@@ -681,7 +703,7 @@ def _cmd_author(args: argparse.Namespace) -> int:
 
     spec_text = spec_path.read_text()
 
-    model_reviewer = ModelReviewer(llm, spec_text)
+    model_reviewer = ModelReviewer(_review_llm(args, config, llm), spec_text)
 
     def reviewer(atom):
         if _model_review_enabled(args):
@@ -737,7 +759,7 @@ def _cmd_resume(args: argparse.Namespace) -> int:
     effort = config.reasoning_effort or DEFAULT_EFFORT
     llm = LLMClient(provider=config.provider, model=model, effort=effort)
     spec_text = spec_path.read_text()
-    model_reviewer = ModelReviewer(llm, spec_text)
+    model_reviewer = ModelReviewer(_review_llm(args, config, llm), spec_text)
 
     def reviewer(atom):
         if _model_review_enabled(args):
@@ -937,6 +959,29 @@ def _command_provider_config(args: argparse.Namespace):
             model=getattr(args, "model", None),
             reasoning_effort=getattr(args, "effort", None),
         ),
+    )
+
+
+def _review_llm(args: argparse.Namespace, config: Any, llm: LLMClient) -> LLMClient:
+    """The model that reviews atoms: the writing model unless --review-* says otherwise."""
+    provider = getattr(args, "review_provider", None)
+    model = getattr(args, "review_model", None)
+    if not provider and not model:
+        return llm
+    if not _model_review_enabled(args):
+        raise SystemExit("--review-provider and --review-model need --model-review.")
+    review = resolve_provider_config(
+        session=SessionOverrides(
+            provider=provider or config.provider,
+            model=model,
+            reasoning_effort=getattr(args, "effort", None),
+        ),
+    )
+    _require_provider_auth(review.provider)
+    return LLMClient(
+        provider=review.provider,
+        model=review.model,
+        effort=review.reasoning_effort or DEFAULT_EFFORT,
     )
 
 

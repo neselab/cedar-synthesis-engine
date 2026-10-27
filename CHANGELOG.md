@@ -33,6 +33,10 @@ versioning while the public provider and CLI interfaces stabilize.
   permissions as examples. Under `--model-review` the model answers, recorded
   as the model's assumption. Before, the map guessed, and the same document
   could get anywhere from 2 to 14 of 14 scopes marked complete.
+- `--review-provider` and `--review-model` let `--model-review` use a different
+  model from the one that writes the atoms, so a reviewer does not share the
+  writer's blind spots. Without them nothing changes. Each model decision
+  records the reviewing model.
 - The map review names its objections: move a condition, add a missing one,
   reclassify or drop a sentence, or unmark a scope, each with exact ids.
   AutoCedar applies these itself and reviews the corrected map again; only

@@ -216,3 +216,65 @@ def test_model_map_review_passes_its_named_objections_on() -> None:
     assert decision.action == "reject"
     assert decision.edit_delta["map_objections"][0]["node_id"] == "p4"
     assert decision.edit_delta["map_objections"][0]["slice_ids"] == ["s2"]
+
+
+def test_review_options_give_the_reviewer_its_own_model(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    spec = tmp_path / "spec.md"
+    spec.write_text("Only the recorded inspector may release a work order.")
+    writer = FakeLLM()
+    reviewer = FakeLLM(("approve", "Matches the release section."))
+    reviewer._provider, reviewer._model = "codex", "gpt-6.1-sol"
+    built: list[dict] = []
+
+    def make_llm(**kwargs):
+        built.append(kwargs)
+        return writer if len(built) == 1 else reviewer
+
+    monkeypatch.setattr(cli, "LLMClient", make_llm)
+    monkeypatch.setattr(cli, "_require_provider_auth", lambda provider: None)
+    monkeypatch.setattr(cli, "make_harness_synthesizer", lambda **kwargs: object())
+    decisions = []
+
+    def fake_author_pipeline(**kwargs):
+        decisions.append(kwargs["review_atom"](_property()))
+        return SimpleNamespace(
+            session_dir=tmp_path, candidate_path=Path(""), final_user_approved=False, notes=[],
+        )
+
+    monkeypatch.setattr(cli, "author_pipeline", fake_author_pipeline)
+    cli._cmd_author(argparse.Namespace(
+        spec=str(spec), out=str(tmp_path / "out"), session_id=None, schema=None,
+        provider="claude-cli", model="claude-haiku-4-5", effort="high", model_review=True,
+        review_provider="codex", review_model="gpt-6.1-sol",
+    ))
+
+    assert [b["provider"] for b in built] == ["claude-cli", "codex"]
+    assert built[1]["model"] == "gpt-6.1-sol"
+    assert writer.calls == [] and len(reviewer.calls) == 1
+    assert decisions[0].action == "approve"
+    assert decisions[0].edit_delta["review_model"] == "codex:gpt-6.1-sol"
+
+
+def test_review_options_need_model_review(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(cli, "LLMClient", lambda **kwargs: FakeLLM())
+    monkeypatch.setattr(cli, "_require_provider_auth", lambda provider: None)
+    spec = tmp_path / "spec.md"
+    spec.write_text("x")
+
+    with pytest.raises(SystemExit, match="need --model-review"):
+        cli._cmd_author(argparse.Namespace(
+            spec=str(spec), out=str(tmp_path / "out"), session_id=None, schema=None,
+            provider=None, model=None, effort=None, model_review=False,
+            review_provider="codex", review_model=None,
+        ))
+
+
+def test_review_options_parse_on_author_and_resume() -> None:
+    parser = cli._build_parser()
+    for command in (["author", "spec.md", "--out", "o"], ["resume", "s", "--out", "o"]):
+        args = parser.parse_args([*command, "--model-review", "--review-provider", "codex",
+                                  "--review-model", "gpt-6.1-sol"])
+        assert (args.review_provider, args.review_model) == ("codex", "gpt-6.1-sol")

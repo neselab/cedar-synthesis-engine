@@ -64,6 +64,9 @@ class ModelReviewer:
                 approved_atoms=self.approved,
             )
         delta = {"review_channel": "model", "model_review": review.reason}
+        reviewer = ":".join(x for x in (getattr(self.llm, "_provider", ""), getattr(self.llm, "_model", "")) if x)
+        if reviewer:
+            delta["review_model"] = reviewer
         objections = getattr(review, "objections", None)
         if objections:
             delta["map_objections"] = [o.model_dump() for o in objections]

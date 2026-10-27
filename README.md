@@ -950,6 +950,11 @@ supports it, that it applies to the right action and types, and that its Cedar
 matches its summary. Rejected atoms go to the repair planner with the reason.
 Model review is recorded as such and never counts as human approval.
 `--auto-approve`, the flag's earlier name, still works and means the same thing.
+By default the model that writes the atoms also reviews them. To review with a
+different model, add `--review-provider` and/or `--review-model`, for example
+`--provider claude-cli --model claude-haiku-4-5 --model-review --review-provider
+codex --review-model gpt-6.1-sol`. Each model decision records the model that
+made it (`review_model` in `stage2/decisions.json`).
 
 ### Output Files
 
