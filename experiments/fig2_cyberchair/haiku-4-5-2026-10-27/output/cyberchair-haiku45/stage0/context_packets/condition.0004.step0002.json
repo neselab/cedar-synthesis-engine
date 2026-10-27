@@ -1,0 +1,12 @@
+{
+  "id": "condition.0004.step0002",
+  "kind": "condition",
+  "focus_node_ids": [
+    "src.cyberchair_access_control_intent.authorization_intent_covered.p0004.l10"
+  ],
+  "scope_ids": [
+    "submitFullPaper"
+  ],
+  "related_node_ids": [],
+  "text": "<autocedar_condition_packet id=\"condition.0004.step0002\">\nRequirement to encode:\n[source_id: src.cyberchair_access_control_intent.authorization_intent_covered.p0004.l10; section: CyberChair Access Control Intent / Authorization Intent Covered] 2. Authors with step-2 credentials can upload full papers during step 2.\n\nWrite one condition atom for each scope below. AutoCedar joins the conditions of a slice with AND and the slices of a scope with OR, so encode only what this requirement says.\n\nScope submitFullPaper: principal User, action submitFullPaper, resource Submission (every way to allow it is listed).\n  It is a condition of slice slice_p0004: Author with step-2 credentials, during step 2\n  The other conditions of this slice (encoded separately):\n    - none\n  Approved condition atoms of this scope:\n    - none yet\n\nRules for interpretation (apply them to every requirement):\n  - none\n</autocedar_condition_packet>\n"
+}

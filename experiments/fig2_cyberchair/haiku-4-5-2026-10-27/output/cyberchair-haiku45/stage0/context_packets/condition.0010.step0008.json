@@ -1,0 +1,12 @@
+{
+  "id": "condition.0010.step0008",
+  "kind": "condition",
+  "focus_node_ids": [
+    "src.cyberchair_access_control_intent.authorization_intent_covered.p0010.l18"
+  ],
+  "scope_ids": [
+    "declareConflict"
+  ],
+  "related_node_ids": [],
+  "text": "<autocedar_condition_packet id=\"condition.0010.step0008\">\nRequirement to encode:\n[source_id: src.cyberchair_access_control_intent.authorization_intent_covered.p0010.l18; section: CyberChair Access Control Intent / Authorization Intent Covered] 8. Reviewers can declare conflicts of interest for assigned papers.\n\nWrite one condition atom for each scope below. AutoCedar joins the conditions of a slice with AND and the slices of a scope with OR, so encode only what this requirement says.\n\nScope declareConflict: principal User, action declareConflict, resource Submission (every way to allow it is listed).\n  It is a condition of slice slice_p0010: Reviewer, for assigned paper\n  The other conditions of this slice (encoded separately):\n    - none\n  Approved condition atoms of this scope:\n    - none yet\n\nRules for interpretation (apply them to every requirement):\n  - none\n</autocedar_condition_packet>\n"
+}

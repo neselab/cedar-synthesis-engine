@@ -1,0 +1,493 @@
+{
+  "schema_version": 1,
+  "nodes": [
+    {
+      "id": "src.cyberchair_access_control_intent.p0001.l3",
+      "text": "Manual AITL target built from the human-provided CyberChair prose.",
+      "start_line": 3,
+      "end_line": 5,
+      "heading_path": [
+        "CyberChair Access Control Intent"
+      ],
+      "node_type": "requirement",
+      "parent_id": "section:cyberchair_access_control_intent",
+      "ordinal": 1
+    },
+    {
+      "id": "src.cyberchair_access_control_intent.p0002.l3",
+      "text": "This workspace is a trace artifact for debugging AutoCedar, not an automatically generated session.",
+      "start_line": 3,
+      "end_line": 5,
+      "heading_path": [
+        "CyberChair Access Control Intent"
+      ],
+      "node_type": "requirement",
+      "parent_id": "section:cyberchair_access_control_intent",
+      "ordinal": 2
+    },
+    {
+      "id": "src.cyberchair_access_control_intent.authorization_intent_covered.p0003.l9",
+      "text": "1. Authors can submit abstracts/papers during step 1.",
+      "start_line": 9,
+      "end_line": 9,
+      "heading_path": [
+        "CyberChair Access Control Intent",
+        "Authorization Intent Covered"
+      ],
+      "node_type": "requirement",
+      "parent_id": "section:cyberchair_access_control_intent.authorization_intent_covered",
+      "ordinal": 3
+    },
+    {
+      "id": "src.cyberchair_access_control_intent.authorization_intent_covered.p0004.l10",
+      "text": "2. Authors with step-2 credentials can upload full papers during step 2.",
+      "start_line": 10,
+      "end_line": 10,
+      "heading_path": [
+        "CyberChair Access Control Intent",
+        "Authorization Intent Covered"
+      ],
+      "node_type": "requirement",
+      "parent_id": "section:cyberchair_access_control_intent.authorization_intent_covered",
+      "ordinal": 4
+    },
+    {
+      "id": "src.cyberchair_access_control_intent.authorization_intent_covered.p0005.l11",
+      "text": "3. Authors can correct step-1 submission information during step 2.",
+      "start_line": 11,
+      "end_line": 11,
+      "heading_path": [
+        "CyberChair Access Control Intent",
+        "Authorization Intent Covered"
+      ],
+      "node_type": "requirement",
+      "parent_id": "section:cyberchair_access_control_intent.authorization_intent_covered",
+      "ordinal": 5
+    },
+    {
+      "id": "src.cyberchair_access_control_intent.authorization_intent_covered.p0006.l12",
+      "text": "4. Authors of selected submissions can submit camera-ready papers after review.",
+      "start_line": 12,
+      "end_line": 12,
+      "heading_path": [
+        "CyberChair Access Control Intent",
+        "Authorization Intent Covered"
+      ],
+      "node_type": "requirement",
+      "parent_id": "section:cyberchair_access_control_intent.authorization_intent_covered",
+      "ordinal": 6
+    },
+    {
+      "id": "src.cyberchair_access_control_intent.authorization_intent_covered.p0007.l13",
+      "text": "5. Assigned reviewers can access/download assigned papers after paper distribution, unless they have declared a conflict of interest.",
+      "start_line": 13,
+      "end_line": 14,
+      "heading_path": [
+        "CyberChair Access Control Intent",
+        "Authorization Intent Covered"
+      ],
+      "node_type": "requirement",
+      "parent_id": "section:cyberchair_access_control_intent.authorization_intent_covered",
+      "ordinal": 7
+    },
+    {
+      "id": "src.cyberchair_access_control_intent.authorization_intent_covered.p0008.l15",
+      "text": "6. Assigned non-conflicted reviewers can submit or update reviews while review is open.",
+      "start_line": 15,
+      "end_line": 15,
+      "heading_path": [
+        "CyberChair Access Control Intent",
+        "Authorization Intent Covered"
+      ],
+      "node_type": "requirement",
+      "parent_id": "section:cyberchair_access_control_intent.authorization_intent_covered",
+      "ordinal": 8
+    },
+    {
+      "id": "src.cyberchair_access_control_intent.authorization_intent_covered.p0009.l16",
+      "text": "7. Reviewers can read other reviewers' reviews for a paper only after submitting their own review for that paper.",
+      "start_line": 16,
+      "end_line": 17,
+      "heading_path": [
+        "CyberChair Access Control Intent",
+        "Authorization Intent Covered"
+      ],
+      "node_type": "requirement",
+      "parent_id": "section:cyberchair_access_control_intent.authorization_intent_covered",
+      "ordinal": 9
+    },
+    {
+      "id": "src.cyberchair_access_control_intent.authorization_intent_covered.p0010.l18",
+      "text": "8. Reviewers can declare conflicts of interest for assigned papers.",
+      "start_line": 18,
+      "end_line": 18,
+      "heading_path": [
+        "CyberChair Access Control Intent",
+        "Authorization Intent Covered"
+      ],
+      "node_type": "requirement",
+      "parent_id": "section:cyberchair_access_control_intent.authorization_intent_covered",
+      "ordinal": 10
+    },
+    {
+      "id": "src.cyberchair_access_control_intent.authorization_intent_covered.p0011.l19",
+      "text": "9. Reviewers may volunteer for papers with conflicting reviews only after they have submitted all assigned reviews and are not conflicted with the paper.",
+      "start_line": 19,
+      "end_line": 20,
+      "heading_path": [
+        "CyberChair Access Control Intent",
+        "Authorization Intent Covered"
+      ],
+      "node_type": "requirement",
+      "parent_id": "section:cyberchair_access_control_intent.authorization_intent_covered",
+      "ordinal": 11
+    },
+    {
+      "id": "src.cyberchair_access_control_intent.authorization_intent_covered.p0012.l21",
+      "text": "10. Chairs/PCC can monitor the review process and identify low-expertise papers.",
+      "start_line": 21,
+      "end_line": 21,
+      "heading_path": [
+        "CyberChair Access Control Intent",
+        "Authorization Intent Covered"
+      ],
+      "node_type": "requirement",
+      "parent_id": "section:cyberchair_access_control_intent.authorization_intent_covered",
+      "ordinal": 12
+    },
+    {
+      "id": "src.cyberchair_access_control_intent.authorization_intent_covered.p0013.l22",
+      "text": "11. PCC can ask an additional reviewer to review a low-expertise paper.",
+      "start_line": 22,
+      "end_line": 22,
+      "heading_path": [
+        "CyberChair Access Control Intent",
+        "Authorization Intent Covered"
+      ],
+      "node_type": "requirement",
+      "parent_id": "section:cyberchair_access_control_intent.authorization_intent_covered",
+      "ordinal": 13
+    },
+    {
+      "id": "src.cyberchair_access_control_intent.authorization_intent_covered.p0014.l23",
+      "text": "12. Reviewer directories and review files are protected from outsiders by per-directory allowed-user lists.",
+      "start_line": 23,
+      "end_line": 24,
+      "heading_path": [
+        "CyberChair Access Control Intent",
+        "Authorization Intent Covered"
+      ],
+      "node_type": "requirement",
+      "parent_id": "section:cyberchair_access_control_intent.authorization_intent_covered",
+      "ordinal": 14
+    },
+    {
+      "id": "src.cyberchair_access_control_intent.deliberately_not_modeled_as_access_control.p0015.l28",
+      "text": "- The system assigning a unique submission id.",
+      "start_line": 28,
+      "end_line": 28,
+      "heading_path": [
+        "CyberChair Access Control Intent",
+        "Deliberately Not Modeled As Access Control"
+      ],
+      "node_type": "requirement",
+      "parent_id": "section:cyberchair_access_control_intent.deliberately_not_modeled_as_access_control",
+      "ordinal": 15
+    },
+    {
+      "id": "src.cyberchair_access_control_intent.deliberately_not_modeled_as_access_control.p0016.l29",
+      "text": "- Sending login/password email.",
+      "start_line": 29,
+      "end_line": 29,
+      "heading_path": [
+        "CyberChair Access Control Intent",
+        "Deliberately Not Modeled As Access Control"
+      ],
+      "node_type": "requirement",
+      "parent_id": "section:cyberchair_access_control_intent.deliberately_not_modeled_as_access_control",
+      "ordinal": 16
+    },
+    {
+      "id": "src.cyberchair_access_control_intent.deliberately_not_modeled_as_access_control.p0017.l30",
+      "text": "- The mechanics of copying files into reviewer directories.",
+      "start_line": 30,
+      "end_line": 30,
+      "heading_path": [
+        "CyberChair Access Control Intent",
+        "Deliberately Not Modeled As Access Control"
+      ],
+      "node_type": "requirement",
+      "parent_id": "section:cyberchair_access_control_intent.deliberately_not_modeled_as_access_control",
+      "ordinal": 17
+    },
+    {
+      "id": "src.cyberchair_access_control_intent.deliberately_not_modeled_as_access_control.p0018.l31",
+      "text": "- The content of generated hyperlinks.",
+      "start_line": 31,
+      "end_line": 31,
+      "heading_path": [
+        "CyberChair Access Control Intent",
+        "Deliberately Not Modeled As Access Control"
+      ],
+      "node_type": "requirement",
+      "parent_id": "section:cyberchair_access_control_intent.deliberately_not_modeled_as_access_control",
+      "ordinal": 18
+    }
+  ],
+  "edges": [
+    {
+      "source": "src.cyberchair_access_control_intent.p0001.l3",
+      "target": "src.cyberchair_access_control_intent.p0002.l3",
+      "type": "next_sibling"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.p0001.l3",
+      "target": "src.cyberchair_access_control_intent.p0002.l3",
+      "type": "same_section"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.p0002.l3",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0003.l9",
+      "type": "next_sibling"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0003.l9",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0004.l10",
+      "type": "next_sibling"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0003.l9",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0004.l10",
+      "type": "same_section"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0004.l10",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0005.l11",
+      "type": "next_sibling"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0004.l10",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0005.l11",
+      "type": "same_section"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0005.l11",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0006.l12",
+      "type": "next_sibling"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0005.l11",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0006.l12",
+      "type": "same_section"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0006.l12",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0007.l13",
+      "type": "next_sibling"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0006.l12",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0007.l13",
+      "type": "same_section"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0007.l13",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0008.l15",
+      "type": "next_sibling"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0007.l13",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0008.l15",
+      "type": "same_section"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0008.l15",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0009.l16",
+      "type": "next_sibling"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0008.l15",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0009.l16",
+      "type": "same_section"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0009.l16",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0010.l18",
+      "type": "next_sibling"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0009.l16",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0010.l18",
+      "type": "same_section"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0010.l18",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0011.l19",
+      "type": "next_sibling"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0010.l18",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0011.l19",
+      "type": "same_section"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0011.l19",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0012.l21",
+      "type": "next_sibling"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0011.l19",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0012.l21",
+      "type": "same_section"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0012.l21",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0013.l22",
+      "type": "next_sibling"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0012.l21",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0013.l22",
+      "type": "same_section"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0013.l22",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0014.l23",
+      "type": "next_sibling"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0013.l22",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0014.l23",
+      "type": "same_section"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0014.l23",
+      "target": "src.cyberchair_access_control_intent.deliberately_not_modeled_as_access_control.p0015.l28",
+      "type": "next_sibling"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.deliberately_not_modeled_as_access_control.p0015.l28",
+      "target": "src.cyberchair_access_control_intent.deliberately_not_modeled_as_access_control.p0016.l29",
+      "type": "next_sibling"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.deliberately_not_modeled_as_access_control.p0015.l28",
+      "target": "src.cyberchair_access_control_intent.deliberately_not_modeled_as_access_control.p0016.l29",
+      "type": "same_section"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.deliberately_not_modeled_as_access_control.p0016.l29",
+      "target": "src.cyberchair_access_control_intent.deliberately_not_modeled_as_access_control.p0017.l30",
+      "type": "next_sibling"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.deliberately_not_modeled_as_access_control.p0016.l29",
+      "target": "src.cyberchair_access_control_intent.deliberately_not_modeled_as_access_control.p0017.l30",
+      "type": "same_section"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.deliberately_not_modeled_as_access_control.p0017.l30",
+      "target": "src.cyberchair_access_control_intent.deliberately_not_modeled_as_access_control.p0018.l31",
+      "type": "next_sibling"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.deliberately_not_modeled_as_access_control.p0017.l30",
+      "target": "src.cyberchair_access_control_intent.deliberately_not_modeled_as_access_control.p0018.l31",
+      "type": "same_section"
+    },
+    {
+      "source": "section:cyberchair_access_control_intent",
+      "target": "src.cyberchair_access_control_intent.p0001.l3",
+      "type": "contains"
+    },
+    {
+      "source": "section:cyberchair_access_control_intent",
+      "target": "src.cyberchair_access_control_intent.p0002.l3",
+      "type": "contains"
+    },
+    {
+      "source": "section:cyberchair_access_control_intent.authorization_intent_covered",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0003.l9",
+      "type": "contains"
+    },
+    {
+      "source": "section:cyberchair_access_control_intent.authorization_intent_covered",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0004.l10",
+      "type": "contains"
+    },
+    {
+      "source": "section:cyberchair_access_control_intent.authorization_intent_covered",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0005.l11",
+      "type": "contains"
+    },
+    {
+      "source": "section:cyberchair_access_control_intent.authorization_intent_covered",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0006.l12",
+      "type": "contains"
+    },
+    {
+      "source": "section:cyberchair_access_control_intent.authorization_intent_covered",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0007.l13",
+      "type": "contains"
+    },
+    {
+      "source": "section:cyberchair_access_control_intent.authorization_intent_covered",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0008.l15",
+      "type": "contains"
+    },
+    {
+      "source": "section:cyberchair_access_control_intent.authorization_intent_covered",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0009.l16",
+      "type": "contains"
+    },
+    {
+      "source": "section:cyberchair_access_control_intent.authorization_intent_covered",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0010.l18",
+      "type": "contains"
+    },
+    {
+      "source": "section:cyberchair_access_control_intent.authorization_intent_covered",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0011.l19",
+      "type": "contains"
+    },
+    {
+      "source": "section:cyberchair_access_control_intent.authorization_intent_covered",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0012.l21",
+      "type": "contains"
+    },
+    {
+      "source": "section:cyberchair_access_control_intent.authorization_intent_covered",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0013.l22",
+      "type": "contains"
+    },
+    {
+      "source": "section:cyberchair_access_control_intent.authorization_intent_covered",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0014.l23",
+      "type": "contains"
+    },
+    {
+      "source": "section:cyberchair_access_control_intent.deliberately_not_modeled_as_access_control",
+      "target": "src.cyberchair_access_control_intent.deliberately_not_modeled_as_access_control.p0015.l28",
+      "type": "contains"
+    },
+    {
+      "source": "section:cyberchair_access_control_intent.deliberately_not_modeled_as_access_control",
+      "target": "src.cyberchair_access_control_intent.deliberately_not_modeled_as_access_control.p0016.l29",
+      "type": "contains"
+    },
+    {
+      "source": "section:cyberchair_access_control_intent.deliberately_not_modeled_as_access_control",
+      "target": "src.cyberchair_access_control_intent.deliberately_not_modeled_as_access_control.p0017.l30",
+      "type": "contains"
+    },
+    {
+      "source": "section:cyberchair_access_control_intent.deliberately_not_modeled_as_access_control",
+      "target": "src.cyberchair_access_control_intent.deliberately_not_modeled_as_access_control.p0018.l31",
+      "type": "contains"
+    }
+  ],
+  "summary": {
+    "nodes": 18,
+    "authorization_relevant_nodes": 13
+  }
+}

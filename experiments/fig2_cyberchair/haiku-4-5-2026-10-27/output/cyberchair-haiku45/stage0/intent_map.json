@@ -1,0 +1,968 @@
+{
+  "approved": true,
+  "map": {
+    "scopes": [
+      {
+        "id": "submitStep1",
+        "action": "submitStep1",
+        "principal_type": "User",
+        "resource_type": "Submission",
+        "exhaustive": true,
+        "summary": "Authors submit abstracts/papers during step 1"
+      },
+      {
+        "id": "submitFullPaper",
+        "action": "submitFullPaper",
+        "principal_type": "User",
+        "resource_type": "Submission",
+        "exhaustive": true,
+        "summary": "Authors with step-2 credentials upload papers during step 2"
+      },
+      {
+        "id": "updateStep1Info",
+        "action": "updateStep1Info",
+        "principal_type": "User",
+        "resource_type": "Submission",
+        "exhaustive": true,
+        "summary": "Authors correct step-1 info during step 2"
+      },
+      {
+        "id": "submitCameraReady",
+        "action": "submitCameraReady",
+        "principal_type": "User",
+        "resource_type": "Submission",
+        "exhaustive": true,
+        "summary": "Selected authors submit camera-ready after review"
+      },
+      {
+        "id": "downloadPaper",
+        "action": "downloadPaper",
+        "principal_type": "User",
+        "resource_type": "Submission",
+        "exhaustive": true,
+        "summary": "Assigned reviewers access papers after distribution unless conflicted"
+      },
+      {
+        "id": "submitReview",
+        "action": "submitReview",
+        "principal_type": "User",
+        "resource_type": "Submission",
+        "exhaustive": true,
+        "summary": "Non-conflicted assigned reviewers submit reviews while open"
+      },
+      {
+        "id": "updateReview",
+        "action": "updateReview",
+        "principal_type": "User",
+        "resource_type": "Submission",
+        "exhaustive": true,
+        "summary": "Non-conflicted assigned reviewers update reviews while open"
+      },
+      {
+        "id": "readOtherReviews",
+        "action": "readOtherReviews",
+        "principal_type": "User",
+        "resource_type": "Submission",
+        "exhaustive": true,
+        "summary": "Reviewers read peer reviews after submitting own"
+      },
+      {
+        "id": "declareConflict",
+        "action": "declareConflict",
+        "principal_type": "User",
+        "resource_type": "Submission",
+        "exhaustive": true,
+        "summary": "Reviewers declare conflicts for assigned papers"
+      },
+      {
+        "id": "volunteerForConflictingPaper",
+        "action": "volunteerForConflictingPaper",
+        "principal_type": "User",
+        "resource_type": "Submission",
+        "exhaustive": true,
+        "summary": "Reviewers volunteer for conflicting papers after completing assignments"
+      },
+      {
+        "id": "monitorReviewProcess",
+        "action": "monitorReviewProcess",
+        "principal_type": "User",
+        "resource_type": "ReviewOverview",
+        "exhaustive": true,
+        "summary": "Chairs/PCC monitor review and identify low-expertise papers"
+      },
+      {
+        "id": "askAdditionalReviewer",
+        "action": "askAdditionalReviewer",
+        "principal_type": "User",
+        "resource_type": "ReviewOverview",
+        "exhaustive": true,
+        "summary": "PCC asks additional reviewers for low-expertise papers"
+      },
+      {
+        "id": "accessReviewerDirectory",
+        "action": "accessReviewerDirectory",
+        "principal_type": "User",
+        "resource_type": "ReviewerDirectory",
+        "exhaustive": true,
+        "summary": "Users on directory's allowed-user list access reviewer directories"
+      },
+      {
+        "id": "readReviewFile",
+        "action": "readReviewFile",
+        "principal_type": "User",
+        "resource_type": "ReviewFile",
+        "exhaustive": true,
+        "summary": "Users on directory's allowed-user list read review files"
+      }
+    ],
+    "slices": [
+      {
+        "id": "slice_p0003",
+        "scope_id": "submitStep1",
+        "summary": "Author, during step 1"
+      },
+      {
+        "id": "slice_p0004",
+        "scope_id": "submitFullPaper",
+        "summary": "Author with step-2 credentials, during step 2"
+      },
+      {
+        "id": "slice_p0005",
+        "scope_id": "updateStep1Info",
+        "summary": "Author, during step 2"
+      },
+      {
+        "id": "slice_p0006",
+        "scope_id": "submitCameraReady",
+        "summary": "Author of selected submission, after review"
+      },
+      {
+        "id": "slice_p0007",
+        "scope_id": "downloadPaper",
+        "summary": "Assigned reviewer, after paper distribution, not conflicted"
+      },
+      {
+        "id": "slice_p0008_submit",
+        "scope_id": "submitReview",
+        "summary": "Assigned non-conflicted reviewer, while review open"
+      },
+      {
+        "id": "slice_p0008_update",
+        "scope_id": "updateReview",
+        "summary": "Assigned non-conflicted reviewer, while review open"
+      },
+      {
+        "id": "slice_p0009",
+        "scope_id": "readOtherReviews",
+        "summary": "Reviewer who submitted own review for paper"
+      },
+      {
+        "id": "slice_p0010",
+        "scope_id": "declareConflict",
+        "summary": "Reviewer, for assigned paper"
+      },
+      {
+        "id": "slice_p0011",
+        "scope_id": "volunteerForConflictingPaper",
+        "summary": "Reviewer, completed all assignments, not conflicted with paper"
+      },
+      {
+        "id": "slice_p0012",
+        "scope_id": "monitorReviewProcess",
+        "summary": "Chair or PCC"
+      },
+      {
+        "id": "slice_p0013",
+        "scope_id": "askAdditionalReviewer",
+        "summary": "PCC"
+      },
+      {
+        "id": "slice_p0014_dir",
+        "scope_id": "accessReviewerDirectory",
+        "summary": "User on allowed-user list"
+      },
+      {
+        "id": "slice_p0014_file",
+        "scope_id": "readReviewFile",
+        "summary": "User on allowed-user list"
+      }
+    ],
+    "sentences": [
+      {
+        "node_id": "src.cyberchair_access_control_intent.authorization_intent_covered.p0003.l9",
+        "kind": "condition",
+        "slice_ids": [
+          "slice_p0003"
+        ],
+        "restricts_scope_ids": [],
+        "note": ""
+      },
+      {
+        "node_id": "src.cyberchair_access_control_intent.authorization_intent_covered.p0004.l10",
+        "kind": "condition",
+        "slice_ids": [
+          "slice_p0004"
+        ],
+        "restricts_scope_ids": [],
+        "note": ""
+      },
+      {
+        "node_id": "src.cyberchair_access_control_intent.authorization_intent_covered.p0005.l11",
+        "kind": "condition",
+        "slice_ids": [
+          "slice_p0005"
+        ],
+        "restricts_scope_ids": [],
+        "note": ""
+      },
+      {
+        "node_id": "src.cyberchair_access_control_intent.authorization_intent_covered.p0006.l12",
+        "kind": "condition",
+        "slice_ids": [
+          "slice_p0006"
+        ],
+        "restricts_scope_ids": [],
+        "note": ""
+      },
+      {
+        "node_id": "src.cyberchair_access_control_intent.authorization_intent_covered.p0007.l13",
+        "kind": "condition",
+        "slice_ids": [
+          "slice_p0007"
+        ],
+        "restricts_scope_ids": [],
+        "note": ""
+      },
+      {
+        "node_id": "src.cyberchair_access_control_intent.authorization_intent_covered.p0008.l15",
+        "kind": "condition",
+        "slice_ids": [
+          "slice_p0008_submit",
+          "slice_p0008_update"
+        ],
+        "restricts_scope_ids": [],
+        "note": ""
+      },
+      {
+        "node_id": "src.cyberchair_access_control_intent.authorization_intent_covered.p0009.l16",
+        "kind": "condition",
+        "slice_ids": [
+          "slice_p0009"
+        ],
+        "restricts_scope_ids": [],
+        "note": ""
+      },
+      {
+        "node_id": "src.cyberchair_access_control_intent.authorization_intent_covered.p0010.l18",
+        "kind": "condition",
+        "slice_ids": [
+          "slice_p0010"
+        ],
+        "restricts_scope_ids": [],
+        "note": ""
+      },
+      {
+        "node_id": "src.cyberchair_access_control_intent.authorization_intent_covered.p0011.l19",
+        "kind": "condition",
+        "slice_ids": [
+          "slice_p0011"
+        ],
+        "restricts_scope_ids": [],
+        "note": ""
+      },
+      {
+        "node_id": "src.cyberchair_access_control_intent.authorization_intent_covered.p0012.l21",
+        "kind": "condition",
+        "slice_ids": [
+          "slice_p0012"
+        ],
+        "restricts_scope_ids": [],
+        "note": ""
+      },
+      {
+        "node_id": "src.cyberchair_access_control_intent.authorization_intent_covered.p0013.l22",
+        "kind": "condition",
+        "slice_ids": [
+          "slice_p0013"
+        ],
+        "restricts_scope_ids": [],
+        "note": ""
+      },
+      {
+        "node_id": "src.cyberchair_access_control_intent.authorization_intent_covered.p0014.l23",
+        "kind": "condition",
+        "slice_ids": [
+          "slice_p0014_dir",
+          "slice_p0014_file"
+        ],
+        "restricts_scope_ids": [],
+        "note": ""
+      }
+    ]
+  },
+  "decision": {
+    "atom_name": "intent_map",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {
+      "review_channel": "model",
+      "model_review": "Every constraint is a condition, metadata is not duplicated, conditions attach to matching scopes, slices group co-requisite conditions, exhaustiveness is correct, and interpretation rules are properly identified."
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": false
+  },
+  "rounds": [
+    {
+      "round": 1,
+      "map": {
+        "scopes": [
+          {
+            "id": "submitStep1",
+            "action": "submitStep1",
+            "principal_type": "User",
+            "resource_type": "Submission",
+            "exhaustive": true,
+            "summary": "Authors submit abstracts/papers during step 1"
+          },
+          {
+            "id": "submitFullPaper",
+            "action": "submitFullPaper",
+            "principal_type": "User",
+            "resource_type": "Submission",
+            "exhaustive": true,
+            "summary": "Authors with step-2 credentials upload papers during step 2"
+          },
+          {
+            "id": "updateStep1Info",
+            "action": "updateStep1Info",
+            "principal_type": "User",
+            "resource_type": "Submission",
+            "exhaustive": true,
+            "summary": "Authors correct step-1 info during step 2"
+          },
+          {
+            "id": "submitCameraReady",
+            "action": "submitCameraReady",
+            "principal_type": "User",
+            "resource_type": "Submission",
+            "exhaustive": true,
+            "summary": "Selected authors submit camera-ready after review"
+          },
+          {
+            "id": "downloadPaper",
+            "action": "downloadPaper",
+            "principal_type": "User",
+            "resource_type": "Submission",
+            "exhaustive": true,
+            "summary": "Assigned reviewers access papers after distribution unless conflicted"
+          },
+          {
+            "id": "submitReview",
+            "action": "submitReview",
+            "principal_type": "User",
+            "resource_type": "Submission",
+            "exhaustive": true,
+            "summary": "Non-conflicted assigned reviewers submit reviews while open"
+          },
+          {
+            "id": "updateReview",
+            "action": "updateReview",
+            "principal_type": "User",
+            "resource_type": "Submission",
+            "exhaustive": true,
+            "summary": "Non-conflicted assigned reviewers update reviews while open"
+          },
+          {
+            "id": "readOtherReviews",
+            "action": "readOtherReviews",
+            "principal_type": "User",
+            "resource_type": "Submission",
+            "exhaustive": true,
+            "summary": "Reviewers read peer reviews after submitting own"
+          },
+          {
+            "id": "declareConflict",
+            "action": "declareConflict",
+            "principal_type": "User",
+            "resource_type": "Submission",
+            "exhaustive": true,
+            "summary": "Reviewers declare conflicts for assigned papers"
+          },
+          {
+            "id": "volunteerForConflictingPaper",
+            "action": "volunteerForConflictingPaper",
+            "principal_type": "User",
+            "resource_type": "Submission",
+            "exhaustive": true,
+            "summary": "Reviewers volunteer for conflicting papers after completing assignments"
+          },
+          {
+            "id": "monitorReviewProcess",
+            "action": "monitorReviewProcess",
+            "principal_type": "User",
+            "resource_type": "ReviewOverview",
+            "exhaustive": true,
+            "summary": "Chairs/PCC monitor review and identify low-expertise papers"
+          },
+          {
+            "id": "askAdditionalReviewer",
+            "action": "askAdditionalReviewer",
+            "principal_type": "User",
+            "resource_type": "ReviewOverview",
+            "exhaustive": true,
+            "summary": "PCC asks additional reviewers for low-expertise papers"
+          },
+          {
+            "id": "accessReviewerDirectory",
+            "action": "accessReviewerDirectory",
+            "principal_type": "User",
+            "resource_type": "ReviewerDirectory",
+            "exhaustive": true,
+            "summary": "Users on directory's allowed-user list access reviewer directories"
+          },
+          {
+            "id": "readReviewFile",
+            "action": "readReviewFile",
+            "principal_type": "User",
+            "resource_type": "ReviewFile",
+            "exhaustive": true,
+            "summary": "Users on directory's allowed-user list read review files"
+          },
+          {
+            "id": "displayAbstract",
+            "action": "displayAbstract",
+            "principal_type": "User",
+            "resource_type": "Submission",
+            "exhaustive": true,
+            "summary": ""
+          },
+          {
+            "id": "indicateExpertise",
+            "action": "indicateExpertise",
+            "principal_type": "User",
+            "resource_type": "Submission",
+            "exhaustive": true,
+            "summary": ""
+          },
+          {
+            "id": "indicateWillingness",
+            "action": "indicateWillingness",
+            "principal_type": "User",
+            "resource_type": "Submission",
+            "exhaustive": true,
+            "summary": ""
+          }
+        ],
+        "slices": [
+          {
+            "id": "slice_p0003",
+            "scope_id": "submitStep1",
+            "summary": "Author, during step 1"
+          },
+          {
+            "id": "slice_p0004",
+            "scope_id": "submitFullPaper",
+            "summary": "Author with step-2 credentials, during step 2"
+          },
+          {
+            "id": "slice_p0005",
+            "scope_id": "updateStep1Info",
+            "summary": "Author, during step 2"
+          },
+          {
+            "id": "slice_p0006",
+            "scope_id": "submitCameraReady",
+            "summary": "Author of selected submission, after review"
+          },
+          {
+            "id": "slice_p0007",
+            "scope_id": "downloadPaper",
+            "summary": "Assigned reviewer, after paper distribution, not conflicted"
+          },
+          {
+            "id": "slice_p0008_submit",
+            "scope_id": "submitReview",
+            "summary": "Assigned non-conflicted reviewer, while review open"
+          },
+          {
+            "id": "slice_p0008_update",
+            "scope_id": "updateReview",
+            "summary": "Assigned non-conflicted reviewer, while review open"
+          },
+          {
+            "id": "slice_p0009",
+            "scope_id": "readOtherReviews",
+            "summary": "Reviewer who submitted own review for paper"
+          },
+          {
+            "id": "slice_p0010",
+            "scope_id": "declareConflict",
+            "summary": "Reviewer, for assigned paper"
+          },
+          {
+            "id": "slice_p0011",
+            "scope_id": "volunteerForConflictingPaper",
+            "summary": "Reviewer, completed all assignments, not conflicted with paper"
+          },
+          {
+            "id": "slice_p0012",
+            "scope_id": "monitorReviewProcess",
+            "summary": "Chair or PCC"
+          },
+          {
+            "id": "slice_p0013",
+            "scope_id": "askAdditionalReviewer",
+            "summary": "PCC"
+          },
+          {
+            "id": "slice_p0014_dir",
+            "scope_id": "accessReviewerDirectory",
+            "summary": "User on allowed-user list"
+          },
+          {
+            "id": "slice_p0014_file",
+            "scope_id": "readReviewFile",
+            "summary": "User on allowed-user list"
+          }
+        ],
+        "sentences": [
+          {
+            "node_id": "src.cyberchair_access_control_intent.authorization_intent_covered.p0003.l9",
+            "kind": "condition",
+            "slice_ids": [
+              "slice_p0003"
+            ],
+            "restricts_scope_ids": [],
+            "note": ""
+          },
+          {
+            "node_id": "src.cyberchair_access_control_intent.authorization_intent_covered.p0004.l10",
+            "kind": "condition",
+            "slice_ids": [
+              "slice_p0004"
+            ],
+            "restricts_scope_ids": [],
+            "note": ""
+          },
+          {
+            "node_id": "src.cyberchair_access_control_intent.authorization_intent_covered.p0005.l11",
+            "kind": "condition",
+            "slice_ids": [
+              "slice_p0005"
+            ],
+            "restricts_scope_ids": [],
+            "note": ""
+          },
+          {
+            "node_id": "src.cyberchair_access_control_intent.authorization_intent_covered.p0006.l12",
+            "kind": "condition",
+            "slice_ids": [
+              "slice_p0006"
+            ],
+            "restricts_scope_ids": [],
+            "note": ""
+          },
+          {
+            "node_id": "src.cyberchair_access_control_intent.authorization_intent_covered.p0007.l13",
+            "kind": "condition",
+            "slice_ids": [
+              "slice_p0007"
+            ],
+            "restricts_scope_ids": [],
+            "note": ""
+          },
+          {
+            "node_id": "src.cyberchair_access_control_intent.authorization_intent_covered.p0008.l15",
+            "kind": "condition",
+            "slice_ids": [
+              "slice_p0008_submit",
+              "slice_p0008_update"
+            ],
+            "restricts_scope_ids": [],
+            "note": ""
+          },
+          {
+            "node_id": "src.cyberchair_access_control_intent.authorization_intent_covered.p0009.l16",
+            "kind": "condition",
+            "slice_ids": [
+              "slice_p0009"
+            ],
+            "restricts_scope_ids": [],
+            "note": ""
+          },
+          {
+            "node_id": "src.cyberchair_access_control_intent.authorization_intent_covered.p0010.l18",
+            "kind": "condition",
+            "slice_ids": [
+              "slice_p0010"
+            ],
+            "restricts_scope_ids": [],
+            "note": ""
+          },
+          {
+            "node_id": "src.cyberchair_access_control_intent.authorization_intent_covered.p0011.l19",
+            "kind": "condition",
+            "slice_ids": [
+              "slice_p0011"
+            ],
+            "restricts_scope_ids": [],
+            "note": ""
+          },
+          {
+            "node_id": "src.cyberchair_access_control_intent.authorization_intent_covered.p0012.l21",
+            "kind": "condition",
+            "slice_ids": [
+              "slice_p0012"
+            ],
+            "restricts_scope_ids": [],
+            "note": ""
+          },
+          {
+            "node_id": "src.cyberchair_access_control_intent.authorization_intent_covered.p0013.l22",
+            "kind": "condition",
+            "slice_ids": [
+              "slice_p0013"
+            ],
+            "restricts_scope_ids": [],
+            "note": ""
+          },
+          {
+            "node_id": "src.cyberchair_access_control_intent.authorization_intent_covered.p0014.l23",
+            "kind": "condition",
+            "slice_ids": [
+              "slice_p0014_dir",
+              "slice_p0014_file"
+            ],
+            "restricts_scope_ids": [],
+            "note": ""
+          }
+        ]
+      },
+      "decision": {
+        "atom_name": "intent_map",
+        "action": "reject",
+        "reason": "Model review: The map includes three scopes that do not appear in the document: displayAbstract, indicateExpertise, and indicateWillingness. These scopes have no slices (empty condition lists) and are marked as exhaustive, meaning the intent is to allow zero ways to perform these actions. The document contains no mention of these actions. This violates Criterion 4: the slices must match the ways the document allows each scope, but the document specifies no authorization for these three actions at all.",
+        "edit_delta": {
+          "review_channel": "model",
+          "model_review": "The map includes three scopes that do not appear in the document: displayAbstract, indicateExpertise, and indicateWillingness. These scopes have no slices (empty condition lists) and are marked as exhaustive, meaning the intent is to allow zero ways to perform these actions. The document contains no mention of these actions. This violates Criterion 4: the slices must match the ways the document allows each scope, but the document specifies no authorization for these three actions at all."
+        },
+        "intent_acknowledged_by_user": false,
+        "symbolic_verified": false
+      }
+    },
+    {
+      "round": 2,
+      "map": {
+        "scopes": [
+          {
+            "id": "submitStep1",
+            "action": "submitStep1",
+            "principal_type": "User",
+            "resource_type": "Submission",
+            "exhaustive": true,
+            "summary": "Authors submit abstracts/papers during step 1"
+          },
+          {
+            "id": "submitFullPaper",
+            "action": "submitFullPaper",
+            "principal_type": "User",
+            "resource_type": "Submission",
+            "exhaustive": true,
+            "summary": "Authors with step-2 credentials upload papers during step 2"
+          },
+          {
+            "id": "updateStep1Info",
+            "action": "updateStep1Info",
+            "principal_type": "User",
+            "resource_type": "Submission",
+            "exhaustive": true,
+            "summary": "Authors correct step-1 info during step 2"
+          },
+          {
+            "id": "submitCameraReady",
+            "action": "submitCameraReady",
+            "principal_type": "User",
+            "resource_type": "Submission",
+            "exhaustive": true,
+            "summary": "Selected authors submit camera-ready after review"
+          },
+          {
+            "id": "downloadPaper",
+            "action": "downloadPaper",
+            "principal_type": "User",
+            "resource_type": "Submission",
+            "exhaustive": true,
+            "summary": "Assigned reviewers access papers after distribution unless conflicted"
+          },
+          {
+            "id": "submitReview",
+            "action": "submitReview",
+            "principal_type": "User",
+            "resource_type": "Submission",
+            "exhaustive": true,
+            "summary": "Non-conflicted assigned reviewers submit reviews while open"
+          },
+          {
+            "id": "updateReview",
+            "action": "updateReview",
+            "principal_type": "User",
+            "resource_type": "Submission",
+            "exhaustive": true,
+            "summary": "Non-conflicted assigned reviewers update reviews while open"
+          },
+          {
+            "id": "readOtherReviews",
+            "action": "readOtherReviews",
+            "principal_type": "User",
+            "resource_type": "Submission",
+            "exhaustive": true,
+            "summary": "Reviewers read peer reviews after submitting own"
+          },
+          {
+            "id": "declareConflict",
+            "action": "declareConflict",
+            "principal_type": "User",
+            "resource_type": "Submission",
+            "exhaustive": true,
+            "summary": "Reviewers declare conflicts for assigned papers"
+          },
+          {
+            "id": "volunteerForConflictingPaper",
+            "action": "volunteerForConflictingPaper",
+            "principal_type": "User",
+            "resource_type": "Submission",
+            "exhaustive": true,
+            "summary": "Reviewers volunteer for conflicting papers after completing assignments"
+          },
+          {
+            "id": "monitorReviewProcess",
+            "action": "monitorReviewProcess",
+            "principal_type": "User",
+            "resource_type": "ReviewOverview",
+            "exhaustive": true,
+            "summary": "Chairs/PCC monitor review and identify low-expertise papers"
+          },
+          {
+            "id": "askAdditionalReviewer",
+            "action": "askAdditionalReviewer",
+            "principal_type": "User",
+            "resource_type": "ReviewOverview",
+            "exhaustive": true,
+            "summary": "PCC asks additional reviewers for low-expertise papers"
+          },
+          {
+            "id": "accessReviewerDirectory",
+            "action": "accessReviewerDirectory",
+            "principal_type": "User",
+            "resource_type": "ReviewerDirectory",
+            "exhaustive": true,
+            "summary": "Users on directory's allowed-user list access reviewer directories"
+          },
+          {
+            "id": "readReviewFile",
+            "action": "readReviewFile",
+            "principal_type": "User",
+            "resource_type": "ReviewFile",
+            "exhaustive": true,
+            "summary": "Users on directory's allowed-user list read review files"
+          }
+        ],
+        "slices": [
+          {
+            "id": "slice_p0003",
+            "scope_id": "submitStep1",
+            "summary": "Author, during step 1"
+          },
+          {
+            "id": "slice_p0004",
+            "scope_id": "submitFullPaper",
+            "summary": "Author with step-2 credentials, during step 2"
+          },
+          {
+            "id": "slice_p0005",
+            "scope_id": "updateStep1Info",
+            "summary": "Author, during step 2"
+          },
+          {
+            "id": "slice_p0006",
+            "scope_id": "submitCameraReady",
+            "summary": "Author of selected submission, after review"
+          },
+          {
+            "id": "slice_p0007",
+            "scope_id": "downloadPaper",
+            "summary": "Assigned reviewer, after paper distribution, not conflicted"
+          },
+          {
+            "id": "slice_p0008_submit",
+            "scope_id": "submitReview",
+            "summary": "Assigned non-conflicted reviewer, while review open"
+          },
+          {
+            "id": "slice_p0008_update",
+            "scope_id": "updateReview",
+            "summary": "Assigned non-conflicted reviewer, while review open"
+          },
+          {
+            "id": "slice_p0009",
+            "scope_id": "readOtherReviews",
+            "summary": "Reviewer who submitted own review for paper"
+          },
+          {
+            "id": "slice_p0010",
+            "scope_id": "declareConflict",
+            "summary": "Reviewer, for assigned paper"
+          },
+          {
+            "id": "slice_p0011",
+            "scope_id": "volunteerForConflictingPaper",
+            "summary": "Reviewer, completed all assignments, not conflicted with paper"
+          },
+          {
+            "id": "slice_p0012",
+            "scope_id": "monitorReviewProcess",
+            "summary": "Chair or PCC"
+          },
+          {
+            "id": "slice_p0013",
+            "scope_id": "askAdditionalReviewer",
+            "summary": "PCC"
+          },
+          {
+            "id": "slice_p0014_dir",
+            "scope_id": "accessReviewerDirectory",
+            "summary": "User on allowed-user list"
+          },
+          {
+            "id": "slice_p0014_file",
+            "scope_id": "readReviewFile",
+            "summary": "User on allowed-user list"
+          }
+        ],
+        "sentences": [
+          {
+            "node_id": "src.cyberchair_access_control_intent.authorization_intent_covered.p0003.l9",
+            "kind": "condition",
+            "slice_ids": [
+              "slice_p0003"
+            ],
+            "restricts_scope_ids": [],
+            "note": ""
+          },
+          {
+            "node_id": "src.cyberchair_access_control_intent.authorization_intent_covered.p0004.l10",
+            "kind": "condition",
+            "slice_ids": [
+              "slice_p0004"
+            ],
+            "restricts_scope_ids": [],
+            "note": ""
+          },
+          {
+            "node_id": "src.cyberchair_access_control_intent.authorization_intent_covered.p0005.l11",
+            "kind": "condition",
+            "slice_ids": [
+              "slice_p0005"
+            ],
+            "restricts_scope_ids": [],
+            "note": ""
+          },
+          {
+            "node_id": "src.cyberchair_access_control_intent.authorization_intent_covered.p0006.l12",
+            "kind": "condition",
+            "slice_ids": [
+              "slice_p0006"
+            ],
+            "restricts_scope_ids": [],
+            "note": ""
+          },
+          {
+            "node_id": "src.cyberchair_access_control_intent.authorization_intent_covered.p0007.l13",
+            "kind": "condition",
+            "slice_ids": [
+              "slice_p0007"
+            ],
+            "restricts_scope_ids": [],
+            "note": ""
+          },
+          {
+            "node_id": "src.cyberchair_access_control_intent.authorization_intent_covered.p0008.l15",
+            "kind": "condition",
+            "slice_ids": [
+              "slice_p0008_submit",
+              "slice_p0008_update"
+            ],
+            "restricts_scope_ids": [],
+            "note": ""
+          },
+          {
+            "node_id": "src.cyberchair_access_control_intent.authorization_intent_covered.p0009.l16",
+            "kind": "condition",
+            "slice_ids": [
+              "slice_p0009"
+            ],
+            "restricts_scope_ids": [],
+            "note": ""
+          },
+          {
+            "node_id": "src.cyberchair_access_control_intent.authorization_intent_covered.p0010.l18",
+            "kind": "condition",
+            "slice_ids": [
+              "slice_p0010"
+            ],
+            "restricts_scope_ids": [],
+            "note": ""
+          },
+          {
+            "node_id": "src.cyberchair_access_control_intent.authorization_intent_covered.p0011.l19",
+            "kind": "condition",
+            "slice_ids": [
+              "slice_p0011"
+            ],
+            "restricts_scope_ids": [],
+            "note": ""
+          },
+          {
+            "node_id": "src.cyberchair_access_control_intent.authorization_intent_covered.p0012.l21",
+            "kind": "condition",
+            "slice_ids": [
+              "slice_p0012"
+            ],
+            "restricts_scope_ids": [],
+            "note": ""
+          },
+          {
+            "node_id": "src.cyberchair_access_control_intent.authorization_intent_covered.p0013.l22",
+            "kind": "condition",
+            "slice_ids": [
+              "slice_p0013"
+            ],
+            "restricts_scope_ids": [],
+            "note": ""
+          },
+          {
+            "node_id": "src.cyberchair_access_control_intent.authorization_intent_covered.p0014.l23",
+            "kind": "condition",
+            "slice_ids": [
+              "slice_p0014_dir",
+              "slice_p0014_file"
+            ],
+            "restricts_scope_ids": [],
+            "note": ""
+          }
+        ]
+      },
+      "decision": {
+        "atom_name": "intent_map",
+        "action": "approve",
+        "reason": "",
+        "edit_delta": {
+          "review_channel": "model",
+          "model_review": "Every constraint is a condition, metadata is not duplicated, conditions attach to matching scopes, slices group co-requisite conditions, exhaustiveness is correct, and interpretation rules are properly identified."
+        },
+        "intent_acknowledged_by_user": false,
+        "symbolic_verified": false
+      }
+    }
+  ]
+}

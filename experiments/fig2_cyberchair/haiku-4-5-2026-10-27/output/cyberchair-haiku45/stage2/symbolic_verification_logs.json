@@ -1,0 +1,154 @@
+{
+  "p0003_submitStep1_author_during_step1": [
+    "type-correct: ok",
+    "condition-shape: ok",
+    "identity-consistency: ok",
+    "satisfiable: ok",
+    "never-errors: ok",
+    "match-vacuity: ok (policy match condition is reachable)",
+    "match-broadness: ok (not universal)",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "submitFullPaper_step2_author": [
+    "type-correct: ok",
+    "condition-shape: ok",
+    "identity-consistency: ok",
+    "satisfiable: ok",
+    "never-errors: ok",
+    "match-vacuity: ok (policy match condition is reachable)",
+    "match-broadness: ok (not universal)",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "author_during_step2": [
+    "type-correct: ok",
+    "condition-shape: ok",
+    "identity-consistency: ok",
+    "satisfiable: ok",
+    "never-errors: ok",
+    "match-vacuity: ok (policy match condition is reachable)",
+    "match-broadness: ok (not universal)",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "submitCameraReady_author_selected_reviewed": [
+    "type-correct: FAILED (cedar validate rc=1: \u00d7 failed to parse policy set\n  \u2570\u2500\u25b6 type constraints using `:` are not supported\n   \u256d\u2500[1:20]\n 1 \u2502 permit (principal: User, action == submitCameraReady, resource: Submission) when {\n   \u00b7                    \u2500\u2500\u2500\u2500\n 2 \u2502     resource.authors.contains(principal) &&\n   \u2570\u2500\u2500\u2500\u2500\n  help: try using `is` instead\n\nE)"
+  ],
+  "submitCameraReady_author_of_selected_after_review": [
+    "type-correct: ok",
+    "condition-shape: ok",
+    "identity-consistency: ok",
+    "satisfiable: ok",
+    "never-errors: ok",
+    "match-vacuity: ok (policy match condition is reachable)",
+    "match-broadness: ok (not universal)",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "assigned_reviewer_post_distribution_not_conflicted": [
+    "type-correct: ok",
+    "condition-shape: ok",
+    "identity-consistency: ok",
+    "satisfiable: ok",
+    "never-errors: ok",
+    "match-vacuity: ok (policy match condition is reachable)",
+    "match-broadness: ok (not universal)",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "assigned-non-conflicted-reviewer-submit": [
+    "type-correct: FAILED (cedar validate rc=1: \u00d7 failed to parse policy set\n  \u2570\u2500\u25b6 expected an entity uid, found name `submitReview`\n   \u256d\u2500\u2500\u2500\u2500\n 1 \u2502 permit (principal is User, action == submitReview, resource is Submission) when { resource.assignedReviewers.contains(principal) && !resource.conflictedReviewers.contains(principal) && resource.reviewO)"
+  ],
+  "submitReview_assigned_non_conflicted_reviewer": [
+    "type-correct: ok",
+    "condition-shape: ok",
+    "identity-consistency: ok",
+    "satisfiable: ok",
+    "never-errors: ok",
+    "match-vacuity: ok (policy match condition is reachable)",
+    "match-broadness: ok (not universal)",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "assigned-non-conflicted-reviewer-update": [
+    "type-correct: FAILED (cedar validate rc=1: \u00d7 failed to parse policy set\n  \u2570\u2500\u25b6 expected an entity uid, found name `updateReview`\n   \u256d\u2500\u2500\u2500\u2500\n 1 \u2502 permit (principal is User, action == updateReview, resource is Submission) when { resource.assignedReviewers.contains(principal) && !resource.conflictedReviewers.contains(principal) && resource.reviewO)"
+  ],
+  "updateReview_assigned_non_conflicted_reviewer": [
+    "type-correct: ok",
+    "condition-shape: ok",
+    "identity-consistency: ok",
+    "satisfiable: ok",
+    "never-errors: ok",
+    "match-vacuity: ok (policy match condition is reachable)",
+    "match-broadness: ok (not universal)",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "reviewer_submitted_own_review": [
+    "type-correct: ok",
+    "condition-shape: ok",
+    "identity-consistency: ok",
+    "satisfiable: ok",
+    "never-errors: ok",
+    "match-vacuity: ok (policy match condition is reachable)",
+    "match-broadness: ok (not universal)",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "assigned_reviewer_can_declare_conflict": [
+    "type-correct: ok",
+    "condition-shape: ok",
+    "identity-consistency: ok",
+    "satisfiable: ok",
+    "never-errors: ok",
+    "match-vacuity: ok (policy match condition is reachable)",
+    "match-broadness: ok (not universal)",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "reviewer_submitted_all_reviews_not_conflicted": [
+    "type-correct: ok",
+    "condition-shape: ok",
+    "identity-consistency: ok",
+    "satisfiable: ok",
+    "never-errors: ok",
+    "match-vacuity: ok (policy match condition is reachable)",
+    "match-broadness: ok (not universal)",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "chair_pcc_role_check": [
+    "type-correct: ok",
+    "condition-shape: ok",
+    "identity-consistency: ok",
+    "satisfiable: ok",
+    "never-errors: ok",
+    "match-vacuity: ok (policy match condition is reachable)",
+    "match-broadness: ok (not universal)",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "PCC_asks_additional_reviewer_for_low_expertise_paper": [
+    "type-correct: ok",
+    "condition-shape: ok",
+    "identity-consistency: ok",
+    "satisfiable: ok",
+    "never-errors: ok",
+    "match-vacuity: ok (policy match condition is reachable)",
+    "match-broadness: ok (not universal)",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "reviewer_directory_allowed_users": [
+    "type-correct: FAILED (cedar validate rc=1: \u00d7 failed to parse policy set\n  \u2570\u2500\u25b6 expected an entity uid, found name `accessReviewerDirectory`\n   \u256d\u2500\u2500\u2500\u2500\n 1 \u2502 permit (principal is User, action == accessReviewerDirectory, resource is ReviewerDirectory) when { resource.allowedUsers.contains(principal) };\n   \u00b7                                      \u2500\u2500\u2500)"
+  ],
+  "reviewer_directory_allowed_users_access": [
+    "type-correct: ok",
+    "condition-shape: ok",
+    "identity-consistency: ok",
+    "satisfiable: ok",
+    "never-errors: ok",
+    "match-vacuity: ok (policy match condition is reachable)",
+    "match-broadness: ok (not universal)",
+    "sugar-universal: ok (not applicable to primitives)"
+  ],
+  "review_file_directory_protection": [
+    "type-correct: ok",
+    "condition-shape: ok",
+    "identity-consistency: ok",
+    "satisfiable: ok",
+    "never-errors: ok",
+    "match-vacuity: ok (policy match condition is reachable)",
+    "match-broadness: ok (not universal)",
+    "sugar-universal: ok (not applicable to primitives)"
+  ]
+}

@@ -1,0 +1,212 @@
+[
+  {
+    "atom_name": "p0003_submitStep1_author_during_step1",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {
+      "review_channel": "model",
+      "model_review": "The condition atom correctly captures the requirement that authors can submit during step 1, with both required conditions: principal is in submission.authors and step1Open is true, properly encoded in Cedar.",
+      "reject_history": [
+        {
+          "atom_name": "p0003_submitStep1_author_during_step1",
+          "reason": "Symbolic verification failed; the atom cannot enter the target. type-correct: FAILED (cedar validate rc=1: \u00d7 failed to parse policy set\n  \u2570\u2500\u25b6 expected an entity uid, found name `submitStep1`\n   \u256d\u2500\u2500\u2500\u2500\n 1 \u2502 permit (principal is User, action == submitStep1, resource is Submission) when { resource.authors.contains(principal) && resource.step1Open };\n   \u00b7                                      \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n   \u2570\u2500)"
+        }
+      ],
+      "replaced_after_reject": true
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "submitFullPaper_step2_author",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {
+      "review_channel": "model",
+      "model_review": "The atom correctly encodes the requirement's three necessary conditions for full paper submission: author status, step-2 credentials, and an open step-2 phase, with accurate Cedar semantics and schema types."
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "author_during_step2",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {
+      "review_channel": "model",
+      "model_review": "The atom encodes exactly what the requirement states: authors may correct step-1 submission information when step 2 is open, with no missing conditions and no additions beyond the requirement."
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "submitCameraReady_author_of_selected_after_review",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {
+      "review_channel": "model",
+      "model_review": "The Cedar encoding exactly captures the three conditions stated in requirement p0006: the principal must be an author (resource.authors.contains(principal)), the submission must be selected (resource.selected), and review must be complete (resource.reviewProcessDone). All required schema elements exist with correct types.",
+      "reject_history": [
+        {
+          "atom_name": "submitCameraReady_author_selected_reviewed",
+          "reason": "Symbolic verification failed; the atom cannot enter the target. type-correct: FAILED (cedar validate rc=1: \u00d7 failed to parse policy set\n  \u2570\u2500\u25b6 type constraints using `:` are not supported\n   \u256d\u2500[1:20]\n 1 \u2502 permit (principal: User, action == submitCameraReady, resource: Submission) when {\n   \u00b7                    \u2500\u2500\u2500\u2500\n 2 \u2502     resource.authors.contains(principal) &&\n   \u2570\u2500\u2500\u2500\u2500\n  help: try using `is` instead\n\nE)"
+        }
+      ],
+      "replaced_after_reject": true
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "assigned_reviewer_post_distribution_not_conflicted",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {
+      "review_channel": "model",
+      "model_review": "The when clause correctly encodes exactly the three conditions stated in requirement 5: assignment status, distribution timing, and conflict status.",
+      "reject_history": [
+        {
+          "atom_name": "assigned_reviewer_post_distribution_not_conflicted",
+          "reason": "Symbolic verification failed; the atom cannot enter the target. type-correct: FAILED (cedar validate rc=1: \u00d7 failed to parse policy set\n  \u2570\u2500\u25b6 expected an entity uid, found name `downloadPaper`\n   \u256d\u2500\u2500\u2500\u2500\n 1 \u2502 permit (principal is User, action == downloadPaper, resource is Submission) when { resource.assignedReviewers.contains(principal) && resource.distributionDone && !(resource.conflictedReviewers.contain)"
+        }
+      ],
+      "replaced_after_reject": true
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "submitReview_assigned_non_conflicted_reviewer",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {
+      "review_channel": "model",
+      "model_review": "The when clause exactly encodes requirement 6 for submitReview: the principal is an assigned (not conflicted) reviewer and review is open, with correct Cedar semantics and all required schema attributes present.",
+      "reject_history": [
+        {
+          "atom_name": "assigned-non-conflicted-reviewer-submit",
+          "reason": "Symbolic verification failed; the atom cannot enter the target. type-correct: FAILED (cedar validate rc=1: \u00d7 failed to parse policy set\n  \u2570\u2500\u25b6 expected an entity uid, found name `submitReview`\n   \u256d\u2500\u2500\u2500\u2500\n 1 \u2502 permit (principal is User, action == submitReview, resource is Submission) when { resource.assignedReviewers.contains(principal) && !resource.conflictedReviewers.contains(principal) && resource.reviewO)"
+        }
+      ],
+      "replaced_after_reject": true
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "updateReview_assigned_non_conflicted_reviewer",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {
+      "review_channel": "model",
+      "model_review": "The requirement \"Assigned non-conflicted reviewers can submit or update reviews while review is open\" applies to both submitReview and updateReview actions. The Cedar encoding correctly captures all three required conditions: principal in assignedReviewers, principal not in conflictedReviewers, and reviewOpen. The principal (User) and resource (Submission) types are correct, schema attribute types match their usage, and the atom is consistent with the already-approved submitReview condition atom.",
+      "reject_history": [
+        {
+          "atom_name": "assigned-non-conflicted-reviewer-update",
+          "reason": "Symbolic verification failed; the atom cannot enter the target. type-correct: FAILED (cedar validate rc=1: \u00d7 failed to parse policy set\n  \u2570\u2500\u25b6 expected an entity uid, found name `updateReview`\n   \u256d\u2500\u2500\u2500\u2500\n 1 \u2502 permit (principal is User, action == updateReview, resource is Submission) when { resource.assignedReviewers.contains(principal) && !resource.conflictedReviewers.contains(principal) && resource.reviewO)"
+        }
+      ],
+      "replaced_after_reject": true
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "reviewer_submitted_own_review",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {
+      "review_channel": "model",
+      "model_review": "The atom correctly encodes requirement p0009: the when clause checks that the principal appears in the Submission's reviewersSubmitted set, which directly captures the requirement's condition that reviewers may read other reviews only after submitting their own."
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "assigned_reviewer_can_declare_conflict",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {
+      "review_channel": "model",
+      "model_review": "The atom correctly encodes the requirement that reviewers can declare conflicts for assigned papers by requiring the principal to be in the submission's assignedReviewers set."
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "reviewer_submitted_all_reviews_not_conflicted",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {
+      "review_channel": "model",
+      "model_review": "The atom correctly encodes all three mandatory conditions from the requirement: the principal must be a Reviewer, must have submitted all assigned reviews, and must not be in the paper's conflicted reviewers set."
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "chair_pcc_role_check",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {
+      "review_channel": "model",
+      "model_review": "The atom correctly encodes the requirement that Chairs and PCC members can monitor the review process, with the Cedar condition precisely matching the plain-English summary and imposing no extraneous constraints."
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "PCC_asks_additional_reviewer_for_low_expertise_paper",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {
+      "review_channel": "model",
+      "model_review": "The atom correctly encodes the requirement that PCC can ask for an additional reviewer for a low-expertise paper; the Cedar conditions properly check both PCC role and the paper's low-expertise status via the onlyNonExpertReviews flag.",
+      "reject_history": [
+        {
+          "atom_name": "PCC_asks_additional_reviewer_for_low_expertise_paper",
+          "reason": "Symbolic verification failed; the atom cannot enter the target. type-correct: FAILED (cedar validate rc=1: \u00d7 failed to parse policy set\n  \u2570\u2500\u25b6 expected an entity uid, found name `askAdditionalReviewer`\n   \u256d\u2500[1:38]\n 1 \u2502 permit (principal is User, action == askAdditionalReviewer, resource is ReviewOverview) when {\n   \u00b7                                      \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n 2 \u2502   principal.role == \"PCC\")"
+        }
+      ],
+      "replaced_after_reject": true
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "reviewer_directory_allowed_users_access",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {
+      "review_channel": "model",
+      "model_review": "The Cedar condition correctly encodes requirement #12: reviewer directories are protected by per-directory allowed-user lists, which means the principal must be in the resource's allowedUsers set to access the directory.",
+      "reject_history": [
+        {
+          "atom_name": "reviewer_directory_allowed_users",
+          "reason": "Symbolic verification failed; the atom cannot enter the target. type-correct: FAILED (cedar validate rc=1: \u00d7 failed to parse policy set\n  \u2570\u2500\u25b6 expected an entity uid, found name `accessReviewerDirectory`\n   \u256d\u2500\u2500\u2500\u2500\n 1 \u2502 permit (principal is User, action == accessReviewerDirectory, resource is ReviewerDirectory) when { resource.allowedUsers.contains(principal) };\n   \u00b7                                      \u2500\u2500\u2500)"
+        }
+      ],
+      "replaced_after_reject": true
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": true
+  },
+  {
+    "atom_name": "review_file_directory_protection",
+    "action": "approve",
+    "reason": "",
+    "edit_delta": {
+      "review_channel": "model",
+      "model_review": "The requirement that review files are \"protected from outsiders by per-directory allowed-user lists\" is correctly encoded: the condition checks that the principal is in the file's directory's allowedUsers set, matching the plain-English summary and establishing the per-directory protection mechanism specified.",
+      "reject_history": [
+        {
+          "atom_name": "review_file_directory_protection",
+          "reason": "Symbolic verification failed; the atom cannot enter the target. type-correct: FAILED (cedar validate rc=1: \u00d7 failed to parse policy set\n  \u2570\u2500\u25b6 expected an entity uid, found name `readReviewFile`\n   \u256d\u2500\u2500\u2500\u2500\n 1 \u2502 permit (principal is User, action == readReviewFile, resource is ReviewFile) when { resource.directory.allowedUsers.contains(principal) };\n   \u00b7                                      \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n   )"
+        }
+      ],
+      "replaced_after_reject": true
+    },
+    "intent_acknowledged_by_user": false,
+    "symbolic_verified": true
+  }
+]

@@ -1,0 +1,2599 @@
+{
+  "schema_version": 1,
+  "nodes": [
+    {
+      "id": "document",
+      "kind": "document",
+      "summary": "raw requirements document"
+    },
+    {
+      "id": "src.cyberchair_access_control_intent.p0001.l3",
+      "text": "Manual AITL target built from the human-provided CyberChair prose.",
+      "start_line": 3,
+      "end_line": 5,
+      "heading_path": [
+        "CyberChair Access Control Intent"
+      ],
+      "node_type": "requirement",
+      "parent_id": "section:cyberchair_access_control_intent",
+      "ordinal": 1,
+      "kind": "source"
+    },
+    {
+      "id": "src.cyberchair_access_control_intent.p0002.l3",
+      "text": "This workspace is a trace artifact for debugging AutoCedar, not an automatically generated session.",
+      "start_line": 3,
+      "end_line": 5,
+      "heading_path": [
+        "CyberChair Access Control Intent"
+      ],
+      "node_type": "requirement",
+      "parent_id": "section:cyberchair_access_control_intent",
+      "ordinal": 2,
+      "kind": "source"
+    },
+    {
+      "id": "src.cyberchair_access_control_intent.authorization_intent_covered.p0003.l9",
+      "text": "1. Authors can submit abstracts/papers during step 1.",
+      "start_line": 9,
+      "end_line": 9,
+      "heading_path": [
+        "CyberChair Access Control Intent",
+        "Authorization Intent Covered"
+      ],
+      "node_type": "requirement",
+      "parent_id": "section:cyberchair_access_control_intent.authorization_intent_covered",
+      "ordinal": 3,
+      "kind": "source"
+    },
+    {
+      "id": "src.cyberchair_access_control_intent.authorization_intent_covered.p0004.l10",
+      "text": "2. Authors with step-2 credentials can upload full papers during step 2.",
+      "start_line": 10,
+      "end_line": 10,
+      "heading_path": [
+        "CyberChair Access Control Intent",
+        "Authorization Intent Covered"
+      ],
+      "node_type": "requirement",
+      "parent_id": "section:cyberchair_access_control_intent.authorization_intent_covered",
+      "ordinal": 4,
+      "kind": "source"
+    },
+    {
+      "id": "src.cyberchair_access_control_intent.authorization_intent_covered.p0005.l11",
+      "text": "3. Authors can correct step-1 submission information during step 2.",
+      "start_line": 11,
+      "end_line": 11,
+      "heading_path": [
+        "CyberChair Access Control Intent",
+        "Authorization Intent Covered"
+      ],
+      "node_type": "requirement",
+      "parent_id": "section:cyberchair_access_control_intent.authorization_intent_covered",
+      "ordinal": 5,
+      "kind": "source"
+    },
+    {
+      "id": "src.cyberchair_access_control_intent.authorization_intent_covered.p0006.l12",
+      "text": "4. Authors of selected submissions can submit camera-ready papers after review.",
+      "start_line": 12,
+      "end_line": 12,
+      "heading_path": [
+        "CyberChair Access Control Intent",
+        "Authorization Intent Covered"
+      ],
+      "node_type": "requirement",
+      "parent_id": "section:cyberchair_access_control_intent.authorization_intent_covered",
+      "ordinal": 6,
+      "kind": "source"
+    },
+    {
+      "id": "src.cyberchair_access_control_intent.authorization_intent_covered.p0007.l13",
+      "text": "5. Assigned reviewers can access/download assigned papers after paper distribution, unless they have declared a conflict of interest.",
+      "start_line": 13,
+      "end_line": 14,
+      "heading_path": [
+        "CyberChair Access Control Intent",
+        "Authorization Intent Covered"
+      ],
+      "node_type": "requirement",
+      "parent_id": "section:cyberchair_access_control_intent.authorization_intent_covered",
+      "ordinal": 7,
+      "kind": "source"
+    },
+    {
+      "id": "src.cyberchair_access_control_intent.authorization_intent_covered.p0008.l15",
+      "text": "6. Assigned non-conflicted reviewers can submit or update reviews while review is open.",
+      "start_line": 15,
+      "end_line": 15,
+      "heading_path": [
+        "CyberChair Access Control Intent",
+        "Authorization Intent Covered"
+      ],
+      "node_type": "requirement",
+      "parent_id": "section:cyberchair_access_control_intent.authorization_intent_covered",
+      "ordinal": 8,
+      "kind": "source"
+    },
+    {
+      "id": "src.cyberchair_access_control_intent.authorization_intent_covered.p0009.l16",
+      "text": "7. Reviewers can read other reviewers' reviews for a paper only after submitting their own review for that paper.",
+      "start_line": 16,
+      "end_line": 17,
+      "heading_path": [
+        "CyberChair Access Control Intent",
+        "Authorization Intent Covered"
+      ],
+      "node_type": "requirement",
+      "parent_id": "section:cyberchair_access_control_intent.authorization_intent_covered",
+      "ordinal": 9,
+      "kind": "source"
+    },
+    {
+      "id": "src.cyberchair_access_control_intent.authorization_intent_covered.p0010.l18",
+      "text": "8. Reviewers can declare conflicts of interest for assigned papers.",
+      "start_line": 18,
+      "end_line": 18,
+      "heading_path": [
+        "CyberChair Access Control Intent",
+        "Authorization Intent Covered"
+      ],
+      "node_type": "requirement",
+      "parent_id": "section:cyberchair_access_control_intent.authorization_intent_covered",
+      "ordinal": 10,
+      "kind": "source"
+    },
+    {
+      "id": "src.cyberchair_access_control_intent.authorization_intent_covered.p0011.l19",
+      "text": "9. Reviewers may volunteer for papers with conflicting reviews only after they have submitted all assigned reviews and are not conflicted with the paper.",
+      "start_line": 19,
+      "end_line": 20,
+      "heading_path": [
+        "CyberChair Access Control Intent",
+        "Authorization Intent Covered"
+      ],
+      "node_type": "requirement",
+      "parent_id": "section:cyberchair_access_control_intent.authorization_intent_covered",
+      "ordinal": 11,
+      "kind": "source"
+    },
+    {
+      "id": "src.cyberchair_access_control_intent.authorization_intent_covered.p0012.l21",
+      "text": "10. Chairs/PCC can monitor the review process and identify low-expertise papers.",
+      "start_line": 21,
+      "end_line": 21,
+      "heading_path": [
+        "CyberChair Access Control Intent",
+        "Authorization Intent Covered"
+      ],
+      "node_type": "requirement",
+      "parent_id": "section:cyberchair_access_control_intent.authorization_intent_covered",
+      "ordinal": 12,
+      "kind": "source"
+    },
+    {
+      "id": "src.cyberchair_access_control_intent.authorization_intent_covered.p0013.l22",
+      "text": "11. PCC can ask an additional reviewer to review a low-expertise paper.",
+      "start_line": 22,
+      "end_line": 22,
+      "heading_path": [
+        "CyberChair Access Control Intent",
+        "Authorization Intent Covered"
+      ],
+      "node_type": "requirement",
+      "parent_id": "section:cyberchair_access_control_intent.authorization_intent_covered",
+      "ordinal": 13,
+      "kind": "source"
+    },
+    {
+      "id": "src.cyberchair_access_control_intent.authorization_intent_covered.p0014.l23",
+      "text": "12. Reviewer directories and review files are protected from outsiders by per-directory allowed-user lists.",
+      "start_line": 23,
+      "end_line": 24,
+      "heading_path": [
+        "CyberChair Access Control Intent",
+        "Authorization Intent Covered"
+      ],
+      "node_type": "requirement",
+      "parent_id": "section:cyberchair_access_control_intent.authorization_intent_covered",
+      "ordinal": 14,
+      "kind": "source"
+    },
+    {
+      "id": "src.cyberchair_access_control_intent.deliberately_not_modeled_as_access_control.p0015.l28",
+      "text": "- The system assigning a unique submission id.",
+      "start_line": 28,
+      "end_line": 28,
+      "heading_path": [
+        "CyberChair Access Control Intent",
+        "Deliberately Not Modeled As Access Control"
+      ],
+      "node_type": "requirement",
+      "parent_id": "section:cyberchair_access_control_intent.deliberately_not_modeled_as_access_control",
+      "ordinal": 15,
+      "kind": "source"
+    },
+    {
+      "id": "src.cyberchair_access_control_intent.deliberately_not_modeled_as_access_control.p0016.l29",
+      "text": "- Sending login/password email.",
+      "start_line": 29,
+      "end_line": 29,
+      "heading_path": [
+        "CyberChair Access Control Intent",
+        "Deliberately Not Modeled As Access Control"
+      ],
+      "node_type": "requirement",
+      "parent_id": "section:cyberchair_access_control_intent.deliberately_not_modeled_as_access_control",
+      "ordinal": 16,
+      "kind": "source"
+    },
+    {
+      "id": "src.cyberchair_access_control_intent.deliberately_not_modeled_as_access_control.p0017.l30",
+      "text": "- The mechanics of copying files into reviewer directories.",
+      "start_line": 30,
+      "end_line": 30,
+      "heading_path": [
+        "CyberChair Access Control Intent",
+        "Deliberately Not Modeled As Access Control"
+      ],
+      "node_type": "requirement",
+      "parent_id": "section:cyberchair_access_control_intent.deliberately_not_modeled_as_access_control",
+      "ordinal": 17,
+      "kind": "source"
+    },
+    {
+      "id": "src.cyberchair_access_control_intent.deliberately_not_modeled_as_access_control.p0018.l31",
+      "text": "- The content of generated hyperlinks.",
+      "start_line": 31,
+      "end_line": 31,
+      "heading_path": [
+        "CyberChair Access Control Intent",
+        "Deliberately Not Modeled As Access Control"
+      ],
+      "node_type": "requirement",
+      "parent_id": "section:cyberchair_access_control_intent.deliberately_not_modeled_as_access_control",
+      "ordinal": 18,
+      "kind": "source"
+    },
+    {
+      "id": "packet:condition.0003.step0001",
+      "kind": "condition_packet",
+      "focus_node_ids": [
+        "src.cyberchair_access_control_intent.authorization_intent_covered.p0003.l9"
+      ]
+    },
+    {
+      "id": "packet:condition.0004.step0002",
+      "kind": "condition_packet",
+      "focus_node_ids": [
+        "src.cyberchair_access_control_intent.authorization_intent_covered.p0004.l10"
+      ]
+    },
+    {
+      "id": "packet:condition.0005.step0003",
+      "kind": "condition_packet",
+      "focus_node_ids": [
+        "src.cyberchair_access_control_intent.authorization_intent_covered.p0005.l11"
+      ]
+    },
+    {
+      "id": "packet:condition.0006.step0004",
+      "kind": "condition_packet",
+      "focus_node_ids": [
+        "src.cyberchair_access_control_intent.authorization_intent_covered.p0006.l12"
+      ]
+    },
+    {
+      "id": "packet:condition.0007.step0005",
+      "kind": "condition_packet",
+      "focus_node_ids": [
+        "src.cyberchair_access_control_intent.authorization_intent_covered.p0007.l13"
+      ]
+    },
+    {
+      "id": "packet:condition.0008.step0006",
+      "kind": "condition_packet",
+      "focus_node_ids": [
+        "src.cyberchair_access_control_intent.authorization_intent_covered.p0008.l15"
+      ]
+    },
+    {
+      "id": "packet:condition.0009.step0007",
+      "kind": "condition_packet",
+      "focus_node_ids": [
+        "src.cyberchair_access_control_intent.authorization_intent_covered.p0009.l16"
+      ]
+    },
+    {
+      "id": "packet:condition.0010.step0008",
+      "kind": "condition_packet",
+      "focus_node_ids": [
+        "src.cyberchair_access_control_intent.authorization_intent_covered.p0010.l18"
+      ]
+    },
+    {
+      "id": "packet:condition.0011.step0009",
+      "kind": "condition_packet",
+      "focus_node_ids": [
+        "src.cyberchair_access_control_intent.authorization_intent_covered.p0011.l19"
+      ]
+    },
+    {
+      "id": "packet:condition.0012.step0010",
+      "kind": "condition_packet",
+      "focus_node_ids": [
+        "src.cyberchair_access_control_intent.authorization_intent_covered.p0012.l21"
+      ]
+    },
+    {
+      "id": "packet:condition.0013.step0011",
+      "kind": "condition_packet",
+      "focus_node_ids": [
+        "src.cyberchair_access_control_intent.authorization_intent_covered.p0013.l22"
+      ]
+    },
+    {
+      "id": "packet:condition.0014.step0012",
+      "kind": "condition_packet",
+      "focus_node_ids": [
+        "src.cyberchair_access_control_intent.authorization_intent_covered.p0014.l23"
+      ]
+    },
+    {
+      "id": "property_atom:p0003_submitStep1_author_during_step1",
+      "kind": "property_atom",
+      "atom": {
+        "name": "p0003_submitStep1_author_during_step1",
+        "rationale": "The requirement specifies that authors have the ability to submit during step 1. This requires two conditions: (1) the principal must be listed in the submission's authors set, and (2) the submission must have step1Open set to true. Both conditions must be satisfied for the action to be allowed.",
+        "plain_english_summary": "The principal must be an author of the submission, and step 1 must be open for submissions.",
+        "source_excerpt": "[source_id: src.cyberchair_access_control_intent.authorization_intent_covered.p0003.l9] Authors can submit abstracts/papers during step 1.",
+        "constraint_type": "condition",
+        "action": "submitStep1",
+        "principal_types": [
+          "User"
+        ],
+        "resource_types": [
+          "Submission"
+        ],
+        "reference_cedar": "permit (principal is User, action == Action::\"submitStep1\", resource is Submission) when { resource.authors.contains(principal) && resource.step1Open };",
+        "required_schema_support": [
+          {
+            "kind": "action_principal",
+            "name": "",
+            "entity": "",
+            "action": "",
+            "field_name": "",
+            "type_name": "User",
+            "reason": "Principal must be of type User to perform submitStep1"
+          },
+          {
+            "kind": "action_resource",
+            "name": "",
+            "entity": "",
+            "action": "",
+            "field_name": "",
+            "type_name": "Submission",
+            "reason": "Resource must be of type Submission for submitStep1"
+          },
+          {
+            "kind": "attribute",
+            "name": "",
+            "entity": "Submission",
+            "action": "",
+            "field_name": "authors",
+            "type_name": "",
+            "reason": "Need to check if principal is in the authors set"
+          },
+          {
+            "kind": "attribute",
+            "name": "",
+            "entity": "Submission",
+            "action": "",
+            "field_name": "step1Open",
+            "type_name": "",
+            "reason": "Need to verify that step 1 is open for submissions"
+          }
+        ],
+        "examples_adversarial": [],
+        "alternatives_considered": [],
+        "symbolic_verified": true,
+        "symbolic_verification_log": [
+          "type-correct: ok",
+          "condition-shape: ok",
+          "identity-consistency: ok",
+          "satisfiable: ok",
+          "never-errors: ok",
+          "match-vacuity: ok (policy match condition is reachable)",
+          "match-broadness: ok (not universal)",
+          "sugar-universal: ok (not applicable to primitives)"
+        ],
+        "intent_acknowledged_by_user": false,
+        "traceback_clauses": [
+          "permit (principal, action == Action::\"submitStep1\", resource)\nwhen {\n    principal in resource.authors && resource.step1Open\n};"
+        ],
+        "traceback_flags": [
+          "uses-attribute-not-in-atom-prose: resource.authors",
+          "idiom-not-in-atom-encoding: in"
+        ],
+        "rate_limit_window": null,
+        "rate_limit_threshold": null,
+        "rate_limit_counter_attr": null,
+        "disjoint_with": null,
+        "disjoint_target_body": null
+      },
+      "source_node_ids": [
+        "src.cyberchair_access_control_intent.authorization_intent_covered.p0003.l9"
+      ]
+    },
+    {
+      "id": "property_atom:submitFullPaper_step2_author",
+      "kind": "property_atom",
+      "atom": {
+        "name": "submitFullPaper_step2_author",
+        "rationale": "The requirement explicitly states that authors (1) with step-2 credentials (2) can upload during step 2 (3). All three conditions must hold: the principal must be in the submission's authors set, the context must indicate step-2 credentials, and the submission's step-2 phase must be open.",
+        "plain_english_summary": "The principal must be listed as an author of the submission, must have step-2 credentials, and step 2 must currently be open.",
+        "source_excerpt": "[source_id: src.cyberchair_access_control_intent.authorization_intent_covered.p0004.l10] 2. Authors with step-2 credentials can upload full papers during step 2.",
+        "constraint_type": "condition",
+        "action": "submitFullPaper",
+        "principal_types": [
+          "User"
+        ],
+        "resource_types": [
+          "Submission"
+        ],
+        "reference_cedar": "permit (principal is User, action == Action::\"submitFullPaper\", resource is Submission) when { resource.authors.contains(principal) && context.hasStep2Credential && resource.step2Open };",
+        "required_schema_support": [
+          {
+            "kind": "attribute",
+            "name": "",
+            "entity": "Submission",
+            "action": "",
+            "field_name": "authors",
+            "type_name": "",
+            "reason": "Required to check if principal is an author of the submission"
+          },
+          {
+            "kind": "context",
+            "name": "",
+            "entity": "",
+            "action": "",
+            "field_name": "hasStep2Credential",
+            "type_name": "",
+            "reason": "Required to verify the principal possesses step-2 credentials"
+          },
+          {
+            "kind": "attribute",
+            "name": "",
+            "entity": "Submission",
+            "action": "",
+            "field_name": "step2Open",
+            "type_name": "",
+            "reason": "Required to verify that step 2 is currently open"
+          }
+        ],
+        "examples_adversarial": [],
+        "alternatives_considered": [],
+        "symbolic_verified": true,
+        "symbolic_verification_log": [
+          "type-correct: ok",
+          "condition-shape: ok",
+          "identity-consistency: ok",
+          "satisfiable: ok",
+          "never-errors: ok",
+          "match-vacuity: ok (policy match condition is reachable)",
+          "match-broadness: ok (not universal)",
+          "sugar-universal: ok (not applicable to primitives)"
+        ],
+        "intent_acknowledged_by_user": false,
+        "traceback_clauses": [
+          "permit (principal, action == Action::\"submitFullPaper\", resource)\nwhen {\n    principal in resource.authors && context.hasStep2Credential && resource.step2Open\n};"
+        ],
+        "traceback_flags": [
+          "uses-attribute-not-in-atom-prose: resource.authors",
+          "idiom-not-in-atom-encoding: in"
+        ],
+        "rate_limit_window": null,
+        "rate_limit_threshold": null,
+        "rate_limit_counter_attr": null,
+        "disjoint_with": null,
+        "disjoint_target_body": null
+      },
+      "source_node_ids": [
+        "src.cyberchair_access_control_intent.authorization_intent_covered.p0004.l10"
+      ]
+    },
+    {
+      "id": "property_atom:author_during_step2",
+      "kind": "property_atom",
+      "atom": {
+        "name": "author_during_step2",
+        "rationale": "The requirement states authors can correct step-1 information during step 2. This encodes the two conditions: the principal must appear in the submission's authors set, and the submission's step2Open flag must be true.",
+        "plain_english_summary": "The principal must be an author of the submission, and step 2 must be open for corrections.",
+        "source_excerpt": "[source_id: src.cyberchair_access_control_intent.authorization_intent_covered.p0005.l11] Authors can correct step-1 submission information during step 2.",
+        "constraint_type": "condition",
+        "action": "updateStep1Info",
+        "principal_types": [
+          "User"
+        ],
+        "resource_types": [
+          "Submission"
+        ],
+        "reference_cedar": "permit (principal is User, action == Action::\"updateStep1Info\", resource is Submission) when { resource.authors.contains(principal) && resource.step2Open };",
+        "required_schema_support": [
+          {
+            "kind": "entity",
+            "name": "User",
+            "entity": "",
+            "action": "",
+            "field_name": "",
+            "type_name": "",
+            "reason": ""
+          },
+          {
+            "kind": "entity",
+            "name": "Submission",
+            "entity": "",
+            "action": "",
+            "field_name": "",
+            "type_name": "",
+            "reason": ""
+          },
+          {
+            "kind": "attribute",
+            "name": "",
+            "entity": "Submission",
+            "action": "",
+            "field_name": "authors",
+            "type_name": "",
+            "reason": ""
+          },
+          {
+            "kind": "attribute",
+            "name": "",
+            "entity": "Submission",
+            "action": "",
+            "field_name": "step2Open",
+            "type_name": "",
+            "reason": ""
+          }
+        ],
+        "examples_adversarial": [],
+        "alternatives_considered": [],
+        "symbolic_verified": true,
+        "symbolic_verification_log": [
+          "type-correct: ok",
+          "condition-shape: ok",
+          "identity-consistency: ok",
+          "satisfiable: ok",
+          "never-errors: ok",
+          "match-vacuity: ok (policy match condition is reachable)",
+          "match-broadness: ok (not universal)",
+          "sugar-universal: ok (not applicable to primitives)"
+        ],
+        "intent_acknowledged_by_user": false,
+        "traceback_clauses": [
+          "permit (principal, action == Action::\"updateStep1Info\", resource)\nwhen {\n    principal in resource.authors && resource.step2Open\n};"
+        ],
+        "traceback_flags": [
+          "uses-attribute-not-in-atom-prose: resource.authors",
+          "idiom-not-in-atom-encoding: in"
+        ],
+        "rate_limit_window": null,
+        "rate_limit_threshold": null,
+        "rate_limit_counter_attr": null,
+        "disjoint_with": null,
+        "disjoint_target_body": null
+      },
+      "source_node_ids": [
+        "src.cyberchair_access_control_intent.authorization_intent_covered.p0005.l11"
+      ]
+    },
+    {
+      "id": "property_atom:submitCameraReady_author_of_selected_after_review",
+      "kind": "property_atom",
+      "atom": {
+        "name": "submitCameraReady_author_of_selected_after_review",
+        "rationale": "The requirement explicitly requires three conditions: the user must be listed as an author (author role check via resource.authors), the submission must be selected for the conference (selected flag), and the review phase must be finished (reviewProcessDone flag indicates review is complete). The Cedar syntax now matches the approved pattern used in this scope.",
+        "plain_english_summary": "The principal must be an author of the submission, the submission must be marked as selected, and the review process must be complete.",
+        "source_excerpt": "[source_id: src.cyberchair_access_control_intent.authorization_intent_covered.p0006.l12] Authors of selected submissions can submit camera-ready papers after review.",
+        "constraint_type": "condition",
+        "action": "submitCameraReady",
+        "principal_types": [
+          "User"
+        ],
+        "resource_types": [
+          "Submission"
+        ],
+        "reference_cedar": "permit (principal is User, action == Action::\"submitCameraReady\", resource is Submission) when {\n    resource.authors.contains(principal) &&\n    resource.selected &&\n    resource.reviewProcessDone\n};",
+        "required_schema_support": [
+          {
+            "kind": "action",
+            "name": "submitCameraReady",
+            "entity": "",
+            "action": "",
+            "field_name": "",
+            "type_name": "",
+            "reason": ""
+          },
+          {
+            "kind": "action_principal",
+            "name": "",
+            "entity": "",
+            "action": "submitCameraReady",
+            "field_name": "",
+            "type_name": "User",
+            "reason": ""
+          },
+          {
+            "kind": "action_resource",
+            "name": "",
+            "entity": "",
+            "action": "submitCameraReady",
+            "field_name": "",
+            "type_name": "Submission",
+            "reason": ""
+          },
+          {
+            "kind": "attribute",
+            "name": "",
+            "entity": "Submission",
+            "action": "",
+            "field_name": "authors",
+            "type_name": "",
+            "reason": ""
+          },
+          {
+            "kind": "attribute",
+            "name": "",
+            "entity": "Submission",
+            "action": "",
+            "field_name": "selected",
+            "type_name": "",
+            "reason": ""
+          },
+          {
+            "kind": "attribute",
+            "name": "",
+            "entity": "Submission",
+            "action": "",
+            "field_name": "reviewProcessDone",
+            "type_name": "",
+            "reason": ""
+          }
+        ],
+        "examples_adversarial": [],
+        "alternatives_considered": [],
+        "symbolic_verified": true,
+        "symbolic_verification_log": [
+          "type-correct: ok",
+          "condition-shape: ok",
+          "identity-consistency: ok",
+          "satisfiable: ok",
+          "never-errors: ok",
+          "match-vacuity: ok (policy match condition is reachable)",
+          "match-broadness: ok (not universal)",
+          "sugar-universal: ok (not applicable to primitives)"
+        ],
+        "intent_acknowledged_by_user": false,
+        "traceback_clauses": [
+          "permit (principal, action == Action::\"submitCameraReady\", resource)\nwhen {\n    principal in resource.authors && resource.selected && resource.reviewProcessDone\n};"
+        ],
+        "traceback_flags": [
+          "uses-attribute-not-in-atom-prose: resource.authors",
+          "idiom-not-in-atom-encoding: in"
+        ],
+        "rate_limit_window": null,
+        "rate_limit_threshold": null,
+        "rate_limit_counter_attr": null,
+        "disjoint_with": null,
+        "disjoint_target_body": null
+      },
+      "source_node_ids": [
+        "src.cyberchair_access_control_intent.authorization_intent_covered.p0006.l12"
+      ]
+    },
+    {
+      "id": "property_atom:assigned_reviewer_post_distribution_not_conflicted",
+      "kind": "property_atom",
+      "atom": {
+        "name": "assigned_reviewer_post_distribution_not_conflicted",
+        "rationale": "The requirement permits assigned reviewers to download papers after distribution, but excludes those with declared conflicts. This condition enforces all three requirements: reviewer assignment status, distribution timing, and conflict status.",
+        "plain_english_summary": "The principal must be an assigned reviewer of the submission, paper distribution must be complete, and the principal must not have declared a conflict of interest.",
+        "source_excerpt": "[source_id: src.cyberchair_access_control_intent.authorization_intent_covered.p0007.l13] \"Assigned reviewers can access/download assigned papers after paper distribution, unless they have declared a conflict of interest.\"",
+        "constraint_type": "condition",
+        "action": "downloadPaper",
+        "principal_types": [
+          "User"
+        ],
+        "resource_types": [
+          "Submission"
+        ],
+        "reference_cedar": "permit (principal is User, action == Action::\"downloadPaper\", resource is Submission) when { resource.assignedReviewers.contains(principal) && resource.distributionDone && !(resource.conflictedReviewers.contains(principal)) };",
+        "required_schema_support": [
+          {
+            "kind": "action",
+            "name": "downloadPaper",
+            "entity": "",
+            "action": "",
+            "field_name": "",
+            "type_name": "",
+            "reason": ""
+          },
+          {
+            "kind": "action_principal",
+            "name": "",
+            "entity": "",
+            "action": "",
+            "field_name": "",
+            "type_name": "User",
+            "reason": ""
+          },
+          {
+            "kind": "action_resource",
+            "name": "",
+            "entity": "",
+            "action": "",
+            "field_name": "",
+            "type_name": "Submission",
+            "reason": ""
+          },
+          {
+            "kind": "attribute",
+            "name": "",
+            "entity": "Submission",
+            "action": "",
+            "field_name": "assignedReviewers",
+            "type_name": "",
+            "reason": ""
+          },
+          {
+            "kind": "attribute",
+            "name": "",
+            "entity": "Submission",
+            "action": "",
+            "field_name": "distributionDone",
+            "type_name": "",
+            "reason": ""
+          },
+          {
+            "kind": "attribute",
+            "name": "",
+            "entity": "Submission",
+            "action": "",
+            "field_name": "conflictedReviewers",
+            "type_name": "",
+            "reason": ""
+          }
+        ],
+        "examples_adversarial": [],
+        "alternatives_considered": [],
+        "symbolic_verified": true,
+        "symbolic_verification_log": [
+          "type-correct: ok",
+          "condition-shape: ok",
+          "identity-consistency: ok",
+          "satisfiable: ok",
+          "never-errors: ok",
+          "match-vacuity: ok (policy match condition is reachable)",
+          "match-broadness: ok (not universal)",
+          "sugar-universal: ok (not applicable to primitives)"
+        ],
+        "intent_acknowledged_by_user": false,
+        "traceback_clauses": [
+          "permit (principal, action == Action::\"downloadPaper\", resource)\nwhen {\n    principal in resource.assignedReviewers && resource.distributionDone && !(principal in resource.conflictedReviewers)\n};"
+        ],
+        "traceback_flags": [
+          "uses-attribute-not-in-atom-prose: resource.assignedReviewers, resource.conflictedReviewers",
+          "idiom-not-in-atom-encoding: in"
+        ],
+        "rate_limit_window": null,
+        "rate_limit_threshold": null,
+        "rate_limit_counter_attr": null,
+        "disjoint_with": null,
+        "disjoint_target_body": null
+      },
+      "source_node_ids": [
+        "src.cyberchair_access_control_intent.authorization_intent_covered.p0007.l13"
+      ]
+    },
+    {
+      "id": "property_atom:submitReview_assigned_non_conflicted_reviewer",
+      "kind": "property_atom",
+      "atom": {
+        "name": "submitReview_assigned_non_conflicted_reviewer",
+        "rationale": "The requirement states assigned non-conflicted reviewers can submit reviews while review is open. This condition enforces all three constraints: principal must be assigned, must not be conflicted, and review must be open.",
+        "plain_english_summary": "The principal must be an assigned reviewer on the submission, not be in the conflicted reviewers set, and the review period must be open.",
+        "source_excerpt": "[source_id: src.cyberchair_access_control_intent.authorization_intent_covered.p0008.l15] Assigned non-conflicted reviewers can submit or update reviews while review is open.",
+        "constraint_type": "condition",
+        "action": "submitReview",
+        "principal_types": [
+          "User"
+        ],
+        "resource_types": [
+          "Submission"
+        ],
+        "reference_cedar": "permit (principal is User, action == Action::\"submitReview\", resource is Submission) when { resource.assignedReviewers.contains(principal) && !resource.conflictedReviewers.contains(principal) && resource.reviewOpen };",
+        "required_schema_support": [
+          {
+            "kind": "entity",
+            "name": "User",
+            "entity": "",
+            "action": "",
+            "field_name": "",
+            "type_name": "",
+            "reason": "Principal type in this scope"
+          },
+          {
+            "kind": "entity",
+            "name": "Submission",
+            "entity": "",
+            "action": "",
+            "field_name": "",
+            "type_name": "",
+            "reason": "Resource type in this scope"
+          },
+          {
+            "kind": "attribute",
+            "name": "",
+            "entity": "Submission",
+            "action": "",
+            "field_name": "assignedReviewers",
+            "type_name": "",
+            "reason": "Required to check if principal is an assigned reviewer"
+          },
+          {
+            "kind": "attribute",
+            "name": "",
+            "entity": "Submission",
+            "action": "",
+            "field_name": "conflictedReviewers",
+            "type_name": "",
+            "reason": "Required to check if principal has a conflict"
+          },
+          {
+            "kind": "attribute",
+            "name": "",
+            "entity": "Submission",
+            "action": "",
+            "field_name": "reviewOpen",
+            "type_name": "",
+            "reason": "Required to check if review period is open"
+          },
+          {
+            "kind": "action",
+            "name": "submitReview",
+            "entity": "",
+            "action": "",
+            "field_name": "",
+            "type_name": "",
+            "reason": "Action in this scope"
+          }
+        ],
+        "examples_adversarial": [],
+        "alternatives_considered": [],
+        "symbolic_verified": true,
+        "symbolic_verification_log": [
+          "type-correct: ok",
+          "condition-shape: ok",
+          "identity-consistency: ok",
+          "satisfiable: ok",
+          "never-errors: ok",
+          "match-vacuity: ok (policy match condition is reachable)",
+          "match-broadness: ok (not universal)",
+          "sugar-universal: ok (not applicable to primitives)"
+        ],
+        "intent_acknowledged_by_user": false,
+        "traceback_clauses": [
+          "permit (principal, action == Action::\"submitReview\", resource)\nwhen {\n    principal in resource.assignedReviewers && !(principal in resource.conflictedReviewers) && resource.reviewOpen\n};"
+        ],
+        "traceback_flags": [
+          "uses-attribute-not-in-atom-prose: resource.assignedReviewers, resource.conflictedReviewers",
+          "idiom-not-in-atom-encoding: in"
+        ],
+        "rate_limit_window": null,
+        "rate_limit_threshold": null,
+        "rate_limit_counter_attr": null,
+        "disjoint_with": null,
+        "disjoint_target_body": null
+      },
+      "source_node_ids": [
+        "src.cyberchair_access_control_intent.authorization_intent_covered.p0008.l15"
+      ]
+    },
+    {
+      "id": "property_atom:updateReview_assigned_non_conflicted_reviewer",
+      "kind": "property_atom",
+      "atom": {
+        "name": "updateReview_assigned_non_conflicted_reviewer",
+        "rationale": "The requirement states assigned non-conflicted reviewers can update reviews while review is open. This condition enforces all three constraints: principal must be assigned, must not be conflicted, and review must be open.",
+        "plain_english_summary": "The principal must be an assigned reviewer on the submission, not be in the conflicted reviewers set, and the review period must be open.",
+        "source_excerpt": "[source_id: src.cyberchair_access_control_intent.authorization_intent_covered.p0008.l15] Assigned non-conflicted reviewers can submit or update reviews while review is open.",
+        "constraint_type": "condition",
+        "action": "updateReview",
+        "principal_types": [
+          "User"
+        ],
+        "resource_types": [
+          "Submission"
+        ],
+        "reference_cedar": "permit (principal is User, action == Action::\"updateReview\", resource is Submission) when { resource.assignedReviewers.contains(principal) && !resource.conflictedReviewers.contains(principal) && resource.reviewOpen };",
+        "required_schema_support": [
+          {
+            "kind": "entity",
+            "name": "User",
+            "entity": "",
+            "action": "",
+            "field_name": "",
+            "type_name": "",
+            "reason": "Principal type in this scope"
+          },
+          {
+            "kind": "entity",
+            "name": "Submission",
+            "entity": "",
+            "action": "",
+            "field_name": "",
+            "type_name": "",
+            "reason": "Resource type in this scope"
+          },
+          {
+            "kind": "attribute",
+            "name": "",
+            "entity": "Submission",
+            "action": "",
+            "field_name": "assignedReviewers",
+            "type_name": "",
+            "reason": "Required to check if principal is an assigned reviewer"
+          },
+          {
+            "kind": "attribute",
+            "name": "",
+            "entity": "Submission",
+            "action": "",
+            "field_name": "conflictedReviewers",
+            "type_name": "",
+            "reason": "Required to check if principal has a conflict"
+          },
+          {
+            "kind": "attribute",
+            "name": "",
+            "entity": "Submission",
+            "action": "",
+            "field_name": "reviewOpen",
+            "type_name": "",
+            "reason": "Required to check if review period is open"
+          },
+          {
+            "kind": "action",
+            "name": "updateReview",
+            "entity": "",
+            "action": "",
+            "field_name": "",
+            "type_name": "",
+            "reason": "Action in this scope"
+          }
+        ],
+        "examples_adversarial": [],
+        "alternatives_considered": [],
+        "symbolic_verified": true,
+        "symbolic_verification_log": [
+          "type-correct: ok",
+          "condition-shape: ok",
+          "identity-consistency: ok",
+          "satisfiable: ok",
+          "never-errors: ok",
+          "match-vacuity: ok (policy match condition is reachable)",
+          "match-broadness: ok (not universal)",
+          "sugar-universal: ok (not applicable to primitives)"
+        ],
+        "intent_acknowledged_by_user": false,
+        "traceback_clauses": [
+          "permit (principal, action == Action::\"updateReview\", resource)\nwhen {\n    principal in resource.assignedReviewers && !(principal in resource.conflictedReviewers) && resource.reviewOpen\n};"
+        ],
+        "traceback_flags": [
+          "uses-attribute-not-in-atom-prose: resource.assignedReviewers, resource.conflictedReviewers",
+          "idiom-not-in-atom-encoding: in"
+        ],
+        "rate_limit_window": null,
+        "rate_limit_threshold": null,
+        "rate_limit_counter_attr": null,
+        "disjoint_with": null,
+        "disjoint_target_body": null
+      },
+      "source_node_ids": [
+        "src.cyberchair_access_control_intent.authorization_intent_covered.p0008.l15"
+      ]
+    },
+    {
+      "id": "property_atom:reviewer_submitted_own_review",
+      "kind": "property_atom",
+      "atom": {
+        "name": "reviewer_submitted_own_review",
+        "rationale": "The requirement explicitly conditions the action on the reviewer having submitted their own review first. This is checked by verifying that the principal appears in the submission's reviewersSubmitted set.",
+        "plain_english_summary": "The principal must have already submitted their own review for the submission.",
+        "source_excerpt": "[source_id: src.cyberchair_access_control_intent.authorization_intent_covered.p0009.l16] Reviewers can read other reviewers' reviews for a paper only after submitting their own review for that paper.",
+        "constraint_type": "condition",
+        "action": "readOtherReviews",
+        "principal_types": [
+          "User"
+        ],
+        "resource_types": [
+          "Submission"
+        ],
+        "reference_cedar": "permit (principal is User, action == Action::\"readOtherReviews\", resource is Submission) when { resource.reviewersSubmitted.contains(principal) };",
+        "required_schema_support": [
+          {
+            "kind": "action",
+            "name": "readOtherReviews",
+            "entity": "",
+            "action": "",
+            "field_name": "",
+            "type_name": "",
+            "reason": ""
+          },
+          {
+            "kind": "action_principal",
+            "name": "",
+            "entity": "User",
+            "action": "readOtherReviews",
+            "field_name": "",
+            "type_name": "",
+            "reason": ""
+          },
+          {
+            "kind": "action_resource",
+            "name": "",
+            "entity": "Submission",
+            "action": "readOtherReviews",
+            "field_name": "",
+            "type_name": "",
+            "reason": ""
+          },
+          {
+            "kind": "attribute",
+            "name": "",
+            "entity": "Submission",
+            "action": "",
+            "field_name": "reviewersSubmitted",
+            "type_name": "",
+            "reason": ""
+          }
+        ],
+        "examples_adversarial": [],
+        "alternatives_considered": [],
+        "symbolic_verified": true,
+        "symbolic_verification_log": [
+          "type-correct: ok",
+          "condition-shape: ok",
+          "identity-consistency: ok",
+          "satisfiable: ok",
+          "never-errors: ok",
+          "match-vacuity: ok (policy match condition is reachable)",
+          "match-broadness: ok (not universal)",
+          "sugar-universal: ok (not applicable to primitives)"
+        ],
+        "intent_acknowledged_by_user": false,
+        "traceback_clauses": [
+          "permit (principal, action == Action::\"readOtherReviews\", resource)\nwhen {\n    principal in resource.reviewersSubmitted\n};"
+        ],
+        "traceback_flags": [
+          "uses-attribute-not-in-atom-prose: resource.reviewersSubmitted",
+          "idiom-not-in-atom-encoding: in"
+        ],
+        "rate_limit_window": null,
+        "rate_limit_threshold": null,
+        "rate_limit_counter_attr": null,
+        "disjoint_with": null,
+        "disjoint_target_body": null
+      },
+      "source_node_ids": [
+        "src.cyberchair_access_control_intent.authorization_intent_covered.p0009.l16"
+      ]
+    },
+    {
+      "id": "property_atom:assigned_reviewer_can_declare_conflict",
+      "kind": "property_atom",
+      "atom": {
+        "name": "assigned_reviewer_can_declare_conflict",
+        "rationale": "The requirement specifies that reviewers can declare conflicts for assigned papers. This means the principal must be in the submission's assignedReviewers set to have permission to declare a conflict.",
+        "plain_english_summary": "The principal is an assigned reviewer for the submission.",
+        "source_excerpt": "[source_id: src.cyberchair_access_control_intent.authorization_intent_covered.p0010.l18] Reviewers can declare conflicts of interest for assigned papers.",
+        "constraint_type": "condition",
+        "action": "declareConflict",
+        "principal_types": [
+          "User"
+        ],
+        "resource_types": [
+          "Submission"
+        ],
+        "reference_cedar": "permit (principal is User, action == Action::\"declareConflict\", resource is Submission) when {\n    resource.assignedReviewers.contains(principal)\n};",
+        "required_schema_support": [
+          {
+            "kind": "entity",
+            "name": "User",
+            "entity": "",
+            "action": "",
+            "field_name": "",
+            "type_name": "",
+            "reason": ""
+          },
+          {
+            "kind": "entity",
+            "name": "Submission",
+            "entity": "",
+            "action": "",
+            "field_name": "",
+            "type_name": "",
+            "reason": ""
+          },
+          {
+            "kind": "attribute",
+            "name": "",
+            "entity": "Submission",
+            "action": "",
+            "field_name": "assignedReviewers",
+            "type_name": "",
+            "reason": ""
+          },
+          {
+            "kind": "action",
+            "name": "",
+            "entity": "",
+            "action": "declareConflict",
+            "field_name": "",
+            "type_name": "",
+            "reason": ""
+          }
+        ],
+        "examples_adversarial": [],
+        "alternatives_considered": [],
+        "symbolic_verified": true,
+        "symbolic_verification_log": [
+          "type-correct: ok",
+          "condition-shape: ok",
+          "identity-consistency: ok",
+          "satisfiable: ok",
+          "never-errors: ok",
+          "match-vacuity: ok (policy match condition is reachable)",
+          "match-broadness: ok (not universal)",
+          "sugar-universal: ok (not applicable to primitives)"
+        ],
+        "intent_acknowledged_by_user": false,
+        "traceback_clauses": [
+          "permit (principal, action == Action::\"declareConflict\", resource)\nwhen {\n    principal in resource.assignedReviewers\n};"
+        ],
+        "traceback_flags": [
+          "uses-attribute-not-in-atom-prose: resource.assignedReviewers",
+          "idiom-not-in-atom-encoding: in"
+        ],
+        "rate_limit_window": null,
+        "rate_limit_threshold": null,
+        "rate_limit_counter_attr": null,
+        "disjoint_with": null,
+        "disjoint_target_body": null
+      },
+      "source_node_ids": [
+        "src.cyberchair_access_control_intent.authorization_intent_covered.p0010.l18"
+      ]
+    },
+    {
+      "id": "property_atom:reviewer_submitted_all_reviews_not_conflicted",
+      "kind": "property_atom",
+      "atom": {
+        "name": "reviewer_submitted_all_reviews_not_conflicted",
+        "rationale": "The requirement explicitly conditions volunteering for conflicting papers on two prerequisites: (1) the reviewer must have completed all assigned reviews, checked via the User.submittedAllAssignedReviews attribute, and (2) the reviewer must not be in the paper's conflictedReviewers set. The role check ensures only reviewers (not authors or other users) can volunteer.",
+        "plain_english_summary": "The principal must be a Reviewer who has submitted all assigned reviews and is not conflicted with the paper.",
+        "source_excerpt": "[source_id: src.cyberchair_access_control_intent.authorization_intent_covered.p0011.l19] Reviewers may volunteer for papers with conflicting reviews only after they have submitted all assigned reviews and are not conflicted with the paper.",
+        "constraint_type": "condition",
+        "action": "volunteerForConflictingPaper",
+        "principal_types": [
+          "User"
+        ],
+        "resource_types": [
+          "Submission"
+        ],
+        "reference_cedar": "permit (principal is User, action == Action::\"volunteerForConflictingPaper\", resource is Submission) when { principal.role == \"Reviewer\" && principal.submittedAllAssignedReviews && !(resource.conflictedReviewers.contains(principal)) };",
+        "required_schema_support": [
+          {
+            "kind": "entity",
+            "name": "User",
+            "entity": "",
+            "action": "",
+            "field_name": "",
+            "type_name": "",
+            "reason": ""
+          },
+          {
+            "kind": "entity",
+            "name": "Submission",
+            "entity": "",
+            "action": "",
+            "field_name": "",
+            "type_name": "",
+            "reason": ""
+          },
+          {
+            "kind": "action",
+            "name": "",
+            "entity": "",
+            "action": "volunteerForConflictingPaper",
+            "field_name": "",
+            "type_name": "",
+            "reason": ""
+          },
+          {
+            "kind": "attribute",
+            "name": "",
+            "entity": "User",
+            "action": "",
+            "field_name": "role",
+            "type_name": "",
+            "reason": ""
+          },
+          {
+            "kind": "attribute",
+            "name": "",
+            "entity": "User",
+            "action": "",
+            "field_name": "submittedAllAssignedReviews",
+            "type_name": "",
+            "reason": ""
+          },
+          {
+            "kind": "attribute",
+            "name": "",
+            "entity": "Submission",
+            "action": "",
+            "field_name": "conflictedReviewers",
+            "type_name": "",
+            "reason": ""
+          }
+        ],
+        "examples_adversarial": [],
+        "alternatives_considered": [],
+        "symbolic_verified": true,
+        "symbolic_verification_log": [
+          "type-correct: ok",
+          "condition-shape: ok",
+          "identity-consistency: ok",
+          "satisfiable: ok",
+          "never-errors: ok",
+          "match-vacuity: ok (policy match condition is reachable)",
+          "match-broadness: ok (not universal)",
+          "sugar-universal: ok (not applicable to primitives)"
+        ],
+        "intent_acknowledged_by_user": false,
+        "traceback_clauses": [
+          "permit (principal, action == Action::\"volunteerForConflictingPaper\", resource)\nwhen {\n    principal.role == \"Reviewer\" && principal.submittedAllAssignedReviews && !(principal in resource.conflictedReviewers)\n};"
+        ],
+        "traceback_flags": [
+          "uses-attribute-not-in-atom-prose: resource.conflictedReviewers",
+          "idiom-not-in-atom-encoding: in"
+        ],
+        "rate_limit_window": null,
+        "rate_limit_threshold": null,
+        "rate_limit_counter_attr": null,
+        "disjoint_with": null,
+        "disjoint_target_body": null
+      },
+      "source_node_ids": [
+        "src.cyberchair_access_control_intent.authorization_intent_covered.p0011.l19"
+      ]
+    },
+    {
+      "id": "property_atom:chair_pcc_role_check",
+      "kind": "property_atom",
+      "atom": {
+        "name": "chair_pcc_role_check",
+        "rationale": "The requirement explicitly grants monitoring access only to users with the role 'Chair' or 'PCC'. The condition checks the principal's role attribute against these two permitted values using OR logic, as either role qualifies.",
+        "plain_english_summary": "The principal's role must be 'Chair' or 'PCC' to monitor the review process.",
+        "source_excerpt": "[source_id: src.cyberchair_access_control_intent.authorization_intent_covered.p0012.l21] 10. Chairs/PCC can monitor the review process and identify low-expertise papers.",
+        "constraint_type": "condition",
+        "action": "monitorReviewProcess",
+        "principal_types": [
+          "User"
+        ],
+        "resource_types": [
+          "ReviewOverview"
+        ],
+        "reference_cedar": "permit (principal is User, action == Action::\"monitorReviewProcess\", resource is ReviewOverview) when {\n    principal.role == \"Chair\" || principal.role == \"PCC\"\n};",
+        "required_schema_support": [
+          {
+            "kind": "action",
+            "name": "monitorReviewProcess",
+            "entity": "",
+            "action": "",
+            "field_name": "",
+            "type_name": "",
+            "reason": ""
+          },
+          {
+            "kind": "action_principal",
+            "name": "",
+            "entity": "",
+            "action": "",
+            "field_name": "",
+            "type_name": "User",
+            "reason": ""
+          },
+          {
+            "kind": "action_resource",
+            "name": "",
+            "entity": "",
+            "action": "",
+            "field_name": "",
+            "type_name": "ReviewOverview",
+            "reason": ""
+          },
+          {
+            "kind": "attribute",
+            "name": "",
+            "entity": "User",
+            "action": "",
+            "field_name": "role",
+            "type_name": "",
+            "reason": ""
+          }
+        ],
+        "examples_adversarial": [],
+        "alternatives_considered": [],
+        "symbolic_verified": true,
+        "symbolic_verification_log": [
+          "type-correct: ok",
+          "condition-shape: ok",
+          "identity-consistency: ok",
+          "satisfiable: ok",
+          "never-errors: ok",
+          "match-vacuity: ok (policy match condition is reachable)",
+          "match-broadness: ok (not universal)",
+          "sugar-universal: ok (not applicable to primitives)"
+        ],
+        "intent_acknowledged_by_user": false,
+        "traceback_clauses": [
+          "permit (principal, action == Action::\"monitorReviewProcess\", resource)\nwhen {\n    principal.role == \"Chair\" || principal.role == \"PCC\"\n};"
+        ],
+        "traceback_flags": [],
+        "rate_limit_window": null,
+        "rate_limit_threshold": null,
+        "rate_limit_counter_attr": null,
+        "disjoint_with": null,
+        "disjoint_target_body": null
+      },
+      "source_node_ids": [
+        "src.cyberchair_access_control_intent.authorization_intent_covered.p0012.l21"
+      ]
+    },
+    {
+      "id": "property_atom:PCC_asks_additional_reviewer_for_low_expertise_paper",
+      "kind": "property_atom",
+      "atom": {
+        "name": "PCC_asks_additional_reviewer_for_low_expertise_paper",
+        "rationale": "The requirement explicitly states 'PCC can ask an additional reviewer to review a low-expertise paper.' This requires two conditions: (1) the principal must be a PCC, checked via the role attribute, and (2) the paper must be low-expertise, indicated by having only non-expert reviews (onlyNonExpertReviews flag). Both must be true to grant permission.",
+        "plain_english_summary": "A Program Committee Chair (PCC) can request an additional reviewer for a paper that has only non-expert reviews.",
+        "source_excerpt": "[source_id: src.cyberchair_access_control_intent.authorization_intent_covered.p0013.l22] 11. PCC can ask an additional reviewer to review a low-expertise paper.",
+        "constraint_type": "condition",
+        "action": "askAdditionalReviewer",
+        "principal_types": [
+          "User"
+        ],
+        "resource_types": [
+          "ReviewOverview"
+        ],
+        "reference_cedar": "permit (principal is User, action == Action::\"askAdditionalReviewer\", resource is ReviewOverview) when {\n  principal.role == \"PCC\" && resource.paper.onlyNonExpertReviews == true\n};",
+        "required_schema_support": [
+          {
+            "kind": "action",
+            "name": "askAdditionalReviewer",
+            "entity": "",
+            "action": "",
+            "field_name": "",
+            "type_name": "",
+            "reason": "The action being authorized"
+          },
+          {
+            "kind": "action_principal",
+            "name": "User",
+            "entity": "",
+            "action": "",
+            "field_name": "",
+            "type_name": "",
+            "reason": "The principal type for this action"
+          },
+          {
+            "kind": "action_resource",
+            "name": "ReviewOverview",
+            "entity": "",
+            "action": "",
+            "field_name": "",
+            "type_name": "",
+            "reason": "The resource type for this action"
+          },
+          {
+            "kind": "attribute",
+            "name": "",
+            "entity": "User",
+            "action": "",
+            "field_name": "role",
+            "type_name": "",
+            "reason": "To check if the principal is a PCC"
+          },
+          {
+            "kind": "attribute",
+            "name": "",
+            "entity": "ReviewOverview",
+            "action": "",
+            "field_name": "paper",
+            "type_name": "",
+            "reason": "To access the associated Submission from the ReviewOverview resource"
+          },
+          {
+            "kind": "attribute",
+            "name": "",
+            "entity": "Submission",
+            "action": "",
+            "field_name": "onlyNonExpertReviews",
+            "type_name": "",
+            "reason": "To verify the paper has only non-expert reviews (low-expertise paper)"
+          }
+        ],
+        "examples_adversarial": [],
+        "alternatives_considered": [],
+        "symbolic_verified": true,
+        "symbolic_verification_log": [
+          "type-correct: ok",
+          "condition-shape: ok",
+          "identity-consistency: ok",
+          "satisfiable: ok",
+          "never-errors: ok",
+          "match-vacuity: ok (policy match condition is reachable)",
+          "match-broadness: ok (not universal)",
+          "sugar-universal: ok (not applicable to primitives)"
+        ],
+        "intent_acknowledged_by_user": false,
+        "traceback_clauses": [
+          "permit (principal, action == Action::\"askAdditionalReviewer\", resource)\nwhen {\n    principal.role == \"PCC\" && resource.paper.onlyNonExpertReviews\n};"
+        ],
+        "traceback_flags": [],
+        "rate_limit_window": null,
+        "rate_limit_threshold": null,
+        "rate_limit_counter_attr": null,
+        "disjoint_with": null,
+        "disjoint_target_body": null
+      },
+      "source_node_ids": [
+        "src.cyberchair_access_control_intent.authorization_intent_covered.p0013.l22"
+      ]
+    },
+    {
+      "id": "property_atom:reviewer_directory_allowed_users_access",
+      "kind": "property_atom",
+      "atom": {
+        "name": "reviewer_directory_allowed_users_access",
+        "rationale": "The requirement states reviewer directories are protected by per-directory allowed-user lists. This atom checks that the principal is in the ReviewerDirectory's allowedUsers set.",
+        "plain_english_summary": "A user can access a reviewer directory if and only if they are on the directory's allowed-users list.",
+        "source_excerpt": "[source_id: src.cyberchair_access_control_intent.authorization_intent_covered.p0014.l23] Reviewer directories and review files are protected from outsiders by per-directory allowed-user lists.",
+        "constraint_type": "condition",
+        "action": "accessReviewerDirectory",
+        "principal_types": [
+          "User"
+        ],
+        "resource_types": [
+          "ReviewerDirectory"
+        ],
+        "reference_cedar": "permit (principal is User, action == Action::\"accessReviewerDirectory\", resource is ReviewerDirectory) when { resource.allowedUsers.contains(principal) };",
+        "required_schema_support": [
+          {
+            "kind": "entity",
+            "name": "User",
+            "entity": "",
+            "action": "",
+            "field_name": "",
+            "type_name": "",
+            "reason": ""
+          },
+          {
+            "kind": "entity",
+            "name": "ReviewerDirectory",
+            "entity": "",
+            "action": "",
+            "field_name": "",
+            "type_name": "",
+            "reason": ""
+          },
+          {
+            "kind": "action",
+            "name": "accessReviewerDirectory",
+            "entity": "",
+            "action": "",
+            "field_name": "",
+            "type_name": "",
+            "reason": ""
+          },
+          {
+            "kind": "action_principal",
+            "name": "",
+            "entity": "",
+            "action": "accessReviewerDirectory",
+            "field_name": "",
+            "type_name": "User",
+            "reason": ""
+          },
+          {
+            "kind": "action_resource",
+            "name": "",
+            "entity": "",
+            "action": "accessReviewerDirectory",
+            "field_name": "",
+            "type_name": "ReviewerDirectory",
+            "reason": ""
+          },
+          {
+            "kind": "attribute",
+            "name": "",
+            "entity": "ReviewerDirectory",
+            "action": "",
+            "field_name": "allowedUsers",
+            "type_name": "",
+            "reason": ""
+          }
+        ],
+        "examples_adversarial": [],
+        "alternatives_considered": [],
+        "symbolic_verified": true,
+        "symbolic_verification_log": [
+          "type-correct: ok",
+          "condition-shape: ok",
+          "identity-consistency: ok",
+          "satisfiable: ok",
+          "never-errors: ok",
+          "match-vacuity: ok (policy match condition is reachable)",
+          "match-broadness: ok (not universal)",
+          "sugar-universal: ok (not applicable to primitives)"
+        ],
+        "intent_acknowledged_by_user": false,
+        "traceback_clauses": [
+          "permit (principal, action == Action::\"accessReviewerDirectory\", resource)\nwhen {\n    principal in resource.allowedUsers\n};"
+        ],
+        "traceback_flags": [
+          "uses-attribute-not-in-atom-prose: resource.allowedUsers",
+          "idiom-not-in-atom-encoding: in"
+        ],
+        "rate_limit_window": null,
+        "rate_limit_threshold": null,
+        "rate_limit_counter_attr": null,
+        "disjoint_with": null,
+        "disjoint_target_body": null
+      },
+      "source_node_ids": [
+        "src.cyberchair_access_control_intent.authorization_intent_covered.p0014.l23"
+      ]
+    },
+    {
+      "id": "property_atom:review_file_directory_protection",
+      "kind": "property_atom",
+      "atom": {
+        "name": "review_file_directory_protection",
+        "rationale": "The requirement states review files are protected by per-directory allowed-user lists. Since review files exist within directories, access is controlled by the directory's allowedUsers list that the file references.",
+        "plain_english_summary": "A user can read a review file if and only if they are on the allowed-users list of the file's directory.",
+        "source_excerpt": "[source_id: src.cyberchair_access_control_intent.authorization_intent_covered.p0014.l23] Reviewer directories and review files are protected from outsiders by per-directory allowed-user lists.",
+        "constraint_type": "condition",
+        "action": "readReviewFile",
+        "principal_types": [
+          "User"
+        ],
+        "resource_types": [
+          "ReviewFile"
+        ],
+        "reference_cedar": "permit (principal is User, action == Action::\"readReviewFile\", resource is ReviewFile) when { resource.directory.allowedUsers.contains(principal) };",
+        "required_schema_support": [
+          {
+            "kind": "entity",
+            "name": "User",
+            "entity": "",
+            "action": "",
+            "field_name": "",
+            "type_name": "",
+            "reason": ""
+          },
+          {
+            "kind": "entity",
+            "name": "ReviewFile",
+            "entity": "",
+            "action": "",
+            "field_name": "",
+            "type_name": "",
+            "reason": ""
+          },
+          {
+            "kind": "entity",
+            "name": "ReviewerDirectory",
+            "entity": "",
+            "action": "",
+            "field_name": "",
+            "type_name": "",
+            "reason": ""
+          },
+          {
+            "kind": "action",
+            "name": "readReviewFile",
+            "entity": "",
+            "action": "",
+            "field_name": "",
+            "type_name": "",
+            "reason": ""
+          },
+          {
+            "kind": "action_principal",
+            "name": "",
+            "entity": "",
+            "action": "readReviewFile",
+            "field_name": "",
+            "type_name": "User",
+            "reason": ""
+          },
+          {
+            "kind": "action_resource",
+            "name": "",
+            "entity": "",
+            "action": "readReviewFile",
+            "field_name": "",
+            "type_name": "ReviewFile",
+            "reason": ""
+          },
+          {
+            "kind": "attribute",
+            "name": "",
+            "entity": "ReviewFile",
+            "action": "",
+            "field_name": "directory",
+            "type_name": "",
+            "reason": ""
+          },
+          {
+            "kind": "attribute",
+            "name": "",
+            "entity": "ReviewerDirectory",
+            "action": "",
+            "field_name": "allowedUsers",
+            "type_name": "",
+            "reason": ""
+          }
+        ],
+        "examples_adversarial": [],
+        "alternatives_considered": [],
+        "symbolic_verified": true,
+        "symbolic_verification_log": [
+          "type-correct: ok",
+          "condition-shape: ok",
+          "identity-consistency: ok",
+          "satisfiable: ok",
+          "never-errors: ok",
+          "match-vacuity: ok (policy match condition is reachable)",
+          "match-broadness: ok (not universal)",
+          "sugar-universal: ok (not applicable to primitives)"
+        ],
+        "intent_acknowledged_by_user": false,
+        "traceback_clauses": [
+          "permit (principal, action == Action::\"readReviewFile\", resource)\nwhen {\n    principal in resource.directory.allowedUsers\n};"
+        ],
+        "traceback_flags": [
+          "uses-attribute-not-in-atom-prose: resource.directory.allowedUsers",
+          "idiom-not-in-atom-encoding: in"
+        ],
+        "rate_limit_window": null,
+        "rate_limit_threshold": null,
+        "rate_limit_counter_attr": null,
+        "disjoint_with": null,
+        "disjoint_target_body": null
+      },
+      "source_node_ids": [
+        "src.cyberchair_access_control_intent.authorization_intent_covered.p0014.l23"
+      ]
+    },
+    {
+      "id": "map:root",
+      "kind": "policy_store"
+    },
+    {
+      "id": "submitStep1",
+      "kind": "scope",
+      "action": "submitStep1",
+      "principal_type": "User",
+      "resource_type": "Submission",
+      "exhaustive": true,
+      "summary": "Authors submit abstracts/papers during step 1"
+    },
+    {
+      "id": "submitFullPaper",
+      "kind": "scope",
+      "action": "submitFullPaper",
+      "principal_type": "User",
+      "resource_type": "Submission",
+      "exhaustive": true,
+      "summary": "Authors with step-2 credentials upload papers during step 2"
+    },
+    {
+      "id": "updateStep1Info",
+      "kind": "scope",
+      "action": "updateStep1Info",
+      "principal_type": "User",
+      "resource_type": "Submission",
+      "exhaustive": true,
+      "summary": "Authors correct step-1 info during step 2"
+    },
+    {
+      "id": "submitCameraReady",
+      "kind": "scope",
+      "action": "submitCameraReady",
+      "principal_type": "User",
+      "resource_type": "Submission",
+      "exhaustive": true,
+      "summary": "Selected authors submit camera-ready after review"
+    },
+    {
+      "id": "downloadPaper",
+      "kind": "scope",
+      "action": "downloadPaper",
+      "principal_type": "User",
+      "resource_type": "Submission",
+      "exhaustive": true,
+      "summary": "Assigned reviewers access papers after distribution unless conflicted"
+    },
+    {
+      "id": "submitReview",
+      "kind": "scope",
+      "action": "submitReview",
+      "principal_type": "User",
+      "resource_type": "Submission",
+      "exhaustive": true,
+      "summary": "Non-conflicted assigned reviewers submit reviews while open"
+    },
+    {
+      "id": "updateReview",
+      "kind": "scope",
+      "action": "updateReview",
+      "principal_type": "User",
+      "resource_type": "Submission",
+      "exhaustive": true,
+      "summary": "Non-conflicted assigned reviewers update reviews while open"
+    },
+    {
+      "id": "readOtherReviews",
+      "kind": "scope",
+      "action": "readOtherReviews",
+      "principal_type": "User",
+      "resource_type": "Submission",
+      "exhaustive": true,
+      "summary": "Reviewers read peer reviews after submitting own"
+    },
+    {
+      "id": "declareConflict",
+      "kind": "scope",
+      "action": "declareConflict",
+      "principal_type": "User",
+      "resource_type": "Submission",
+      "exhaustive": true,
+      "summary": "Reviewers declare conflicts for assigned papers"
+    },
+    {
+      "id": "volunteerForConflictingPaper",
+      "kind": "scope",
+      "action": "volunteerForConflictingPaper",
+      "principal_type": "User",
+      "resource_type": "Submission",
+      "exhaustive": true,
+      "summary": "Reviewers volunteer for conflicting papers after completing assignments"
+    },
+    {
+      "id": "monitorReviewProcess",
+      "kind": "scope",
+      "action": "monitorReviewProcess",
+      "principal_type": "User",
+      "resource_type": "ReviewOverview",
+      "exhaustive": true,
+      "summary": "Chairs/PCC monitor review and identify low-expertise papers"
+    },
+    {
+      "id": "askAdditionalReviewer",
+      "kind": "scope",
+      "action": "askAdditionalReviewer",
+      "principal_type": "User",
+      "resource_type": "ReviewOverview",
+      "exhaustive": true,
+      "summary": "PCC asks additional reviewers for low-expertise papers"
+    },
+    {
+      "id": "accessReviewerDirectory",
+      "kind": "scope",
+      "action": "accessReviewerDirectory",
+      "principal_type": "User",
+      "resource_type": "ReviewerDirectory",
+      "exhaustive": true,
+      "summary": "Users on directory's allowed-user list access reviewer directories"
+    },
+    {
+      "id": "readReviewFile",
+      "kind": "scope",
+      "action": "readReviewFile",
+      "principal_type": "User",
+      "resource_type": "ReviewFile",
+      "exhaustive": true,
+      "summary": "Users on directory's allowed-user list read review files"
+    },
+    {
+      "id": "slice_p0003",
+      "kind": "slice",
+      "scope_id": "submitStep1",
+      "summary": "Author, during step 1"
+    },
+    {
+      "id": "slice_p0004",
+      "kind": "slice",
+      "scope_id": "submitFullPaper",
+      "summary": "Author with step-2 credentials, during step 2"
+    },
+    {
+      "id": "slice_p0005",
+      "kind": "slice",
+      "scope_id": "updateStep1Info",
+      "summary": "Author, during step 2"
+    },
+    {
+      "id": "slice_p0006",
+      "kind": "slice",
+      "scope_id": "submitCameraReady",
+      "summary": "Author of selected submission, after review"
+    },
+    {
+      "id": "slice_p0007",
+      "kind": "slice",
+      "scope_id": "downloadPaper",
+      "summary": "Assigned reviewer, after paper distribution, not conflicted"
+    },
+    {
+      "id": "slice_p0008_submit",
+      "kind": "slice",
+      "scope_id": "submitReview",
+      "summary": "Assigned non-conflicted reviewer, while review open"
+    },
+    {
+      "id": "slice_p0008_update",
+      "kind": "slice",
+      "scope_id": "updateReview",
+      "summary": "Assigned non-conflicted reviewer, while review open"
+    },
+    {
+      "id": "slice_p0009",
+      "kind": "slice",
+      "scope_id": "readOtherReviews",
+      "summary": "Reviewer who submitted own review for paper"
+    },
+    {
+      "id": "slice_p0010",
+      "kind": "slice",
+      "scope_id": "declareConflict",
+      "summary": "Reviewer, for assigned paper"
+    },
+    {
+      "id": "slice_p0011",
+      "kind": "slice",
+      "scope_id": "volunteerForConflictingPaper",
+      "summary": "Reviewer, completed all assignments, not conflicted with paper"
+    },
+    {
+      "id": "slice_p0012",
+      "kind": "slice",
+      "scope_id": "monitorReviewProcess",
+      "summary": "Chair or PCC"
+    },
+    {
+      "id": "slice_p0013",
+      "kind": "slice",
+      "scope_id": "askAdditionalReviewer",
+      "summary": "PCC"
+    },
+    {
+      "id": "slice_p0014_dir",
+      "kind": "slice",
+      "scope_id": "accessReviewerDirectory",
+      "summary": "User on allowed-user list"
+    },
+    {
+      "id": "slice_p0014_file",
+      "kind": "slice",
+      "scope_id": "readReviewFile",
+      "summary": "User on allowed-user list"
+    }
+  ],
+  "edges": [
+    {
+      "source": "document",
+      "target": "src.cyberchair_access_control_intent.p0001.l3",
+      "type": "contains"
+    },
+    {
+      "source": "document",
+      "target": "src.cyberchair_access_control_intent.p0002.l3",
+      "type": "contains"
+    },
+    {
+      "source": "document",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0003.l9",
+      "type": "contains"
+    },
+    {
+      "source": "document",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0004.l10",
+      "type": "contains"
+    },
+    {
+      "source": "document",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0005.l11",
+      "type": "contains"
+    },
+    {
+      "source": "document",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0006.l12",
+      "type": "contains"
+    },
+    {
+      "source": "document",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0007.l13",
+      "type": "contains"
+    },
+    {
+      "source": "document",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0008.l15",
+      "type": "contains"
+    },
+    {
+      "source": "document",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0009.l16",
+      "type": "contains"
+    },
+    {
+      "source": "document",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0010.l18",
+      "type": "contains"
+    },
+    {
+      "source": "document",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0011.l19",
+      "type": "contains"
+    },
+    {
+      "source": "document",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0012.l21",
+      "type": "contains"
+    },
+    {
+      "source": "document",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0013.l22",
+      "type": "contains"
+    },
+    {
+      "source": "document",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0014.l23",
+      "type": "contains"
+    },
+    {
+      "source": "document",
+      "target": "src.cyberchair_access_control_intent.deliberately_not_modeled_as_access_control.p0015.l28",
+      "type": "contains"
+    },
+    {
+      "source": "document",
+      "target": "src.cyberchair_access_control_intent.deliberately_not_modeled_as_access_control.p0016.l29",
+      "type": "contains"
+    },
+    {
+      "source": "document",
+      "target": "src.cyberchair_access_control_intent.deliberately_not_modeled_as_access_control.p0017.l30",
+      "type": "contains"
+    },
+    {
+      "source": "document",
+      "target": "src.cyberchair_access_control_intent.deliberately_not_modeled_as_access_control.p0018.l31",
+      "type": "contains"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.p0001.l3",
+      "target": "src.cyberchair_access_control_intent.p0002.l3",
+      "type": "next_sibling"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.p0001.l3",
+      "target": "src.cyberchair_access_control_intent.p0002.l3",
+      "type": "same_section"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.p0002.l3",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0003.l9",
+      "type": "next_sibling"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0003.l9",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0004.l10",
+      "type": "next_sibling"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0003.l9",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0004.l10",
+      "type": "same_section"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0004.l10",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0005.l11",
+      "type": "next_sibling"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0004.l10",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0005.l11",
+      "type": "same_section"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0005.l11",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0006.l12",
+      "type": "next_sibling"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0005.l11",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0006.l12",
+      "type": "same_section"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0006.l12",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0007.l13",
+      "type": "next_sibling"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0006.l12",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0007.l13",
+      "type": "same_section"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0007.l13",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0008.l15",
+      "type": "next_sibling"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0007.l13",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0008.l15",
+      "type": "same_section"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0008.l15",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0009.l16",
+      "type": "next_sibling"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0008.l15",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0009.l16",
+      "type": "same_section"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0009.l16",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0010.l18",
+      "type": "next_sibling"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0009.l16",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0010.l18",
+      "type": "same_section"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0010.l18",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0011.l19",
+      "type": "next_sibling"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0010.l18",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0011.l19",
+      "type": "same_section"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0011.l19",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0012.l21",
+      "type": "next_sibling"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0011.l19",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0012.l21",
+      "type": "same_section"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0012.l21",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0013.l22",
+      "type": "next_sibling"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0012.l21",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0013.l22",
+      "type": "same_section"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0013.l22",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0014.l23",
+      "type": "next_sibling"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0013.l22",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0014.l23",
+      "type": "same_section"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0014.l23",
+      "target": "src.cyberchair_access_control_intent.deliberately_not_modeled_as_access_control.p0015.l28",
+      "type": "next_sibling"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.deliberately_not_modeled_as_access_control.p0015.l28",
+      "target": "src.cyberchair_access_control_intent.deliberately_not_modeled_as_access_control.p0016.l29",
+      "type": "next_sibling"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.deliberately_not_modeled_as_access_control.p0015.l28",
+      "target": "src.cyberchair_access_control_intent.deliberately_not_modeled_as_access_control.p0016.l29",
+      "type": "same_section"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.deliberately_not_modeled_as_access_control.p0016.l29",
+      "target": "src.cyberchair_access_control_intent.deliberately_not_modeled_as_access_control.p0017.l30",
+      "type": "next_sibling"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.deliberately_not_modeled_as_access_control.p0016.l29",
+      "target": "src.cyberchair_access_control_intent.deliberately_not_modeled_as_access_control.p0017.l30",
+      "type": "same_section"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.deliberately_not_modeled_as_access_control.p0017.l30",
+      "target": "src.cyberchair_access_control_intent.deliberately_not_modeled_as_access_control.p0018.l31",
+      "type": "next_sibling"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.deliberately_not_modeled_as_access_control.p0017.l30",
+      "target": "src.cyberchair_access_control_intent.deliberately_not_modeled_as_access_control.p0018.l31",
+      "type": "same_section"
+    },
+    {
+      "source": "section:cyberchair_access_control_intent",
+      "target": "src.cyberchair_access_control_intent.p0001.l3",
+      "type": "contains"
+    },
+    {
+      "source": "section:cyberchair_access_control_intent",
+      "target": "src.cyberchair_access_control_intent.p0002.l3",
+      "type": "contains"
+    },
+    {
+      "source": "section:cyberchair_access_control_intent.authorization_intent_covered",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0003.l9",
+      "type": "contains"
+    },
+    {
+      "source": "section:cyberchair_access_control_intent.authorization_intent_covered",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0004.l10",
+      "type": "contains"
+    },
+    {
+      "source": "section:cyberchair_access_control_intent.authorization_intent_covered",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0005.l11",
+      "type": "contains"
+    },
+    {
+      "source": "section:cyberchair_access_control_intent.authorization_intent_covered",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0006.l12",
+      "type": "contains"
+    },
+    {
+      "source": "section:cyberchair_access_control_intent.authorization_intent_covered",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0007.l13",
+      "type": "contains"
+    },
+    {
+      "source": "section:cyberchair_access_control_intent.authorization_intent_covered",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0008.l15",
+      "type": "contains"
+    },
+    {
+      "source": "section:cyberchair_access_control_intent.authorization_intent_covered",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0009.l16",
+      "type": "contains"
+    },
+    {
+      "source": "section:cyberchair_access_control_intent.authorization_intent_covered",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0010.l18",
+      "type": "contains"
+    },
+    {
+      "source": "section:cyberchair_access_control_intent.authorization_intent_covered",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0011.l19",
+      "type": "contains"
+    },
+    {
+      "source": "section:cyberchair_access_control_intent.authorization_intent_covered",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0012.l21",
+      "type": "contains"
+    },
+    {
+      "source": "section:cyberchair_access_control_intent.authorization_intent_covered",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0013.l22",
+      "type": "contains"
+    },
+    {
+      "source": "section:cyberchair_access_control_intent.authorization_intent_covered",
+      "target": "src.cyberchair_access_control_intent.authorization_intent_covered.p0014.l23",
+      "type": "contains"
+    },
+    {
+      "source": "section:cyberchair_access_control_intent.deliberately_not_modeled_as_access_control",
+      "target": "src.cyberchair_access_control_intent.deliberately_not_modeled_as_access_control.p0015.l28",
+      "type": "contains"
+    },
+    {
+      "source": "section:cyberchair_access_control_intent.deliberately_not_modeled_as_access_control",
+      "target": "src.cyberchair_access_control_intent.deliberately_not_modeled_as_access_control.p0016.l29",
+      "type": "contains"
+    },
+    {
+      "source": "section:cyberchair_access_control_intent.deliberately_not_modeled_as_access_control",
+      "target": "src.cyberchair_access_control_intent.deliberately_not_modeled_as_access_control.p0017.l30",
+      "type": "contains"
+    },
+    {
+      "source": "section:cyberchair_access_control_intent.deliberately_not_modeled_as_access_control",
+      "target": "src.cyberchair_access_control_intent.deliberately_not_modeled_as_access_control.p0018.l31",
+      "type": "contains"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0003.l9",
+      "target": "packet:condition.0003.step0001",
+      "type": "expands_into"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0004.l10",
+      "target": "packet:condition.0004.step0002",
+      "type": "expands_into"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0005.l11",
+      "target": "packet:condition.0005.step0003",
+      "type": "expands_into"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0006.l12",
+      "target": "packet:condition.0006.step0004",
+      "type": "expands_into"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0007.l13",
+      "target": "packet:condition.0007.step0005",
+      "type": "expands_into"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0008.l15",
+      "target": "packet:condition.0008.step0006",
+      "type": "expands_into"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0009.l16",
+      "target": "packet:condition.0009.step0007",
+      "type": "expands_into"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0010.l18",
+      "target": "packet:condition.0010.step0008",
+      "type": "expands_into"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0011.l19",
+      "target": "packet:condition.0011.step0009",
+      "type": "expands_into"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0012.l21",
+      "target": "packet:condition.0012.step0010",
+      "type": "expands_into"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0013.l22",
+      "target": "packet:condition.0013.step0011",
+      "type": "expands_into"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0014.l23",
+      "target": "packet:condition.0014.step0012",
+      "type": "expands_into"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0003.l9",
+      "target": "property_atom:p0003_submitStep1_author_during_step1",
+      "type": "grounds_property_atom"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0004.l10",
+      "target": "property_atom:submitFullPaper_step2_author",
+      "type": "grounds_property_atom"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0005.l11",
+      "target": "property_atom:author_during_step2",
+      "type": "grounds_property_atom"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0006.l12",
+      "target": "property_atom:submitCameraReady_author_of_selected_after_review",
+      "type": "grounds_property_atom"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0007.l13",
+      "target": "property_atom:assigned_reviewer_post_distribution_not_conflicted",
+      "type": "grounds_property_atom"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0008.l15",
+      "target": "property_atom:submitReview_assigned_non_conflicted_reviewer",
+      "type": "grounds_property_atom"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0008.l15",
+      "target": "property_atom:updateReview_assigned_non_conflicted_reviewer",
+      "type": "grounds_property_atom"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0009.l16",
+      "target": "property_atom:reviewer_submitted_own_review",
+      "type": "grounds_property_atom"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0010.l18",
+      "target": "property_atom:assigned_reviewer_can_declare_conflict",
+      "type": "grounds_property_atom"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0011.l19",
+      "target": "property_atom:reviewer_submitted_all_reviews_not_conflicted",
+      "type": "grounds_property_atom"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0012.l21",
+      "target": "property_atom:chair_pcc_role_check",
+      "type": "grounds_property_atom"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0013.l22",
+      "target": "property_atom:PCC_asks_additional_reviewer_for_low_expertise_paper",
+      "type": "grounds_property_atom"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0014.l23",
+      "target": "property_atom:reviewer_directory_allowed_users_access",
+      "type": "grounds_property_atom"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0014.l23",
+      "target": "property_atom:review_file_directory_protection",
+      "type": "grounds_property_atom"
+    },
+    {
+      "source": "scope:submitStep1",
+      "target": "map:root",
+      "type": "or_child_of"
+    },
+    {
+      "source": "scope:submitFullPaper",
+      "target": "map:root",
+      "type": "or_child_of"
+    },
+    {
+      "source": "scope:updateStep1Info",
+      "target": "map:root",
+      "type": "or_child_of"
+    },
+    {
+      "source": "scope:submitCameraReady",
+      "target": "map:root",
+      "type": "or_child_of"
+    },
+    {
+      "source": "scope:downloadPaper",
+      "target": "map:root",
+      "type": "or_child_of"
+    },
+    {
+      "source": "scope:submitReview",
+      "target": "map:root",
+      "type": "or_child_of"
+    },
+    {
+      "source": "scope:updateReview",
+      "target": "map:root",
+      "type": "or_child_of"
+    },
+    {
+      "source": "scope:readOtherReviews",
+      "target": "map:root",
+      "type": "or_child_of"
+    },
+    {
+      "source": "scope:declareConflict",
+      "target": "map:root",
+      "type": "or_child_of"
+    },
+    {
+      "source": "scope:volunteerForConflictingPaper",
+      "target": "map:root",
+      "type": "or_child_of"
+    },
+    {
+      "source": "scope:monitorReviewProcess",
+      "target": "map:root",
+      "type": "or_child_of"
+    },
+    {
+      "source": "scope:askAdditionalReviewer",
+      "target": "map:root",
+      "type": "or_child_of"
+    },
+    {
+      "source": "scope:accessReviewerDirectory",
+      "target": "map:root",
+      "type": "or_child_of"
+    },
+    {
+      "source": "scope:readReviewFile",
+      "target": "map:root",
+      "type": "or_child_of"
+    },
+    {
+      "source": "slice:slice_p0003",
+      "target": "scope:submitStep1",
+      "type": "or_alternative_of"
+    },
+    {
+      "source": "slice:slice_p0004",
+      "target": "scope:submitFullPaper",
+      "type": "or_alternative_of"
+    },
+    {
+      "source": "slice:slice_p0005",
+      "target": "scope:updateStep1Info",
+      "type": "or_alternative_of"
+    },
+    {
+      "source": "slice:slice_p0006",
+      "target": "scope:submitCameraReady",
+      "type": "or_alternative_of"
+    },
+    {
+      "source": "slice:slice_p0007",
+      "target": "scope:downloadPaper",
+      "type": "or_alternative_of"
+    },
+    {
+      "source": "slice:slice_p0008_submit",
+      "target": "scope:submitReview",
+      "type": "or_alternative_of"
+    },
+    {
+      "source": "slice:slice_p0008_update",
+      "target": "scope:updateReview",
+      "type": "or_alternative_of"
+    },
+    {
+      "source": "slice:slice_p0009",
+      "target": "scope:readOtherReviews",
+      "type": "or_alternative_of"
+    },
+    {
+      "source": "slice:slice_p0010",
+      "target": "scope:declareConflict",
+      "type": "or_alternative_of"
+    },
+    {
+      "source": "slice:slice_p0011",
+      "target": "scope:volunteerForConflictingPaper",
+      "type": "or_alternative_of"
+    },
+    {
+      "source": "slice:slice_p0012",
+      "target": "scope:monitorReviewProcess",
+      "type": "or_alternative_of"
+    },
+    {
+      "source": "slice:slice_p0013",
+      "target": "scope:askAdditionalReviewer",
+      "type": "or_alternative_of"
+    },
+    {
+      "source": "slice:slice_p0014_dir",
+      "target": "scope:accessReviewerDirectory",
+      "type": "or_alternative_of"
+    },
+    {
+      "source": "slice:slice_p0014_file",
+      "target": "scope:readReviewFile",
+      "type": "or_alternative_of"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0003.l9",
+      "target": "slice:slice_p0003",
+      "type": "and_condition_of"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0004.l10",
+      "target": "slice:slice_p0004",
+      "type": "and_condition_of"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0005.l11",
+      "target": "slice:slice_p0005",
+      "type": "and_condition_of"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0006.l12",
+      "target": "slice:slice_p0006",
+      "type": "and_condition_of"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0007.l13",
+      "target": "slice:slice_p0007",
+      "type": "and_condition_of"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0008.l15",
+      "target": "slice:slice_p0008_submit",
+      "type": "and_condition_of"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0008.l15",
+      "target": "slice:slice_p0008_update",
+      "type": "and_condition_of"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0009.l16",
+      "target": "slice:slice_p0009",
+      "type": "and_condition_of"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0010.l18",
+      "target": "slice:slice_p0010",
+      "type": "and_condition_of"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0011.l19",
+      "target": "slice:slice_p0011",
+      "type": "and_condition_of"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0012.l21",
+      "target": "slice:slice_p0012",
+      "type": "and_condition_of"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0013.l22",
+      "target": "slice:slice_p0013",
+      "type": "and_condition_of"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0014.l23",
+      "target": "slice:slice_p0014_dir",
+      "type": "and_condition_of"
+    },
+    {
+      "source": "src.cyberchair_access_control_intent.authorization_intent_covered.p0014.l23",
+      "target": "slice:slice_p0014_file",
+      "type": "and_condition_of"
+    }
+  ],
+  "summary": {
+    "source_nodes": 18,
+    "schema_packets": 0,
+    "property_packets": 12,
+    "schema_atoms": 0,
+    "property_atoms": 14,
+    "schema_gaps": 0
+  }
+}

@@ -1,0 +1,133 @@
+{"ts": "2026-10-27T10:01:36.890902Z", "event": "input.spec_written", "filename": "policy_spec.md", "size": 1571}
+{"ts": "2026-10-27T10:01:36.892219Z", "event": "stage0.source_index", "nodes": 18, "authorization_relevant_nodes": 13}
+{"ts": "2026-10-27T10:01:36.892790Z", "event": "stage0.intent_dag", "source_nodes": 18, "schema_packets": 0, "property_packets": 0, "schema_atoms": 0, "property_atoms": 0, "schema_gaps": 0}
+{"ts": "2026-10-27T10:01:36.893100Z", "event": "stage0.coverage_ledger", "open_property_nodes": 13, "completed_property_nodes": 0}
+{"ts": "2026-10-27T10:01:36.902392Z", "event": "stage1.schema_validation", "attempts": 1}
+{"ts": "2026-10-27T10:01:36.902617Z", "event": "stage1.proposed", "count": 0}
+{"ts": "2026-10-27T10:01:36.902800Z", "event": "stage1.attributions_logged", "count": 0}
+{"ts": "2026-10-27T10:01:36.903003Z", "event": "stage1.decisions_logged", "count": 0}
+{"ts": "2026-10-27T10:01:36.903234Z", "event": "stage1.schema_written", "size": 2497}
+{"ts": "2026-10-27T10:04:27.164077Z", "event": "stage0.context_packet", "packet_id": "condition.0003.step0001", "kind": "condition", "focus_node_ids": ["src.cyberchair_access_control_intent.authorization_intent_covered.p0003.l9"]}
+{"ts": "2026-10-27T10:04:36.209428Z", "event": "stage2.proposed", "count": 1}
+{"ts": "2026-10-27T10:04:36.209970Z", "event": "stage2.attributions_logged", "count": 1}
+{"ts": "2026-10-27T10:04:36.234634Z", "event": "stage2.decisions_logged", "count": 1}
+{"ts": "2026-10-27T10:04:47.007674Z", "event": "stage2.repair_plans", "count": 1}
+{"ts": "2026-10-27T10:05:25.825721Z", "event": "stage2.approved", "count": 1}
+{"ts": "2026-10-27T10:05:25.826546Z", "event": "stage2.decisions_logged", "count": 1}
+{"ts": "2026-10-27T10:05:25.826870Z", "event": "stage2.verification_logged", "atom_count": 1}
+{"ts": "2026-10-27T10:05:25.827917Z", "event": "stage0.coverage_ledger", "open_property_nodes": 11, "completed_property_nodes": 1}
+{"ts": "2026-10-27T10:05:25.829067Z", "event": "stage0.context_packet", "packet_id": "condition.0004.step0002", "kind": "condition", "focus_node_ids": ["src.cyberchair_access_control_intent.authorization_intent_covered.p0004.l10"]}
+{"ts": "2026-10-27T10:05:36.792828Z", "event": "stage2.proposed", "count": 2}
+{"ts": "2026-10-27T10:05:36.793177Z", "event": "stage2.attributions_logged", "count": 2}
+{"ts": "2026-10-27T10:05:55.516382Z", "event": "stage2.approved", "count": 2}
+{"ts": "2026-10-27T10:05:55.517039Z", "event": "stage2.decisions_logged", "count": 2}
+{"ts": "2026-10-27T10:05:55.517344Z", "event": "stage2.verification_logged", "atom_count": 2}
+{"ts": "2026-10-27T10:05:55.518278Z", "event": "stage0.coverage_ledger", "open_property_nodes": 10, "completed_property_nodes": 2}
+{"ts": "2026-10-27T10:05:55.519127Z", "event": "stage0.context_packet", "packet_id": "condition.0005.step0003", "kind": "condition", "focus_node_ids": ["src.cyberchair_access_control_intent.authorization_intent_covered.p0005.l11"]}
+{"ts": "2026-10-27T10:06:19.425244Z", "event": "stage2.proposed", "count": 3}
+{"ts": "2026-10-27T10:06:19.425704Z", "event": "stage2.attributions_logged", "count": 3}
+{"ts": "2026-10-27T10:06:36.893710Z", "event": "stage2.approved", "count": 3}
+{"ts": "2026-10-27T10:06:36.894297Z", "event": "stage2.decisions_logged", "count": 3}
+{"ts": "2026-10-27T10:06:36.894593Z", "event": "stage2.verification_logged", "atom_count": 3}
+{"ts": "2026-10-27T10:06:36.895733Z", "event": "stage0.coverage_ledger", "open_property_nodes": 9, "completed_property_nodes": 3}
+{"ts": "2026-10-27T10:06:36.896594Z", "event": "stage0.context_packet", "packet_id": "condition.0006.step0004", "kind": "condition", "focus_node_ids": ["src.cyberchair_access_control_intent.authorization_intent_covered.p0006.l12"]}
+{"ts": "2026-10-27T10:06:53.727349Z", "event": "stage2.proposed", "count": 4}
+{"ts": "2026-10-27T10:06:53.727716Z", "event": "stage2.attributions_logged", "count": 4}
+{"ts": "2026-10-27T10:06:53.736801Z", "event": "stage2.decisions_logged", "count": 4}
+{"ts": "2026-10-27T10:07:06.930289Z", "event": "stage2.repair_plans", "count": 2}
+{"ts": "2026-10-27T10:07:38.244609Z", "event": "stage2.approved", "count": 4}
+{"ts": "2026-10-27T10:07:38.245199Z", "event": "stage2.decisions_logged", "count": 4}
+{"ts": "2026-10-27T10:07:38.245642Z", "event": "stage2.verification_logged", "atom_count": 5}
+{"ts": "2026-10-27T10:07:38.247587Z", "event": "stage0.coverage_ledger", "open_property_nodes": 8, "completed_property_nodes": 4}
+{"ts": "2026-10-27T10:07:38.249354Z", "event": "stage0.context_packet", "packet_id": "condition.0007.step0005", "kind": "condition", "focus_node_ids": ["src.cyberchair_access_control_intent.authorization_intent_covered.p0007.l13"]}
+{"ts": "2026-10-27T10:07:52.951473Z", "event": "stage2.proposed", "count": 5}
+{"ts": "2026-10-27T10:07:52.951837Z", "event": "stage2.attributions_logged", "count": 5}
+{"ts": "2026-10-27T10:07:52.959920Z", "event": "stage2.decisions_logged", "count": 5}
+{"ts": "2026-10-27T10:08:01.110469Z", "event": "stage2.repair_plans", "count": 3}
+{"ts": "2026-10-27T10:08:33.061369Z", "event": "stage2.approved", "count": 5}
+{"ts": "2026-10-27T10:08:33.061802Z", "event": "stage2.decisions_logged", "count": 5}
+{"ts": "2026-10-27T10:08:33.062065Z", "event": "stage2.verification_logged", "atom_count": 6}
+{"ts": "2026-10-27T10:08:33.063386Z", "event": "stage0.coverage_ledger", "open_property_nodes": 7, "completed_property_nodes": 5}
+{"ts": "2026-10-27T10:08:33.064562Z", "event": "stage0.context_packet", "packet_id": "condition.0008.step0006", "kind": "condition", "focus_node_ids": ["src.cyberchair_access_control_intent.authorization_intent_covered.p0008.l15"]}
+{"ts": "2026-10-27T10:08:50.013607Z", "event": "stage2.proposed", "count": 6}
+{"ts": "2026-10-27T10:08:50.013980Z", "event": "stage2.attributions_logged", "count": 6}
+{"ts": "2026-10-27T10:08:50.022566Z", "event": "stage2.decisions_logged", "count": 6}
+{"ts": "2026-10-27T10:09:02.894171Z", "event": "stage2.repair_plans", "count": 4}
+{"ts": "2026-10-27T10:09:40.199981Z", "event": "stage2.approved", "count": 6}
+{"ts": "2026-10-27T10:09:40.200504Z", "event": "stage2.decisions_logged", "count": 6}
+{"ts": "2026-10-27T10:09:40.200873Z", "event": "stage2.verification_logged", "atom_count": 8}
+{"ts": "2026-10-27T10:09:40.204395Z", "event": "stage2.proposed", "count": 7}
+{"ts": "2026-10-27T10:09:40.204784Z", "event": "stage2.attributions_logged", "count": 7}
+{"ts": "2026-10-27T10:09:40.212861Z", "event": "stage2.decisions_logged", "count": 7}
+{"ts": "2026-10-27T10:09:52.911086Z", "event": "stage2.repair_plans", "count": 5}
+{"ts": "2026-10-27T10:10:33.459153Z", "event": "stage2.approved", "count": 7}
+{"ts": "2026-10-27T10:10:33.460197Z", "event": "stage2.decisions_logged", "count": 7}
+{"ts": "2026-10-27T10:10:33.460519Z", "event": "stage2.verification_logged", "atom_count": 10}
+{"ts": "2026-10-27T10:10:33.463456Z", "event": "stage0.coverage_ledger", "open_property_nodes": 6, "completed_property_nodes": 6}
+{"ts": "2026-10-27T10:10:33.465902Z", "event": "stage0.context_packet", "packet_id": "condition.0009.step0007", "kind": "condition", "focus_node_ids": ["src.cyberchair_access_control_intent.authorization_intent_covered.p0009.l16"]}
+{"ts": "2026-10-27T10:10:48.827145Z", "event": "stage2.proposed", "count": 8}
+{"ts": "2026-10-27T10:10:48.828005Z", "event": "stage2.attributions_logged", "count": 8}
+{"ts": "2026-10-27T10:11:12.892574Z", "event": "stage2.approved", "count": 8}
+{"ts": "2026-10-27T10:11:12.893706Z", "event": "stage2.decisions_logged", "count": 8}
+{"ts": "2026-10-27T10:11:12.894464Z", "event": "stage2.verification_logged", "atom_count": 11}
+{"ts": "2026-10-27T10:11:12.898245Z", "event": "stage0.coverage_ledger", "open_property_nodes": 5, "completed_property_nodes": 7}
+{"ts": "2026-10-27T10:11:12.899941Z", "event": "stage0.context_packet", "packet_id": "condition.0010.step0008", "kind": "condition", "focus_node_ids": ["src.cyberchair_access_control_intent.authorization_intent_covered.p0010.l18"]}
+{"ts": "2026-10-27T10:11:37.331239Z", "event": "stage2.proposed", "count": 9}
+{"ts": "2026-10-27T10:11:37.331921Z", "event": "stage2.attributions_logged", "count": 9}
+{"ts": "2026-10-27T10:11:53.670655Z", "event": "stage2.approved", "count": 9}
+{"ts": "2026-10-27T10:11:53.671346Z", "event": "stage2.decisions_logged", "count": 9}
+{"ts": "2026-10-27T10:11:53.671723Z", "event": "stage2.verification_logged", "atom_count": 12}
+{"ts": "2026-10-27T10:11:53.674649Z", "event": "stage0.coverage_ledger", "open_property_nodes": 4, "completed_property_nodes": 8}
+{"ts": "2026-10-27T10:11:53.676852Z", "event": "stage0.context_packet", "packet_id": "condition.0011.step0009", "kind": "condition", "focus_node_ids": ["src.cyberchair_access_control_intent.authorization_intent_covered.p0011.l19"]}
+{"ts": "2026-10-27T10:12:09.390653Z", "event": "stage2.proposed", "count": 10}
+{"ts": "2026-10-27T10:12:09.391205Z", "event": "stage2.attributions_logged", "count": 10}
+{"ts": "2026-10-27T10:12:34.370811Z", "event": "stage2.approved", "count": 10}
+{"ts": "2026-10-27T10:12:34.371335Z", "event": "stage2.decisions_logged", "count": 10}
+{"ts": "2026-10-27T10:12:34.371752Z", "event": "stage2.verification_logged", "atom_count": 13}
+{"ts": "2026-10-27T10:12:34.374416Z", "event": "stage0.coverage_ledger", "open_property_nodes": 3, "completed_property_nodes": 9}
+{"ts": "2026-10-27T10:12:34.376663Z", "event": "stage0.context_packet", "packet_id": "condition.0012.step0010", "kind": "condition", "focus_node_ids": ["src.cyberchair_access_control_intent.authorization_intent_covered.p0012.l21"]}
+{"ts": "2026-10-27T10:12:54.961470Z", "event": "stage2.proposed", "count": 11}
+{"ts": "2026-10-27T10:12:54.962380Z", "event": "stage2.attributions_logged", "count": 11}
+{"ts": "2026-10-27T10:13:18.272915Z", "event": "stage2.approved", "count": 11}
+{"ts": "2026-10-27T10:13:18.273755Z", "event": "stage2.decisions_logged", "count": 11}
+{"ts": "2026-10-27T10:13:18.274230Z", "event": "stage2.verification_logged", "atom_count": 14}
+{"ts": "2026-10-27T10:13:18.277400Z", "event": "stage0.coverage_ledger", "open_property_nodes": 2, "completed_property_nodes": 10}
+{"ts": "2026-10-27T10:13:18.280773Z", "event": "stage0.context_packet", "packet_id": "condition.0013.step0011", "kind": "condition", "focus_node_ids": ["src.cyberchair_access_control_intent.authorization_intent_covered.p0013.l22"]}
+{"ts": "2026-10-27T10:13:39.336981Z", "event": "stage2.proposed", "count": 12}
+{"ts": "2026-10-27T10:13:39.337357Z", "event": "stage2.attributions_logged", "count": 12}
+{"ts": "2026-10-27T10:13:39.345202Z", "event": "stage2.decisions_logged", "count": 12}
+{"ts": "2026-10-27T10:13:49.581643Z", "event": "stage2.repair_plans", "count": 6}
+{"ts": "2026-10-27T10:14:39.390875Z", "event": "stage2.approved", "count": 12}
+{"ts": "2026-10-27T10:14:39.391836Z", "event": "stage2.decisions_logged", "count": 12}
+{"ts": "2026-10-27T10:14:39.392211Z", "event": "stage2.verification_logged", "atom_count": 15}
+{"ts": "2026-10-27T10:14:39.397276Z", "event": "stage0.coverage_ledger", "open_property_nodes": 1, "completed_property_nodes": 11}
+{"ts": "2026-10-27T10:14:39.399612Z", "event": "stage0.context_packet", "packet_id": "condition.0014.step0012", "kind": "condition", "focus_node_ids": ["src.cyberchair_access_control_intent.authorization_intent_covered.p0014.l23"]}
+{"ts": "2026-10-27T10:15:06.260671Z", "event": "stage2.proposed", "count": 13}
+{"ts": "2026-10-27T10:15:06.261359Z", "event": "stage2.attributions_logged", "count": 13}
+{"ts": "2026-10-27T10:15:06.283029Z", "event": "stage2.decisions_logged", "count": 13}
+{"ts": "2026-10-27T10:15:17.754085Z", "event": "stage2.repair_plans", "count": 7}
+{"ts": "2026-10-27T10:16:43.792376Z", "event": "stage2.approved", "count": 13}
+{"ts": "2026-10-27T10:16:43.794324Z", "event": "stage2.decisions_logged", "count": 13}
+{"ts": "2026-10-27T10:16:43.794963Z", "event": "stage2.verification_logged", "atom_count": 17}
+{"ts": "2026-10-27T10:16:43.804525Z", "event": "stage2.proposed", "count": 14}
+{"ts": "2026-10-27T10:16:43.805111Z", "event": "stage2.attributions_logged", "count": 14}
+{"ts": "2026-10-27T10:16:43.828417Z", "event": "stage2.decisions_logged", "count": 14}
+{"ts": "2026-10-27T10:16:55.725357Z", "event": "stage2.repair_plans", "count": 8}
+{"ts": "2026-10-27T10:17:52.593793Z", "event": "stage2.approved", "count": 14}
+{"ts": "2026-10-27T10:17:52.594910Z", "event": "stage2.decisions_logged", "count": 14}
+{"ts": "2026-10-27T10:17:52.595718Z", "event": "stage2.verification_logged", "atom_count": 18}
+{"ts": "2026-10-27T10:17:52.598728Z", "event": "stage0.coverage_ledger", "open_property_nodes": 0, "completed_property_nodes": 12}
+{"ts": "2026-10-27T10:17:52.606132Z", "event": "stage1_5.amendments", "count": 0}
+{"ts": "2026-10-27T10:17:52.606670Z", "event": "stage2.decisions_logged", "count": 14}
+{"ts": "2026-10-27T10:17:52.607740Z", "event": "stage2.approved", "count": 14}
+{"ts": "2026-10-27T10:17:52.608196Z", "event": "stage2.intent_graph", "properties": 14}
+{"ts": "2026-10-27T10:17:52.608528Z", "event": "stage2.verification_logged", "atom_count": 18}
+{"ts": "2026-10-27T10:17:52.608794Z", "event": "stage2.adversarial_examples", "atom_count": 14}
+{"ts": "2026-10-27T10:17:53.082003Z", "event": "stage1_75.consistency_check", "unsat": false, "core": []}
+{"ts": "2026-10-27T10:17:53.086696Z", "event": "stage2.plan_written", "reference_count": 28}
+{"ts": "2026-10-27T10:18:58.275320Z", "event": "stage3.iteration", "iter": 1, "verifier_passed": true, "critic_mean": 4}
+{"ts": "2026-10-27T10:18:58.275789Z", "event": "stage3.final_candidate", "size": 2155}
+{"ts": "2026-10-27T10:18:58.276868Z", "event": "stage2_5.traceback", "atom_count": 14}
+{"ts": "2026-10-27T10:18:58.277084Z", "event": "stage2_5.final_decision", "approved": false}
+{"ts": "2026-10-27T10:18:58.279298Z", "event": "stage0.intent_dag", "source_nodes": 18, "schema_packets": 0, "property_packets": 12, "schema_atoms": 0, "property_atoms": 14, "schema_gaps": 0}
+{"ts": "2026-10-27T10:18:58.279562Z", "event": "stage0.coverage_ledger", "open_property_nodes": 0, "completed_property_nodes": 12}

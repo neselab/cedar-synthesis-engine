@@ -1,0 +1,15 @@
+{
+  "exit_code": 0,
+  "started_at": "2026-10-27T10:01:36Z",
+  "finished_at": "2026-10-27T10:18:58Z",
+  "code_commit": "2b5467ecf5953e637d830807193ff7e112a50281",
+  "uncommitted_changes": " M autocedar/providers/claude_cli.py; M autocedar/schema_support.py; M tests/test_claude_cli.py;?? tests/test_schema_support.py;",
+  "provider": "claude-cli",
+  "model": "claude-haiku-4-5",
+  "effort": "high",
+  "review": "model review (no person)",
+  "schema_fixed": true,
+  "spec_sha256": "293eb7a59dab0764a90e2baa11320d6a4e87141d276ecb00c4caf2a9b30afa82",
+  "schema_sha256": "0f5a497387711c2fcbcfdf155e268505b48cddc339dc4967ec7363099d85f519",
+  "candidate_exists": true
+}

@@ -1,0 +1,76 @@
+{
+  "root_solved": true,
+  "scopes": {
+    "submitStep1": true,
+    "submitFullPaper": true,
+    "updateStep1Info": true,
+    "submitCameraReady": true,
+    "downloadPaper": true,
+    "submitReview": true,
+    "updateReview": true,
+    "readOtherReviews": true,
+    "declareConflict": true,
+    "volunteerForConflictingPaper": true,
+    "monitorReviewProcess": true,
+    "askAdditionalReviewer": true,
+    "accessReviewerDirectory": true,
+    "readReviewFile": true
+  },
+  "slices": {
+    "slice_p0003": true,
+    "slice_p0004": true,
+    "slice_p0005": true,
+    "slice_p0006": true,
+    "slice_p0007": true,
+    "slice_p0008_submit": true,
+    "slice_p0008_update": true,
+    "slice_p0009": true,
+    "slice_p0010": true,
+    "slice_p0011": true,
+    "slice_p0012": true,
+    "slice_p0013": true,
+    "slice_p0014_dir": true,
+    "slice_p0014_file": true
+  },
+  "conditions": {
+    "src.cyberchair_access_control_intent.authorization_intent_covered.p0003.l9": {
+      "submitStep1": true
+    },
+    "src.cyberchair_access_control_intent.authorization_intent_covered.p0004.l10": {
+      "submitFullPaper": true
+    },
+    "src.cyberchair_access_control_intent.authorization_intent_covered.p0005.l11": {
+      "updateStep1Info": true
+    },
+    "src.cyberchair_access_control_intent.authorization_intent_covered.p0006.l12": {
+      "submitCameraReady": true
+    },
+    "src.cyberchair_access_control_intent.authorization_intent_covered.p0007.l13": {
+      "downloadPaper": true
+    },
+    "src.cyberchair_access_control_intent.authorization_intent_covered.p0008.l15": {
+      "submitReview": true,
+      "updateReview": true
+    },
+    "src.cyberchair_access_control_intent.authorization_intent_covered.p0009.l16": {
+      "readOtherReviews": true
+    },
+    "src.cyberchair_access_control_intent.authorization_intent_covered.p0010.l18": {
+      "declareConflict": true
+    },
+    "src.cyberchair_access_control_intent.authorization_intent_covered.p0011.l19": {
+      "volunteerForConflictingPaper": true
+    },
+    "src.cyberchair_access_control_intent.authorization_intent_covered.p0012.l21": {
+      "monitorReviewProcess": true
+    },
+    "src.cyberchair_access_control_intent.authorization_intent_covered.p0013.l22": {
+      "askAdditionalReviewer": true
+    },
+    "src.cyberchair_access_control_intent.authorization_intent_covered.p0014.l23": {
+      "accessReviewerDirectory": true,
+      "readReviewFile": true
+    }
+  },
+  "blocking_conditions": []
+}

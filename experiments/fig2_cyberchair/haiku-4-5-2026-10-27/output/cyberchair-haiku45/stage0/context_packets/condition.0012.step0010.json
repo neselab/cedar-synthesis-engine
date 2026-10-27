@@ -1,0 +1,12 @@
+{
+  "id": "condition.0012.step0010",
+  "kind": "condition",
+  "focus_node_ids": [
+    "src.cyberchair_access_control_intent.authorization_intent_covered.p0012.l21"
+  ],
+  "scope_ids": [
+    "monitorReviewProcess"
+  ],
+  "related_node_ids": [],
+  "text": "<autocedar_condition_packet id=\"condition.0012.step0010\">\nRequirement to encode:\n[source_id: src.cyberchair_access_control_intent.authorization_intent_covered.p0012.l21; section: CyberChair Access Control Intent / Authorization Intent Covered] 10. Chairs/PCC can monitor the review process and identify low-expertise papers.\n\nWrite one condition atom for each scope below. AutoCedar joins the conditions of a slice with AND and the slices of a scope with OR, so encode only what this requirement says.\n\nScope monitorReviewProcess: principal User, action monitorReviewProcess, resource ReviewOverview (every way to allow it is listed).\n  It is a condition of slice slice_p0012: Chair or PCC\n  The other conditions of this slice (encoded separately):\n    - none\n  Approved condition atoms of this scope:\n    - none yet\n\nRules for interpretation (apply them to every requirement):\n  - none\n</autocedar_condition_packet>\n"
+}

@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "source_nodes": 18,
+  "authorization_nodes": [
+    "src.cyberchair_access_control_intent.authorization_intent_covered.p0003.l9",
+    "src.cyberchair_access_control_intent.authorization_intent_covered.p0004.l10",
+    "src.cyberchair_access_control_intent.authorization_intent_covered.p0005.l11",
+    "src.cyberchair_access_control_intent.authorization_intent_covered.p0006.l12",
+    "src.cyberchair_access_control_intent.authorization_intent_covered.p0007.l13",
+    "src.cyberchair_access_control_intent.authorization_intent_covered.p0008.l15",
+    "src.cyberchair_access_control_intent.authorization_intent_covered.p0009.l16",
+    "src.cyberchair_access_control_intent.authorization_intent_covered.p0010.l18",
+    "src.cyberchair_access_control_intent.authorization_intent_covered.p0011.l19",
+    "src.cyberchair_access_control_intent.authorization_intent_covered.p0012.l21",
+    "src.cyberchair_access_control_intent.authorization_intent_covered.p0013.l22",
+    "src.cyberchair_access_control_intent.authorization_intent_covered.p0014.l23"
+  ],
+  "schema_packet_ids": [],
+  "property_packet_ids": [
+    "condition.0003.step0001",
+    "condition.0004.step0002",
+    "condition.0005.step0003",
+    "condition.0006.step0004",
+    "condition.0007.step0005",
+    "condition.0008.step0006",
+    "condition.0009.step0007",
+    "condition.0010.step0008",
+    "condition.0011.step0009",
+    "condition.0012.step0010",
+    "condition.0013.step0011",
+    "condition.0014.step0012"
+  ],
+  "completed_property_node_ids": [
+    "src.cyberchair_access_control_intent.authorization_intent_covered.p0003.l9",
+    "src.cyberchair_access_control_intent.authorization_intent_covered.p0004.l10",
+    "src.cyberchair_access_control_intent.authorization_intent_covered.p0005.l11",
+    "src.cyberchair_access_control_intent.authorization_intent_covered.p0006.l12",
+    "src.cyberchair_access_control_intent.authorization_intent_covered.p0007.l13",
+    "src.cyberchair_access_control_intent.authorization_intent_covered.p0008.l15",
+    "src.cyberchair_access_control_intent.authorization_intent_covered.p0009.l16",
+    "src.cyberchair_access_control_intent.authorization_intent_covered.p0010.l18",
+    "src.cyberchair_access_control_intent.authorization_intent_covered.p0011.l19",
+    "src.cyberchair_access_control_intent.authorization_intent_covered.p0012.l21",
+    "src.cyberchair_access_control_intent.authorization_intent_covered.p0013.l22",
+    "src.cyberchair_access_control_intent.authorization_intent_covered.p0014.l23"
+  ],
+  "open_property_node_ids": []
+}

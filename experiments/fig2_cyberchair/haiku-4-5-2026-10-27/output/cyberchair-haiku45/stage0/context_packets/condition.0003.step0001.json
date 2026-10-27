@@ -1,0 +1,12 @@
+{
+  "id": "condition.0003.step0001",
+  "kind": "condition",
+  "focus_node_ids": [
+    "src.cyberchair_access_control_intent.authorization_intent_covered.p0003.l9"
+  ],
+  "scope_ids": [
+    "submitStep1"
+  ],
+  "related_node_ids": [],
+  "text": "<autocedar_condition_packet id=\"condition.0003.step0001\">\nRequirement to encode:\n[source_id: src.cyberchair_access_control_intent.authorization_intent_covered.p0003.l9; section: CyberChair Access Control Intent / Authorization Intent Covered] 1. Authors can submit abstracts/papers during step 1.\n\nWrite one condition atom for each scope below. AutoCedar joins the conditions of a slice with AND and the slices of a scope with OR, so encode only what this requirement says.\n\nScope submitStep1: principal User, action submitStep1, resource Submission (every way to allow it is listed).\n  It is a condition of slice slice_p0003: Author, during step 1\n  The other conditions of this slice (encoded separately):\n    - none\n  Approved condition atoms of this scope:\n    - none yet\n\nRules for interpretation (apply them to every requirement):\n  - none\n</autocedar_condition_packet>\n"
+}

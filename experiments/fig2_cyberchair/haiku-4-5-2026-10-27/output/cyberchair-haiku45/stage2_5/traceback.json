@@ -1,0 +1,136 @@
+[
+  {
+    "atom_name": "p0003_submitStep1_author_during_step1",
+    "clauses": [
+      "permit (principal, action == Action::\"submitStep1\", resource)\nwhen {\n    principal in resource.authors && resource.step1Open\n};"
+    ],
+    "flags": [
+      "uses-attribute-not-in-atom-prose: resource.authors",
+      "idiom-not-in-atom-encoding: in"
+    ]
+  },
+  {
+    "atom_name": "submitFullPaper_step2_author",
+    "clauses": [
+      "permit (principal, action == Action::\"submitFullPaper\", resource)\nwhen {\n    principal in resource.authors && context.hasStep2Credential && resource.step2Open\n};"
+    ],
+    "flags": [
+      "uses-attribute-not-in-atom-prose: resource.authors",
+      "idiom-not-in-atom-encoding: in"
+    ]
+  },
+  {
+    "atom_name": "author_during_step2",
+    "clauses": [
+      "permit (principal, action == Action::\"updateStep1Info\", resource)\nwhen {\n    principal in resource.authors && resource.step2Open\n};"
+    ],
+    "flags": [
+      "uses-attribute-not-in-atom-prose: resource.authors",
+      "idiom-not-in-atom-encoding: in"
+    ]
+  },
+  {
+    "atom_name": "submitCameraReady_author_of_selected_after_review",
+    "clauses": [
+      "permit (principal, action == Action::\"submitCameraReady\", resource)\nwhen {\n    principal in resource.authors && resource.selected && resource.reviewProcessDone\n};"
+    ],
+    "flags": [
+      "uses-attribute-not-in-atom-prose: resource.authors",
+      "idiom-not-in-atom-encoding: in"
+    ]
+  },
+  {
+    "atom_name": "assigned_reviewer_post_distribution_not_conflicted",
+    "clauses": [
+      "permit (principal, action == Action::\"downloadPaper\", resource)\nwhen {\n    principal in resource.assignedReviewers && resource.distributionDone && !(principal in resource.conflictedReviewers)\n};"
+    ],
+    "flags": [
+      "uses-attribute-not-in-atom-prose: resource.assignedReviewers, resource.conflictedReviewers",
+      "idiom-not-in-atom-encoding: in"
+    ]
+  },
+  {
+    "atom_name": "submitReview_assigned_non_conflicted_reviewer",
+    "clauses": [
+      "permit (principal, action == Action::\"submitReview\", resource)\nwhen {\n    principal in resource.assignedReviewers && !(principal in resource.conflictedReviewers) && resource.reviewOpen\n};"
+    ],
+    "flags": [
+      "uses-attribute-not-in-atom-prose: resource.assignedReviewers, resource.conflictedReviewers",
+      "idiom-not-in-atom-encoding: in"
+    ]
+  },
+  {
+    "atom_name": "updateReview_assigned_non_conflicted_reviewer",
+    "clauses": [
+      "permit (principal, action == Action::\"updateReview\", resource)\nwhen {\n    principal in resource.assignedReviewers && !(principal in resource.conflictedReviewers) && resource.reviewOpen\n};"
+    ],
+    "flags": [
+      "uses-attribute-not-in-atom-prose: resource.assignedReviewers, resource.conflictedReviewers",
+      "idiom-not-in-atom-encoding: in"
+    ]
+  },
+  {
+    "atom_name": "reviewer_submitted_own_review",
+    "clauses": [
+      "permit (principal, action == Action::\"readOtherReviews\", resource)\nwhen {\n    principal in resource.reviewersSubmitted\n};"
+    ],
+    "flags": [
+      "uses-attribute-not-in-atom-prose: resource.reviewersSubmitted",
+      "idiom-not-in-atom-encoding: in"
+    ]
+  },
+  {
+    "atom_name": "assigned_reviewer_can_declare_conflict",
+    "clauses": [
+      "permit (principal, action == Action::\"declareConflict\", resource)\nwhen {\n    principal in resource.assignedReviewers\n};"
+    ],
+    "flags": [
+      "uses-attribute-not-in-atom-prose: resource.assignedReviewers",
+      "idiom-not-in-atom-encoding: in"
+    ]
+  },
+  {
+    "atom_name": "reviewer_submitted_all_reviews_not_conflicted",
+    "clauses": [
+      "permit (principal, action == Action::\"volunteerForConflictingPaper\", resource)\nwhen {\n    principal.role == \"Reviewer\" && principal.submittedAllAssignedReviews && !(principal in resource.conflictedReviewers)\n};"
+    ],
+    "flags": [
+      "uses-attribute-not-in-atom-prose: resource.conflictedReviewers",
+      "idiom-not-in-atom-encoding: in"
+    ]
+  },
+  {
+    "atom_name": "chair_pcc_role_check",
+    "clauses": [
+      "permit (principal, action == Action::\"monitorReviewProcess\", resource)\nwhen {\n    principal.role == \"Chair\" || principal.role == \"PCC\"\n};"
+    ],
+    "flags": []
+  },
+  {
+    "atom_name": "PCC_asks_additional_reviewer_for_low_expertise_paper",
+    "clauses": [
+      "permit (principal, action == Action::\"askAdditionalReviewer\", resource)\nwhen {\n    principal.role == \"PCC\" && resource.paper.onlyNonExpertReviews\n};"
+    ],
+    "flags": []
+  },
+  {
+    "atom_name": "reviewer_directory_allowed_users_access",
+    "clauses": [
+      "permit (principal, action == Action::\"accessReviewerDirectory\", resource)\nwhen {\n    principal in resource.allowedUsers\n};"
+    ],
+    "flags": [
+      "uses-attribute-not-in-atom-prose: resource.allowedUsers",
+      "idiom-not-in-atom-encoding: in"
+    ]
+  },
+  {
+    "atom_name": "review_file_directory_protection",
+    "clauses": [
+      "permit (principal, action == Action::\"readReviewFile\", resource)\nwhen {\n    principal in resource.directory.allowedUsers\n};"
+    ],
+    "flags": [
+      "uses-attribute-not-in-atom-prose: resource.directory.allowedUsers",
+      "idiom-not-in-atom-encoding: in"
+    ]
+  }
+]

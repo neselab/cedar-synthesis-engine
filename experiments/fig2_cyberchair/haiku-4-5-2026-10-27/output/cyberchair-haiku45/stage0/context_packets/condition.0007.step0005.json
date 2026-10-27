@@ -1,0 +1,12 @@
+{
+  "id": "condition.0007.step0005",
+  "kind": "condition",
+  "focus_node_ids": [
+    "src.cyberchair_access_control_intent.authorization_intent_covered.p0007.l13"
+  ],
+  "scope_ids": [
+    "downloadPaper"
+  ],
+  "related_node_ids": [],
+  "text": "<autocedar_condition_packet id=\"condition.0007.step0005\">\nRequirement to encode:\n[source_id: src.cyberchair_access_control_intent.authorization_intent_covered.p0007.l13; section: CyberChair Access Control Intent / Authorization Intent Covered] 5. Assigned reviewers can access/download assigned papers after paper distribution, unless they have declared a conflict of interest.\n\nWrite one condition atom for each scope below. AutoCedar joins the conditions of a slice with AND and the slices of a scope with OR, so encode only what this requirement says.\n\nScope downloadPaper: principal User, action downloadPaper, resource Submission (every way to allow it is listed).\n  It is a condition of slice slice_p0007: Assigned reviewer, after paper distribution, not conflicted\n  The other conditions of this slice (encoded separately):\n    - none\n  Approved condition atoms of this scope:\n    - none yet\n\nRules for interpretation (apply them to every requirement):\n  - none\n</autocedar_condition_packet>\n"
+}
