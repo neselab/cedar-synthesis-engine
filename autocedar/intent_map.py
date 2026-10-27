@@ -292,11 +292,14 @@ class IntentMap:
             )
             if scope.summary:
                 lines.append(f"  {scope.summary}")
-            for sl in self.scope_slices(scope.id):
-                lines.append(f"  Slice {sl.id}: {sl.summary} (all of these must hold)")
-                for node_id in self.slice_conditions(sl.id):
-                    lines.append(f"    - [{node_id}] {text.get(node_id, '?')}")
             restrictions = self.restrictions(scope.id)
+            also = " and every restriction below" if restrictions else ""
+            for sl in self.scope_slices(scope.id):
+                lines.append(f"  Slice {sl.id}: {sl.summary} (all of these must hold{also})")
+                # The slice's own conditions; restrictions are listed once below.
+                for s in self.conditions():
+                    if sl.id in s.slice_ids:
+                        lines.append(f"    - [{s.node_id}] {text.get(s.node_id, '?')}")
             if restrictions:
                 lines.append("  Restrictions on every request of this scope:")
                 lines.extend(f"    - [{n}] {text.get(n, '?')}" for n in restrictions)

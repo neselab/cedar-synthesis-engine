@@ -323,3 +323,24 @@ def test_unmarked_scopes_render_as_not_stated_and_survive_a_round_trip() -> None
     question = PermissionsQuestion(scopes=[m.scopes[1]])
     assert "signoff (principal User, resource WorkOrder)" in question.render()
     assert question.to_dict()["scopes"][0]["id"] == "s_signoff"
+
+
+def test_render_lists_a_restriction_once_not_inside_each_slice() -> None:
+    doc = compile_source_document(SPEC)
+    ids = node_ids(doc)
+    m = work_order_map(doc)
+    m.slices.append(MapSlice("sl_signoff_2", "s_signoff", "a second way to sign off"))
+    m.sentences = [s for s in m.sentences if s.node_id != ids["signoff:on hold"]] + [
+        MapSentence(ids["signoff:on hold"], "condition", [], ["s_signoff"]),
+        MapSentence(ids["signoff:inspector"], "condition", ["sl_signoff", "sl_signoff_2"]),
+    ]
+    m.sentences = [s for i, s in enumerate(m.sentences) if not (
+        s.node_id == ids["signoff:inspector"] and s.slice_ids == ["sl_signoff"]
+    )]
+
+    text = m.render(doc)
+
+    assert text.count(ids["signoff:on hold"]) == 1
+    assert "and every restriction below" in text
+    # The floor still joins the restriction into every slice of its scope.
+    assert ids["signoff:on hold"] in m.slice_conditions("sl_signoff_2")

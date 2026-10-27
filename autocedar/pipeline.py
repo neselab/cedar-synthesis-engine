@@ -302,9 +302,19 @@ def _build_reviewed_intent_map(
                 return resumed, decision, ""
     outline = document_outline(source_doc)
     actions = describe_schema_actions(triples)
+
+    def build_map(**kwargs: Any) -> IntentMap:
+        built = map_intent(outline=outline, schema_actions=actions, **kwargs)
+        # AutoCedar never assumes a list of permissions is incomplete: a scope
+        # the map does not mark complete waits for the yes/no question.
+        for scope in built.scopes:
+            if scope.exhaustive is False:
+                scope.exhaustive = None
+        return built
+
     rounds: list[dict[str, Any]] = []
     _notify_review_stage(review_atom, "Intent map review", 1)
-    intent_map = map_intent(outline=outline, schema_actions=actions, feedback="", previous=None)
+    intent_map = build_map(feedback="", previous=None)
     for round_number in range(1, MAP_ROUNDS + 1):
         errors = intent_map.structure_errors(source_doc, triples)
         if errors:
@@ -315,9 +325,7 @@ def _build_reviewed_intent_map(
                     "Stopped before atoms: the intent map still fails its structure "
                     f"checks after {MAP_ROUNDS} rounds: " + "; ".join(errors[:6])
                 )
-            intent_map = map_intent(
-                outline=outline,
-                schema_actions=actions,
+            intent_map = build_map(
                 feedback="\n".join(f"- {e}" for e in errors),
                 previous=intent_map,
             )
@@ -346,9 +354,7 @@ def _build_reviewed_intent_map(
                 f"Stopped before atoms: the intent map was not approved after {MAP_ROUNDS} "
                 f"rounds. Last reason: {decision.reason}"
             )
-        intent_map = map_intent(
-            outline=outline,
-            schema_actions=actions,
+        intent_map = build_map(
             feedback=decision.reason or "The reviewer rejected the map.",
             previous=intent_map,
         )

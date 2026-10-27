@@ -231,14 +231,19 @@ def test_unapproved_map_stops_before_any_atom(tmp_path: Path) -> None:
     assert proposer.calls == []
 
 
+@pytest.mark.parametrize("marked", [None, False])
 @pytest.mark.parametrize("answer", ["approve", "reject"])
-def test_unmarked_scope_is_settled_by_one_yes_or_no_question(tmp_path: Path, answer: str) -> None:
+def test_unmarked_scope_is_settled_by_one_yes_or_no_question(
+    tmp_path: Path, answer: str, marked: bool | None,
+) -> None:
     spec, schema, doc = _setup(tmp_path)
     questions: list[PermissionsQuestion] = []
 
     def mapper(**kw) -> IntentMap:
+        # A map that calls the list "examples" without saying why is treated
+        # like one that leaves it unmarked: AutoCedar asks.
         m = work_order_map(doc)
-        m.scopes[1].exhaustive = None
+        m.scopes[1].exhaustive = marked
         return m
 
     def reviewer(atom):
@@ -251,7 +256,7 @@ def test_unmarked_scope_is_settled_by_one_yes_or_no_question(tmp_path: Path, ans
         return approve_checked(atom)
 
     result = author(
-        spec, tmp_path / "out", session_id=f"question-{answer}",
+        spec, tmp_path / "out", session_id=f"question-{answer}-{marked}",
         review_atom=reviewer,
         map_intent=mapper,
         propose_property_atom=Proposer(doc),

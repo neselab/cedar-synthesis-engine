@@ -11,10 +11,9 @@ Return an IntentMapResponse:
 - `scopes`: one per (principal type, action, resource type) that the document
   allows or restricts. Use names exactly as in the schema. Set `exhaustive` to
   true when the document says it lists every way the scope can be allowed ("if
-  and only if", "only", or a rule that requests not described are denied); to
-  false when the document says its permissions for the scope are examples or
-  incomplete; and to null when the document says neither. Do not guess:
-  AutoCedar asks the person about every scope left null.
+  and only if", "only", or a rule that requests not described are denied), and
+  to null otherwise. Do not guess: AutoCedar asks the person whether the list
+  is complete for every scope left null.
 - `slices`: each slice is one way a request of its scope is allowed. All
   conditions of a slice must hold together. A section that allows an action
   "if and only if all the following requirements hold" is one slice.

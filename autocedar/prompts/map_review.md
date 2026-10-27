@@ -23,10 +23,9 @@ Approve the map only if all of these hold:
    not contain it.
 4. The slices match the ways the document allows each scope, and each slice
    holds exactly the conditions that must hold together.
-5. Each scope is marked as listing every way to allow it only if the document
-   says so, as giving examples only if the document says the list is
-   incomplete, and left unmarked when the document says neither; AutoCedar
-   asks the person about unmarked scopes.
+5. A scope is marked as listing every way to allow it only if the document
+   says so. Every other scope is left unmarked, and AutoCedar asks the person
+   whether its list is complete; an unmarked scope is not a problem.
 6. Rules for interpretation are the sentences that tell how to read the
    others.
 

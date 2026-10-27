@@ -213,10 +213,7 @@ class ClaudeCLIBackend(ModelBackend):
         if reasoning_effort:
             command.extend(["--effort", reasoning_effort])
         if output_type is not None:
-            command.extend([
-                "--json-schema",
-                json.dumps(output_type.model_json_schema(), separators=(",", ":")),
-            ])
+            command.extend(["--json-schema", _cli_json_schema(output_type)])
 
         prompt = _render_prompt(messages=messages, system=system)
         try:
@@ -363,6 +360,28 @@ def _extract_json_object(text: str) -> Any:
         if start == -1 or end <= start:
             raise
         return json.loads(stripped[start : end + 1])
+
+
+def _cli_json_schema(output_type: type[BaseModel]) -> str:
+    """The output schema in the form the CLI accepts.
+
+    Pydantic marks tagged unions with OpenAPI's ``discriminator`` object, which
+    the CLI's strict JSON Schema check rejects; the ``oneOf`` branches and
+    their ``const`` tags already state the same constraint.
+    """
+
+    def strip(value: Any) -> Any:
+        if isinstance(value, dict):
+            return {
+                key: strip(item)
+                for key, item in value.items()
+                if not (key == "discriminator" and isinstance(item, dict) and "propertyName" in item)
+            }
+        if isinstance(value, list):
+            return [strip(item) for item in value]
+        return value
+
+    return json.dumps(strip(output_type.model_json_schema()), separators=(",", ":"))
 
 
 def _ran_out_of_turns(completed: subprocess.CompletedProcess[str]) -> bool:

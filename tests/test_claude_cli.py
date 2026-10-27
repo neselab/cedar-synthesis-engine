@@ -173,3 +173,36 @@ def test_claude_cli_auth_status_uses_machine_readable_command() -> None:
     assert status.auth_method == "claude.ai"
     assert status.subscription_type == "max"
     assert runner.calls[0]["command"] == ["claude", "auth", "status", "--json"]
+
+
+def test_claude_cli_schema_drops_openapi_discriminators_only() -> None:
+    from typing import Annotated, Literal, Union
+
+    from pydantic import Field
+
+    class Cat(BaseModel):
+        kind: Literal["cat"]
+        discriminator: str = ""
+
+    class Dog(BaseModel):
+        kind: Literal["dog"]
+
+    class Pets(BaseModel):
+        pets: list[Annotated[Union[Cat, Dog], Field(discriminator="kind")]]
+
+    assert '"propertyName"' in json.dumps(Pets.model_json_schema())
+    runner = RecordingRunner({"type": "result", "subtype": "success", "structured_output": {"pets": []}})
+    backend = ClaudeCLIBackend(executable="claude", runner=runner, environ={})
+
+    backend.generate_structured(
+        model="sonnet",
+        messages=(ChatMessage(role="user", content="question"),),
+        output_type=Pets,
+    )
+
+    command = runner.calls[0]["command"]
+    schema = command[command.index("--json-schema") + 1]
+    assert "propertyName" not in schema
+    assert '"oneOf"' in schema
+    # A field that happens to be named "discriminator" stays in the schema.
+    assert '"discriminator":{' in schema
