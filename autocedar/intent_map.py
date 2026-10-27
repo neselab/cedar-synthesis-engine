@@ -588,6 +588,15 @@ def condition_shape_issue(reference_cedar: str, atom: PropertyAtom, cedar_path: 
 # Step 4: floors and ceilings calculated from the map.
 # ---------------------------------------------------------------------------
 
+# Log line for a condition atom that can raise a runtime error alone but not
+# after the other conditions of its slice.
+GUARDED_BY_SLICE = "never-errors: ok (guarded by the earlier conditions of its slice)"
+
+
+def needs_slice_guard(atom: PropertyAtom) -> bool:
+    return GUARDED_BY_SLICE in (atom.symbolic_verification_log or [])
+
+
 def derive_boundary_atoms(
     intent_map: IntentMap,
     approved: list[PropertyAtom],
@@ -613,7 +622,9 @@ def derive_boundary_atoms(
             if missing:
                 issues.append(f"Slice {sl.id} of scope {scope.id} has no approved atom for {missing}.")
                 continue
-            atoms = [grounded[(n, scope.id)] for n in node_ids]
+            # Cedar's && stops at the first false conjunct, so an atom that is
+            # only safe after its slice's other conditions goes last.
+            atoms = sorted((grounded[(n, scope.id)] for n in node_ids), key=needs_slice_guard)
             floor = merge_conditions(scope, atoms, cedar_path=cedar_path)
             floors.append(floor)
             derived.append(_derived_atom(

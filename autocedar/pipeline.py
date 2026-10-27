@@ -45,10 +45,20 @@ from autocedar.critic import (
     score_candidate as score_candidate_default,
     stub_llm_scorer,
 )
-from autocedar.grounding import CEDAR_PATH, _is_symcc_tool_error, _run_symcc, symbolic_verify_atom
+from autocedar.grounding import (
+    CEDAR_PATH,
+    _check_never_errors,
+    _is_symcc_tool_error,
+    _run_symcc,
+    symbolic_verify_atom,
+)
 from autocedar.intent_map import (
+    GUARDED_BY_SLICE,
     IntentMap,
     PermissionsQuestion,
+    atom_fits_scope,
+    merge_conditions,
+    needs_slice_guard,
     build_condition_packet,
     condition_atom_issue,
     derive_boundary_atoms,
@@ -1306,6 +1316,10 @@ def author(
             symbolic_verify_atom(current_atom, str(schema_path), prior_atoms=plan.properties)
             if intent_map is not None and active_property_node is not None:
                 _check_against_map(intent_map, current_atom, active_property_node)
+                _check_safety_in_slice(
+                    intent_map, current_atom, active_property_node, plan.properties, schema_path,
+                    session.base / "stage2" / "slice_safety",
+                )
             verification_logs[current_atom.name] = list(current_atom.symbolic_verification_log)
             reviewed_atom, decision = _normalize_review_result(
                 current_atom,
@@ -1490,6 +1504,10 @@ def author(
                 symbolic_verify_atom(reviewed_atom, str(schema_path), prior_atoms=plan.properties)
                 if intent_map is not None and active_property_node is not None:
                     _check_against_map(intent_map, reviewed_atom, active_property_node)
+                    _check_safety_in_slice(
+                        intent_map, reviewed_atom, active_property_node, plan.properties, schema_path,
+                        session.base / "stage2" / "slice_safety",
+                    )
                 verification_logs[reviewed_atom.name] = list(
                     reviewed_atom.symbolic_verification_log,
                 )
@@ -2231,8 +2249,62 @@ def _map_stop_notes(intent_map: IntentMap, source_doc: Any, approved: list[Prope
     ]
 
 
+def _check_safety_in_slice(
+    intent_map: IntentMap,
+    atom: PropertyAtom,
+    node: Any,
+    approved: list[PropertyAtom],
+    schema_path: Path,
+    workdir: Path,
+) -> None:
+    """Re-check a condition atom that can raise a runtime error alone.
+
+    A requirement such as an elapsed-time window may overflow on its own while
+    an earlier condition of its slice (a range check) rules those values out.
+    Floors put such an atom after the slice's other conditions, and Cedar's &&
+    stops at the first false conjunct, so the atom is checked the same way:
+    after the approved conditions that come before it, in every slice it joins.
+    """
+    log = atom.symbolic_verification_log or []
+    failed = [line for line in log if line.startswith("never-errors: FAILED")]
+    if atom.constraint_type != "condition" or not failed:
+        return
+    order = {s.node_id: i for i, s in enumerate(intent_map.sentences)}
+    grounded = intent_map.grounding(approved)
+    workdir.mkdir(parents=True, exist_ok=True)
+    checked = False
+    for scope in intent_map.scopes_for_node(node.id):
+        if not atom_fits_scope(atom, scope):
+            continue
+        for sl in intent_map.scope_slices(scope.id):
+            members = intent_map.slice_conditions(sl.id)
+            if node.id not in members:
+                continue
+            guards = [
+                grounded[(n, scope.id)]
+                for n in sorted(members, key=lambda n: order.get(n, 0))
+                if order.get(n, 0) < order.get(node.id, 0)
+                and (n, scope.id) in grounded
+                and not needs_slice_guard(grounded[(n, scope.id)])
+            ]
+            if not guards:
+                return
+            merged = merge_conditions(scope, [*guards, atom], cedar_path=CEDAR_PATH)
+            check = _check_never_errors(
+                replace(atom, name=f"{atom.name}__{sl.id}", reference_cedar=merged),
+                str(schema_path),
+                workdir,
+            )
+            if not check.passed:
+                return
+            checked = True
+    if checked:
+        atom.symbolic_verification_log = [GUARDED_BY_SLICE if line in failed else line for line in log]
+        atom.symbolic_verified = not any("FAILED" in line for line in atom.symbolic_verification_log)
+
+
 def _dead_slice_floors(derived: list[PropertyAtom], schema_path: Path, workdir: Path) -> list[str]:
-    """Slices whose conditions contradict each other, so nothing can be allowed."""
+    """Slices whose conditions contradict each other, or that can raise a runtime error."""
     problems: list[str] = []
     workdir.mkdir(parents=True, exist_ok=True)
     for atom in derived:
@@ -2255,6 +2327,10 @@ def _dead_slice_floors(derived: list[PropertyAtom], schema_path: Path, workdir: 
                 f"{atom.name}: its conditions contradict each other, so no request of "
                 "this slice can be allowed.",
             )
+        safety = _check_never_errors(atom, str(schema_path), workdir)
+        if not safety.passed:
+            problems.append(f"{atom.name}: its conditions together can raise a runtime error: "
+                            f"{safety.detail[:300]}")
     return problems
 
 

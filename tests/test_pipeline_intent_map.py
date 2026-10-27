@@ -399,3 +399,78 @@ def test_fixed_schema_turns_a_schema_gap_into_a_rewrite_of_the_atom(tmp_path: Pa
     assert result.notes == []
     assert len(instructions) == 1 and instructions[0].startswith("The schema is fixed")
     assert run_verification(str(result.candidate_path.parent)).loss == 0
+
+
+GUARD_SPEC = """# Work orders
+
+## Permission to release a work order
+Action: release
+Allow this action if and only if all the following requirements hold:
+
+- Access requires that the work order's defect count [resource.defectCount] is below 1000.
+- Access requires that the work order's defect count plus one [resource.defectCount] equals 1.
+"""
+GUARD_SCHEMA = """entity User;
+entity WorkOrder { defectCount: Long };
+action release appliesTo { principal: [User], resource: [WorkOrder] };
+"""
+GUARD_CONDITIONS = {"below 1000": "resource.defectCount < 1000", "plus one": "resource.defectCount + 1 == 1"}
+
+
+def _guard_run(tmp_path: Path, conditions: dict[str, str], session_id: str):
+    from autocedar.intent_map import MapScope, MapSlice
+
+    spec = tmp_path / "spec.md"
+    spec.write_text(GUARD_SPEC)
+    schema = tmp_path / "schema.cedarschema"
+    schema.write_text(GUARD_SCHEMA)
+    doc = compile_source_document(GUARD_SPEC)
+    nodes = [n for n in doc.nodes if n.text.startswith("- ")]
+    intent_map = IntentMap(
+        scopes=[MapScope("s_release", "release", "User", "WorkOrder", True)],
+        slices=[MapSlice("sl_release", "s_release", "release")],
+        sentences=[MapSentence(n.id, "condition", ["sl_release"]) for n in nodes],
+    )
+    text = {n.id: n.text for n in doc.nodes}
+
+    def proposer(packet, schema_path, prior_atoms, decisions):
+        node = _focus(packet)
+        expr = next(v for k, v in conditions.items() if k in text[node])
+        return [PropertyAtom(
+            name=f"release_{len(prior_atoms)}_{len(decisions)}", rationale="stub",
+            plain_english_summary=expr, source_excerpt="", constraint_type="condition",
+            action="release", principal_types=["User"], resource_types=["WorkOrder"],
+            reference_cedar=f'permit (principal is User, action == Action::"release", '
+                            f"resource is WorkOrder) when {{ {expr} }};",
+        )]
+
+    return author(
+        spec, tmp_path / "out", session_id=session_id,
+        review_atom=approve_checked, map_intent=lambda **kw: intent_map,
+        propose_property_atom=proposer, synthesize=_synthesize_exact,
+        schema_path_override=str(schema),
+    )
+
+
+def test_atom_that_can_overflow_alone_is_safe_after_the_earlier_range_check(tmp_path: Path) -> None:
+    from autocedar.intent_map import GUARDED_BY_SLICE
+
+    result = _guard_run(tmp_path, GUARD_CONDITIONS, "guarded")
+
+    assert result.notes == []
+    arithmetic = next(a for a in result.plan.properties if "+ 1" in a.reference_cedar)
+    assert GUARDED_BY_SLICE in arithmetic.symbolic_verification_log
+    floor = (result.session_dir / "stage2" / "final_plan" / "references").glob("floor__*.cedar")
+    text = " ".join(next(floor).read_text().split())
+    assert text.index("< 1000") < text.index("+ 1")
+    # The calculated plan, used as the candidate, never raises a runtime error.
+    assert run_verification(str(result.candidate_path.parent)).loss == 0
+
+
+def test_atom_that_can_overflow_without_a_guard_is_still_rejected(tmp_path: Path) -> None:
+    unguarded = {"below 1000": "resource.defectCount + 1 == 1", "plus one": "resource.defectCount + 1 == 1"}
+
+    result = _guard_run(tmp_path, unguarded, "unguarded")
+
+    assert result.candidate_path == Path("")
+    assert "Stopped before synthesis" in result.notes[0]
