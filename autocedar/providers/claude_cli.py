@@ -30,9 +30,12 @@ _ERROR_PREVIEW_LIMIT = 800
 # asks it to fix a failing answer; an answer accepted on the first try takes 2
 # turns and each fix adds one. Tools are disabled, so the extra turns can only
 # be used for fixes; with one turn, a single slip ends the call with
-# error_max_turns. A call that still runs out of turns is tried once more.
+# error_max_turns. The CLI also caps its own fix requests
+# (error_max_structured_output_retries). A call that ends either way is a
+# fresh sample away from success, so it is tried again, up to twice.
 _STRUCTURED_MAX_TURNS = 5
-_OUT_OF_TURNS_RETRIES = 1
+_STRUCTURED_RETRIES = 2
+_RETRYABLE_SUBTYPES = frozenset({"error_max_turns", "error_max_structured_output_retries"})
 _StructuredT = TypeVar("_StructuredT", bound=BaseModel)
 _Runner = Callable[..., subprocess.CompletedProcess[str]]
 
@@ -217,7 +220,7 @@ class ClaudeCLIBackend(ModelBackend):
 
         prompt = _render_prompt(messages=messages, system=system)
         try:
-            for attempt in range(_OUT_OF_TURNS_RETRIES + 1):
+            for attempt in range(_STRUCTURED_RETRIES + 1):
                 with tempfile.TemporaryDirectory(prefix="autocedar-claude-") as temp_dir:
                     private_cwd = Path(temp_dir)
                     private_cwd.chmod(0o700)
@@ -227,7 +230,7 @@ class ClaudeCLIBackend(ModelBackend):
                         cwd=private_cwd,
                         timeout=self.timeout,
                     )
-                if output_type is None or not _ran_out_of_turns(completed):
+                if output_type is None or not _structured_call_gave_up(completed):
                     break
         except subprocess.TimeoutExpired as exc:
             raise ClaudeCLIError(
@@ -384,12 +387,12 @@ def _cli_json_schema(output_type: type[BaseModel]) -> str:
     return json.dumps(strip(output_type.model_json_schema()), separators=(",", ":"))
 
 
-def _ran_out_of_turns(completed: subprocess.CompletedProcess[str]) -> bool:
+def _structured_call_gave_up(completed: subprocess.CompletedProcess[str]) -> bool:
     try:
         payload = json.loads(completed.stdout or "")
     except (TypeError, json.JSONDecodeError):
         return False
-    return isinstance(payload, dict) and payload.get("subtype") == "error_max_turns"
+    return isinstance(payload, dict) and payload.get("subtype") in _RETRYABLE_SUBTYPES
 
 
 def _bounded_process_error(completed: subprocess.CompletedProcess[str]) -> str:

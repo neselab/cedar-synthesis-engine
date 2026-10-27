@@ -122,7 +122,30 @@ def test_claude_cli_out_of_turns_is_retried_once_then_named() -> None:
             messages=(ChatMessage(role="user", content="question"),),
             output_type=Answer,
         )
-    assert len(runner.calls) == 2
+    assert len(runner.calls) == 3
+
+
+def test_claude_cli_retries_when_its_own_schema_fixes_run_out() -> None:
+    gave_up = RecordingRunner(
+        {"type": "result", "subtype": "error_max_structured_output_retries",
+         "terminal_reason": "structured_output_retry_exhausted", "is_error": True},
+        returncode=1,
+    )
+    answered = RecordingRunner({"type": "result", "subtype": "success", "structured_output": {"answer": "yes"}})
+    runners = iter([gave_up, answered])
+    backend = ClaudeCLIBackend(
+        executable="claude",
+        runner=lambda command, **kwargs: next(runners)(command, **kwargs),
+        environ={},
+    )
+
+    result = backend.generate_structured(
+        model="sonnet",
+        messages=(ChatMessage(role="user", content="question"),),
+        output_type=Answer,
+    )
+
+    assert result.parsed == Answer(answer="yes")
 
 
 def test_claude_cli_out_of_turns_retry_can_succeed() -> None:
