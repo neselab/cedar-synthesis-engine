@@ -121,6 +121,27 @@ def test_each_rule_is_checked_and_the_risky_one_is_named(tmp_path: Path) -> None
 
 
 @requires_solvers
+def test_rule_with_a_long_chain_gets_a_real_verdict(tmp_path: Path) -> None:
+    # The JSON form of 70 chained || nests past the 128 levels Cedar's JSON reader allows.
+    chain = " || ".join(
+        f'resource.releaseDate == datetime("{2000 + k}-01-01T00:00:00Z")' for k in range(70)
+    )
+    ws = _workspace(
+        tmp_path,
+        f'permit (principal, action == Action::"view", resource) when {{ {chain} }};\n'
+        'permit (principal, action == Action::"view", resource) '
+        'when { context.now >= resource.releaseDate.offset(duration("-24h")) };\n',
+    )
+
+    vr = run_verification(str(ws))
+
+    failed = [r for r in vr.results if not r.passed]
+    assert [r.check_name for r in failed] == ["no_runtime_errors__view__User__Release"]
+    assert not failed[0].tool_error
+    assert failed[0].counterexample.startswith("Rule 2 of 2:")
+
+
+@requires_solvers
 def test_several_safe_rules_pass(tmp_path: Path) -> None:
     ws = _workspace(
         tmp_path,

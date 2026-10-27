@@ -272,6 +272,34 @@ def test_floors_and_ceilings_are_calculated_from_approved_conditions(tmp_path: P
 
 
 @requires_cedar
+def test_condition_with_a_long_chain_merges_into_a_valid_floor(tmp_path: Path) -> None:
+    # The JSON form of 70 chained || nests past the 128 levels Cedar's JSON reader allows.
+    chain = " || ".join(f"resource.defectCount == {k}" for k in range(70))
+    doc = compile_source_document(SPEC)
+    m = work_order_map(doc)
+    ids = node_ids(doc)
+    atoms = [
+        condition_atom(ids["release:inspector"], "release", CONDITIONS["inspector"]),
+        condition_atom(ids["release:defect count"], "release", chain, name="release_defects"),
+    ]
+
+    derived, issues = derive_boundary_atoms(m, atoms, cedar_path=CEDAR_PATH)
+
+    floor = next(a for a in derived if a.name == "floor__s_release__sl_release").reference_cedar
+    assert not any("sl_release" in issue for issue in issues)
+    assert floor.index("resource.inspector") < floor.index("resource.defectCount == 69")
+    schema = tmp_path / "schema.cedarschema"
+    schema.write_text(SCHEMA)
+    policy = tmp_path / "floor.cedar"
+    policy.write_text(floor)
+    result = subprocess.run(
+        [CEDAR_PATH, "validate", "--schema", str(schema), "--policies", str(policy)],
+        capture_output=True, text=True,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+@requires_cedar
 def test_missing_condition_atom_is_reported_not_guessed() -> None:
     doc = compile_source_document(SPEC)
     m = work_order_map(doc)

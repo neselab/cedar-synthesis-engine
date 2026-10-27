@@ -4,6 +4,7 @@ Solver Wrapper for the Cedar Synthesis Engine.
 Uses Cedar CLI v4.10+ with `symcc` subcommand for formal verification.
 The solver uses CVC5 under the hood — no @domain annotations needed.
 """
+from autocedar.cedar_text import is_template, split_policies
 from autocedar.symcc_result import formal_verdict
 
 import json
@@ -403,9 +404,11 @@ def run_never_errors_check(
 ) -> CheckResult:
     """Check: no policy in the candidate can raise a runtime error.
 
-    ``cedar symcc never-errors`` analyzes exactly one policy, so Cedar first
-    parses the candidate into JSON (which handles comments and string
-    literals correctly) and each static policy is checked on its own.
+    ``cedar symcc never-errors`` analyzes exactly one policy, so each static
+    policy is checked on its own. Cedar parses the candidate first, and the
+    policies are then cut from the text and checked as Cedar text: Cedar's
+    JSON reader stops at 128 levels of nesting, which a long chain of || or
+    && can pass.
     """
 
     def result(passed: bool, counterexample: str = "", tool_error: bool = False) -> CheckResult:
@@ -425,6 +428,8 @@ def run_never_errors_check(
             capture_output=True, text=True, timeout=30,
         )
         policy_set = json.loads(parsed.stdout) if parsed.returncode == 0 else None
+        with open(candidate_path) as f:
+            rules = [p for p in split_policies(f.read()) if not is_template(p)]
     except (OSError, subprocess.TimeoutExpired, json.JSONDecodeError) as exc:
         return result(False, f"Could not split the candidate into policies: {exc}", tool_error=True)
     if not isinstance(policy_set, dict):
@@ -433,41 +438,32 @@ def run_never_errors_check(
             "Could not split the candidate into policies: " + _subprocess_output(parsed),
             tool_error=True,
         )
+    expected = len(policy_set.get("staticPolicies") or {})
+    if len(rules) != expected:
+        return result(
+            False,
+            f"Could not split the candidate into policies: Cedar found {expected}, "
+            f"the text split gave {len(rules)}.",
+            tool_error=True,
+        )
 
-    policies = policy_set.get("staticPolicies") or {}
     work_dir = os.path.dirname(os.path.abspath(candidate_path))
-    for index, (policy_id, policy) in enumerate(policies.items(), start=1):
-        single = {"staticPolicies": {policy_id: policy}, "templates": {}, "templateLinks": []}
-        single_path = os.path.join(work_dir, f".never_errors_{index}.json")
+    for index, rule in enumerate(rules, start=1):
+        single_path = os.path.join(work_dir, f".never_errors_{index}.cedar")
         with open(single_path, "w") as f:
-            json.dump(single, f)
+            f.write(rule + "\n")
         try:
             passed, output = _run_symcc(
                 schema_path, principal_type, action, resource_type,
                 "never-errors",
-                ["--policy-format", "json", "--policies", single_path],
+                ["--policies", single_path],
             )
             if _is_symcc_tool_error(output):
                 return result(False, output, tool_error=True)
             if not passed:
-                rule = _policy_json_to_cedar(single_path)
-                where = f"Rule {index} of {len(policies)}"
-                if rule:
-                    where += f":\n{rule}"
-                return result(False, f"{where}\n{output}")
+                return result(False, f"Rule {index} of {len(rules)}:\n{rule}\n{output}")
         finally:
             os.remove(single_path)
     return result(True)
-
-
-def _policy_json_to_cedar(path: str) -> str:
-    try:
-        out = subprocess.run(
-            [CEDAR_PATH, "translate-policy", "--direction", "json-to-cedar", "--policies", path],
-            capture_output=True, text=True, timeout=30,
-        )
-    except (OSError, subprocess.TimeoutExpired):
-        return ""
-    return out.stdout.strip() if out.returncode == 0 else ""
 
 

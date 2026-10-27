@@ -58,6 +58,12 @@ versioning while the public provider and CLI interfaces stabilize.
   structured calls now allow the CLI to ask the model to fix an answer that
   fails the schema (up to 5 turns), retry once if the call still runs out of
   turns, and report the CLI's error kind.
+- Fixed a crash, and a false tool error from the never-errors check, on a
+  condition with a long chain of `||` or `&&` (about 60 terms or more).
+  Cedar's JSON reader stops at 128 levels of nesting, so neither step goes
+  through JSON any more: floors and ceilings join the atoms' `when` and
+  `unless` clauses as written, and the never-errors check cuts the candidate
+  into policies at the semicolons that end them and checks each as Cedar text.
 - Runs without a person now review meaning. `--model-review` has the model
   judge each atom against the full requirements (supported by the text, right
   action and types, Cedar matching its summary, floors that keep every

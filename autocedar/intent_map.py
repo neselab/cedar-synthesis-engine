@@ -33,6 +33,7 @@ from pathlib import Path
 from typing import Any, Iterable, Optional
 
 from autocedar.atoms import PropertyAtom
+from autocedar.cedar_text import policy_conditions
 from autocedar.source_doc import SourceDocument, SourceNode, atom_source_ids
 
 
@@ -665,19 +666,23 @@ def derive_boundary_atoms(
 
 
 def merge_conditions(scope: MapScope, atoms: list[PropertyAtom], *, cedar_path: str) -> str:
-    """One permit for the scope whose conditions are all of the atoms' conditions."""
-    conditions: list[Any] = []
+    """One permit for the scope whose conditions are all of the atoms' conditions.
+
+    Each atom's when and unless clauses are kept as written and in order, and
+    Cedar joins the clauses of a policy with &&. The permit is built as text:
+    Cedar's JSON reader stops at 128 levels of nesting, which a long chain of
+    || or && in one atom can pass.
+    """
+    clauses: list[str] = []
     for atom in atoms:
-        conditions.extend(_single_policy_json(atom.reference_cedar, cedar_path)["conditions"])
-    policy = {
-        "effect": "permit",
-        "principal": {"op": "is", "entity_type": scope.principal_type},
-        "action": {"op": "==", "entity": {"type": "Action", "id": _bare_action(scope.action)}},
-        "resource": {"op": "is", "entity_type": scope.resource_type},
-        "conditions": conditions,
-    }
-    payload = {"staticPolicies": {"policy0": policy}, "templates": {}, "templateLinks": []}
-    return _cedar(cedar_path, ["translate-policy", "--direction", "json-to-cedar"], json.dumps(payload)).strip()
+        _single_policy_json(atom.reference_cedar, cedar_path)  # one policy, and it parses
+        clauses.append(policy_conditions(atom.reference_cedar))
+    head = (
+        f"permit (\n  principal is {scope.principal_type},\n"
+        f"  action == Action::\"{_bare_action(scope.action)}\",\n"
+        f"  resource is {scope.resource_type}\n)"
+    )
+    return head + "".join(f"\n{clause}" for clause in clauses if clause) + ";"
 
 
 def _derived_atom(*, name, kind, scope, cedar, summary, atoms) -> PropertyAtom:
