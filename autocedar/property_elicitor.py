@@ -255,6 +255,11 @@ def compile_plan(plan: VerificationPlanDraft) -> CompiledPlan:
             env_entry[path_key] = path_value
             plan_entries.append(env_entry)
 
+    # 5. The candidate must also never raise a Cedar evaluation error (e.g. a
+    #    datetime overflow) in any environment the plan checks; matching the
+    #    bounds says nothing about errors on requests the bounds deny.
+    plan_entries.extend(_never_errors_entries(plan_entries))
+
     plan_text = _render_verification_plan_py(plan_entries)
     return CompiledPlan(
         verification_plan_py=plan_text,
@@ -320,6 +325,31 @@ def compile_plan_for_consistency(plan: VerificationPlanDraft) -> VerificationPla
         )
 
     return VerificationPlanDraft(properties=normalized)
+
+
+def _never_errors_entries(entries: list[dict]) -> list[dict]:
+    """One ``never-errors`` check per distinct request environment in the plan."""
+    seen: set[tuple[str, str, str]] = set()
+    out: list[dict] = []
+    for entry in entries:
+        key = (entry["principal_type"], entry["action"], entry["resource_type"])
+        if not all(key) or key in seen:
+            continue
+        seen.add(key)
+        principal_type, action, resource_type = key
+        action_name = action.removeprefix("Action::").strip('"')
+        out.append({
+            "name": f"no_runtime_errors__{action_name}__{principal_type}__{resource_type}",
+            "description": (
+                f"The policy must never raise an evaluation error for {action_name} "
+                f"requests (principal {principal_type}, resource {resource_type})."
+            ),
+            "type": "never-errors",
+            "principal_type": principal_type,
+            "action": action,
+            "resource_type": resource_type,
+        })
+    return out
 
 
 def _resolve_primitive_type(atom: PropertyAtom) -> str:

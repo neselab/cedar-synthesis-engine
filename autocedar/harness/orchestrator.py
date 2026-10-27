@@ -143,6 +143,8 @@ def run_verification(workspace: str) -> VerificationResult:
                 principal_type=check["principal_type"],
                 action=check["action"],
                 resource_type=check["resource_type"],
+                check_name=check["name"],
+                description=check["description"],
             )
         elif ctype == "floor":
             # Reverse-implies: floor ≤ candidate

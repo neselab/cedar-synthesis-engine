@@ -5,6 +5,20 @@ versioning while the public provider and CLI interfaces stabilize.
 
 ## Unreleased
 
+- A property atom with no action, principal type, or resource type (such as a
+  catch-all "deny unlisted actions" atom) now fails its admission checks and
+  goes to review and repair. Before, it raised `ValueError` and ended the whole
+  authoring run. The property prompt now says Cedar is default-deny and asks
+  for one atom per action.
+- Compiled plans now include a `never-errors` check for every request
+  environment, so synthesis rejects candidates that can raise a Cedar
+  evaluation error, such as datetime overflow, and feeds back the
+  counterexample. `cedar symcc never-errors` analyzes one policy at a time, so
+  the check parses the candidate with Cedar and checks each rule, naming the
+  rule that can error. Atom admission uses the same check, so a reference
+  with several policies now gets a verdict instead of a tool error. The
+  synthesis and property prompts now show guarded datetime arithmetic instead
+  of unguarded `.offset(...)`, which can overflow.
 - Fixed verification of property atoms over several principal or resource
   types: compiled plans now emit one ceiling or floor check per type pair
   instead of checking only the first, which left the other types unbounded.

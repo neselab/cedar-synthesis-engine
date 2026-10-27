@@ -501,7 +501,27 @@ def test_multi_type_bounds_compile_to_one_check_per_environment() -> None:
 def test_single_type_bounds_keep_their_atom_name() -> None:
     out = compile_plan(VerificationPlanDraft(properties=[_ceiling_atom()]))
     assert '"name": "careTeam_only_read",' in out.verification_plan_py
-    assert "__User__" not in out.verification_plan_py
+    assert "careTeam_only_read__" not in out.verification_plan_py
+
+
+def test_plan_adds_one_never_errors_check_per_environment() -> None:
+    ceiling = _ceiling_atom()
+    ceiling.principal_types = ["Doctor", "Nurse"]
+    liveness = _liveness_atom()
+    liveness.principal_types = ["Doctor"]
+    out = compile_plan(VerificationPlanDraft(properties=[ceiling, liveness, _floor_atom()]))
+    plan = out.verification_plan_py
+
+    assert plan.count('"type": "never-errors"') == 3
+    for name, principal, action in [
+        ("no_runtime_errors__read__Doctor__Record", "Doctor", "read"),
+        ("no_runtime_errors__read__Nurse__Record", "Nurse", "read"),
+        ("no_runtime_errors__edit__User__Record", "User", "edit"),
+    ]:
+        block = plan.split(f'"name": "{name}"', 1)[1].split("},", 1)[0]
+        assert f'"principal_type": "{principal}"' in block
+        assert f'"action": "Action::\\"{action}\\""' in block
+        assert "reference_path" not in block and "floor_path" not in block
 
 
 def test_consistency_plan_keeps_liveness_probes_only() -> None:

@@ -149,6 +149,17 @@ Rules:
 - Prefer orthogonal properties over one property per role when the requirement
   composes cleanly, but keep every returned atom individually meaningful and
   reviewable.
+- Every atom bounds exactly one action declared in the schema and names its
+  `principal_types` and `resource_types`. Cedar denies every request that no
+  `permit` allows, so do not propose catch-all atoms such as "deny unlisted
+  actions" or "no other role may act"; unlisted requests are already denied.
+  When a sentence restricts several actions, propose one atom per action.
+- Datetime arithmetic (`.offset(...)`, `.durationSince(...)`) can overflow at
+  extreme dates, and AutoCedar rejects any reference that can raise an
+  evaluation error. Compare two datetimes directly when the schema provides
+  both. Otherwise guard the operand first, so `&&` short-circuits before the
+  arithmetic: `resource.start > datetime("1970-01-02T00:00:00Z") &&
+  context.now >= resource.start.offset(duration("-24h"))`.
 - Use `ceiling` for safety bounds: candidate policy must not permit more than the reference.
 - Use `floor` for required permissions: candidate policy must permit at least what the reference permits.
 - Same-action floors and ceilings must be pairwise compatible: every request

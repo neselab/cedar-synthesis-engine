@@ -783,11 +783,22 @@ DATETIME / DURATION SYNTAX — Cedar mixes two formats; do not confuse them:
   interchange format. Cedar will reject ISO 8601 durations with the error
   `Failed to parse as a duration value`. If you see that error, the fix is
   to rewrite ONLY the duration literal, not any datetime literals.
-- For datetime arithmetic on entity-attribute datetimes, use `.offset(duration)`
-  and `.toTime()`. Examples:
-    resource.releaseDate.offset(duration("-24h"))
-    // ^ "24 hours before the release date"
-    context.now.datetime.offset(context.now.localTimeOffset).toTime() >= duration("21h")
+- Datetime arithmetic (`.offset(duration)`, `.durationSince(...)`) can
+  overflow at extreme dates, and the verifier rejects any policy that can
+  raise an evaluation error. Compare two datetimes directly when you can.
+  Otherwise guard every operand first, so `&&` short-circuits before the
+  arithmetic runs. Examples (each verified error-free by `cedar symcc
+  never-errors`):
+    context.now.datetime >= resource.releaseDate
+    // ^ no arithmetic needed
+    resource.releaseDate > datetime("1970-01-02T00:00:00Z")
+      && context.now.datetime >= resource.releaseDate.offset(duration("-24h"))
+    // ^ "no earlier than 24 hours before the release date"
+    context.now.localTimeOffset >= duration("-24h")
+      && context.now.localTimeOffset <= duration("24h")
+      && context.now.datetime > datetime("1970-01-02T00:00:00Z")
+      && context.now.datetime < datetime("9999-12-30T00:00:00Z")
+      && context.now.datetime.offset(context.now.localTimeOffset).toTime() >= duration("21h")
     // ^ "is the local time-of-day at or after 21:00?"
 """
 
@@ -1553,6 +1564,22 @@ def _format_feedback(
                             "exist) and remove the duplicate `&&` clauses from "
                             "every permit rule."
                         )
+            if r.counterexample and include_witness:
+                parts.append(f"  Counterexample from solver:\n  ```\n  {r.counterexample}\n  ```")
+        elif ctype == "never-errors":
+            if include_direction:
+                parts.append(
+                    "  **Your policy can raise an evaluation error on the request below** "
+                    "(for example, datetime or arithmetic overflow).",
+                )
+                parts.append(
+                    "  Keep the same allow/deny decisions, but rewrite the expression so it "
+                    "cannot error: compare values directly, or guard the operand so `&&` "
+                    "short-circuits before the risky operation.",
+                )
+            else:
+                parts.append("  **This runtime-safety check failed.**")
+                parts.append("  Revise the policy so this check passes without breaking other checks.")
             if r.counterexample and include_witness:
                 parts.append(f"  Counterexample from solver:\n  ```\n  {r.counterexample}\n  ```")
         elif "liveness" in ctype:
