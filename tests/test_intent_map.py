@@ -387,3 +387,22 @@ def test_slices_with_the_same_conditions_are_merged() -> None:
     assert m.structure_errors(doc, set()) == []
     # Slices with different conditions stay apart.
     assert m.merge_duplicate_slices() == []
+
+
+@requires_cedar
+def test_condition_atom_that_holds_for_every_request_fails_its_checks(tmp_path) -> None:
+    from autocedar.grounding import symbolic_verify_atom
+
+    schema = tmp_path / "schema.cedarschema"
+    schema.write_text(SCHEMA)
+
+    def checked(expr: str) -> list[str]:
+        atom = condition_atom("src.x", "release", expr)
+        symbolic_verify_atom(atom, str(schema), workdir=tmp_path)
+        return [line for line in atom.symbolic_verification_log if line.startswith("match-broadness")]
+
+    # As in the Haiku run: a field the schema does not declare, behind `has`,
+    # makes the requirement vanish.
+    vanished = checked("!(resource has frozen && resource.frozen) || resource.defectCount == 0")
+    assert vanished[0].startswith("match-broadness: FAILED")
+    assert checked("resource.defectCount == 0")[0].startswith("match-broadness: ok")

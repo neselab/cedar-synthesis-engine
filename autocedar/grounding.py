@@ -582,6 +582,21 @@ def _check_match_shape(
     )
     if always_matches.tool_error:
         checks.append(SymbolicCheck(name="match-broadness", passed=False, detail=always_matches.raw_output))
+    elif always_matches.passed and atom.constraint_type == "condition":
+        # A requirement that holds for every request of its scope restricts
+        # nothing: usually a `has` test on a field the schema does not declare,
+        # which Cedar treats as absent.
+        checks.append(
+            SymbolicCheck(
+                name="match-broadness",
+                passed=False,
+                detail=(
+                    "the condition holds for every request of its scope, so it encodes no "
+                    "requirement; use only fields the schema declares (a `has` test on an "
+                    "undeclared field is always false)"
+                ),
+            ),
+        )
     elif always_matches.passed:
         checks.append(
             SymbolicCheck(
