@@ -44,6 +44,10 @@ CODEX_PROVIDERS = {"codex", "openai", "openai-codex"}
 CODEX_REASONING_EFFORTS = ("low", "medium", "high")
 AUTOCEDAR_EFFORTS = ("low", "medium", "high", "max")
 _REFRESH_SKEW_SECONDS = 120
+# Overload and gateway errors come from the service, not the request, so the
+# same request is sent again after these pauses, within the call's deadline.
+_TRANSIENT_STATUSES = frozenset({429, 500, 502, 503, 504})
+_TRANSIENT_RETRY_DELAYS = (5.0, 15.0)
 
 _JSONRequester = Callable[[str, str, dict[str, str], Any | None, float], tuple[int, Any]]
 
@@ -524,6 +528,11 @@ class CodexAuthClient:
                 requester=self._requester,
             )
             credentials = self._credentials
+            status, response = send_request()
+        for delay in _TRANSIENT_RETRY_DELAYS:
+            if status not in _TRANSIENT_STATUSES:
+                break
+            time.sleep(min(delay, max(deadline - time.monotonic(), 0.0)))
             status, response = send_request()
         if (
             status != 200

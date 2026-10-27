@@ -327,6 +327,55 @@ def test_loads_json_object_accepts_trailing_response_fragments() -> None:
     }
 
 
+def test_codex_parse_retries_gateway_errors_then_names_the_last(monkeypatch) -> None:
+    credentials = CodexCredentials(
+        access_token=_codex_jwt("acct_parse"),
+        refresh_token="refresh",
+        source="test",
+        auth_path=None,
+        base_url=DEFAULT_CODEX_BASE_URL,
+    )
+    statuses = [504, 503, 200]
+    pauses: list[float] = []
+    monkeypatch.setattr(codex_auth.time, "sleep", pauses.append)
+
+    def requester(method: str, url: str, headers: dict[str, str], body: Any, timeout: float):
+        _ = method, url, headers, body, timeout
+        status = statuses.pop(0)
+        if status != 200:
+            return status, {"body_preview": "upstream timed out"}
+        return 200, {
+            "usage": {"input_tokens": 12, "output_tokens": 3},
+            "output": [
+                {
+                    "type": "message",
+                    "content": [{"type": "output_text", "text": '{"answer":"OK"}'}],
+                },
+            ],
+        }
+
+    client = CodexAuthClient(credentials=credentials, requester=requester)
+    response = client.messages.parse(
+        model="gpt-test",
+        system=[{"type": "text", "text": "system prompt"}],
+        messages=[{"role": "user", "content": "user turn"}],
+        output_format=_Answer,
+    )
+
+    assert response.parsed_output == _Answer(answer="OK")
+    assert pauses == [5.0, 15.0]
+
+    statuses[:] = [504, 504, 504]
+    with pytest.raises(CodexAuthError, match="504"):
+        client.messages.parse(
+            model="gpt-test",
+            system=[{"type": "text", "text": "system prompt"}],
+            messages=[{"role": "user", "content": "user turn"}],
+            output_format=_Answer,
+        )
+    assert statuses == []
+
+
 def test_codex_parse_retries_once_after_empty_text_output() -> None:
     credentials = CodexCredentials(
         access_token=_codex_jwt("acct_parse"),
