@@ -45,11 +45,16 @@ Encoding rules:
   declared enum type.
 - Compare datetimes with `<`, `<=`, `>`, `>=`, `==`; there are no methods such
   as `greaterThan`. `datetime("...")` takes ISO 8601; `duration("...")` takes
-  Go-style strings such as "24h". Arithmetic such as `.offset(...)` or
-  `.durationSince(...)` can overflow, and AutoCedar rejects any condition that
-  can raise an error: compare datetimes directly, or guard the operand first,
-  for example `resource.start > datetime("1970-01-02T00:00:00Z") &&
-  context.now >= resource.start.offset(duration("-24h"))`.
+  Go-style strings such as "24h".
+- Arithmetic can overflow: `+`, `-`, and `*` on Long values, and `.offset(...)`
+  or `.durationSince(...)` on datetimes. AutoCedar rejects a condition that can
+  raise an error unless earlier requirements of its slice rule the error out:
+  floors put such a condition after the others, and Cedar's `&&` stops at the
+  first false condition. So when earlier requirements bound the operands,
+  write the arithmetic as the document states it. Otherwise compare datetimes
+  directly, or guard the operand first, for example `resource.start >
+  datetime("1970-01-02T00:00:00Z") && context.now >=
+  resource.start.offset(duration("-24h"))`.
 - IP ranges use `context.ip.isInRange(ip("10.0.0.0/8"))`. Wildcard patterns
   use `like "prefix*"`.
 - Guard optional attributes with `has` before reading them. Cedar does not

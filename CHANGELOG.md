@@ -59,6 +59,12 @@ versioning while the public provider and CLI interfaces stabilize.
   fails the schema (up to 5 turns), retry up to twice if the call still runs
   out of turns or the CLI cannot parse the model's tool call
   (`malformed_tool_use_exhausted`), and report the CLI's error kind.
+- A condition whose arithmetic can overflow on its own (`+`, `-`, `*`, or
+  datetime `.offset(...)`) is accepted when earlier requirements of its slice
+  bound the operands; floors place it after them, so Cedar's `&&` checks the
+  bounds first. The condition prompt now says so. Before, it told the model
+  that AutoCedar rejects any condition that can raise an error, so models
+  avoided `*` and invented schema fields for a product such as usage × rate.
 - The Codex provider now sends a request again, after pauses of 5 and 15
   seconds within the call's deadline, when the service answers with an
   overload or gateway error (429, 500, 502, 503, 504). Before, one such answer
