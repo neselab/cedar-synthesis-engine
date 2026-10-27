@@ -41,6 +41,10 @@ Rules:
   Requirements listed under one action never apply to another action, even
   when another section repeats the same sentence word for word; repeated
   sentences in two sections are two conditions, one per section.
+- A sentence is one condition. An "at least one of" or "or" inside a sentence
+  stays inside that condition; it never makes separate slices. Make separate
+  slices only when separate sentences or sections describe separate ways to be
+  allowed.
 - Every slice needs at least one condition. Every condition needs at least one
   slice or restricted scope.
 - Use node ids exactly as given; list each node at most once.

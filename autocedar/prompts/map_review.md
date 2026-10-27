@@ -22,7 +22,9 @@ Approve the map only if all of these hold:
    nowhere else. Reject a condition attached to an action whose section does
    not contain it.
 4. The slices match the ways the document allows each scope, and each slice
-   holds exactly the conditions that must hold together.
+   holds exactly the conditions that must hold together. A sentence is one
+   condition: an "at least one of" or "or" inside it belongs to that condition,
+   so never ask to split a sentence across slices.
 5. A scope is marked as listing every way to allow it only if the document
    says so. Every other scope is left unmarked, and AutoCedar asks the person
    whether its list is complete; an unmarked scope is not a problem.

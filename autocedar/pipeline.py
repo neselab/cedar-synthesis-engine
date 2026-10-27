@@ -313,6 +313,7 @@ def _build_reviewed_intent_map(
         for scope in built.scopes:
             if scope.exhaustive is False:
                 scope.exhaustive = None
+        built.merge_duplicate_slices()
         return built
 
     rounds: list[dict[str, Any]] = []

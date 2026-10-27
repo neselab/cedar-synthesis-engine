@@ -369,3 +369,21 @@ def test_named_objections_are_applied_to_the_map() -> None:
     assert "unknown slice" in m.apply_objection({"kind": "move_condition", "node_id": hold, "slice_ids": ["sl_x"]}, known)
     assert "unknown source node" in m.apply_objection({"kind": "drop_sentence", "node_id": "src.nope"}, known)
     assert "no slice or scope" in m.apply_objection({"kind": "move_condition", "node_id": hold}, known)
+
+
+def test_slices_with_the_same_conditions_are_merged() -> None:
+    doc = compile_source_document(SPEC)
+    ids = node_ids(doc)
+    m = work_order_map(doc)
+    # The mapper split release into two "ways" that carry the same conditions.
+    m.slices.append(MapSlice("sl_release_2", "s_release", "same conditions again"))
+    for s in m.sentences:
+        if "sl_release" in s.slice_ids:
+            s.slice_ids = ["sl_release", "sl_release_2"]
+
+    assert m.merge_duplicate_slices() == ["sl_release_2"]
+    assert [sl.id for sl in m.scope_slices("s_release")] == ["sl_release"]
+    assert m.condition(ids["release:inspector"]).slice_ids == ["sl_release"]
+    assert m.structure_errors(doc, set()) == []
+    # Slices with different conditions stay apart.
+    assert m.merge_duplicate_slices() == []

@@ -276,6 +276,29 @@ class IntentMap:
 
     # -- review --------------------------------------------------------------
 
+    def merge_duplicate_slices(self) -> list[str]:
+        """Merge slices of one scope that have the same conditions.
+
+        Two ways to be allowed with the same conditions are one way: their
+        floors are the same policy. Returns the ids of the slices merged away.
+        """
+        merged: list[str] = []
+        for scope in self.scopes:
+            kept: dict[frozenset[str], str] = {}
+            for sl in self.scope_slices(scope.id):
+                own = frozenset(s.node_id for s in self.conditions() if sl.id in s.slice_ids)
+                if own in kept:
+                    merged.append(sl.id)
+                    for sentence in self.sentences:
+                        if sl.id in sentence.slice_ids:
+                            sentence.slice_ids = list(dict.fromkeys(
+                                kept[own] if i == sl.id else i for i in sentence.slice_ids
+                            ))
+                else:
+                    kept[own] = sl.id
+        self.slices = [sl for sl in self.slices if sl.id not in set(merged)]
+        return merged
+
     # -- objections a reviewer names -------------------------------------------
 
     def apply_objection(self, objection: dict[str, Any], node_ids: set[str]) -> str:
