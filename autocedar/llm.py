@@ -834,7 +834,9 @@ class LLMClient:
             f"```cedarschema\n{schema_text}\n```"
         )
         response = self._call_parse(
-            system_prompt=_load_prompt(_property_prompt_name(spec_text)),
+            # Its own prompt: the atomization prompts ask for atoms, and a
+            # model that follows them returns the wrong shape.
+            system_prompt=_load_prompt("repair_planner.md"),
             spec_text=spec_text,
             user_turn=user_turn,
             output_format=PropertyRejectionPlanResponse,

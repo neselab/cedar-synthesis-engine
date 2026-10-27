@@ -1034,3 +1034,29 @@ def test_fix_schema_includes_error_text_in_user_turn() -> None:
     )
     user_msg = fake.messages.last_kwargs["messages"][0]
     assert "EXPECTED IDENTIFIER" in user_msg["content"]
+
+
+def test_repair_planner_uses_its_own_prompt_not_an_atomization_prompt() -> None:
+    from autocedar.atoms import PropertyAtom
+    from autocedar.llm import PropertyRejectionPlanResponse
+
+    plan = PropertyRejectionPlanResponse(action="repair_current_property", reason="fix the method")
+    fake = _FakeAnthropic(_make_response(plan))
+    client = LLMClient(client=fake)
+    atom = PropertyAtom(
+        name="overlap", rationale="", plain_english_summary="", source_excerpt="",
+        constraint_type="condition", action="approve", principal_types=["User"],
+        resource_types=["File"], reference_cedar="permit (principal, action, resource);",
+    )
+    packet = '<autocedar_condition_packet id="condition.0001.step0001">\nRequirement to encode:\n</autocedar_condition_packet>'
+
+    result = client.plan_property_rejection(
+        current_atom=atom, user_reason="not a Cedar method", spec_text=packet,
+        schema_text="", prior_atoms=[], symbolic_log=["type-correct: FAILED"],
+    )
+
+    assert result.action == "repair_current_property"
+    blocks = fake.messages.last_kwargs["system"]
+    system = " ".join(b["text"] for b in blocks) if isinstance(blocks, list) else str(blocks)
+    assert "You plan AutoCedar's next step" in system
+    assert "Return one condition atom" not in system
