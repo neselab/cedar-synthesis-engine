@@ -250,8 +250,10 @@ def _build_parser() -> argparse.ArgumentParser:
         type=int,
         default=None,
         help=(
-            "Optional maximum Stage 2 schema-repair loops before stopping "
-            "(default: no cap)."
+            "Optional maximum Stage 2 schema-repair loops (default: no cap). "
+            "After that the schema is fixed: atoms that need a missing field "
+            "are rewritten within the schema, and a requirement that still "
+            "cannot be expressed stops the run by name."
         ),
     )
     author_p.set_defaults(func=_cmd_author)
@@ -300,8 +302,10 @@ def _build_parser() -> argparse.ArgumentParser:
         type=int,
         default=None,
         help=(
-            "Optional maximum Stage 2 schema-repair loops before stopping "
-            "(default: no cap)."
+            "Optional maximum Stage 2 schema-repair loops (default: no cap). "
+            "After that the schema is fixed: atoms that need a missing field "
+            "are rewritten within the schema, and a requirement that still "
+            "cannot be expressed stops the run by name."
         ),
     )
     resume_p.set_defaults(func=_cmd_resume)

@@ -375,6 +375,10 @@ def _build_reviewed_intent_map(
     return None, None, "Stopped before atoms: the intent map was not approved."
 
 
+def _schema_gap_budget_spent(limit: int | None, used: int) -> bool:
+    return limit is not None and used >= limit
+
+
 def _apply_map_objections(
     intent_map: IntentMap,
     decision: AtomDecision,
@@ -1179,7 +1183,15 @@ def author(
             proposed=len(prop_atoms),
             queued=len(pending_property_atoms),
         )
-        support_gaps = missing_schema_support(atom.required_schema_support, schema_text)
+        # With the map and a spent gap budget the schema is fixed: Cedar
+        # validation of the atom is the real check, and a declared hook the
+        # schema lacks fails there and is repaired within the schema.
+        support_gaps = (
+            []
+            if intent_map is not None
+            and _schema_gap_budget_spent(schema_gap_repair_limit, schema_gap_repair_count)
+            else missing_schema_support(atom.required_schema_support, schema_text)
+        )
         if support_gaps:
             gap_reason = (
                 "The proposed property atom depends on schema support that is "
@@ -1313,6 +1325,23 @@ def author(
                     schema_text,
                     list(current_atom.symbolic_verification_log),
                 )
+                if (
+                    repair_plan.action == "repair_schema"
+                    and intent_map is not None
+                    and _schema_gap_budget_spent(schema_gap_repair_limit, schema_gap_repair_count)
+                ):
+                    # The schema cannot change any more, so the atom has to be
+                    # rewritten within it. A requirement it cannot express stays
+                    # unsolved and stops the run by name.
+                    repair_plan = replace(
+                        repair_plan,
+                        action="repair_current_property",
+                        repair_instruction=(
+                            "The schema is fixed: it cannot gain entities, attributes, or "
+                            "context fields. Rewrite the atom using only what the schema "
+                            "already declares. " + (repair_plan.repair_instruction or reason)
+                        ),
+                    )
                 repair_plans.append(
                     {
                         "atom_name": current_atom.name,

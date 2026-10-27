@@ -353,3 +353,49 @@ def test_objection_the_map_cannot_apply_goes_to_the_mapper(tmp_path: Path) -> No
     assert result.notes == []
     assert len(calls) == 2
     assert calls[1]["feedback"] == "- Release needs a second slice for supervisors."
+
+
+def test_fixed_schema_turns_a_schema_gap_into_a_rewrite_of_the_atom(tmp_path: Path) -> None:
+    from dataclasses import replace
+
+    from autocedar.pipeline import PropertyRepairPlan
+
+    spec, schema, doc = _setup(tmp_path)
+    ids = node_ids(doc)
+    target = ids["release:defect count"]
+
+    class GapProposer(Proposer):
+        def __call__(self, packet, schema_path, prior_atoms, decisions):
+            atoms = super().__call__(packet, schema_path, prior_atoms, decisions)
+            if _focus(packet) == target:
+                # A field the fixed schema does not have.
+                atoms = [replace(a, reference_cedar=a.reference_cedar.replace("defectCount", "openDefects"))
+                         for a in atoms]
+            return atoms
+
+    instructions: list[str] = []
+
+    def planner(text, schema_path, atom, decision, prior, schema_text, log):
+        return PropertyRepairPlan(action="repair_schema", reason="needs WorkOrder.openDefects",
+                                  repair_instruction="Add WorkOrder.openDefects.")
+
+    def repairer(text, schema_path, rejected, reason, prior):
+        instructions.append(reason)
+        return replace(rejected, name=rejected.name + "_fixed",
+                       reference_cedar=rejected.reference_cedar.replace("openDefects", "defectCount"))
+
+    result = author(
+        spec, tmp_path / "out", session_id="fixed-schema",
+        review_atom=approve_checked,
+        map_intent=lambda **kw: work_order_map(doc),
+        propose_property_atom=GapProposer(doc),
+        plan_property_repair=planner,
+        repair_property_atom=repairer,
+        synthesize=_synthesize_exact,
+        schema_path_override=str(schema),
+        max_schema_gap_repairs=0,
+    )
+
+    assert result.notes == []
+    assert len(instructions) == 1 and instructions[0].startswith("The schema is fixed")
+    assert run_verification(str(result.candidate_path.parent)).loss == 0
