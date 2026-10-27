@@ -31,11 +31,14 @@ _ERROR_PREVIEW_LIMIT = 800
 # turns and each fix adds one. Tools are disabled, so the extra turns can only
 # be used for fixes; with one turn, a single slip ends the call with
 # error_max_turns. The CLI also caps its own fix requests
-# (error_max_structured_output_retries). A call that ends either way is a
-# fresh sample away from success, so it is tried again, up to twice.
+# (error_max_structured_output_retries), and it gives up when the model's tool
+# call cannot be parsed twice in a row (terminal reason
+# malformed_tool_use_exhausted). A call that ends any of these ways is a fresh
+# sample away from success, so it is tried again, up to twice.
 _STRUCTURED_MAX_TURNS = 5
 _STRUCTURED_RETRIES = 2
 _RETRYABLE_SUBTYPES = frozenset({"error_max_turns", "error_max_structured_output_retries"})
+_RETRYABLE_TERMINAL_REASONS = frozenset({"malformed_tool_use_exhausted"})
 _StructuredT = TypeVar("_StructuredT", bound=BaseModel)
 _Runner = Callable[..., subprocess.CompletedProcess[str]]
 
@@ -392,7 +395,10 @@ def _structured_call_gave_up(completed: subprocess.CompletedProcess[str]) -> boo
         payload = json.loads(completed.stdout or "")
     except (TypeError, json.JSONDecodeError):
         return False
-    return isinstance(payload, dict) and payload.get("subtype") in _RETRYABLE_SUBTYPES
+    return isinstance(payload, dict) and (
+        payload.get("subtype") in _RETRYABLE_SUBTYPES
+        or payload.get("terminal_reason") in _RETRYABLE_TERMINAL_REASONS
+    )
 
 
 def _bounded_process_error(completed: subprocess.CompletedProcess[str]) -> str:

@@ -148,6 +148,30 @@ def test_claude_cli_retries_when_its_own_schema_fixes_run_out() -> None:
     assert result.parsed == Answer(answer="yes")
 
 
+def test_claude_cli_retries_when_the_tool_call_cannot_be_parsed() -> None:
+    unparsed = RecordingRunner(
+        {"type": "result", "subtype": "success", "is_error": True,
+         "result": "The model's tool call could not be parsed (retry also failed).",
+         "terminal_reason": "malformed_tool_use_exhausted"},
+        returncode=1,
+    )
+    answered = RecordingRunner({"type": "result", "subtype": "success", "structured_output": {"answer": "yes"}})
+    runners = iter([unparsed, answered])
+    backend = ClaudeCLIBackend(
+        executable="claude",
+        runner=lambda command, **kwargs: next(runners)(command, **kwargs),
+        environ={},
+    )
+
+    result = backend.generate_structured(
+        model="sonnet",
+        messages=(ChatMessage(role="user", content="question"),),
+        output_type=Answer,
+    )
+
+    assert result.parsed == Answer(answer="yes")
+
+
 def test_claude_cli_out_of_turns_retry_can_succeed() -> None:
     first = RecordingRunner(OUT_OF_TURNS, returncode=1)
     second = RecordingRunner({"type": "result", "subtype": "success", "structured_output": {"answer": "yes"}})

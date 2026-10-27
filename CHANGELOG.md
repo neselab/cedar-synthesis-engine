@@ -56,8 +56,9 @@ versioning while the public provider and CLI interfaces stabilize.
   skipped.
 - Fixed intermittent `error_max_turns` failures with the Claude CLI provider:
   structured calls now allow the CLI to ask the model to fix an answer that
-  fails the schema (up to 5 turns), retry once if the call still runs out of
-  turns, and report the CLI's error kind.
+  fails the schema (up to 5 turns), retry up to twice if the call still runs
+  out of turns or the CLI cannot parse the model's tool call
+  (`malformed_tool_use_exhausted`), and report the CLI's error kind.
 - Fixed a crash, and a false tool error from the never-errors check, on a
   condition with a long chain of `||` or `&&` (about 60 terms or more).
   Cedar's JSON reader stops at 128 levels of nesting, so neither step goes
