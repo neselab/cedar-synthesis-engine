@@ -276,6 +276,51 @@ class IntentMap:
 
     # -- review --------------------------------------------------------------
 
+    # -- objections a reviewer names -------------------------------------------
+
+    def apply_objection(self, objection: dict[str, Any], node_ids: set[str]) -> str:
+        """Apply one named objection to the map.
+
+        Returns "" when applied, or why it was not: an objection of kind
+        "other", or one that names an unknown node, slice, or scope, goes back
+        to the mapper instead.
+        """
+        kind = objection.get("kind", "other")
+        node_id = objection.get("node_id", "")
+        slice_ids = list(objection.get("slice_ids") or [])
+        scope_ids = list(objection.get("restricts_scope_ids") or [])
+        sentence = next((s for s in self.sentences if s.node_id == node_id), None)
+        if kind == "unmark_scope":
+            scope = self.scope_by_id.get(objection.get("scope_id", ""))
+            if scope is None:
+                return f"unknown scope {objection.get('scope_id')!r}"
+            scope.exhaustive = None
+            return ""
+        if kind not in {"move_condition", "add_condition", "make_interpretation", "drop_sentence"}:
+            return "needs the mapper"
+        if node_id not in node_ids:
+            return f"unknown source node {node_id!r}"
+        if kind == "drop_sentence":
+            if sentence is None:
+                return f"source node {node_id!r} is not in the map"
+            self.sentences.remove(sentence)
+            return ""
+        if kind == "make_interpretation":
+            slice_ids, scope_ids, new_kind = [], [], INTERPRETATION
+        else:
+            unknown = [i for i in slice_ids if i not in self.slice_by_id]
+            unknown += [i for i in scope_ids if i not in self.scope_by_id]
+            if unknown:
+                return f"unknown slice or scope {unknown}"
+            if not slice_ids and not scope_ids:
+                return "no slice or scope given"
+            new_kind = CONDITION
+        if sentence is None:
+            self.sentences.append(MapSentence(node_id, new_kind, slice_ids, scope_ids))
+        else:
+            sentence.kind, sentence.slice_ids, sentence.restricts_scope_ids = new_kind, slice_ids, scope_ids
+        return ""
+
     def render(self, doc: SourceDocument) -> str:
         """Plain-text map for reviewers: every node with its source sentence."""
         text = {node.id: node.text for node in doc.nodes}

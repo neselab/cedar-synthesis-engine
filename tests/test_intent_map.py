@@ -344,3 +344,28 @@ def test_render_lists_a_restriction_once_not_inside_each_slice() -> None:
     assert "and every restriction below" in text
     # The floor still joins the restriction into every slice of its scope.
     assert ids["signoff:on hold"] in m.slice_conditions("sl_signoff_2")
+
+
+def test_named_objections_are_applied_to_the_map() -> None:
+    doc = compile_source_document(SPEC)
+    ids = node_ids(doc)
+    known = {node.id for node in doc.nodes}
+    m = work_order_map(doc)
+    hold = ids["signoff:on hold"]
+
+    assert m.apply_objection({"kind": "move_condition", "node_id": hold, "restricts_scope_ids": ["s_signoff"]}, known) == ""
+    assert m.condition(hold).slice_ids == [] and m.restrictions("s_signoff") == [hold]
+    assert m.apply_objection({"kind": "make_interpretation", "node_id": hold}, known) == ""
+    assert hold in m.interpretation_ids() and m.condition(hold) is None
+    assert m.apply_objection({"kind": "add_condition", "node_id": hold, "slice_ids": ["sl_signoff"]}, known) == ""
+    assert m.condition(hold).slice_ids == ["sl_signoff"]
+    assert m.apply_objection({"kind": "unmark_scope", "scope_id": "s_release"}, known) == ""
+    assert m.scope_by_id["s_release"].exhaustive is None
+    assert m.apply_objection({"kind": "drop_sentence", "node_id": ids["rule"]}, known) == ""
+    assert ids["rule"] not in m.interpretation_ids()
+
+    # Anything the map cannot apply on its own goes back to the mapper.
+    assert m.apply_objection({"kind": "other", "detail": "split the slice"}, known) == "needs the mapper"
+    assert "unknown slice" in m.apply_objection({"kind": "move_condition", "node_id": hold, "slice_ids": ["sl_x"]}, known)
+    assert "unknown source node" in m.apply_objection({"kind": "drop_sentence", "node_id": "src.nope"}, known)
+    assert "no slice or scope" in m.apply_objection({"kind": "move_condition", "node_id": hold}, known)

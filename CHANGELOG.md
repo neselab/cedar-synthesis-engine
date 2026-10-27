@@ -33,6 +33,19 @@ versioning while the public provider and CLI interfaces stabilize.
   permissions as examples. Under `--model-review` the model answers, recorded
   as the model's assumption. Before, the map guessed, and the same document
   could get anywhere from 2 to 14 of 14 scopes marked complete.
+- The map review names its objections: move a condition, add a missing one,
+  reclassify or drop a sentence, or unmark a scope, each with exact ids.
+  AutoCedar applies these itself and reviews the corrected map again; only
+  other objections go back to the mapper, quoted one by one. Before, any
+  rejection sent the whole map back with a free-text reason, so one detail the
+  mapper could not fix ended the run.
+- The map text shown to reviewers no longer lists a scope restriction inside
+  every slice as well as under the restrictions, which made correct maps look
+  inconsistent and get rejected.
+- A scope the map does not mark complete always goes to the yes/no question;
+  the map can no longer mark a list "examples only" on its own.
+- Schema construction works with the Claude CLI provider; the CLI rejected the
+  `discriminator` keyword in the schema-atom format.
 - Fixed the schema-support check misreading `entity E = { ... }` (valid Cedar)
   as an entity without attributes, which reported false schema gaps and
   stopped runs with a fixed schema. Declared hooks that name nothing are

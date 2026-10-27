@@ -29,5 +29,22 @@ Approve the map only if all of these hold:
 6. Rules for interpretation are the sentences that tell how to read the
    others.
 
-When you reject, name the source node ids and say what is wrong and what the
-document says. When you approve, say in one sentence why.
+Approve the map when you have no objection, and say in one sentence why. When
+you reject, list every problem as one objection, with ids exactly as in the
+map data:
+
+- `move_condition`: a condition sits under the wrong slices or scopes. Give its
+  `node_id` and the right `slice_ids` and/or `restricts_scope_ids`.
+- `add_condition`: a sentence that constrains access is missing from the map.
+  Give its `node_id` and its `slice_ids` and/or `restricts_scope_ids`.
+- `make_interpretation`: the sentence `node_id` tells how to read the others;
+  it is not a condition.
+- `drop_sentence`: the sentence `node_id` carries no requirement.
+- `unmark_scope`: the scope `scope_id` is marked complete, but the document
+  does not say it lists every way to allow it.
+- `other`: anything else, such as a missing, extra, or wrong scope or slice;
+  say what to change.
+
+In each objection's `detail`, say what is wrong and quote what the document
+says. The text and the data show the same map; object to what the map says,
+not to how it is laid out.

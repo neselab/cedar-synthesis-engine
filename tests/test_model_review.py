@@ -196,3 +196,23 @@ def test_model_reviewer_answers_whether_the_permission_list_is_complete() -> Non
     assert decision.edit_delta["review_channel"] == "model"
     assert llm.seen["question"] is question
     assert llm.seen["outline"] == "<spec outline>"
+
+
+def test_model_map_review_passes_its_named_objections_on() -> None:
+    from autocedar.intent_map import IntentMap
+    from autocedar.llm import MapReviewResponse
+
+    class MapLLM:
+        def review_intent_map(self, **kwargs):
+            return MapReviewResponse.model_validate({
+                "decision": "reject",
+                "reason": "One condition is under the wrong action.",
+                "objections": [{"kind": "move_condition", "node_id": "p4", "slice_ids": ["s2"],
+                                "detail": "p4 is in the sign-off section."}],
+            })
+
+    decision = ModelReviewer(MapLLM(), "spec")(IntentMap(review_text="INTENT MAP"))
+
+    assert decision.action == "reject"
+    assert decision.edit_delta["map_objections"][0]["node_id"] == "p4"
+    assert decision.edit_delta["map_objections"][0]["slice_ids"] == ["s2"]

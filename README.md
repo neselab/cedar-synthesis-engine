@@ -448,14 +448,18 @@ AND-OR proof blueprint:
   go with every later step; every other sentence carries no requirement.
 
 You review the map first, with the same keys: `A` approves it, `R reason` sends
-it back to the model with your reason, and `S` shows it as JSON. The map cannot
+it back to the model with your reason, and `S` shows it as JSON. With
+`--model-review`, the model reviewer names each objection (move a condition,
+add a missing one, reclassify or drop a sentence, unmark a scope); AutoCedar
+applies those itself and reviews the map again, and sends any other objection
+back to the mapper. The map cannot
 be edited field by field. AutoCedar also checks its structure: every scope's
 action and types exist in the schema, every slice has a condition, and every
 condition has a slice.
 
 Each scope is marked complete when the document says it lists every way to
-allow it ("only", "if and only if", or "deny anything else"), as examples when
-the document says so, and unmarked when the document says neither. If any scope
+allow it ("only", "if and only if", or "deny anything else"), and unmarked
+otherwise. If any scope
 is unmarked, AutoCedar asks once after you approve the map: is the list of
 permissions complete? `A` answers yes (anything not allowed is denied) and `R`
 answers no (the listed permissions are examples). With `--model-review`, the

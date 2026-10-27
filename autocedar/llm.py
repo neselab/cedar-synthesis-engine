@@ -321,6 +321,30 @@ class AtomReviewResponse(BaseModel):
     reason: str
 
 
+class _LLMMapObjection(BaseModel):
+    kind: Literal[
+        "move_condition",
+        "add_condition",
+        "make_interpretation",
+        "drop_sentence",
+        "unmark_scope",
+        "other",
+    ]
+    detail: str
+    node_id: str = ""
+    scope_id: str = ""
+    slice_ids: list[str] = Field(default_factory=list)
+    restricts_scope_ids: list[str] = Field(default_factory=list)
+
+
+class MapReviewResponse(BaseModel):
+    """A model reviewer's decision on the intent map, with each problem named."""
+
+    decision: Literal["approve", "reject"]
+    reason: str
+    objections: list[_LLMMapObjection] = Field(default_factory=list)
+
+
 class PropertyRejectionPlanResponse(BaseModel):
     """Structured repair action for a rejected property atom."""
 
@@ -892,7 +916,7 @@ class LLMClient:
             sentences=[MapSentence(**item.model_dump()) for item in parsed.sentences],
         )
 
-    def review_intent_map(self, *, intent_map: IntentMap, outline: str) -> AtomReviewResponse:
+    def review_intent_map(self, *, intent_map: IntentMap, outline: str) -> MapReviewResponse:
         """Judge whether the map assigns every sentence where the document puts it."""
         response = self._call_parse(
             system_prompt=_load_prompt("map_review.md"),
@@ -903,7 +927,7 @@ class LLMClient:
                 "The same map as data:\n"
                 f"```json\n{json.dumps(intent_map.to_dict(), separators=(',', ':'))}\n```"
             ),
-            output_format=AtomReviewResponse,
+            output_format=MapReviewResponse,
             effort_override=_stage2_effort(self._provider, self._effort),
         )
         return response.parsed_output

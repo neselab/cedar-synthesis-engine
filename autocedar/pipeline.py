@@ -287,8 +287,11 @@ def _build_reviewed_intent_map(
     """Map the document, check the map's structure, and have it reviewed.
 
     Like a LEAP blueprint, the map is the plan every later step follows, so it
-    is reviewed before any atom is written. A rejection or a failed structure
-    check goes back to the mapper with the reason, for up to MAP_ROUNDS rounds.
+    is reviewed before any atom is written. A reviewer names its objections;
+    AutoCedar applies the ones it can (moving a condition, reclassifying or
+    dropping a sentence, unmarking a scope) and reviews the corrected map
+    again. Other objections, a rejection without objections, or a failed
+    structure check go back to the mapper, for up to MAP_ROUNDS mapper rounds.
     """
     record_path = session.base / "stage0" / "intent_map.json"
     triples = schema_triples(schema_text, cedar_path=CEDAR_PATH)
@@ -313,14 +316,18 @@ def _build_reviewed_intent_map(
         return built
 
     rounds: list[dict[str, Any]] = []
+    node_ids = {node.id for node in source_doc.nodes}
     _notify_review_stage(review_atom, "Intent map review", 1)
     intent_map = build_map(feedback="", previous=None)
-    for round_number in range(1, MAP_ROUNDS + 1):
+    mapper_calls = 1
+    # Objections AutoCedar applies itself cost a review but no mapper call, so
+    # reviews are capped separately from mapper rounds.
+    for round_number in range(1, 2 * MAP_ROUNDS + 1):
         errors = intent_map.structure_errors(source_doc, triples)
         if errors:
             rounds.append({"round": round_number, "map": intent_map.to_dict(), "structure_errors": errors})
             write_json(record_path, {"approved": False, "rounds": rounds})
-            if round_number == MAP_ROUNDS:
+            if mapper_calls >= MAP_ROUNDS:
                 return None, None, (
                     "Stopped before atoms: the intent map still fails its structure "
                     f"checks after {MAP_ROUNDS} rounds: " + "; ".join(errors[:6])
@@ -329,6 +336,7 @@ def _build_reviewed_intent_map(
                 feedback="\n".join(f"- {e}" for e in errors),
                 previous=intent_map,
             )
+            mapper_calls += 1
             continue
         intent_map.review_text = intent_map.render(source_doc)
         intent_map.outline = outline
@@ -348,17 +356,40 @@ def _build_reviewed_intent_map(
             write_json(record_path, record)
             _notify_review_stage_complete(review_atom, "Intent map review", [decision])
             return intent_map, decision, ""
+        applied, remaining = _apply_map_objections(intent_map, decision, node_ids)
+        rounds[-1].update(objections_applied=applied, objections_for_mapper=remaining)
         write_json(record_path, {"approved": False, "rounds": rounds})
-        if round_number == MAP_ROUNDS:
+        if applied and not remaining:
+            continue
+        if mapper_calls >= MAP_ROUNDS:
             return None, None, (
                 f"Stopped before atoms: the intent map was not approved after {MAP_ROUNDS} "
                 f"rounds. Last reason: {decision.reason}"
             )
+        feedback = "\n".join(f"- {o.get('detail') or o.get('kind')}" for o in remaining)
         intent_map = build_map(
-            feedback=decision.reason or "The reviewer rejected the map.",
+            feedback=feedback or decision.reason or "The reviewer rejected the map.",
             previous=intent_map,
         )
+        mapper_calls += 1
     return None, None, "Stopped before atoms: the intent map was not approved."
+
+
+def _apply_map_objections(
+    intent_map: IntentMap,
+    decision: AtomDecision,
+    node_ids: set[str],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Apply the objections a map reviewer named; return (applied, left for the mapper)."""
+    applied: list[dict[str, Any]] = []
+    remaining: list[dict[str, Any]] = []
+    for objection in (decision.edit_delta or {}).get("map_objections") or []:
+        problem = intent_map.apply_objection(objection, node_ids)
+        if problem:
+            remaining.append({**objection, "not_applied": problem})
+        else:
+            applied.append(objection)
+    return applied, remaining
 
 
 def _settle_unmarked_scopes(intent_map: IntentMap, review_atom: AtomReviewer) -> dict[str, Any] | None:

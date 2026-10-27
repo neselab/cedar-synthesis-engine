@@ -64,6 +64,9 @@ class ModelReviewer:
                 approved_atoms=self.approved,
             )
         delta = {"review_channel": "model", "model_review": review.reason}
+        objections = getattr(review, "objections", None)
+        if objections:
+            delta["map_objections"] = [o.model_dump() for o in objections]
         if review.decision == "approve":
             if isinstance(atom, PropertyAtom):
                 self.approved.append(atom)

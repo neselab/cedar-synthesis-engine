@@ -282,3 +282,74 @@ def _synthesize_floors(scenario_dir: Path) -> Path:
     candidate = scenario_dir / "candidate.cedar"
     candidate.write_text("\n\n".join(p.read_text() for p in floors) + "\n")
     return candidate
+
+
+def test_named_objection_is_applied_without_asking_the_mapper_again(tmp_path: Path) -> None:
+    spec, schema, doc = _setup(tmp_path)
+    ids = node_ids(doc)
+    calls: list[dict] = []
+
+    def mapper(**kw) -> IntentMap:
+        # The classic slip: the sign-off hold rule attached to release.
+        calls.append(kw)
+        m = work_order_map(doc)
+        hold = next(s for s in m.sentences if s.node_id == ids["signoff:on hold"])
+        hold.slice_ids = ["sl_release"]
+        return m
+
+    reviews: list[str] = []
+
+    def reviewer(atom):
+        if isinstance(atom, IntentMap):
+            reviews.append(atom.review_text)
+            if len(reviews) == 1:
+                return AtomDecision("intent_map", "reject", reason="Hold rule is under release.", edit_delta={
+                    "review_channel": "model",
+                    "map_objections": [{"kind": "move_condition", "node_id": ids["signoff:on hold"],
+                                        "slice_ids": ["sl_signoff"], "detail": "It sits in the sign-off section."}],
+                })
+            return AtomDecision("intent_map", "approve", intent_acknowledged_by_user=True)
+        return approve_checked(atom)
+
+    result = author(
+        spec, tmp_path / "out", session_id="objection",
+        review_atom=reviewer, map_intent=mapper,
+        propose_property_atom=Proposer(doc), synthesize=_synthesize_exact,
+        schema_path_override=str(schema),
+    )
+
+    assert result.notes == []
+    assert len(calls) == 1
+    assert len(reviews) == 2
+    record = json.loads((result.session_dir / "stage0" / "intent_map.json").read_text())
+    assert record["rounds"][0]["objections_applied"][0]["kind"] == "move_condition"
+    hold = next(s for s in record["map"]["sentences"] if s["node_id"] == ids["signoff:on hold"])
+    assert hold["slice_ids"] == ["sl_signoff"]
+
+
+def test_objection_the_map_cannot_apply_goes_to_the_mapper(tmp_path: Path) -> None:
+    spec, schema, doc = _setup(tmp_path)
+    calls: list[dict] = []
+
+    def mapper(**kw) -> IntentMap:
+        calls.append(kw)
+        return work_order_map(doc)
+
+    def reviewer(atom):
+        if isinstance(atom, IntentMap) and len(calls) == 1:
+            return AtomDecision("intent_map", "reject", reason="Split release.", edit_delta={
+                "review_channel": "model",
+                "map_objections": [{"kind": "other", "detail": "Release needs a second slice for supervisors."}],
+            })
+        return approve_checked(atom)
+
+    result = author(
+        spec, tmp_path / "out", session_id="objection-other",
+        review_atom=reviewer, map_intent=mapper,
+        propose_property_atom=Proposer(doc), synthesize=_synthesize_exact,
+        schema_path_override=str(schema),
+    )
+
+    assert result.notes == []
+    assert len(calls) == 2
+    assert calls[1]["feedback"] == "- Release needs a second slice for supervisors."
