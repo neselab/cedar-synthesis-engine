@@ -18,6 +18,21 @@ versioning while the public provider and CLI interfaces stabilize.
   and otherwise the run stops and names the blocking requirements. The map
   replaces the keyword rule for finding requirement sentences. Runs without a
   map builder (the Python API without `map_intent`) keep the previous Stage 2.
+- When the document does not say whether it lists every way to allow an action,
+  the map leaves that scope unmarked and AutoCedar asks one yes/no question
+  after the map is approved: is the list of permissions complete? Yes gives
+  those scopes a ceiling equal to their floors; no treats the listed
+  permissions as examples. Under `--model-review` the model answers, recorded
+  as the model's assumption. Before, the map guessed, and the same document
+  could get anywhere from 2 to 14 of 14 scopes marked complete.
+- Fixed the schema-support check misreading `entity E = { ... }` (valid Cedar)
+  as an entity without attributes, which reported false schema gaps and
+  stopped runs with a fixed schema. Declared hooks that name nothing are
+  skipped.
+- Fixed intermittent `error_max_turns` failures with the Claude CLI provider:
+  structured calls now allow the CLI to ask the model to fix an answer that
+  fails the schema (up to 5 turns), retry once if the call still runs out of
+  turns, and report the CLI's error kind.
 - Runs without a person now review meaning. `--model-review` has the model
   judge each atom against the full requirements (supported by the text, right
   action and types, Cedar matching its summary, floors that keep every

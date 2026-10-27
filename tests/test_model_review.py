@@ -169,3 +169,30 @@ def test_model_reviewer_reviews_the_intent_map_with_its_outline() -> None:
     assert decision.atom_name == "intent_map"
     assert decision.intent_acknowledged_by_user is False
     assert llm.seen["outline"] == '<node id="p1">...</node>'
+
+
+def test_model_reviewer_answers_whether_the_permission_list_is_complete() -> None:
+    from autocedar.intent_map import MapScope, PermissionsQuestion
+
+    class QuestionLLM:
+        def __init__(self) -> None:
+            self.seen = {}
+
+        def answer_permissions_question(self, **kwargs):
+            self.seen = kwargs
+            return AtomReviewResponse(decision="approve", reason="The numbered list reads as the full grant list.")
+
+    llm = QuestionLLM()
+    question = PermissionsQuestion(
+        scopes=[MapScope("s_release", "release", "User", "WorkOrder", None)],
+        outline="<spec outline>",
+    )
+
+    decision = ModelReviewer(llm, "raw spec")(question)
+
+    assert decision.action == "approve"
+    assert decision.atom_name == "permissions_complete"
+    assert decision.intent_acknowledged_by_user is False
+    assert decision.edit_delta["review_channel"] == "model"
+    assert llm.seen["question"] is question
+    assert llm.seen["outline"] == "<spec outline>"

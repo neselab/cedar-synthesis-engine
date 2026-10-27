@@ -2835,6 +2835,8 @@ class AutoCedarApp(App[None]):
         atom = request.current
         if atom.__class__.__name__ == "IntentMap":
             text = escape(render_intent_map(atom))
+        elif atom.__class__.__name__ == "PermissionsQuestion":
+            text = escape(atom.render()) + "\n\n[bold]A[/] yes, the list is complete   [bold]R[/] no, the permissions are examples"
         elif atom.__class__.__name__ == "PropertyAtom":
             text = render_property_atom(atom, request.index, request.total)
         else:
@@ -3532,7 +3534,7 @@ def _join_nonempty(values: Any) -> str:
 
 
 def _render_cedar_for_review(atom: Any) -> str:
-    if atom.__class__.__name__ == "IntentMap":
+    if atom.__class__.__name__ in {"IntentMap", "PermissionsQuestion"}:
         return json.dumps(atom.to_dict(), indent=2)
     if atom.__class__.__name__ == "PropertyAtom":
         return render_property_reference(atom)

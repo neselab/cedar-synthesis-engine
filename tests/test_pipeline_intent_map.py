@@ -15,7 +15,7 @@ import pytest
 from autocedar.atoms import PropertyAtom
 from autocedar.corpus import AtomDecision
 from autocedar.harness.orchestrator import run_verification
-from autocedar.intent_map import IntentMap, MapSentence
+from autocedar.intent_map import IntentMap, MapSentence, PermissionsQuestion
 from autocedar.pipeline import MAX_CONDITION_ATTEMPTS, author
 from autocedar.source_doc import compile_source_document
 from tests.reviewers import approve_checked
@@ -229,3 +229,51 @@ def test_unapproved_map_stops_before_any_atom(tmp_path: Path) -> None:
 
     assert "intent map was not approved" in result.notes[0]
     assert proposer.calls == []
+
+
+@pytest.mark.parametrize("answer", ["approve", "reject"])
+def test_unmarked_scope_is_settled_by_one_yes_or_no_question(tmp_path: Path, answer: str) -> None:
+    spec, schema, doc = _setup(tmp_path)
+    questions: list[PermissionsQuestion] = []
+
+    def mapper(**kw) -> IntentMap:
+        m = work_order_map(doc)
+        m.scopes[1].exhaustive = None
+        return m
+
+    def reviewer(atom):
+        if isinstance(atom, PermissionsQuestion):
+            questions.append(atom)
+            return AtomDecision(atom.name, answer, reason="" if answer == "approve" else "Examples only.",
+                                intent_acknowledged_by_user=answer == "approve")
+        if isinstance(atom, IntentMap):
+            assert "does not say whether all ways are listed" in atom.review_text
+        return approve_checked(atom)
+
+    result = author(
+        spec, tmp_path / "out", session_id=f"question-{answer}",
+        review_atom=reviewer,
+        map_intent=mapper,
+        propose_property_atom=Proposer(doc),
+        synthesize=_synthesize_exact if answer == "approve" else _synthesize_floors,
+        schema_path_override=str(schema),
+    )
+
+    assert result.notes == []
+    assert [[s.id for s in q.scopes] for q in questions] == [["s_signoff"]]
+    record = json.loads((result.session_dir / "stage0" / "intent_map.json").read_text())
+    assert record["permissions_complete"]["complete"] is (answer == "approve")
+    assert record["permissions_complete"]["answered_by"] == "person"
+    assert record["map"]["scopes"][1]["exhaustive"] is (answer == "approve")
+    plan = (result.session_dir / "stage2" / "final_plan" / "verification_plan.py").read_text()
+    # Yes gives the scope a ceiling equal to its floors; no leaves only the floor.
+    assert ('"name": "ceiling__s_signoff"' in plan) is (answer == "approve")
+    assert '"name": "floor__s_signoff__sl_signoff"' in plan
+
+
+def _synthesize_floors(scenario_dir: Path) -> Path:
+    """Write the plan's floors as the candidate: enough when no ceiling bounds them."""
+    floors = sorted((scenario_dir / "references").glob("floor__*.cedar"))
+    candidate = scenario_dir / "candidate.cedar"
+    candidate.write_text("\n\n".join(p.read_text() for p in floors) + "\n")
+    return candidate

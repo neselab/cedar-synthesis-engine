@@ -47,6 +47,7 @@ from autocedar.intent_map import (
     MapScope,
     MapSentence,
     MapSlice,
+    PermissionsQuestion,
     is_condition_packet,
 )
 from autocedar.providers import (
@@ -287,7 +288,7 @@ class _LLMMapScope(BaseModel):
     action: str
     principal_type: str
     resource_type: str
-    exhaustive: bool
+    exhaustive: bool | None
     summary: str = ""
 
 
@@ -902,6 +903,17 @@ class LLMClient:
                 "The same map as data:\n"
                 f"```json\n{json.dumps(intent_map.to_dict(), separators=(',', ':'))}\n```"
             ),
+            output_format=AtomReviewResponse,
+            effort_override=_stage2_effort(self._provider, self._effort),
+        )
+        return response.parsed_output
+
+    def answer_permissions_question(self, *, question: PermissionsQuestion, outline: str) -> AtomReviewResponse:
+        """Answer for the author whether the document lists every permission (approve = yes)."""
+        response = self._call_parse(
+            system_prompt=_load_prompt("permissions_complete.md"),
+            spec_text=outline,
+            user_turn=question.render(),
             output_format=AtomReviewResponse,
             effort_override=_stage2_effort(self._provider, self._effort),
         )

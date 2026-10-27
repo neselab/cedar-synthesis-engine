@@ -26,6 +26,13 @@ from .base import (
 DEFAULT_CLAUDE_CLI_MODEL = "sonnet"
 DEFAULT_TIMEOUT_SECONDS = 600.0
 _ERROR_PREVIEW_LIMIT = 800
+# With --json-schema, the CLI checks the model's answer against the schema and
+# asks it to fix a failing answer; an answer accepted on the first try takes 2
+# turns and each fix adds one. Tools are disabled, so the extra turns can only
+# be used for fixes; with one turn, a single slip ends the call with
+# error_max_turns. A call that still runs out of turns is tried once more.
+_STRUCTURED_MAX_TURNS = 5
+_OUT_OF_TURNS_RETRIES = 1
 _StructuredT = TypeVar("_StructuredT", bound=BaseModel)
 _Runner = Callable[..., subprocess.CompletedProcess[str]]
 
@@ -188,7 +195,7 @@ class ClaudeCLIBackend(ModelBackend):
             "--model",
             model or DEFAULT_CLAUDE_CLI_MODEL,
             "--max-turns",
-            "1",
+            "1" if output_type is None else str(_STRUCTURED_MAX_TURNS),
             "--tools",
             "",
             "--disable-slash-commands",
@@ -213,15 +220,18 @@ class ClaudeCLIBackend(ModelBackend):
 
         prompt = _render_prompt(messages=messages, system=system)
         try:
-            with tempfile.TemporaryDirectory(prefix="autocedar-claude-") as temp_dir:
-                private_cwd = Path(temp_dir)
-                private_cwd.chmod(0o700)
-                completed = self._run(
-                    command,
-                    input_text=prompt,
-                    cwd=private_cwd,
-                    timeout=self.timeout,
-                )
+            for attempt in range(_OUT_OF_TURNS_RETRIES + 1):
+                with tempfile.TemporaryDirectory(prefix="autocedar-claude-") as temp_dir:
+                    private_cwd = Path(temp_dir)
+                    private_cwd.chmod(0o700)
+                    completed = self._run(
+                        command,
+                        input_text=prompt,
+                        cwd=private_cwd,
+                        timeout=self.timeout,
+                    )
+                if output_type is None or not _ran_out_of_turns(completed):
+                    break
         except subprocess.TimeoutExpired as exc:
             raise ClaudeCLIError(
                 f"Claude CLI timed out after {self.timeout:g} seconds.",
@@ -355,6 +365,14 @@ def _extract_json_object(text: str) -> Any:
         return json.loads(stripped[start : end + 1])
 
 
+def _ran_out_of_turns(completed: subprocess.CompletedProcess[str]) -> bool:
+    try:
+        payload = json.loads(completed.stdout or "")
+    except (TypeError, json.JSONDecodeError):
+        return False
+    return isinstance(payload, dict) and payload.get("subtype") == "error_max_turns"
+
+
 def _bounded_process_error(completed: subprocess.CompletedProcess[str]) -> str:
     detail = (completed.stderr or completed.stdout or "unknown error").strip()
     if completed.stdout:
@@ -364,6 +382,8 @@ def _bounded_process_error(completed: subprocess.CompletedProcess[str]) -> str:
             payload = None
         if isinstance(payload, dict) and isinstance(payload.get("result"), str):
             detail = payload["result"]
+        elif isinstance(payload, dict) and payload.get("subtype"):
+            detail = f"{payload['subtype']} ({payload.get('terminal_reason') or 'no reason given'})"
     return (
         f"Claude CLI exited with status {completed.returncode}: "
         f"{_bounded_text(detail)}"

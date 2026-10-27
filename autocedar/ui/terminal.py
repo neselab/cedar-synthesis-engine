@@ -35,7 +35,7 @@ from autocedar.atoms import (
     TypeAliasAtom,
 )
 from autocedar.corpus import AtomDecision
-from autocedar.intent_map import IntentMap
+from autocedar.intent_map import IntentMap, PermissionsQuestion
 from autocedar.llm import LLMClient, Stage1Atom
 
 VERIFIED_BADGE = "✓ Formally consistent — does this match your intent?"
@@ -552,7 +552,7 @@ def _review_one_atom(
             )
         if key == "R":
             reason = (input_fn("Reason: ") or "").strip()
-            if llm is None or isinstance(current, (PropertyAtom, IntentMap)):
+            if llm is None or isinstance(current, (PropertyAtom, IntentMap, PermissionsQuestion)):
                 return ReviewedAtom(
                     atom=current,
                     decision=AtomDecision(
@@ -586,6 +586,9 @@ def _review_one_atom(
                 "and AutoCedar revises it)",
             )
             continue
+        if key == "E" and isinstance(current, PermissionsQuestion):
+            output_fn("(answer with A for yes or R for no)")
+            continue
         if key == "E":
             edit_input = (input_fn("Edit (field=value): ") or "").strip()
             try:
@@ -606,7 +609,7 @@ def _review_one_atom(
             output_fn(f"Agent: {answer}")
             continue
         if key == "S":
-            if isinstance(current, IntentMap):
+            if isinstance(current, (IntentMap, PermissionsQuestion)):
                 output_fn(json.dumps(current.to_dict(), indent=2))
             elif isinstance(current, PropertyAtom):
                 output_fn("```cedar")
@@ -645,6 +648,8 @@ def _approval_needs_failed_property_confirmation(
 def _render_review_atom(atom: ReviewableAtom, index: int, total: int) -> str:
     if isinstance(atom, IntentMap):
         return render_intent_map(atom)
+    if isinstance(atom, PermissionsQuestion):
+        return atom.render() + "\n\n[A] yes, the list is complete   [R] no, the permissions are examples"
     if isinstance(atom, PropertyAtom):
         return render_property_atom(atom, index, total)
     return render_schema_atom(atom, index, total)
@@ -689,6 +694,8 @@ def _apply_field_edit(
             "the map cannot be edited field by field; reject it with a reason "
             "and AutoCedar revises it",
         )
+    if isinstance(atom, PermissionsQuestion):
+        raise ValueError("answer with A for yes or R for no")
     if "=" not in edit_input:
         raise ValueError("expected `field=value`")
     field_name, value = edit_input.split("=", 1)

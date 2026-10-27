@@ -18,6 +18,7 @@ from autocedar.intent_map import (
     MapScope,
     MapSentence,
     MapSlice,
+    PermissionsQuestion,
     build_condition_packet,
     condition_atom_issue,
     condition_shape_issue,
@@ -310,3 +311,15 @@ def test_examples_only_scope_keeps_whole_scope_restrictions_as_ceilings() -> Non
     }
     floor = next(a for a in derived if a.constraint_type == "floor").reference_cedar
     assert "defectCount" in floor  # the restriction is part of every slice
+
+
+def test_unmarked_scopes_render_as_not_stated_and_survive_a_round_trip() -> None:
+    doc = compile_source_document(SPEC)
+    m = work_order_map(doc)
+    m.scopes[1].exhaustive = None
+
+    assert "the document does not say whether all ways are listed" in m.render(doc)
+    assert IntentMap.from_dict(m.to_dict()).scopes[1].exhaustive is None
+    question = PermissionsQuestion(scopes=[m.scopes[1]])
+    assert "signoff (principal User, resource WorkOrder)" in question.render()
+    assert question.to_dict()["scopes"][0]["id"] == "s_signoff"

@@ -718,3 +718,20 @@ def test_map_review_shows_the_map_and_rejects_without_asking_for_a_replacement()
     assert reviewed.decision.reason == "The hold rule belongs to sign off."
     assert any("INTENT MAP" in line for line in output)
     assert any("cannot be edited field by field" in line for line in output)
+
+
+def test_permissions_question_is_answered_with_approve_or_reject() -> None:
+    from autocedar.intent_map import MapScope, PermissionsQuestion
+
+    question = PermissionsQuestion(scopes=[MapScope("s_signoff", "signoff", "User", "WorkOrder", None)])
+    inputs = iter(["E", "R", "The document only gives examples."])
+    output: list[str] = []
+
+    reviewed = interactive_review_loop(
+        [question], llm=None, spec_text="spec",
+        input_fn=lambda prompt="": next(inputs), output_fn=output.append,
+    )[0]
+
+    assert reviewed.decision.action == "reject"
+    assert any("IS THE LIST OF PERMISSIONS COMPLETE?" in line and "signoff" in line for line in output)
+    assert any("answer with A for yes or R for no" in line for line in output)

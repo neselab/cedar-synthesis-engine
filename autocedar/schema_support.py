@@ -25,10 +25,17 @@ def missing_schema_support(
     required: list[RequiredSchemaSupport],
     schema_text: str,
 ) -> list[MissingSchemaSupport]:
-    """Return required schema hooks absent from ``schema_text``."""
+    """Return required schema hooks absent from ``schema_text``.
+
+    A hook that leaves its entity, action, field, or type name empty names
+    nothing to look for, so it is skipped; Cedar validation of the atom still
+    catches a reference the schema does not support.
+    """
 
     missing: list[MissingSchemaSupport] = []
     for support in required:
+        if not _names_given(support):
+            continue
         ok, detail = _support_present(support, schema_text)
         if not ok:
             missing.append(MissingSchemaSupport(support=support, detail=detail))
@@ -84,6 +91,21 @@ def _support_present(support: RequiredSchemaSupport, schema_text: str) -> tuple[
     return False, f"unsupported schema hook kind `{kind}`"
 
 
+def _names_given(support: RequiredSchemaSupport) -> bool:
+    kind = support.kind
+    if kind == "entity":
+        return bool(support.name or support.entity or support.type_name)
+    if kind == "action":
+        return bool(support.name or support.action)
+    if kind == "attribute":
+        return bool(support.entity and support.field_name)
+    if kind == "context":
+        return bool(support.action and support.field_name)
+    if kind in {"action_principal", "action_resource"}:
+        return bool(support.action and support.type_name)
+    return True
+
+
 def _support_label(support: RequiredSchemaSupport) -> str:
     if support.kind in {"entity", "action"}:
         return f"{support.kind} `{support.name or support.entity or support.action}`"
@@ -117,8 +139,10 @@ def _action_block(schema_text: str, action: str) -> str | None:
 def _entity_has_attribute(schema_text: str, entity: str, field_name: str) -> bool:
     if not entity or not field_name:
         return False
+    # Cedar allows `entity E {...}` and `entity E = {...}`, with or without
+    # `in [...]`, and quoted attribute names.
     match = re.search(
-        rf"\bentity\s+{re.escape(entity)}(?:\s+in\s+\[[^\]]*\])?\s*\{{"
+        rf"\bentity\s+{re.escape(entity)}(?:\s+in\s+(?:\[[^\]]*\]|[\w:]+))?\s*=?\s*\{{"
         rf"(?P<body>.*?)"
         rf"\n?\s*\}};",
         schema_text,
@@ -126,7 +150,7 @@ def _entity_has_attribute(schema_text: str, entity: str, field_name: str) -> boo
     )
     if not match:
         return False
-    return bool(re.search(rf"\b{re.escape(field_name)}\??\s*:", match.group("body")))
+    return bool(re.search(rf'(?:^|[\s,{{])"?{re.escape(field_name)}"?\??\s*:', match.group("body")))
 
 
 def _action_context_has_attribute(schema_text: str, action: str, field_name: str) -> bool:

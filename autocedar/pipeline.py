@@ -48,6 +48,7 @@ from autocedar.critic import (
 from autocedar.grounding import CEDAR_PATH, _is_symcc_tool_error, _run_symcc, symbolic_verify_atom
 from autocedar.intent_map import (
     IntentMap,
+    PermissionsQuestion,
     build_condition_packet,
     condition_atom_issue,
     derive_boundary_atoms,
@@ -326,12 +327,17 @@ def _build_reviewed_intent_map(
         _, decision = _normalize_review_result(intent_map, review_atom(intent_map))
         rounds.append({"round": round_number, "map": intent_map.to_dict(), "decision": to_dict(decision)})
         if decision.action == "approve":
-            write_json(record_path, {
+            record = {
                 "approved": True,
                 "map": intent_map.to_dict(),
                 "decision": to_dict(decision),
                 "rounds": rounds,
-            })
+            }
+            permissions = _settle_unmarked_scopes(intent_map, review_atom)
+            if permissions is not None:
+                record["map"] = intent_map.to_dict()
+                record["permissions_complete"] = permissions
+            write_json(record_path, record)
             _notify_review_stage_complete(review_atom, "Intent map review", [decision])
             return intent_map, decision, ""
         write_json(record_path, {"approved": False, "rounds": rounds})
@@ -347,6 +353,30 @@ def _build_reviewed_intent_map(
             previous=intent_map,
         )
     return None, None, "Stopped before atoms: the intent map was not approved."
+
+
+def _settle_unmarked_scopes(intent_map: IntentMap, review_atom: AtomReviewer) -> dict[str, Any] | None:
+    """Ask once whether the document lists every permission for the scopes it leaves unmarked.
+
+    AutoCedar does not assume either answer: the reviewer (a person, or the
+    model under model review) says yes or no, and the answer applies to every
+    unmarked scope.
+    """
+    unmarked = [scope for scope in intent_map.scopes if scope.exhaustive is None]
+    if not unmarked:
+        return None
+    question = PermissionsQuestion(scopes=unmarked, outline=intent_map.outline)
+    _, decision = _normalize_review_result(question, review_atom(question))
+    complete = decision.action == "approve"
+    for scope in unmarked:
+        scope.exhaustive = complete
+    delta = decision.edit_delta or {}
+    return {
+        "complete": complete,
+        "answered_by": "model" if delta.get("review_channel") == "model" else "person",
+        "reason": decision.reason or delta.get("model_review", ""),
+        "scope_ids": [scope.id for scope in unmarked],
+    }
 
 
 def _approved_session_map(base: Path) -> IntentMap | None:

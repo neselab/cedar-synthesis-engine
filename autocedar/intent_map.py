@@ -52,7 +52,9 @@ class MapScope:
     action: str
     principal_type: str
     resource_type: str
-    exhaustive: bool = True
+    # True: the document lists every way to allow the scope; False: its ways
+    # are examples. None: the document does not say, and the reviewer is asked.
+    exhaustive: bool | None = True
     summary: str = ""
 
 
@@ -279,7 +281,11 @@ class IntentMap:
         text = {node.id: node.text for node in doc.nodes}
         lines = ["INTENT MAP", ""]
         for scope in self.scopes:
-            listed = "all ways to allow it are listed" if scope.exhaustive else "the listed ways are examples"
+            listed = {
+                True: "all ways to allow it are listed",
+                False: "the listed ways are examples",
+                None: "the document does not say whether all ways are listed",
+            }[scope.exhaustive]
             lines.append(
                 f"Scope {scope.id}: principal {scope.principal_type}, action "
                 f"{_bare_action(scope.action)}, resource {scope.resource_type} ({listed})",
@@ -306,6 +312,39 @@ class IntentMap:
         lines.append(f"Sentences with no requirement ({len(unlisted)}):")
         lines.extend(f"  - [{node.id}] {node.text}" for node in unlisted)
         return "\n".join(lines)
+
+
+@dataclass
+class PermissionsQuestion:
+    """Asks whether the document lists every permission for the scopes it leaves unmarked.
+
+    Reviewed like an atom: approve means yes, so each scope's ceiling equals
+    its floors; reject means no, the listed permissions are examples.
+    """
+
+    scopes: list[MapScope]
+    outline: str = ""
+    name: str = "permissions_complete"
+
+    def render(self) -> str:
+        lines = [
+            "IS THE LIST OF PERMISSIONS COMPLETE?",
+            "",
+            "The requirements do not say whether they list every way to allow these actions:",
+        ]
+        lines += [
+            f"  - {_bare_action(s.action)} (principal {s.principal_type}, resource {s.resource_type})"
+            for s in self.scopes
+        ]
+        lines += [
+            "",
+            "Approve: yes, the list is complete; any request it does not allow is denied.",
+            "Reject: no, the listed permissions are examples; more requests may be allowed.",
+        ]
+        return "\n".join(lines)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"question": self.name, "scopes": [asdict(s) for s in self.scopes]}
 
 
 # ---------------------------------------------------------------------------
