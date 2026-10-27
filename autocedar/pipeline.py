@@ -45,7 +45,15 @@ from autocedar.critic import (
     score_candidate as score_candidate_default,
     stub_llm_scorer,
 )
-from autocedar.grounding import symbolic_verify_atom
+from autocedar.grounding import CEDAR_PATH, _is_symcc_tool_error, _run_symcc, symbolic_verify_atom
+from autocedar.intent_map import (
+    IntentMap,
+    build_condition_packet,
+    condition_atom_issue,
+    derive_boundary_atoms,
+    describe_schema_actions,
+    schema_triples,
+)
 from autocedar.persistence import session_spec, write_json
 from autocedar.plan_verification import (
     generate_atom_traceback,
@@ -70,11 +78,16 @@ from autocedar.source_doc import (
     build_schema_packets,
     build_source_intent_dag,
     compile_source_document,
+    document_outline,
     select_property_packet,
     source_ids_from_text,
 )
 
 DEFAULT_MAX_PROPERTY_PROPOSALS = 128
+# Rounds to build, check and review the intent map before giving up.
+MAP_ROUNDS = 3
+# Proposals for one condition before AutoCedar stops and reports it.
+MAX_CONDITION_ATTEMPTS = 3
 
 
 # ---------------------------------------------------------------------------
@@ -91,6 +104,10 @@ PropertyProposer = Callable[
     [str, str, list[PropertyAtom], list[AtomDecision]],
     PropertyProposalResult,
 ]
+
+# Stage 0.5: map the whole document into scopes, slices and conditions.
+# Called with outline=, schema_actions=, feedback=, previous=.
+IntentMapper = Callable[..., IntentMap]
 
 # Stage 2 repair: propose one replacement after the user rejects a property atom.
 PropertyRepairer = Callable[[str, str, PropertyAtom, str, list[PropertyAtom]], Optional[PropertyAtom]]
@@ -147,16 +164,6 @@ def _stub_property_proposer(
     """Test helper: return no next Stage 2 atom."""
     _ = spec_text, schema_path, prior_atoms, prior_decisions
     return None
-
-
-def _stub_auto_approve(atom: Any) -> AtomDecision:
-    """Test helper: advance plumbing without claiming human intent review."""
-    return AtomDecision(
-        atom_name=getattr(atom, "name", "?"),
-        action="approve",
-        intent_acknowledged_by_user=False,
-        symbolic_verified=getattr(atom, "symbolic_verified", False),
-    )
 
 
 def _default_property_repair_plan(
@@ -244,6 +251,7 @@ def _write_stage0_artifacts(
     schema_gaps: list[dict[str, Any]] | None = None,
 ) -> None:
     """Persist the source-grounded intent DAG and coverage ledger."""
+    intent_map = _approved_session_map(session.base)
     session.write_stage0_intent_dag(
         build_source_intent_dag(
             source_doc,
@@ -252,6 +260,7 @@ def _write_stage0_artifacts(
             schema_atoms=schema_atoms or [],
             property_atoms=property_atoms or [],
             schema_gaps=schema_gaps or [],
+            intent_map=intent_map,
         ),
     )
     session.write_stage0_coverage_ledger(
@@ -260,8 +269,91 @@ def _write_stage0_artifacts(
             completed_property_node_ids=completed_property_node_ids,
             schema_packets=schema_context_packets,
             property_packets=property_context_packets,
+            frontier_ids=intent_map.condition_node_ids(source_doc) if intent_map else None,
         ),
     )
+
+
+def _build_reviewed_intent_map(
+    *,
+    map_intent: IntentMapper,
+    source_doc: Any,
+    schema_text: str,
+    review_atom: AtomReviewer,
+    session: Session,
+    resume_from: Path | None,
+) -> tuple[IntentMap | None, AtomDecision | None, str]:
+    """Map the document, check the map's structure, and have it reviewed.
+
+    Like a LEAP blueprint, the map is the plan every later step follows, so it
+    is reviewed before any atom is written. A rejection or a failed structure
+    check goes back to the mapper with the reason, for up to MAP_ROUNDS rounds.
+    """
+    record_path = session.base / "stage0" / "intent_map.json"
+    triples = schema_triples(schema_text, cedar_path=CEDAR_PATH)
+    if resume_from is not None:
+        prior = _read_json(resume_from / "stage0" / "intent_map.json", None)
+        if isinstance(prior, dict) and prior.get("approved") and prior.get("map"):
+            resumed = IntentMap.from_dict(prior["map"])
+            if not resumed.structure_errors(source_doc, triples):
+                write_json(record_path, prior)
+                decision = from_dict(AtomDecision, prior["decision"]) if prior.get("decision") else None
+                return resumed, decision, ""
+    outline = document_outline(source_doc)
+    actions = describe_schema_actions(triples)
+    rounds: list[dict[str, Any]] = []
+    _notify_review_stage(review_atom, "Intent map review", 1)
+    intent_map = map_intent(outline=outline, schema_actions=actions, feedback="", previous=None)
+    for round_number in range(1, MAP_ROUNDS + 1):
+        errors = intent_map.structure_errors(source_doc, triples)
+        if errors:
+            rounds.append({"round": round_number, "map": intent_map.to_dict(), "structure_errors": errors})
+            write_json(record_path, {"approved": False, "rounds": rounds})
+            if round_number == MAP_ROUNDS:
+                return None, None, (
+                    "Stopped before atoms: the intent map still fails its structure "
+                    f"checks after {MAP_ROUNDS} rounds: " + "; ".join(errors[:6])
+                )
+            intent_map = map_intent(
+                outline=outline,
+                schema_actions=actions,
+                feedback="\n".join(f"- {e}" for e in errors),
+                previous=intent_map,
+            )
+            continue
+        intent_map.review_text = intent_map.render(source_doc)
+        intent_map.outline = outline
+        _, decision = _normalize_review_result(intent_map, review_atom(intent_map))
+        rounds.append({"round": round_number, "map": intent_map.to_dict(), "decision": to_dict(decision)})
+        if decision.action == "approve":
+            write_json(record_path, {
+                "approved": True,
+                "map": intent_map.to_dict(),
+                "decision": to_dict(decision),
+                "rounds": rounds,
+            })
+            _notify_review_stage_complete(review_atom, "Intent map review", [decision])
+            return intent_map, decision, ""
+        write_json(record_path, {"approved": False, "rounds": rounds})
+        if round_number == MAP_ROUNDS:
+            return None, None, (
+                f"Stopped before atoms: the intent map was not approved after {MAP_ROUNDS} "
+                f"rounds. Last reason: {decision.reason}"
+            )
+        intent_map = map_intent(
+            outline=outline,
+            schema_actions=actions,
+            feedback=decision.reason or "The reviewer rejected the map.",
+            previous=intent_map,
+        )
+    return None, None, "Stopped before atoms: the intent map was not approved."
+
+
+def _approved_session_map(base: Path) -> IntentMap | None:
+    record = _read_json(base / "stage0" / "intent_map.json", None)
+    if isinstance(record, dict) and record.get("approved") and record.get("map"):
+        return IntentMap.from_dict(record["map"])
+    return None
 
 
 def _run_incremental_candidate_check(
@@ -345,6 +437,7 @@ def author(
     run_incremental_checks: bool = False,
     max_property_proposals: int = DEFAULT_MAX_PROPERTY_PROPOSALS,
     max_schema_gap_repairs: int | None = None,
+    map_intent: IntentMapper | None = None,
 ) -> AuthorResult:
     """End-to-end Stage-1-through-2.5 pipeline.
 
@@ -356,6 +449,13 @@ def author(
     pre-built schema (rather than composing one from atoms via the
     proposer). When set, Stage 1 atom-proposal is skipped and the
     pipeline composes its schema text directly from disk.
+
+    ``map_intent`` turns on the task graph (``autocedar.intent_map``): the
+    document is mapped into scopes, slices and conditions, the map is
+    reviewed, each condition gets its own atom from map-scoped context, floors
+    and ceilings are calculated from the approved conditions, and synthesis
+    starts only when every node of the map is solved. Without it, Stage 2 uses
+    keyword-selected source nodes as before.
     """
     spec_path = Path(spec_path)
     output_dir = Path(output_dir)
@@ -690,6 +790,38 @@ def author(
     session.write_stage1_final_schema(schema_text)
     _notify_schema_ready(review_atom, schema_text)
 
+    # ──── Stage 0.5: intent map (the task graph) ────
+    intent_map: IntentMap | None = None
+    map_decision: AtomDecision | None = None
+    if map_intent is not None:
+        intent_map, map_decision, map_note = _build_reviewed_intent_map(
+            map_intent=map_intent,
+            source_doc=source_doc,
+            schema_text=schema_text,
+            review_atom=review_atom,
+            session=session,
+            resume_from=Path(resume_from) if resume_from else None,
+        )
+        if intent_map is None:
+            _write_stage0_artifacts(
+                session,
+                source_doc,
+                schema_context_packets,
+                property_context_packets,
+                completed_property_node_ids,
+                schema_atoms=approved_schema_atoms,
+            )
+            session.flush_transcript()
+            return AuthorResult(
+                session_id=session_id,
+                session_dir=session.base,
+                candidate_path=Path(""),
+                plan=VerificationPlanDraft(properties=[]),
+                schema_text=schema_text,
+                final_user_approved=False,
+                notes=[map_note],
+            )
+
     # ──── Stage 2: property elicitation ────
     # Stage 2 is intentionally clocked by HITL review: ask for one property
     # atom, verify it, let the human approve/edit/reject it, then pass that
@@ -721,7 +853,41 @@ def author(
         session.write_stage2_attribution_decisions(attributions2)
         session.write_stage2_decisions(decisions2)
         session.write_stage2_symbolic_verification_logs(verification_logs)
-    property_frontier_nodes = source_doc.authorization_nodes()
+    if intent_map is not None:
+        # The map's conditions are the requirement frontier, in document order.
+        property_frontier_nodes = [
+            source_doc.by_id[node_id] for node_id in intent_map.condition_node_ids(source_doc)
+        ]
+    else:
+        property_frontier_nodes = source_doc.authorization_nodes()
+    frontier_ids = [node.id for node in property_frontier_nodes]
+    unresolved_node_ids: set[str] = set()
+    node_attempts: dict[str, int] = {}
+    node_decision_start: dict[str, int] = {}
+
+    def packet_for(node: Any, step: int) -> Any:
+        if intent_map is not None:
+            return build_condition_packet(source_doc, intent_map, node, plan.properties, step)
+        packet = select_property_packet(
+            source_doc,
+            node,
+            approved_schema_atoms=approved_schema_atoms,
+            approved_property_atoms=plan.properties,
+            prior_decisions=decisions2,
+        )
+        packet.id = f"{packet.id}.step{step:04d}"
+        return packet
+
+    def give_up_on_node(node: Any, reason: str) -> None:
+        unresolved_node_ids.add(node.id)
+        decisions2.append(AtomDecision(
+            atom_name=f"unresolved_{node.id}",
+            action="reject",
+            reason=reason,
+            edit_delta={"stage": "stage2_condition_unresolved", "source_node_ids": [node.id]},
+        ))
+        session.write_stage2_decisions(decisions2)
+
     property_frontier_total = len(property_frontier_nodes)
     property_frontier_index = {
         node.id: index for index, node in enumerate(property_frontier_nodes, start=1)
@@ -732,10 +898,7 @@ def author(
     active_spec_text = ""
     pending_property_atoms = list(resume_checkpoint.pending_properties) if resume_checkpoint else []
     if active_property_node is not None:
-        active_packet = select_property_packet(
-            source_doc, active_property_node, approved_schema_atoms=approved_schema_atoms,
-            approved_property_atoms=plan.properties, prior_decisions=decisions2,
-        )
+        active_packet = packet_for(active_property_node, 1)
         active_spec_text = active_packet.to_prompt_text(include_review_context=False)
 
     def save_property_checkpoint(retry_atom: PropertyAtom | None = None,
@@ -779,12 +942,14 @@ def author(
                     node
                     for node in property_frontier_nodes
                     if node.id not in completed_property_node_ids
+                    and node.id not in unresolved_node_ids
                 ),
                 None,
             )
             if active_property_node is None:
-                property_frontier_exhausted = True
+                property_frontier_exhausted = not unresolved_node_ids
                 break
+            node_decision_start.setdefault(active_property_node.id, len(decisions2))
             pending_property_atoms = []
             _notify_property_progress(
                 review_atom,
@@ -800,14 +965,7 @@ def author(
                 queued=0,
             )
         if not pending_property_atoms:
-            active_packet = select_property_packet(
-                source_doc,
-                active_property_node,
-                approved_schema_atoms=approved_schema_atoms,
-                approved_property_atoms=plan.properties,
-                prior_decisions=decisions2,
-            )
-            active_packet.id = f"{active_packet.id}.step{len(property_context_packets) + 1:04d}"
+            active_packet = packet_for(active_property_node, len(property_context_packets) + 1)
             property_context_packets.append(active_packet)
             session.write_stage0_context_packet(active_packet.id, active_packet.to_dict())
             active_spec_text = active_packet.to_prompt_text(include_review_context=False)
@@ -815,7 +973,9 @@ def author(
                 active_spec_text,
                 str(schema_path),
                 plan.properties,
-                decisions2,
+                decisions2
+                if intent_map is None
+                else decisions2[node_decision_start.get(active_property_node.id, 0):],
             )
             proposed = _normalize_property_proposals(proposal_result)
             fingerprint = hashlib.sha256(json.dumps({
@@ -826,12 +986,25 @@ def author(
             }, sort_keys=True).encode()).hexdigest()
             repeated_proposals[fingerprint] = repeated_proposals.get(fingerprint, 0) + 1
             if repeated_proposals[fingerprint] >= 3:
-                raise RuntimeError(
-                    f"Property authoring made no progress on source {active_property_node.id} "
-                    "after three identical proposals. Reviews are saved; inspect the source "
-                    "and review feedback before resuming."
+                if intent_map is None:
+                    raise RuntimeError(
+                        f"Property authoring made no progress on source {active_property_node.id} "
+                        "after three identical proposals. Reviews are saved; inspect the source "
+                        "and review feedback before resuming."
+                    )
+                give_up_on_node(
+                    active_property_node,
+                    "Three identical proposals without progress; reported before synthesis.",
                 )
+                active_property_node = None
+                active_packet = None
+                active_spec_text = ""
+                continue
             proposal_was_batch = isinstance(proposal_result, list)
+            if intent_map is not None:
+                taken = set(approved_property_names)
+                for atom in proposed:
+                    _ground_in_condition(atom, active_property_node, taken)
             pending_property_atoms.extend(
                 (attach_source_ids(atom, active_packet.focus_node_ids), proposal_was_batch)
                 for atom in proposed
@@ -853,9 +1026,10 @@ def author(
                 queued=len(pending_property_atoms),
             )
             if not pending_property_atoms:
-                completion_blocker = _source_node_completion_blocker(
-                    active_packet.focus_node_ids,
-                    plan.properties,
+                completion_blocker = (
+                    _map_completion_blocker(intent_map, active_property_node, plan.properties)
+                    if intent_map is not None
+                    else _source_node_completion_blocker(active_packet.focus_node_ids, plan.properties)
                 )
                 if completion_blocker is not None:
                     decisions2.append(
@@ -887,6 +1061,11 @@ def author(
                         queued=0,
                         reason=completion_blocker,
                     )
+                    if intent_map is not None and _attempts_exhausted(node_attempts, active_property_node):
+                        give_up_on_node(active_property_node, completion_blocker)
+                        active_property_node = None
+                        active_packet = None
+                        active_spec_text = ""
                     continue
                 completed_property_node_ids.add(active_property_node.id)
                 session.write_stage0_coverage_ledger(
@@ -895,6 +1074,7 @@ def author(
                         completed_property_node_ids=completed_property_node_ids,
                         schema_packets=schema_context_packets,
                         property_packets=property_context_packets,
+                        frontier_ids=frontier_ids,
                     ),
                 )
                 _notify_property_progress(
@@ -1044,6 +1224,8 @@ def author(
         pending_schema_gap: dict[str, Any] | None = None
         while True:
             symbolic_verify_atom(current_atom, str(schema_path), prior_atoms=plan.properties)
+            if intent_map is not None and active_property_node is not None:
+                _check_against_map(intent_map, current_atom, active_property_node)
             verification_logs[current_atom.name] = list(current_atom.symbolic_verification_log)
             reviewed_atom, decision = _normalize_review_result(
                 current_atom,
@@ -1185,6 +1367,8 @@ def author(
                     plan.properties,
                 )
                 if replacement is not None:
+                    if intent_map is not None and active_property_node is not None:
+                        _ground_in_condition(replacement, active_property_node, set(approved_property_names))
                     replacement = attach_source_ids(replacement, active_packet.focus_node_ids)
                     replacement = _align_repaired_property_atom(
                         rejected_atom=reviewed_atom,
@@ -1207,6 +1391,8 @@ def author(
                 and reviewed_atom is not current_atom
             ):
                 symbolic_verify_atom(reviewed_atom, str(schema_path), prior_atoms=plan.properties)
+                if intent_map is not None and active_property_node is not None:
+                    _check_against_map(intent_map, reviewed_atom, active_property_node)
                 verification_logs[reviewed_atom.name] = list(
                     reviewed_atom.symbolic_verification_log,
                 )
@@ -1404,9 +1590,10 @@ def author(
             and active_property_node is not None
             and active_packet is not None
         ):
-            completion_blocker = _source_node_completion_blocker(
-                active_packet.focus_node_ids,
-                plan.properties,
+            completion_blocker = (
+                _map_completion_blocker(intent_map, active_property_node, plan.properties)
+                if intent_map is not None
+                else _source_node_completion_blocker(active_packet.focus_node_ids, plan.properties)
             )
             if completion_blocker is not None:
                 decisions2.append(
@@ -1438,6 +1625,11 @@ def author(
                     queued=0,
                     reason=completion_blocker,
                 )
+                if intent_map is not None and _attempts_exhausted(node_attempts, active_property_node):
+                    give_up_on_node(active_property_node, completion_blocker)
+                    active_property_node = None
+                    active_packet = None
+                    active_spec_text = ""
                 continue
             completed_property_node_ids.add(active_property_node.id)
             session.write_stage0_coverage_ledger(
@@ -1446,6 +1638,7 @@ def author(
                     completed_property_node_ids=completed_property_node_ids,
                     schema_packets=schema_context_packets,
                     property_packets=property_context_packets,
+                    frontier_ids=frontier_ids,
                 ),
             )
             _notify_property_progress(
@@ -1527,6 +1720,8 @@ def author(
             for node in property_frontier_nodes
             if node.id not in completed_property_node_ids
         ]
+        if intent_map is not None:
+            write_json(session.base / "stage2" / "map_status.json", intent_map.status(plan.properties))
         return AuthorResult(
             session_id=session_id,
             session_dir=session.base,
@@ -1534,14 +1729,56 @@ def author(
             plan=plan,
             schema_text=schema_text,
             final_user_approved=False,
-            notes=[
-                "Stage 2 stopped before covering the full source DAG; "
-                f"{len(open_nodes)} authorization source node(s) remain open.",
-            ],
+            notes=(
+                _map_stop_notes(intent_map, source_doc, plan.properties)
+                if intent_map is not None
+                else [
+                    "Stage 2 stopped before covering the full source DAG; "
+                    f"{len(open_nodes)} authorization source node(s) remain open.",
+                ]
+            ),
         )
 
+    # ──── Stage 2 boundaries: calculated from the intent map ────
+    boundary_plan = plan
+    if intent_map is not None:
+        status = intent_map.status(plan.properties)
+        write_json(session.base / "stage2" / "map_status.json", status)
+        derived, derive_issues = derive_boundary_atoms(intent_map, plan.properties, cedar_path=CEDAR_PATH)
+        derive_issues += _dead_slice_floors(derived, schema_path, session.base / "stage2" / "derived")
+        write_json(session.base / "stage2" / "derived_boundaries.json", {
+            "atoms": [to_dict(a) for a in derived],
+            "issues": derive_issues,
+        })
+        if not status["root_solved"] or derive_issues:
+            _write_stage0_artifacts(
+                session,
+                source_doc,
+                schema_context_packets,
+                property_context_packets,
+                completed_property_node_ids,
+                schema_atoms=approved_schema_atoms,
+                property_atoms=plan.properties,
+                schema_gaps=schema_gaps,
+            )
+            session.flush_transcript()
+            return AuthorResult(
+                session_id=session_id,
+                session_dir=session.base,
+                candidate_path=Path(""),
+                plan=plan,
+                schema_text=schema_text,
+                final_user_approved=False,
+                notes=(
+                    _map_stop_notes(intent_map, source_doc, plan.properties)
+                    if not status["root_solved"]
+                    else ["Stopped before synthesis: " + "; ".join(derive_issues[:6])]
+                ),
+            )
+        boundary_plan = VerificationPlanDraft(properties=derived)
+
     # ──── Stage 1.75: pre-synthesis unsat detection ────
-    consistency_plan = compile_plan_for_consistency(plan)
+    consistency_plan = compile_plan_for_consistency(boundary_plan)
     consistency = symbolic_consistency_check(consistency_plan, str(schema_path))
     session.write_stage1_75_unsat_core(
         unsat=consistency.unsat,
@@ -1592,14 +1829,14 @@ def author(
         )
 
     # ──── Stage 2 final compile (sugar resolution + §8.8 patches) ────
-    compiled = compile_plan(plan)
+    compiled = compile_plan(boundary_plan)
     session.write_stage2_final_plan(compiled.verification_plan_py, compiled.references)
 
     # Materialize a complete scenario directory for Stage 3.
     stage3_spec_text = approved_target_spec(
         original_spec_name=spec_path.name,
         schema_atoms=approved_schema_atoms,
-        property_atoms=plan.properties,
+        property_atoms=[*plan.properties, *(boundary_plan.properties if intent_map else [])],
     )
     scenario_dir = _materialize_scenario_dir(
         session_dir=session.base,
@@ -1631,6 +1868,8 @@ def author(
         stage2_decisions=decisions2,
         schema_gap_repairs=schema_gap_repairs,
     )
+    if map_decision is not None and not map_decision.intent_acknowledged_by_user:
+        final_user_approved = False
     final_approval_reason = (
         "All accepted schema and property atoms were explicitly acknowledged "
         "by a user."
@@ -1840,6 +2079,86 @@ def _normalize_property_proposals(result: PropertyProposalResult) -> list[Proper
     if isinstance(result, PropertyAtom):
         return [result]
     return [atom for atom in result if isinstance(atom, PropertyAtom)]
+
+
+def _ground_in_condition(atom: PropertyAtom, node: Any, taken: set[str]) -> PropertyAtom:
+    """Tie an atom to its condition node, durably, under a unique name."""
+    attach_source_ids(atom, [node.id])
+    if node.id not in atom.source_excerpt:
+        atom.source_excerpt = f"[source_id: {node.id}] {atom.source_excerpt}".strip()
+    if atom.name in taken:
+        base = f"{atom.name}__{re.sub(r'[^A-Za-z0-9_]+', '_', atom.action) or 'scope'}"
+        atom.name = base if base not in taken else f"{base}__p{node.ordinal:04d}"
+    taken.add(atom.name)
+    return atom
+
+
+def _check_against_map(intent_map: IntentMap, atom: PropertyAtom, node: Any) -> None:
+    """Fail an atom whose kind or scope the map does not allow for its node."""
+    issue = condition_atom_issue(intent_map, atom, node.id)
+    if issue:
+        atom.symbolic_verified = False
+        atom.symbolic_verification_log = [
+            *atom.symbolic_verification_log,
+            f"map-scope: FAILED ({issue})",
+        ]
+
+
+def _map_completion_blocker(intent_map: IntentMap, node: Any, approved: list[PropertyAtom]) -> str | None:
+    """A condition is solved only when every scope it applies to has an approved atom."""
+    missing = intent_map.unsolved_scopes(node.id, approved)
+    if not missing:
+        return None
+    scopes = "; ".join(
+        f"{s.id} ({s.principal_type} / {s.action} / {s.resource_type})" for s in missing
+    )
+    return (
+        "This requirement has no approved condition atom yet for scope(s) "
+        f"{scopes}. Propose one condition atom for each."
+    )
+
+
+def _attempts_exhausted(attempts: dict[str, int], node: Any) -> bool:
+    attempts[node.id] = attempts.get(node.id, 0) + 1
+    return attempts[node.id] >= MAX_CONDITION_ATTEMPTS
+
+
+def _map_stop_notes(intent_map: IntentMap, source_doc: Any, approved: list[PropertyAtom]) -> list[str]:
+    status = intent_map.status(approved)
+    text = {node.id: node.text for node in source_doc.nodes}
+    blocked = status["blocking_conditions"]
+    return [
+        f"Stopped before synthesis: {len(blocked)} requirement(s) in the intent map "
+        "have no approved condition atom, so the plan would be incomplete. "
+        "Blocked: " + "; ".join(f"[{n}] {text.get(n, '')}" for n in blocked[:12]),
+    ]
+
+
+def _dead_slice_floors(derived: list[PropertyAtom], schema_path: Path, workdir: Path) -> list[str]:
+    """Slices whose conditions contradict each other, so nothing can be allowed."""
+    problems: list[str] = []
+    workdir.mkdir(parents=True, exist_ok=True)
+    for atom in derived:
+        if atom.constraint_type != "floor":
+            continue
+        path = workdir / f"{atom.name}.cedar"
+        path.write_text(atom.reference_cedar)
+        denies, output = _run_symcc(
+            str(schema_path),
+            atom.principal_types[0],
+            atom.action,
+            atom.resource_types[0],
+            "always-denies",
+            ["--policies", str(path)],
+        )
+        if _is_symcc_tool_error(output):
+            problems.append(f"{atom.name}: the verifier could not check this slice: {output[:300]}")
+        elif denies:
+            problems.append(
+                f"{atom.name}: its conditions contradict each other, so no request of "
+                "this slice can be allowed.",
+            )
+    return problems
 
 
 def _source_node_completion_blocker(

@@ -11,7 +11,8 @@ from autocedar import pipeline
 from autocedar.atoms import EntityAtom, to_dict
 from autocedar.corpus import AtomDecision, Session
 from autocedar.persistence import atomic_write_text, find_resumable_session, write_json
-from autocedar.ui.terminal import ReviewedAtom, auto_approve
+from autocedar.ui.terminal import ReviewedAtom
+from tests.reviewers import approve_checked
 from tests.test_pipeline import MINIMAL_SCHEMA, _owner_must_floor, _owner_only_ceiling
 
 
@@ -52,7 +53,7 @@ def test_resume_keeps_approval_and_unreviewed_bundle_without_new_proposal(plumbi
         reviewed.append(atom.name)
         if len(reviewed) == 2:
             raise TimeoutError("simulated process interruption")
-        return auto_approve(atom)
+        return approve_checked(atom)
 
     with pytest.raises(TimeoutError):
         pipeline.author(**kwargs, session_id="original", review_atom=interrupted_review,
@@ -67,7 +68,7 @@ def test_resume_keeps_approval_and_unreviewed_bundle_without_new_proposal(plumbi
 
     def resume_review(atom):
         resumed_reviews.append(atom.name)
-        return auto_approve(atom)
+        return approve_checked(atom)
 
     def no_new_proposals(*_):
         pytest.fail("The queued proposal must survive an interruption")
@@ -122,7 +123,7 @@ def test_legacy_resume_preserves_independent_ceilings_and_verifier_status(plumbi
                     reference_cedar=older.reference_cedar.replace("principal == resource.owner", "principal.isAdmin"))
     source.write_stage2_proposed_atoms([older, newer])
     source.write_stage2_approved_atoms([older, newer])
-    source.write_stage2_decisions([auto_approve(a) for a in [older, newer]])
+    source.write_stage2_decisions([approve_checked(a) for a in [older, newer]])
     restored = pipeline._load_resume_checkpoint(source.base)
     assert [to_dict(a) for a in restored.approved_property_atoms] == [to_dict(older), to_dict(newer)]
     assert restored.schema_text == MINIMAL_SCHEMA
@@ -142,7 +143,7 @@ def test_stage1_resume_preserves_edited_atom_and_pending_schema_queue(plumbing, 
         if len(seen) == 2:
             raise TimeoutError("schema interrupted")
         edited = replace(atom, plain_english_summary="An edited summary")
-        return ReviewedAtom(atom=edited, decision=auto_approve(edited))
+        return ReviewedAtom(atom=edited, decision=approve_checked(edited))
 
     with pytest.raises(TimeoutError):
         pipeline.author(**kwargs, session_id="schema-interrupted", review_atom=review,
@@ -160,7 +161,7 @@ def test_stage1_resume_preserves_edited_atom_and_pending_schema_queue(plumbing, 
         pytest.fail("Do not regenerate the schema bundle")
 
     pipeline.author(**kwargs, session_id="schema-resumed", resume_from=original,
-                    review_atom=lambda a: resumed.append(a.name) or auto_approve(a),
+                    review_atom=lambda a: resumed.append(a.name) or approve_checked(a),
                     propose_schema_atoms=no_proposal, propose_property_atom=lambda *_: [])
     assert resumed == ["Resource"]
 
@@ -177,13 +178,13 @@ def test_completed_sources_not_requeried_after_timeout(plumbing):
         return []
 
     with pytest.raises(TimeoutError):
-        pipeline.author(**kwargs, session_id="timeout", review_atom=auto_approve, propose_property_atom=propose)
+        pipeline.author(**kwargs, session_id="timeout", review_atom=approve_checked, propose_property_atom=propose)
     source = kwargs["output_dir"] / "timeout"
     checkpoint = pipeline._load_resume_checkpoint(source)
     assert len(checkpoint.completed_property_node_ids) == 1
     assert find_resumable_session(kwargs["output_dir"], kwargs["spec_path"].read_text()) == source
     resumed_calls = []
-    pipeline.author(**kwargs, session_id="resume", resume_from=source, review_atom=auto_approve,
+    pipeline.author(**kwargs, session_id="resume", resume_from=source, review_atom=approve_checked,
                     propose_property_atom=lambda packet, *_: resumed_calls.append(packet) or [])
     assert len(resumed_calls) == 1
 
@@ -197,7 +198,7 @@ def test_repeated_identical_no_progress_stops_before_global_budget(plumbing):
         return [_owner_must_floor()]  # Missing safety boundary blocks completion.
 
     with pytest.raises(RuntimeError, match="no progress"):
-        pipeline.author(**kwargs, session_id="stalled", review_atom=auto_approve, propose_property_atom=propose)
+        pipeline.author(**kwargs, session_id="stalled", review_atom=approve_checked, propose_property_atom=propose)
     assert len(calls) == 4  # First approval changes state, then three identical proposals.
 
 
@@ -213,7 +214,7 @@ def test_schema_gap_repair_saves_each_review_before_next_prompt(plumbing, monkey
         seen.append(atom.name)
         if len(seen) == 2:
             raise TimeoutError("gap review interrupted")
-        return auto_approve(atom)
+        return approve_checked(atom)
 
     common = dict(spec_text="A source requirement.", schema_text=MINIMAL_SCHEMA,
                   schema_path=Path(kwargs["schema_path_override"]), gap={"atom_name": "needs_support", "reason": "Missing entities"},
@@ -228,7 +229,7 @@ def test_schema_gap_repair_saves_each_review_before_next_prompt(plumbing, monkey
     reviewed = []
     common["repair_records"] = persisted
     result = pipeline._repair_schema_gap_and_validate(
-        **common, review_atom=lambda a: reviewed.append(a.name) or auto_approve(a),
+        **common, review_atom=lambda a: reviewed.append(a.name) or approve_checked(a),
         propose_schema_atoms=lambda *_: pytest.fail("Saved schema repair queue must be reused"))
     assert result == MINIMAL_SCHEMA
     assert reviewed == ["ExtraB"]

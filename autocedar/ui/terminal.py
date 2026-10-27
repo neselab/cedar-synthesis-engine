@@ -22,6 +22,7 @@ independent of the symcc-driven ``symbolic_verified`` flag.
 from __future__ import annotations
 
 import dataclasses
+import json
 import re
 from dataclasses import dataclass
 from typing import Any, Callable, Optional, Union
@@ -34,6 +35,7 @@ from autocedar.atoms import (
     TypeAliasAtom,
 )
 from autocedar.corpus import AtomDecision
+from autocedar.intent_map import IntentMap
 from autocedar.llm import LLMClient, Stage1Atom
 
 VERIFIED_BADGE = "✓ Formally consistent — does this match your intent?"
@@ -456,40 +458,6 @@ def _is_symcc_setup_error(text: str) -> bool:
 
 
 # ---------------------------------------------------------------------------
-# Auto-approve reviewer (non-interactive, used by tests and batch eval).
-# ---------------------------------------------------------------------------
-
-
-def auto_approve(atom: Any) -> AtomDecision:
-    """Non-interactive reviewer for batch runs.
-
-    This is still only a plumbing convenience; it is not semantic HITL
-    validation, so an approval returned here deliberately leaves
-    ``intent_acknowledged_by_user`` false. It must also not approve a property
-    atom whose verifier checks failed, because that would let invalid reference
-    Cedar enter the formal target and later fail as a plan-level tooling error.
-    """
-    if isinstance(atom, PropertyAtom) and not getattr(atom, "symbolic_verified", False):
-        log = getattr(atom, "symbolic_verification_log", []) or []
-        reason = "Symbolic verification failed; auto-approve refuses invalid property atoms."
-        if log:
-            reason += " " + str(log[0])
-        return AtomDecision(
-            atom_name=getattr(atom, "name", "?"),
-            action="reject",
-            reason=reason,
-            intent_acknowledged_by_user=False,
-            symbolic_verified=False,
-        )
-    return AtomDecision(
-        atom_name=getattr(atom, "name", "?"),
-        action="approve",
-        intent_acknowledged_by_user=False,
-        symbolic_verified=getattr(atom, "symbolic_verified", False),
-    )
-
-
-# ---------------------------------------------------------------------------
 # Interactive review loop.
 # ---------------------------------------------------------------------------
 
@@ -584,7 +552,7 @@ def _review_one_atom(
             )
         if key == "R":
             reason = (input_fn("Reason: ") or "").strip()
-            if llm is None or isinstance(current, PropertyAtom):
+            if llm is None or isinstance(current, (PropertyAtom, IntentMap)):
                 return ReviewedAtom(
                     atom=current,
                     decision=AtomDecision(
@@ -612,6 +580,12 @@ def _review_one_atom(
             edit_log["reject_reason"] = reason
             edit_log["replaced_by_llm"] = True
             continue
+        if key == "E" and isinstance(current, IntentMap):
+            output_fn(
+                "(the map cannot be edited field by field; reject it with a reason "
+                "and AutoCedar revises it)",
+            )
+            continue
         if key == "E":
             edit_input = (input_fn("Edit (field=value): ") or "").strip()
             try:
@@ -632,7 +606,9 @@ def _review_one_atom(
             output_fn(f"Agent: {answer}")
             continue
         if key == "S":
-            if isinstance(current, PropertyAtom):
+            if isinstance(current, IntentMap):
+                output_fn(json.dumps(current.to_dict(), indent=2))
+            elif isinstance(current, PropertyAtom):
                 output_fn("```cedar")
                 output_fn(render_property_reference(current))
                 output_fn("```")
@@ -667,9 +643,20 @@ def _approval_needs_failed_property_confirmation(
 
 
 def _render_review_atom(atom: ReviewableAtom, index: int, total: int) -> str:
+    if isinstance(atom, IntentMap):
+        return render_intent_map(atom)
     if isinstance(atom, PropertyAtom):
         return render_property_atom(atom, index, total)
     return render_schema_atom(atom, index, total)
+
+
+def render_intent_map(intent_map: IntentMap) -> str:
+    """The map for review: approve it, or reject it with a reason to revise it."""
+    return (
+        intent_map.review_text
+        + "\n\nApprove if every sentence sits where the document puts it. "
+        "Reject with a reason to have AutoCedar revise the map."
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -697,6 +684,11 @@ def _apply_field_edit(
     alternatives_considered), the user rejects and lets the LLM
     propose a replacement.
     """
+    if isinstance(atom, IntentMap):
+        raise ValueError(
+            "the map cannot be edited field by field; reject it with a reason "
+            "and AutoCedar revises it",
+        )
     if "=" not in edit_input:
         raise ValueError("expected `field=value`")
     field_name, value = edit_input.split("=", 1)

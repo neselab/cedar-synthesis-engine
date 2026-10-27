@@ -31,6 +31,9 @@ ConstraintType = Literal[
     "liveness",
     "rate_limit",
     "disjointness",
+    # One condition of a slice in the intent map; AutoCedar calculates floors
+    # and ceilings from approved conditions (see autocedar.intent_map).
+    "condition",
 ]
 
 PRIMITIVE_CONSTRAINTS: tuple[str, ...] = ("ceiling", "floor", "liveness")

@@ -404,13 +404,35 @@ be a boolean flag, use `E cedar_type=Bool`. AutoCedar re-presents the edited
 atom before you approve it. If you edit a property atom, symbolic checks are
 rerun after approval so stale verification results are not reused.
 
-After the schema is established, AutoCedar asks the model for bounded local
-Stage 2 property bundles from a source packet plus the current schema and
-approved target. This cuts repeated model round trips without changing the
-review contract: each returned property atom is still symbolically checked and
-sent through HITL review one by one before it can enter the formal target. Each
-source packet records the current source node, nearby clauses, related
-definitions, approved atoms, and prior review history.
+After the schema is established, AutoCedar maps the whole document before it
+writes any property. The **intent map** is a task graph in the style of LEAP's
+AND-OR proof blueprint:
+
+- a **scope** is the requests for one principal type, action, and resource
+  type; a request is allowed when one of the scope's slices holds;
+- a **slice** is one way to be allowed; all of its conditions must hold;
+- a **condition** is a requirement sentence, attached to the slices it
+  constrains (or to a whole scope it restricts);
+- **rules for interpretation** (how "unless" clauses work, what brackets mean)
+  go with every later step; every other sentence carries no requirement.
+
+You review the map first, with the same keys: `A` approves it, `R reason` sends
+it back to the model with your reason, and `S` shows it as JSON. The map cannot
+be edited field by field. AutoCedar also checks its structure: every scope's
+action and types exist in the schema, every slice has a condition, and every
+condition has a slice.
+
+Then AutoCedar asks for one **condition atom** per condition and scope: the
+Cedar for exactly that requirement. Each call receives the requirement, the
+other conditions of its slice, the scope's approved conditions, and the rules
+for interpretation, all taken from the map. Each atom is symbolically checked
+and reviewed one by one. A requirement counts as done only when every scope it
+applies to has an approved atom; after three failed attempts, AutoCedar stops
+before synthesis and names the requirement. AutoCedar then calculates the
+floors and ceilings itself: a slice's floor joins its conditions with AND, and
+a scope's floors are joined with OR. When the document lists every way to allow
+a scope, its ceiling is the same set of permits, so the plan is exact. It also
+checks that no slice's conditions contradict each other.
 During this stage, AutoCedar prints property progress and shows a TUI progress
 bar over source packets, with details such as the current source packet, open
 source-node count, approved/rejected atom count, and queued atoms so long
@@ -876,6 +898,14 @@ uv run autocedar synthesize cedarbench/scenarios/realworld/emergency_break_glass
   --phase1-model gpt-5.5 \
   --phase2-model gpt-5.5
 ```
+
+`author` and `resume` pause for you to review each atom. When no person is
+available, as in batch experiments, add `--model-review`: the model then judges
+each atom against the requirements in your place, checking that the text
+supports it, that it applies to the right action and types, and that its Cedar
+matches its summary. Rejected atoms go to the repair planner with the reason.
+Model review is recorded as such and never counts as human approval.
+`--auto-approve`, the flag's earlier name, still works and means the same thing.
 
 ### Output Files
 

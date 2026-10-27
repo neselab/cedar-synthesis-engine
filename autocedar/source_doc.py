@@ -351,9 +351,14 @@ def build_coverage_ledger(
     *,
     completed_property_node_ids: set[str],
     schema_packets: list[SourcePacket],
-    property_packets: list[SourcePacket],
+    property_packets: list[Any],
+    frontier_ids: list[str] | None = None,
 ) -> dict[str, Any]:
-    auth_ids = [node.id for node in doc.authorization_nodes()]
+    """Coverage of the requirement frontier: the intent map's conditions when
+    a map exists, otherwise the keyword-selected authorization nodes."""
+    auth_ids = list(frontier_ids) if frontier_ids is not None else [
+        node.id for node in doc.authorization_nodes()
+    ]
     return {
         "schema_version": 1,
         "source_nodes": len(doc.nodes),
@@ -375,6 +380,7 @@ def build_source_intent_dag(
     schema_atoms: Iterable[Any] = (),
     property_atoms: Iterable[PropertyAtom] = (),
     schema_gaps: Iterable[dict[str, Any]] = (),
+    intent_map: Any = None,
 ) -> dict[str, Any]:
     schema_atom_list = list(schema_atoms)
     property_atom_list = list(property_atoms)
@@ -451,6 +457,14 @@ def build_source_intent_dag(
                     "type": "reveals_schema_gap",
                 },
             )
+    if intent_map is not None:
+        # The task graph's typed edges: conditions to slices (AND), slices to
+        # scopes (OR), scopes to the policy store, interpretation rules.
+        from autocedar.intent_map import map_graph
+
+        map_nodes, map_edges = map_graph(intent_map)
+        nodes.extend(map_nodes)
+        edges.extend(map_edges)
     return {
         "schema_version": 1,
         "nodes": nodes,
@@ -464,6 +478,15 @@ def build_source_intent_dag(
             "schema_gaps": len(schema_gap_list),
         },
     }
+
+
+def document_outline(doc: SourceDocument) -> str:
+    """The document as numbered source nodes, for whole-document model calls."""
+    lines = []
+    for node in doc.nodes:
+        section = " / ".join(node.heading_path) if node.heading_path else "root"
+        lines.append(f'<node id="{node.id}" section="{section}">{node.text}</node>')
+    return "\n".join(lines) + "\n"
 
 
 def approved_target_spec(

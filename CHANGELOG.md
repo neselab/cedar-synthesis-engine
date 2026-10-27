@@ -5,6 +5,27 @@ versioning while the public provider and CLI interfaces stabilize.
 
 ## Unreleased
 
+- Added the intent map, a task graph after LEAP's AND-OR blueprint. The model
+  maps the whole document into scopes (one principal type, action, and resource
+  type), slices (ways to be allowed, AND of conditions), conditions (requirement
+  sentences with edges to their slices), and rules for interpretation. The map
+  passes structure checks and review before any atom is written. Each condition
+  then gets one condition atom per scope, proposed from context drawn from the
+  map's edges rather than the six nearest sentences. Floors and ceilings are
+  calculated from the approved conditions, so a floor can no longer miss a
+  condition. A requirement counts as done only when an approved atom grounds it
+  in every scope; synthesis starts only when every node of the map is solved,
+  and otherwise the run stops and names the blocking requirements. The map
+  replaces the keyword rule for finding requirement sentences. Runs without a
+  map builder (the Python API without `map_intent`) keep the previous Stage 2.
+- Runs without a person now review meaning. `--model-review` has the model
+  judge each atom against the full requirements (supported by the text, right
+  action and types, Cedar matching its summary, floors that keep every
+  condition) and sends rejections to the repair planner. Before, the flag
+  approved any atom whose Cedar passed the symbolic checks, so atoms that
+  misread a requirement entered the target. `--auto-approve` is the earlier
+  name and still works. The checks-only approval mode is removed. Model review
+  never counts as human approval.
 - A short "Label:" line no longer replaces the Markdown section it sits in; it
   becomes a sub-heading under that section. Templates that repeat "Allow this
   action if…:" under each action's heading previously merged every action's

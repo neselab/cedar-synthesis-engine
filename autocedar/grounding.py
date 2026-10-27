@@ -887,6 +887,18 @@ def symbolic_verify_atom(
             atom.symbolic_verification_log = result.log_lines()
             return result
 
+    if atom.constraint_type == "condition":
+        # Floors are calculated by merging condition atoms, so each one must be
+        # a single permit for exactly its scope.
+        from autocedar.intent_map import condition_shape_issue
+
+        issue = condition_shape_issue(atom.reference_cedar, atom, CEDAR_PATH)
+        result.checks.append(SymbolicCheck(name="condition-shape", passed=not issue, detail=issue))
+        if issue:
+            atom.symbolic_verified = False
+            atom.symbolic_verification_log = result.log_lines()
+            return result
+
     # Check 5: schema-aware identity consistency. Cedar validation can pass
     # even when a policy compares User::"alice" to Patient::"alice".
     result.checks.append(_check_identity_consistency(atom, schema_path))
