@@ -203,6 +203,11 @@ def compile_source_document(spec_text: str) -> SourceDocument:
     nodes: list[SourceNode] = []
     edges: list[dict[str, str]] = []
     headings: list[str] = []
+    # Markdown headings form the section hierarchy. A short "Label:" line is a
+    # sub-heading under the current Markdown section and is replaced by the
+    # next label, so it never displaces the section that names, e.g., the
+    # action a block of requirements belongs to.
+    markdown_headings: list[tuple[int, str]] = []
     paragraph: list[tuple[int, str]] = []
     ordinal = 0
 
@@ -235,8 +240,14 @@ def compile_source_document(spec_text: str) -> SourceDocument:
         if heading is not None:
             flush_paragraph()
             level, title = heading
-            headings = headings[: max(0, level - 1)]
-            headings.append(title)
+            if level:
+                # Keep only shallower headings, so skipped levels (a document
+                # that starts at "##") still make same-level sections siblings.
+                markdown_headings = [(lvl, t) for lvl, t in markdown_headings if lvl < level]
+                markdown_headings.append((level, title))
+                headings = [t for _, t in markdown_headings]
+            else:
+                headings = [*(t for _, t in markdown_headings), title]
             continue
         if not stripped:
             flush_paragraph()
@@ -340,9 +351,14 @@ def build_coverage_ledger(
     *,
     completed_property_node_ids: set[str],
     schema_packets: list[SourcePacket],
-    property_packets: list[SourcePacket],
+    property_packets: list[Any],
+    frontier_ids: list[str] | None = None,
 ) -> dict[str, Any]:
-    auth_ids = [node.id for node in doc.authorization_nodes()]
+    """Coverage of the requirement frontier: the intent map's conditions when
+    a map exists, otherwise the keyword-selected authorization nodes."""
+    auth_ids = list(frontier_ids) if frontier_ids is not None else [
+        node.id for node in doc.authorization_nodes()
+    ]
     return {
         "schema_version": 1,
         "source_nodes": len(doc.nodes),
@@ -364,6 +380,7 @@ def build_source_intent_dag(
     schema_atoms: Iterable[Any] = (),
     property_atoms: Iterable[PropertyAtom] = (),
     schema_gaps: Iterable[dict[str, Any]] = (),
+    intent_map: Any = None,
 ) -> dict[str, Any]:
     schema_atom_list = list(schema_atoms)
     property_atom_list = list(property_atoms)
@@ -440,6 +457,14 @@ def build_source_intent_dag(
                     "type": "reveals_schema_gap",
                 },
             )
+    if intent_map is not None:
+        # The task graph's typed edges: conditions to slices (AND), slices to
+        # scopes (OR), scopes to the policy store, interpretation rules.
+        from autocedar.intent_map import map_graph
+
+        map_nodes, map_edges = map_graph(intent_map)
+        nodes.extend(map_nodes)
+        edges.extend(map_edges)
     return {
         "schema_version": 1,
         "nodes": nodes,
@@ -453,6 +478,15 @@ def build_source_intent_dag(
             "schema_gaps": len(schema_gap_list),
         },
     }
+
+
+def document_outline(doc: SourceDocument) -> str:
+    """The document as numbered source nodes, for whole-document model calls."""
+    lines = []
+    for node in doc.nodes:
+        section = " / ".join(node.heading_path) if node.heading_path else "root"
+        lines.append(f'<node id="{node.id}" section="{section}">{node.text}</node>')
+    return "\n".join(lines) + "\n"
 
 
 def approved_target_spec(
@@ -533,17 +567,21 @@ def _neighbors(doc: SourceDocument, focus_nodes: list[SourceNode], limit: int = 
                 if candidate.id not in focus_ids:
                     related.append(candidate)
 
-    scored: list[tuple[int, SourceNode]] = []
+    # Nodes from the focus node's own section come first, then the rest by
+    # shared content words. Templates often repeat a requirement verbatim in
+    # several sections (one per action), and ranking by shared words alone
+    # filled packets with another action's requirements.
+    focus_sections = {node.parent_id for node in focus_nodes}
+    scored: list[tuple[bool, int, SourceNode]] = []
     for candidate in all_nodes:
         if candidate.id in focus_ids:
             continue
-        score = len(terms & _terms(candidate.text))
-        if candidate.parent_id and candidate.parent_id in {node.parent_id for node in focus_nodes}:
-            score += 2
+        same_section = bool(candidate.parent_id) and candidate.parent_id in focus_sections
+        score = len(terms & _terms(candidate.text)) + (2 if same_section else 0)
         if score > 1:
-            scored.append((score, candidate))
-    scored.sort(key=lambda item: (-item[0], item[1].ordinal))
-    related.extend(candidate for _, candidate in scored[:limit])
+            scored.append((same_section, score, candidate))
+    scored.sort(key=lambda item: (not item[0], -item[1], item[2].ordinal))
+    related.extend(candidate for _, _, candidate in scored[:limit])
     deduped: list[SourceNode] = []
     seen: set[str] = set()
     for node in related:
@@ -578,11 +616,12 @@ def _terms(text: str) -> set[str]:
 
 
 def _parse_heading(stripped: str) -> tuple[int, str] | None:
+    """Return (level, title); level 0 marks a "Label:" line, not Markdown."""
     markdown = re.match(r"^(#{1,6})\s+(.+)$", stripped)
     if markdown:
         return len(markdown.group(1)), markdown.group(2).strip()
     if stripped.endswith(":") and len(stripped) < 120 and not re.search(r"[.;]", stripped):
-        return 2, stripped[:-1].strip()
+        return 0, stripped[:-1].strip()
     return None
 
 
@@ -590,17 +629,39 @@ def _normalize_block(text: str) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
 
+_LIST_MARKER = re.compile(r"^\s*(?:[-*+\u2022]|\(?\d{1,3}[.)]|\(?[A-Za-z][)])\s+")
+_BARE_LIST_MARKER = re.compile(r"^\(?(?:\d{1,3}|[A-Za-z])[.)]$")
+_TERMINAL_PUNCTUATION = (".", "!", "?", ":", ";")
+
+
 def _paragraph_blocks(paragraph: list[tuple[int, str]]) -> list[tuple[str, int, int]]:
-    if len(paragraph) <= 1:
-        if not paragraph:
-            return []
-        line_no, text = paragraph[0]
-        return [(_normalize_block(text), line_no, line_no)]
-    return [
-        (_normalize_block(text), line_no, line_no)
-        for line_no, text in paragraph
-        if _normalize_block(text)
-    ]
+    """Group a paragraph's lines into blocks, one per list item or wrapped line.
+
+    A line starts a new block when it opens a list item, or when the previous
+    block already ends a sentence. Otherwise it continues the previous block if
+    it is indented further or starts in lower case, which is how hard-wrapped
+    prose and wrapped list items look. Lines that satisfy none of these keep
+    their own block, so one-requirement-per-line documents split as before.
+    """
+    blocks: list[list[Any]] = []
+    for line_no, raw in paragraph:
+        text = _normalize_block(raw)
+        if not text:
+            continue
+        indent = len(raw) - len(raw.lstrip())
+        if blocks and _continues_block(blocks[-1], raw, text, indent):
+            blocks[-1][0] = f"{blocks[-1][0]} {text}"
+            blocks[-1][2] = line_no
+            continue
+        blocks.append([text, line_no, line_no, indent])
+    return [(text, start, end) for text, start, end, _ in blocks]
+
+
+def _continues_block(block: list[Any], raw: str, text: str, indent: int) -> bool:
+    previous_text, _, _, first_indent = block
+    if _LIST_MARKER.match(raw) or previous_text.endswith(_TERMINAL_PUNCTUATION):
+        return False
+    return indent > first_indent or text[:1].islower()
 
 
 def _split_requirement_block(
@@ -609,11 +670,19 @@ def _split_requirement_block(
     end_line: int,
     max_chars: int = 900,
 ) -> list[tuple[str, int, int]]:
-    sentences = [
-        sentence.strip()
-        for sentence in re.split(r"(?<=[.!?])\s*(?=[A-Z0-9\"'])", text)
-        if sentence.strip()
-    ]
+    sentences: list[str] = []
+    # Split after sentence punctuation. Pasted text may lack the space before
+    # a capital ("team.Nurses"), but a digit needs one, so "§8.8" stays whole.
+    for sentence in re.split(r"(?<=[.!?])(?:\s+(?=[A-Z0-9\"'])|(?=[A-Z\"']))", text):
+        sentence = sentence.strip()
+        if not sentence:
+            continue
+        # A list marker such as "7." ends in a period, so the split above cuts
+        # it off its item; join it back.
+        if sentences and _BARE_LIST_MARKER.match(sentences[-1]):
+            sentences[-1] = f"{sentences[-1]} {sentence}"
+        else:
+            sentences.append(sentence)
     if len(sentences) > 1:
         return [(sentence, start_line, end_line) for sentence in sentences]
     return _split_long_block(text, start_line, end_line, max_chars=max_chars)

@@ -5,7 +5,7 @@ description: Turn natural-language access-control requirements into a Cedar poli
 
 # AutoCedar
 
-AutoCedar splits requirements into small **intent atoms**. Schema atoms fix the vocabulary (entities, attributes, actions). Property atoms state behavior: a **floor** lists requests that must be allowed, a **ceiling** bounds what may be allowed, and a **liveness slice** is a class of requests that must not be emptied. The user approves each atom. AutoCedar then compiles the approved atoms into a verification target and synthesizes a Cedar policy that `cedar symcc` proves satisfies it.
+AutoCedar splits requirements into small **intent atoms**. Schema atoms fix the vocabulary (entities, attributes, actions). AutoCedar then maps the requirements into an **intent map**: for each action, the ways a request may be allowed and the requirements on each way. Each requirement becomes a **condition atom**, the Cedar condition for that requirement alone. The user approves the map and each atom. From them AutoCedar calculates the verification target, **floors** (requests that must be allowed) and **ceilings** (bounds on what may be allowed), and synthesizes a Cedar policy that `cedar symcc` proves satisfies it.
 
 The `autocedar` MCP server provides the tools named below.
 
@@ -35,7 +35,7 @@ If the `autocedar` tools are missing altogether, the MCP server did not start. I
 3. Loop on the returned `state`:
    - **`awaiting_review`.** Present `pending_review` to the user:
      - `stage` and position (`index` of `total`);
-     - `kind` and, for property atoms, `constraint_type`;
+     - `kind`: `intent_map` (approve, or reject with a reason; it cannot be edited), `permissions_question` (approve means yes, the list of permissions is complete; reject means no, the listed permissions are examples), `schema`, or `property` with its `constraint_type`;
      - the `summary`, which is the claim being approved;
      - the `source_excerpt` it came from;
      - the `cedar` encoding;
@@ -47,7 +47,7 @@ If the `autocedar` tools are missing altogether, the MCP server did not start. I
    - **`running`.** The pipeline is proposing atoms or synthesizing. Call `author_status`, which waits. Tell the user briefly what `recent_events` shows.
    - **`finished`.**
      - If `result.completed` is true, show the Cedar policy (`candidate_cedar`) and the session directory.
-     - If it is false, show the `notes`: construction stopped, for example on a floor and ceiling that conflict, and the user has to resolve it.
+     - If it is false, show the `notes`: construction stopped, for example on a requirement that has no approved atom, and the user has to resolve it.
    - **`error`.** Show the error. A run can be continued with `author_start` and `resume_session` set to the session directory.
    - **`paused`.** The run was paused with `author_pause`. Resume it the same way.
 

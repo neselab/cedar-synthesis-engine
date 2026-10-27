@@ -82,3 +82,105 @@ def test_attach_source_ids_keeps_visible_excerpt_unchanged() -> None:
 
     assert atom.source_excerpt == "The owner can read the document."
     assert atom_source_ids(atom) == ["src.docs.p0001.l7"]
+
+
+def test_wrapped_list_items_and_prose_become_single_nodes() -> None:
+    spec = (
+        "## Requirements\n"
+        "\n"
+        "7. Reviewers can read other reviewers' reviews for a paper only after submitting\n"
+        "   their own review for that paper.\n"
+        "8. Reviewers can declare conflicts of interest for assigned papers.\n"
+        "\n"
+        "Chairs monitor the review process and may reassign papers when a reviewer\n"
+        "withdraws.\n"
+    )
+
+    doc = compile_source_document(spec)
+
+    assert [node.text for node in doc.nodes] == [
+        "7. Reviewers can read other reviewers' reviews for a paper only after "
+        "submitting their own review for that paper.",
+        "8. Reviewers can declare conflicts of interest for assigned papers.",
+        "Chairs monitor the review process and may reassign papers when a reviewer withdraws.",
+    ]
+    assert (doc.nodes[0].start_line, doc.nodes[0].end_line) == (3, 4)
+
+
+def test_one_requirement_per_line_still_splits_per_line() -> None:
+    spec = "Doctors read records\nNurses update vitals\nPatients view their own records\n"
+
+    doc = compile_source_document(spec)
+
+    assert [node.text for node in doc.nodes] == [
+        "Doctors read records",
+        "Nurses update vitals",
+        "Patients view their own records",
+    ]
+
+
+def test_section_numbers_are_not_sentence_breaks() -> None:
+    doc = compile_source_document("Owners bypass MFA except on confidential files (see §8.8). Admins can audit.")
+
+    assert [node.text for node in doc.nodes] == [
+        "Owners bypass MFA except on confidential files (see §8.8).",
+        "Admins can audit.",
+    ]
+
+
+def test_label_lines_nest_under_markdown_sections() -> None:
+    spec = (
+        "# Requirements\n"
+        "\n"
+        "## Permission to release a work order\n"
+        "Allow this action if and only if all the following requirements hold:\n"
+        "\n"
+        "- Access requires that the user equals the work order's inspector.\n"
+        "\n"
+        "## Permission to sign off a work order\n"
+        "Allow this action if and only if all the following requirements hold:\n"
+        "\n"
+        "- Access requires that the user equals the work order's inspector.\n"
+    )
+
+    doc = compile_source_document(spec)
+
+    release, signoff = doc.nodes
+    assert release.heading_path == [
+        "Requirements",
+        "Permission to release a work order",
+        "Allow this action if and only if all the following requirements hold",
+    ]
+    assert signoff.heading_path[1] == "Permission to sign off a work order"
+    assert release.parent_id != signoff.parent_id
+
+
+def test_consecutive_label_lines_are_siblings() -> None:
+    doc = compile_source_document("Doctors:\nDoctors can read records.\n\nNurses:\nNurses can read charts.\n")
+
+    assert [node.heading_path for node in doc.nodes] == [["Doctors"], ["Nurses"]]
+
+
+def test_property_packets_prefer_the_focus_section() -> None:
+    shared = "- Access requires that the current time is between 2000 and 2100."
+    spec = "\n".join([
+        "## Permission to approve",
+        "Requirements:",
+        "- Access requires that the user has the Approver role.",
+        "- Access requires that the amount is at most 500.",
+        shared,
+        "",
+        "## Permission to disburse",
+        "Requirements:",
+        "- Access requires that the user has the Payer role.",
+        shared,
+        "",
+    ])
+    doc = compile_source_document(spec)
+    focus = doc.nodes[0]
+
+    related = select_property_packet(doc, focus).related_nodes
+
+    sections = [node.heading_path[0] for node in related]
+    assert sections[:2] == ["Permission to approve", "Permission to approve"]
+    assert sections.index("Permission to disburse") > sections.index("Permission to approve")

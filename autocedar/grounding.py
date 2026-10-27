@@ -42,6 +42,7 @@ from autocedar.atoms import (
     AlternativeEncoding,
     Example,
     PropertyAtom,
+    shared_environments,
 )
 from autocedar.identity_model import find_identity_issues, format_identity_issues
 
@@ -379,6 +380,28 @@ def _symcc_tool_error_message(output: str) -> str:
     )
 
 
+def _scope_issue(atom: PropertyAtom) -> str:
+    """Explain why an atom lacks the single action and types symcc needs."""
+    missing = [
+        label
+        for label, value in (
+            ("an action", atom.action.strip()),
+            ("principal types", atom.principal_types),
+            ("resource types", atom.resource_types),
+        )
+        if not value
+    ]
+    if not missing:
+        return ""
+    return (
+        f"atom names no {' or '.join(missing)}. Each property atom must bound "
+        "one schema action for named principal and resource types. Cedar "
+        "already denies every request that no permit allows, so an atom that "
+        "only denies unlisted actions, roles, or types adds nothing; drop it, "
+        "or restate it per action."
+    )
+
+
 def _principal_resource(atom: PropertyAtom) -> tuple[str, str]:
     """Extract (principal_type, resource_type) for an atom's symcc query.
 
@@ -481,24 +504,24 @@ def _check_never_errors(
             passed=True,
             detail="liveness atom has no reference encoding",
         )
+    from autocedar.harness.solver_wrapper import run_never_errors_check
+
     principal_type, resource_type = _principal_resource(atom)
     policy_path = workdir / f"{atom.name}_never_errors.cedar"
     policy_path.write_text(atom.reference_cedar)
-    signal = _run_symcc_signal(
+    # symcc's never-errors takes one policy; the harness check splits a
+    # reference that holds several and checks each.
+    check = run_never_errors_check(
         schema_path,
+        str(policy_path),
         principal_type,
-        atom.action,
+        _action_literal(atom.action),
         resource_type,
-        "never-errors",
-        ["--policies", str(policy_path)],
-        candidate_excerpt=atom.reference_cedar,
     )
-    if signal.tool_error:
-        return SymbolicCheck(name="never-errors", passed=False, detail=signal.raw_output)
     return SymbolicCheck(
         name="never-errors",
-        passed=signal.passed,
-        detail="" if signal.passed else signal.compact_detail(),
+        passed=check.passed,
+        detail="" if check.passed else check.counterexample,
     )
 
 
@@ -623,20 +646,32 @@ def _check_joint_consistency(
         floor_atom = atom if new_role == "floor" else prior
         ceiling_atom = prior if new_role == "floor" else atom
 
+        # Compare the pair only where both bounds apply. The harness checks
+        # each bound in its own request environments, so a ceiling on one
+        # principal type never constrains a floor on another.
+        environments = shared_environments(floor_atom, ceiling_atom)
+        if not environments:
+            continue
+
         floor_path = workdir / f"{floor_atom.name}_floor.cedar"
         ceiling_path = workdir / f"{ceiling_atom.name}_ceiling.cedar"
         floor_path.write_text(floor_atom.reference_cedar)
         ceiling_path.write_text(ceiling_atom.reference_cedar)
-        principal_type, resource_type = _principal_resource(atom)
 
-        passed, output = _run_symcc(
-            schema_path,
-            principal_type,
-            atom.action,
-            resource_type,
-            "implies",
-            ["--policies1", str(floor_path), "--policies2", str(ceiling_path)],
-        )
+        passed, output = True, ""
+        for principal_type, resource_type in environments:
+            env_passed, env_output = _run_symcc(
+                schema_path,
+                principal_type,
+                atom.action,
+                resource_type,
+                "implies",
+                ["--policies1", str(floor_path), "--policies2", str(ceiling_path)],
+            )
+            if not env_passed:
+                passed = False
+                output = f"[principal {principal_type}, resource {resource_type}]\n{env_output}"
+                break
         out.append(
             SymbolicCheck(
                 name=f"joint-consistency-with-{prior.name}",
@@ -829,6 +864,16 @@ def symbolic_verify_atom(
 
     result = SymbolicVerificationResult(atom_name=atom.name)
 
+    # Every check below runs symcc for one (principal, action, resource)
+    # environment. An atom that names none cannot be checked or compiled, so
+    # it fails here and goes to review and repair instead of crashing the run.
+    scope_issue = _scope_issue(atom)
+    if scope_issue:
+        result.checks.append(SymbolicCheck(name="typed-scope", passed=False, detail=scope_issue))
+        atom.symbolic_verified = False
+        atom.symbolic_verification_log = result.log_lines()
+        return result
+
     # Check 3: type correctness.
     if atom.constraint_type == "liveness" and not atom.reference_cedar:
         # Liveness has no reference body to validate.
@@ -838,6 +883,18 @@ def symbolic_verify_atom(
         if not result.checks[-1].passed:
             # Symbolic checks cannot interpret a policy that fails Cedar's
             # type/parse gate. Preserve the diagnostic and avoid repeated tool work.
+            atom.symbolic_verified = False
+            atom.symbolic_verification_log = result.log_lines()
+            return result
+
+    if atom.constraint_type == "condition":
+        # Floors are calculated by merging condition atoms, so each one must be
+        # a single permit for exactly its scope.
+        from autocedar.intent_map import condition_shape_issue
+
+        issue = condition_shape_issue(atom.reference_cedar, atom, CEDAR_PATH)
+        result.checks.append(SymbolicCheck(name="condition-shape", passed=not issue, detail=issue))
+        if issue:
             atom.symbolic_verified = False
             atom.symbolic_verification_log = result.log_lines()
             return result

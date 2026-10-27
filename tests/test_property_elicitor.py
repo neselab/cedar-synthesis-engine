@@ -369,7 +369,7 @@ def test_disjointness_compiles_to_implies_and_patches_floors_on_same_action() ->
     assert '!(resource.legalHold && principal.role != "legal")' in floor_text
 
 
-def test_consistency_plan_uses_patched_floors_and_skips_raw_disjointness() -> None:
+def test_consistency_plan_patches_floors_and_keeps_disjointness_raw() -> None:
     plan = VerificationPlanDraft(
         properties=[
             _floor_atom(),
@@ -379,7 +379,10 @@ def test_consistency_plan_uses_patched_floors_and_skips_raw_disjointness() -> No
 
     consistency_plan = compile_plan_for_consistency(plan)
 
-    assert [atom.name for atom in consistency_plan.properties] == ["admin_must_edit"]
+    # The disjointness atom passes through unchanged: Stage 1.75 keeps it out
+    # of floor/ceiling pairs but checks liveness slices against it.
+    assert [atom.name for atom in consistency_plan.properties] == ["admin_must_edit", "legal_hold_disj"]
+    assert consistency_plan.properties[1] is plan.properties[1]
     floor = consistency_plan.properties[0]
     assert floor.constraint_type == "floor"
     assert 'principal.role == "admin"' in floor.reference_cedar
@@ -471,3 +474,63 @@ def test_full_five_atom_plan_compiles_deterministically() -> None:
         "legal_hold_disj",
     ):
         assert f'"name": "{name}"' in out_a.verification_plan_py
+
+
+def test_multi_type_bounds_compile_to_one_check_per_environment() -> None:
+    ceiling = _ceiling_atom()
+    ceiling.principal_types = ["Doctor", "Nurse"]
+    floor = _floor_atom()
+    floor.resource_types = ["Record", "Archive"]
+    out = compile_plan(VerificationPlanDraft(properties=[ceiling, floor]))
+    plan = out.verification_plan_py
+
+    for name, principal, resource in [
+        ("careTeam_only_read__Doctor__Record", "Doctor", "Record"),
+        ("careTeam_only_read__Nurse__Record", "Nurse", "Record"),
+        ("admin_must_edit__User__Record", "User", "Record"),
+        ("admin_must_edit__User__Archive", "User", "Archive"),
+    ]:
+        block = plan.split(f'"name": "{name}"', 1)[1].split("},", 1)[0]
+        assert f'"principal_type": "{principal}"' in block
+        assert f'"resource_type": "{resource}"' in block
+    # Each atom still ships one reference file shared by its checks.
+    assert set(out.references) == {"careTeam_only_read", "admin_must_edit"}
+    assert plan.count('os.path.join(REFS, "careTeam_only_read.cedar")') == 2
+
+
+def test_single_type_bounds_keep_their_atom_name() -> None:
+    out = compile_plan(VerificationPlanDraft(properties=[_ceiling_atom()]))
+    assert '"name": "careTeam_only_read",' in out.verification_plan_py
+    assert "careTeam_only_read__" not in out.verification_plan_py
+
+
+def test_plan_adds_one_never_errors_check_per_environment() -> None:
+    ceiling = _ceiling_atom()
+    ceiling.principal_types = ["Doctor", "Nurse"]
+    liveness = _liveness_atom()
+    liveness.principal_types = ["Doctor"]
+    out = compile_plan(VerificationPlanDraft(properties=[ceiling, liveness, _floor_atom()]))
+    plan = out.verification_plan_py
+
+    assert plan.count('"type": "never-errors"') == 3
+    for name, principal, action in [
+        ("no_runtime_errors__read__Doctor__Record", "Doctor", "read"),
+        ("no_runtime_errors__read__Nurse__Record", "Nurse", "read"),
+        ("no_runtime_errors__edit__User__Record", "User", "edit"),
+    ]:
+        block = plan.split(f'"name": "{name}"', 1)[1].split("},", 1)[0]
+        assert f'"principal_type": "{principal}"' in block
+        assert f'"action": "Action::\\"{action}\\""' in block
+        assert "reference_path" not in block and "floor_path" not in block
+
+
+def test_consistency_plan_keeps_liveness_probes_only() -> None:
+    probe = _liveness_atom()
+    probe.name = "liveness_probe"
+    probe.reference_cedar = (
+        'permit (principal is User, action == Action::"read", resource is Record) '
+        "when { resource.careTeamMembers.contains(principal) };"
+    )
+    plan = VerificationPlanDraft(properties=[_liveness_atom(), probe])
+    names = [a.name for a in compile_plan_for_consistency(plan).properties]
+    assert names == ["liveness_probe"]

@@ -26,6 +26,7 @@ from typing import Any, Callable, Optional, TextIO
 from autocedar import __version__
 from autocedar.atoms import PropertyAtom
 from autocedar.corpus import AtomDecision
+from autocedar.intent_map import IntentMap, PermissionsQuestion
 from autocedar.ui.terminal import (
     ReviewedAtom,
     _apply_field_edit,
@@ -46,7 +47,10 @@ SERVER_INSTRUCTIONS = (
     "`doctor` to confirm Cedar, SymCC and the model provider are set up. "
     "`author_start` runs the authoring pipeline; whenever a status contains "
     "`pending_review`, show the atom to the user exactly as given and ask "
-    "them to approve, reject (with a reason) or edit it. Submit only the "
+    "them to approve, reject (with a reason) or edit it. The first item is the "
+    "intent map, which can be approved or rejected with a reason. If the "
+    "requirements do not say whether they list every permission, a yes/no "
+    "question follows: approve means yes, reject means no. Submit only the "
     "user's own decision with `author_review`; never decide for them. "
     "`verify` checks an existing workspace's candidate.cedar against its "
     "verification_plan.py."
@@ -218,23 +222,35 @@ def _render_pending(request: _ReviewRequest) -> dict[str, Any]:
     atom = request.atom
     is_property = isinstance(atom, PropertyAtom)
     rendered = _render_review_atom(atom, request.index, request.total or request.index)
-    cedar = render_property_reference(atom) if is_property else render_schema_declaration(atom)
+    options = [
+        "approve",
+        "reject (give a reason)",
+        "edit (field=value lines, then review again)",
+    ]
+    if isinstance(atom, IntentMap):
+        kind, cedar = "intent_map", json.dumps(atom.to_dict(), indent=2)
+        options = options[:2]
+    elif isinstance(atom, PermissionsQuestion):
+        kind, cedar = "permissions_question", json.dumps(atom.to_dict(), indent=2)
+        options = [
+            "approve (yes: the list of permissions is complete)",
+            "reject (no: the listed permissions are examples)",
+        ]
+    else:
+        kind = "property" if is_property else "schema"
+        cedar = render_property_reference(atom) if is_property else render_schema_declaration(atom)
     pending: dict[str, Any] = {
         "request_id": request.request_id,
         "stage": request.stage,
         "index": request.index,
         "total": request.total,
-        "kind": "property" if is_property else "schema",
+        "kind": kind,
         "name": getattr(atom, "name", ""),
         "summary": getattr(atom, "plain_english_summary", ""),
         "source_excerpt": getattr(atom, "source_excerpt", ""),
         "cedar": cedar,
         "rendered": rendered,
-        "options": [
-            "approve",
-            "reject (give a reason)",
-            "edit (field=value lines, then review again)",
-        ],
+        "options": options,
     }
     if is_property:
         pending["constraint_type"] = atom.constraint_type

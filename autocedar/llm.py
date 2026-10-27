@@ -22,6 +22,7 @@ grounding, etc.) stays unchanged.
 from __future__ import annotations
 
 import json
+import re
 import time
 from pathlib import Path
 from types import SimpleNamespace
@@ -41,6 +42,14 @@ from autocedar.atoms import (
     TypeAliasAtom,
 )
 from autocedar.codex_auth import DEFAULT_CODEX_MODEL
+from autocedar.intent_map import (
+    IntentMap,
+    MapScope,
+    MapSentence,
+    MapSlice,
+    PermissionsQuestion,
+    is_condition_packet,
+)
 from autocedar.providers import (
     ChatMessage,
     InstructionPart,
@@ -118,6 +127,11 @@ def _coerce_backend(
     # Backward compatibility for older tests and embedders. The only code that
     # touches the vendor-specific Messages API remains inside this adapter.
     return AnthropicAPIBackend(client=client)
+
+
+def _property_prompt_name(spec_text: str) -> str:
+    """Condition packets from the intent map use the condition protocol."""
+    return "condition_atomization.md" if is_condition_packet(spec_text) else "property_atomization.md"
 
 
 def _load_prompt(name: str) -> str:
@@ -248,7 +262,7 @@ class _LLMPropertyAtom(BaseModel):
     rationale: str
     plain_english_summary: str
     source_excerpt: str
-    constraint_type: Literal["ceiling", "floor", "liveness", "rate_limit", "disjointness"]
+    constraint_type: Literal["ceiling", "floor", "liveness", "rate_limit", "disjointness", "condition"]
     action: str
     principal_types: list[str] = Field(default_factory=list)
     resource_types: list[str] = Field(default_factory=list)
@@ -267,6 +281,44 @@ class PropertyAtomsResponse(BaseModel):
     """Top-level structured response for Stage 2 property elicitation."""
 
     atoms: list[_LLMPropertyAtom]
+
+
+class _LLMMapScope(BaseModel):
+    id: str
+    action: str
+    principal_type: str
+    resource_type: str
+    exhaustive: bool | None
+    summary: str = ""
+
+
+class _LLMMapSlice(BaseModel):
+    id: str
+    scope_id: str
+    summary: str = ""
+
+
+class _LLMMapSentence(BaseModel):
+    node_id: str
+    kind: Literal["condition", "interpretation"]
+    slice_ids: list[str] = Field(default_factory=list)
+    restricts_scope_ids: list[str] = Field(default_factory=list)
+    note: str = ""
+
+
+class IntentMapResponse(BaseModel):
+    """The model's intent map: scopes, slices, and classified sentences."""
+
+    scopes: list[_LLMMapScope]
+    slices: list[_LLMMapSlice]
+    sentences: list[_LLMMapSentence]
+
+
+class AtomReviewResponse(BaseModel):
+    """A model reviewer's decision on one atom, judged against the requirements."""
+
+    decision: Literal["approve", "reject"]
+    reason: str
 
 
 class PropertyRejectionPlanResponse(BaseModel):
@@ -617,6 +669,8 @@ class LLMClient:
         """
         prior_atoms = prior_atoms or []
         prior_decisions = prior_decisions or []
+        if is_condition_packet(spec_text):
+            return self.propose_condition_atoms(spec_text, schema_text, prior_decisions=prior_decisions)
         system_prompt = _load_prompt("property_atomization.md")
         prior_json = [_summarize_property_atom(atom) for atom in prior_atoms]
         decision_json = [
@@ -690,7 +744,7 @@ class LLMClient:
             "an empty atoms list."
         )
         response = self._call_parse(
-            system_prompt=_load_prompt("property_atomization.md"),
+            system_prompt=_load_prompt(_property_prompt_name(spec_text)),
             spec_text=spec_text,
             user_turn=user_turn,
             output_format=PropertyAtomsResponse,
@@ -756,7 +810,7 @@ class LLMClient:
             f"```cedarschema\n{schema_text}\n```"
         )
         response = self._call_parse(
-            system_prompt=_load_prompt("property_atomization.md"),
+            system_prompt=_load_prompt(_property_prompt_name(spec_text)),
             spec_text=spec_text,
             user_turn=user_turn,
             output_format=PropertyRejectionPlanResponse,
@@ -767,6 +821,134 @@ class LLMClient:
     # ------------------------------------------------------------------
     # Stage 1 fix: ask the LLM to fix a cedar-validate failure.
     # ------------------------------------------------------------------
+
+    def review_atom_against_requirements(
+        self,
+        *,
+        atom: Any,
+        spec_text: str,
+        schema_text: str,
+        approved_atoms: list[PropertyAtom],
+    ) -> AtomReviewResponse:
+        """Judge whether one atom means what the requirements say.
+
+        Used when no person reviews atoms. The full requirements document is
+        the reference; the atom's Cedar has already passed AutoCedar's checks.
+        """
+        from autocedar.atoms import to_dict as _atom_to_dict
+
+        kind = "property atom" if isinstance(atom, PropertyAtom) else "schema atom"
+        user_turn = (
+            f"Review this {kind} against the requirements.\n\n"
+            f"```json\n{json.dumps(_atom_to_dict(atom), indent=2, default=str)}\n```\n\n"
+            "Earlier approved property atoms:\n"
+            f"```json\n{json.dumps([_summarize_property_atom(a) for a in approved_atoms], separators=(',', ':'))}\n```\n\n"
+            "Current Cedar schema (may be empty while the schema is being built):\n"
+            f"```cedarschema\n{schema_text}\n```"
+        )
+        response = self._call_parse(
+            system_prompt=_load_prompt("atom_review.md"),
+            spec_text=spec_text,
+            user_turn=user_turn,
+            output_format=AtomReviewResponse,
+            effort_override=_stage2_effort(self._provider, self._effort),
+        )
+        return response.parsed_output
+
+    def build_intent_map(
+        self,
+        *,
+        outline: str,
+        schema_actions: str,
+        feedback: str = "",
+        previous: IntentMap | None = None,
+    ) -> IntentMap:
+        """Map the whole document: scopes, slices, and each sentence's role."""
+        user_turn = (
+            "Schema actions with their principal and resource types:\n"
+            f"{schema_actions}\n\n"
+        )
+        if previous is not None:
+            user_turn += (
+                "Your earlier map:\n"
+                f"```json\n{json.dumps(previous.to_dict(), indent=1)}\n```\n\n"
+                "Problems to fix:\n"
+                f"{feedback}\n\n"
+                "Return the whole corrected map."
+            )
+        else:
+            user_turn += "Return the intent map for this document."
+        response = self._call_parse(
+            system_prompt=_load_prompt("intent_map.md"),
+            spec_text=outline,
+            user_turn=user_turn,
+            output_format=IntentMapResponse,
+            effort_override=_stage2_effort(self._provider, self._effort),
+        )
+        parsed = response.parsed_output
+        return IntentMap(
+            scopes=[MapScope(**item.model_dump()) for item in parsed.scopes],
+            slices=[MapSlice(**item.model_dump()) for item in parsed.slices],
+            sentences=[MapSentence(**item.model_dump()) for item in parsed.sentences],
+        )
+
+    def review_intent_map(self, *, intent_map: IntentMap, outline: str) -> AtomReviewResponse:
+        """Judge whether the map assigns every sentence where the document puts it."""
+        response = self._call_parse(
+            system_prompt=_load_prompt("map_review.md"),
+            spec_text=outline,
+            user_turn=(
+                "Review this intent map against the document.\n\n"
+                f"{intent_map.review_text}\n\n"
+                "The same map as data:\n"
+                f"```json\n{json.dumps(intent_map.to_dict(), separators=(',', ':'))}\n```"
+            ),
+            output_format=AtomReviewResponse,
+            effort_override=_stage2_effort(self._provider, self._effort),
+        )
+        return response.parsed_output
+
+    def answer_permissions_question(self, *, question: PermissionsQuestion, outline: str) -> AtomReviewResponse:
+        """Answer for the author whether the document lists every permission (approve = yes)."""
+        response = self._call_parse(
+            system_prompt=_load_prompt("permissions_complete.md"),
+            spec_text=outline,
+            user_turn=question.render(),
+            output_format=AtomReviewResponse,
+            effort_override=_stage2_effort(self._provider, self._effort),
+        )
+        return response.parsed_output
+
+    def propose_condition_atoms(
+        self,
+        packet_text: str,
+        schema_text: str,
+        *,
+        prior_decisions: list[Any] | None = None,
+    ) -> list[PropertyAtom]:
+        """One condition atom per scope of the packet's requirement.
+
+        ``prior_decisions`` should be the decisions on this requirement only;
+        the pipeline filters them so rejection reasons reach the retry.
+        """
+        decision_json = [
+            _summarize_atom_decision(decision) for decision in prior_decisions or []
+            if getattr(decision, "action", "") != "approve"
+        ]
+        response = self._call_parse(
+            system_prompt=_load_prompt("condition_atomization.md"),
+            spec_text=packet_text,
+            user_turn=(
+                "Use this validated Cedar schema:\n\n"
+                f"```cedarschema\n{schema_text}\n```\n\n"
+                "Earlier decisions on this requirement:\n\n"
+                f"```json\n{json.dumps(decision_json, separators=(',', ':'))}\n```\n\n"
+                "Return one condition atom for each scope in the packet."
+            ),
+            output_format=PropertyAtomsResponse,
+            effort_override=_stage2_effort(self._provider, self._effort),
+        )
+        return [_translate_property_atom(atom) for atom in response.parsed_output.atoms]
 
     def answer_question_about_atom(
         self,
@@ -796,7 +978,7 @@ class LLMClient:
         )
         response = self._call_text(
             system_prompt=_load_prompt(
-                "property_atomization.md" if is_property_atom else "schema_atomization.md",
+                _property_prompt_name(spec_text) if is_property_atom else "schema_atomization.md",
             ),
             spec_text=spec_text,
             user_turn=user_turn,

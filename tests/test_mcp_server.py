@@ -229,3 +229,22 @@ def test_serve_stdio_keeps_protocol_stream_clean() -> None:
     assert [line.get("id") for line in lines] == [1, 2, None]
     assert json.loads(lines[1]["result"]["content"][0]["text"]) == {"ok": True}
     assert lines[2]["error"]["code"] == -32700
+
+
+def test_pending_map_and_permissions_question_offer_their_own_options() -> None:
+    from autocedar.intent_map import IntentMap, MapScope, PermissionsQuestion
+    from autocedar.mcp_server import _render_pending, _ReviewRequest
+
+    intent_map = IntentMap(review_text="INTENT MAP\nScope s_release: ...")
+    question = PermissionsQuestion(scopes=[MapScope("s_release", "release", "User", "WorkOrder", None)])
+
+    shown_map = _render_pending(_ReviewRequest(request_id=1, atom=intent_map, stage="Intent map review", index=1, total=None))
+    shown_question = _render_pending(_ReviewRequest(request_id=2, atom=question, stage="Intent map review", index=2, total=None))
+
+    assert shown_map["kind"] == "intent_map"
+    assert all("edit" not in option for option in shown_map["options"])
+    assert "INTENT MAP" in shown_map["rendered"]
+    assert shown_question["kind"] == "permissions_question"
+    assert shown_question["options"][0].startswith("approve (yes")
+    assert json.loads(shown_question["cedar"])["scopes"][0]["id"] == "s_release"
+    assert "IS THE LIST OF PERMISSIONS COMPLETE?" in shown_question["rendered"]

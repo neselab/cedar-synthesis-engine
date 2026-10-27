@@ -23,7 +23,7 @@ from autocedar.atoms import RequiredSchemaSupport
 from autocedar.corpus import AtomDecision
 from autocedar.grounding import CEDAR_PATH, CVC5_PATH
 from autocedar.pipeline import PropertyRepairPlan, _latest_intent_acknowledgement, author
-from autocedar.ui.terminal import auto_approve
+from tests.reviewers import approve_checked
 
 _HAVE_SOLVERS = (
     os.path.isfile(CEDAR_PATH)
@@ -1357,7 +1357,7 @@ def test_batch_auto_approval_advances_without_human_semantic_approval(
         output_dir=tmp_path / "out",
         session_id="batch-plumbing-only",
         propose_property_atom=_QueuedPropertyProposer(_owner_only_ceiling()),
-        review_atom=auto_approve,
+        review_atom=approve_checked,
         synthesize=_synthesize_stub,
         schema_path_override=str(schema_path),
         run_incremental_checks=False,

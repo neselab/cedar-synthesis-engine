@@ -37,7 +37,8 @@ from autocedar.pipeline import author as author_pipeline
 from autocedar.progress import format_property_progress
 from autocedar.property_atomizer import propose_property_atom
 from autocedar.schema_atomizer import propose_schema_atoms
-from autocedar.ui.terminal import auto_approve, interactive_review_loop
+from autocedar.model_review import ModelReviewer
+from autocedar.ui.terminal import interactive_review_loop
 from autocedar.providers import (
     AuthStore,
     CANONICAL_PROVIDER_IDS,
@@ -230,12 +231,19 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Adaptive thinking effort for Stage 1/2 atomization (default: provider setting).",
     )
     author_p.add_argument(
-        "--auto-approve",
+        "--model-review",
+        dest="model_review",
         action="store_true",
         help=(
-            "Advance atoms without interactive review, for plumbing tests only; "
-            "this does not count as human semantic approval."
+            "Review atoms without a person: the model judges each atom against "
+            "the requirements. This does not count as human approval."
         ),
+    )
+    author_p.add_argument(
+        "--auto-approve",
+        dest="model_review",
+        action="store_true",
+        help=argparse.SUPPRESS,
     )
     author_p.add_argument(
         "--max-schema-gap-repairs",
@@ -273,9 +281,19 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Adaptive thinking effort for continued authoring (default: provider setting).",
     )
     resume_p.add_argument(
-        "--auto-approve",
+        "--model-review",
+        dest="model_review",
         action="store_true",
-        help="Approve newly proposed atoms without interactive review, for plumbing tests only.",
+        help=(
+            "Review newly proposed atoms without a person: the model judges each "
+            "atom against the requirements. This does not count as human approval."
+        ),
+    )
+    resume_p.add_argument(
+        "--auto-approve",
+        dest="model_review",
+        action="store_true",
+        help=argparse.SUPPRESS,
     )
     resume_p.add_argument(
         "--max-schema-gap-repairs",
@@ -659,9 +677,11 @@ def _cmd_author(args: argparse.Namespace) -> int:
 
     spec_text = spec_path.read_text()
 
+    model_reviewer = ModelReviewer(llm, spec_text)
+
     def reviewer(atom):
-        if args.auto_approve:
-            return auto_approve(atom)
+        if _model_review_enabled(args):
+            return model_reviewer(atom)
         reviewed = interactive_review_loop(
             [atom],
             llm=llm,
@@ -673,6 +693,7 @@ def _cmd_author(args: argparse.Namespace) -> int:
         print(f"property progress: {format_property_progress(payload)}", flush=True)
 
     reviewer.property_progress = property_progress  # type: ignore[attr-defined]
+    reviewer.schema_ready = model_reviewer.schema_ready  # type: ignore[attr-defined]
 
     result = author_pipeline(
         spec_path=spec_path,
@@ -712,10 +733,11 @@ def _cmd_resume(args: argparse.Namespace) -> int:
     effort = config.reasoning_effort or DEFAULT_EFFORT
     llm = LLMClient(provider=config.provider, model=model, effort=effort)
     spec_text = spec_path.read_text()
+    model_reviewer = ModelReviewer(llm, spec_text)
 
     def reviewer(atom):
-        if args.auto_approve:
-            return auto_approve(atom)
+        if _model_review_enabled(args):
+            return model_reviewer(atom)
         reviewed = interactive_review_loop(
             [atom],
             llm=llm,
@@ -727,6 +749,7 @@ def _cmd_resume(args: argparse.Namespace) -> int:
         print(f"property progress: {format_property_progress(payload)}", flush=True)
 
     reviewer.property_progress = property_progress  # type: ignore[attr-defined]
+    reviewer.schema_ready = model_reviewer.schema_ready  # type: ignore[attr-defined]
 
     result = author_pipeline(
         spec_path=spec_path,
@@ -804,6 +827,7 @@ def author_hooks(llm: LLMClient, *, model: str | None, provider: str) -> dict:
         )
 
     return {
+        "map_intent": lambda **kwargs: llm.build_intent_map(**kwargs),
         "propose_schema_atoms": schema_proposer,
         "propose_property_atom": property_proposer,
         "repair_schema_atom": schema_repairer,
@@ -912,11 +936,16 @@ def _command_provider_config(args: argparse.Namespace):
     )
 
 
+def _model_review_enabled(args: argparse.Namespace) -> bool:
+    # ``auto_approve`` is the attribute name older callers still pass.
+    return bool(getattr(args, "model_review", False) or getattr(args, "auto_approve", False))
+
+
 def _authoring_completed(result: object) -> bool:
     """Return true when the pipeline produced its final candidate artifact.
 
     Process completion and human semantic approval are intentionally separate:
-    an ``--auto-approve`` plumbing run may complete successfully while its
+    a ``--model-review`` run may complete successfully while its
     ``final_user_approved`` field remains false.
     """
     candidate_path = getattr(result, "candidate_path", None)

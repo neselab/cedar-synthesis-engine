@@ -104,6 +104,45 @@ def test_claude_cli_structured_output_is_validated() -> None:
     assert result.parsed == Answer(answer="yes")
     command = runner.calls[0]["command"]
     assert "--json-schema" in command
+    # Turns beyond the first two let the CLI ask the model to fix an answer
+    # that fails the schema.
+    assert command[command.index("--max-turns") + 1] == "5"
+
+
+OUT_OF_TURNS = {"type": "result", "subtype": "error_max_turns", "terminal_reason": "max_turns", "is_error": True}
+
+
+def test_claude_cli_out_of_turns_is_retried_once_then_named() -> None:
+    runner = RecordingRunner(OUT_OF_TURNS, returncode=1)
+    backend = ClaudeCLIBackend(executable="claude", runner=runner, environ={})
+
+    with pytest.raises(ClaudeCLIError, match=r"error_max_turns \(max_turns\)"):
+        backend.generate_structured(
+            model="sonnet",
+            messages=(ChatMessage(role="user", content="question"),),
+            output_type=Answer,
+        )
+    assert len(runner.calls) == 2
+
+
+def test_claude_cli_out_of_turns_retry_can_succeed() -> None:
+    first = RecordingRunner(OUT_OF_TURNS, returncode=1)
+    second = RecordingRunner({"type": "result", "subtype": "success", "structured_output": {"answer": "yes"}})
+    runners = iter([first, second])
+    backend = ClaudeCLIBackend(
+        executable="claude",
+        runner=lambda command, **kwargs: next(runners)(command, **kwargs),
+        environ={},
+    )
+
+    result = backend.generate_structured(
+        model="sonnet",
+        messages=(ChatMessage(role="user", content="question"),),
+        output_type=Answer,
+    )
+
+    assert result.parsed == Answer(answer="yes")
+    assert len(first.calls) == len(second.calls) == 1
 
 
 def test_claude_cli_failure_is_bounded_and_does_not_echo_prompt() -> None:
