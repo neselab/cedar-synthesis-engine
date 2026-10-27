@@ -5,6 +5,14 @@ versioning while the public provider and CLI interfaces stabilize.
 
 ## Unreleased
 
+- A short "Label:" line no longer replaces the Markdown section it sits in; it
+  becomes a sub-heading under that section. Templates that repeat "Allow this
+  action if…:" under each action's heading previously merged every action's
+  requirements into one section, so atoms were proposed for the wrong action.
+  Markdown heading levels are now tracked explicitly, so a document that
+  starts at "##" keeps its sections as siblings.
+- Property packets now list nodes from the focus node's own section before
+  nodes from other sections that merely share words.
 - A property atom with no action, principal type, or resource type (such as a
   catch-all "deny unlisted actions" atom) now fails its admission checks and
   goes to review and repair. Before, it raised `ValueError` and ended the whole

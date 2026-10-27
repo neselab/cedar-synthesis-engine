@@ -203,6 +203,11 @@ def compile_source_document(spec_text: str) -> SourceDocument:
     nodes: list[SourceNode] = []
     edges: list[dict[str, str]] = []
     headings: list[str] = []
+    # Markdown headings form the section hierarchy. A short "Label:" line is a
+    # sub-heading under the current Markdown section and is replaced by the
+    # next label, so it never displaces the section that names, e.g., the
+    # action a block of requirements belongs to.
+    markdown_headings: list[tuple[int, str]] = []
     paragraph: list[tuple[int, str]] = []
     ordinal = 0
 
@@ -235,8 +240,14 @@ def compile_source_document(spec_text: str) -> SourceDocument:
         if heading is not None:
             flush_paragraph()
             level, title = heading
-            headings = headings[: max(0, level - 1)]
-            headings.append(title)
+            if level:
+                # Keep only shallower headings, so skipped levels (a document
+                # that starts at "##") still make same-level sections siblings.
+                markdown_headings = [(lvl, t) for lvl, t in markdown_headings if lvl < level]
+                markdown_headings.append((level, title))
+                headings = [t for _, t in markdown_headings]
+            else:
+                headings = [*(t for _, t in markdown_headings), title]
             continue
         if not stripped:
             flush_paragraph()
@@ -533,17 +544,21 @@ def _neighbors(doc: SourceDocument, focus_nodes: list[SourceNode], limit: int = 
                 if candidate.id not in focus_ids:
                     related.append(candidate)
 
-    scored: list[tuple[int, SourceNode]] = []
+    # Nodes from the focus node's own section come first, then the rest by
+    # shared content words. Templates often repeat a requirement verbatim in
+    # several sections (one per action), and ranking by shared words alone
+    # filled packets with another action's requirements.
+    focus_sections = {node.parent_id for node in focus_nodes}
+    scored: list[tuple[bool, int, SourceNode]] = []
     for candidate in all_nodes:
         if candidate.id in focus_ids:
             continue
-        score = len(terms & _terms(candidate.text))
-        if candidate.parent_id and candidate.parent_id in {node.parent_id for node in focus_nodes}:
-            score += 2
+        same_section = bool(candidate.parent_id) and candidate.parent_id in focus_sections
+        score = len(terms & _terms(candidate.text)) + (2 if same_section else 0)
         if score > 1:
-            scored.append((score, candidate))
-    scored.sort(key=lambda item: (-item[0], item[1].ordinal))
-    related.extend(candidate for _, candidate in scored[:limit])
+            scored.append((same_section, score, candidate))
+    scored.sort(key=lambda item: (not item[0], -item[1], item[2].ordinal))
+    related.extend(candidate for _, _, candidate in scored[:limit])
     deduped: list[SourceNode] = []
     seen: set[str] = set()
     for node in related:
@@ -578,11 +593,12 @@ def _terms(text: str) -> set[str]:
 
 
 def _parse_heading(stripped: str) -> tuple[int, str] | None:
+    """Return (level, title); level 0 marks a "Label:" line, not Markdown."""
     markdown = re.match(r"^(#{1,6})\s+(.+)$", stripped)
     if markdown:
         return len(markdown.group(1)), markdown.group(2).strip()
     if stripped.endswith(":") and len(stripped) < 120 and not re.search(r"[.;]", stripped):
-        return 2, stripped[:-1].strip()
+        return 0, stripped[:-1].strip()
     return None
 
 
