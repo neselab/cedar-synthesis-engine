@@ -296,6 +296,7 @@ def _build_reviewed_intent_map(
     resume_from: Path | None,
     extend_schema: Callable[[list[tuple[str, str, str]], str], str | None] | None = None,
     schema_can_grow: bool = False,
+    map_rounds: int = MAP_ROUNDS,
 ) -> tuple[IntentMap | None, AtomDecision | None, str]:
     """Map the document, check the map's structure, and have it reviewed.
 
@@ -304,7 +305,7 @@ def _build_reviewed_intent_map(
     AutoCedar applies the ones it can (moving a condition, reclassifying or
     dropping a sentence, unmarking a scope) and reviews the corrected map
     again. Other objections, a rejection without objections, or a failed
-    structure check go back to the mapper, for up to MAP_ROUNDS mapper rounds.
+    structure check go back to the mapper, for up to ``map_rounds`` mapper rounds.
 
     A scope whose action the schema does not declare is a schema gap, as in
     Stage 2: ``extend_schema`` asks for the missing actions through the
@@ -359,7 +360,7 @@ def _build_reviewed_intent_map(
     # Objections AutoCedar applies itself cost a review but no mapper call, so
     # reviews are capped separately from mapper rounds.
     left_out: list[str] = []
-    for round_number in range(1, 2 * MAP_ROUNDS + 1):
+    for round_number in range(1, 2 * map_rounds + 1):
         missing = intent_map.missing_actions(triples)
         ask = [t for t in missing if t not in refused]
         if missing and extend_schema is not None:
@@ -381,10 +382,10 @@ def _build_reviewed_intent_map(
         if errors:
             rounds.append({"round": round_number, "map": intent_map.to_dict(), "structure_errors": errors})
             write_json(record_path, {"approved": False, "rounds": rounds})
-            if mapper_calls >= MAP_ROUNDS:
+            if mapper_calls >= map_rounds:
                 return None, None, (
                     "Stopped before atoms: the intent map still fails its structure "
-                    f"checks after {MAP_ROUNDS} rounds: " + "; ".join(errors[:6])
+                    f"checks after {map_rounds} rounds: " + "; ".join(errors[:6])
                 )
             intent_map = build_map(
                 feedback="\n".join(f"- {e}" for e in errors),
@@ -415,9 +416,9 @@ def _build_reviewed_intent_map(
         write_json(record_path, {"approved": False, "rounds": rounds})
         if applied and not remaining:
             continue
-        if mapper_calls >= MAP_ROUNDS:
+        if mapper_calls >= map_rounds:
             return None, None, (
-                f"Stopped before atoms: the intent map was not approved after {MAP_ROUNDS} "
+                f"Stopped before atoms: the intent map was not approved after {map_rounds} "
                 f"rounds. Last reason: {decision.reason}"
             )
         feedback = "\n".join(f"- {o.get('detail') or o.get('kind')}" for o in remaining)
@@ -616,6 +617,7 @@ def author(
     max_property_proposals: int = DEFAULT_MAX_PROPERTY_PROPOSALS,
     max_schema_gap_repairs: int | None = None,
     map_intent: IntentMapper | None = None,
+    max_map_rounds: int = MAP_ROUNDS,
 ) -> AuthorResult:
     """End-to-end Stage-1-through-2.5 pipeline.
 
@@ -1024,6 +1026,7 @@ def author(
             extend_schema=extend_schema_for_map,
             schema_can_grow=propose_schema_atoms is not None
             and not _schema_gap_budget_spent(schema_gap_repair_limit, schema_gap_repair_count),
+            map_rounds=max_map_rounds,
         )
         if intent_map is None:
             _write_stage0_artifacts(

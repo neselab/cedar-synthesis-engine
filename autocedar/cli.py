@@ -33,7 +33,7 @@ from autocedar.llm import (
     DEFAULT_EFFORT,
     LLMClient,
 )
-from autocedar.pipeline import author as author_pipeline
+from autocedar.pipeline import MAP_ROUNDS, author as author_pipeline
 from autocedar.progress import format_property_progress
 from autocedar.property_atomizer import propose_property_atom
 from autocedar.schema_atomizer import propose_schema_atoms
@@ -267,6 +267,16 @@ def _build_parser() -> argparse.ArgumentParser:
             "cannot be expressed stops the run by name."
         ),
     )
+    author_p.add_argument(
+        "--max-map-rounds",
+        type=int,
+        default=MAP_ROUNDS,
+        help=(
+            f"Maximum intent-map rounds that go back to the mapper (default: {MAP_ROUNDS}). "
+            "Objections AutoCedar applies itself do not count. Long or noisy "
+            "documents can need more."
+        ),
+    )
     author_p.set_defaults(func=_cmd_author)
 
     resume_p = sub.add_parser(
@@ -328,6 +338,16 @@ def _build_parser() -> argparse.ArgumentParser:
             "After that the schema is fixed: atoms that need a missing field "
             "are rewritten within the schema, and a requirement that still "
             "cannot be expressed stops the run by name."
+        ),
+    )
+    resume_p.add_argument(
+        "--max-map-rounds",
+        type=int,
+        default=MAP_ROUNDS,
+        help=(
+            f"Maximum intent-map rounds that go back to the mapper (default: {MAP_ROUNDS}). "
+            "Objections AutoCedar applies itself do not count. Long or noisy "
+            "documents can need more."
         ),
     )
     resume_p.set_defaults(func=_cmd_resume)
@@ -730,6 +750,7 @@ def _cmd_author(args: argparse.Namespace) -> int:
         schema_path_override=args.schema,
         run_incremental_checks=False,
         max_schema_gap_repairs=getattr(args, "max_schema_gap_repairs", None),
+        max_map_rounds=getattr(args, "max_map_rounds", MAP_ROUNDS),
     )
 
     completed = _authoring_completed(result)
@@ -786,6 +807,7 @@ def _cmd_resume(args: argparse.Namespace) -> int:
         resume_from=session_dir,
         run_incremental_checks=False,
         max_schema_gap_repairs=getattr(args, "max_schema_gap_repairs", None),
+        max_map_rounds=getattr(args, "max_map_rounds", MAP_ROUNDS),
     )
 
     completed = _authoring_completed(result)

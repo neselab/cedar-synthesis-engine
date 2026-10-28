@@ -68,6 +68,8 @@ versioning while the public provider and CLI interfaces stabilize.
   sentences left and why, so the two reviews do not overrule each other in
   turn. Before, the map could not name a requirement the generated schema had
   missed, so its review kept rejecting it until the run stopped.
+- `--max-map-rounds` (default 3, as before) sets how many times the intent map
+  can go back to the mapper. Long or noisy documents can need more rounds.
 - When the schema review refuses a Stage 2 schema repair on the map path, the
   run goes on: that requirement's atoms are rewritten within the schema, with
   the review's reason in the instruction, and a requirement that still cannot

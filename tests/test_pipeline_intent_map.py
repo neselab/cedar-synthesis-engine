@@ -231,6 +231,25 @@ def test_unapproved_map_stops_before_any_atom(tmp_path: Path) -> None:
     assert proposer.calls == []
 
 
+@pytest.mark.parametrize("rounds", [1, 5])
+def test_map_rounds_cap_the_mapper_calls(tmp_path: Path, rounds: int) -> None:
+    spec, schema, doc = _setup(tmp_path)
+    calls: list[dict] = []
+
+    result = author(
+        spec, tmp_path / "out", session_id=f"rounds-{rounds}",
+        review_atom=lambda atom: AtomDecision("intent_map", "reject", reason="Wrong slices."),
+        map_intent=lambda **kw: calls.append(kw) or work_order_map(doc),
+        propose_property_atom=Proposer(doc),
+        synthesize=_synthesize_exact,
+        schema_path_override=str(schema),
+        max_map_rounds=rounds,
+    )
+
+    assert len(calls) == rounds
+    assert f"not approved after {rounds} rounds" in result.notes[0]
+
+
 @pytest.mark.parametrize("marked", [None, False])
 @pytest.mark.parametrize("answer", ["approve", "reject"])
 def test_unmarked_scope_is_settled_by_one_yes_or_no_question(
