@@ -101,6 +101,9 @@ DEFAULT_MAX_PROPERTY_PROPOSALS = 128
 MAP_ROUNDS = 3
 # Proposals for one condition before AutoCedar stops and reports it.
 MAX_CONDITION_ATTEMPTS = 3
+# Noisy mode scales the proposal budget with the document: about one proposal
+# and three atom reviews for each of a condition's attempts.
+NOISY_PROPOSALS_PER_CONDITION = 12
 
 
 # ---------------------------------------------------------------------------
@@ -298,6 +301,7 @@ def _build_reviewed_intent_map(
     extend_schema: Callable[[list[tuple[str, str, str]], str], str | None] | None = None,
     schema_can_grow: bool = False,
     map_rounds: int = MAP_ROUNDS,
+    noisy: bool = False,
 ) -> tuple[IntentMap | None, AtomDecision | None, str]:
     """Map the document, check the map's structure, and have it reviewed.
 
@@ -314,6 +318,11 @@ def _build_reviewed_intent_map(
     It returns None when it makes no attempt (no repair budget left). When the
     schema review refuses an action, that decision stands: the scopes that need
     it leave the map, and the map reviewer is told which sentences left and why.
+
+    In noisy mode the schema is fixed, so scopes it does not declare leave the
+    map at once, and a map the reviewer still rejects after ``map_rounds``
+    rounds is used anyway if it passes the structure checks. Its open
+    objections are recorded instead of stopping the run.
     """
     record_path = session.base / "stage0" / "intent_map.json"
     triples = schema_triples(schema_text, cedar_path=CEDAR_PATH)
@@ -361,10 +370,42 @@ def _build_reviewed_intent_map(
     # Objections AutoCedar applies itself cost a review but no mapper call, so
     # reviews are capped separately from mapper rounds.
     left_out: list[str] = []
+    last_reviewed: tuple[IntentMap, AtomDecision] | None = None
+
+    def accept_unapproved(reason: str) -> tuple[IntentMap | None, AtomDecision | None, str]:
+        if not noisy or last_reviewed is None:
+            return None, None, reason
+        current_ok = not intent_map.structure_errors(source_doc, triples)
+        chosen = intent_map if current_ok else last_reviewed[0]
+        decision = last_reviewed[1]
+        record: dict[str, Any] = {
+            "approved": False,
+            "accepted_in_noisy_mode": True,
+            "open_objections": reason,
+            "map": chosen.to_dict(),
+            "decision": to_dict(decision),
+            "rounds": rounds,
+        }
+        chosen.review_text = chosen.render(source_doc)
+        chosen.outline = outline
+        permissions = _settle_unmarked_scopes(chosen, review_atom)
+        if permissions is not None:
+            record["map"] = chosen.to_dict()
+            record["permissions_complete"] = permissions
+        write_json(record_path, record)
+        _notify_review_stage_complete(review_atom, "Intent map review", [decision])
+        return chosen, decision, ""
+
     for round_number in range(1, 2 * map_rounds + 1):
         missing = intent_map.missing_actions(triples)
         ask = [t for t in missing if t not in refused]
-        if missing and extend_schema is not None:
+        if missing and noisy:
+            refused.update(missing)
+            dropped = intent_map.drop_scopes(missing)
+            left_out.extend(dropped)
+            rounds.append({"round": round_number, "schema_lacks": [list(t) for t in missing], "left_out": dropped})
+            write_json(record_path, {"approved": False, "rounds": rounds})
+        elif missing and extend_schema is not None:
             extended = extend_schema(ask, _missing_action_reason(intent_map, ask, source_doc)) if ask else None
             if extended is not None:
                 triples = schema_triples(extended, cedar_path=CEDAR_PATH)
@@ -384,7 +425,7 @@ def _build_reviewed_intent_map(
             rounds.append({"round": round_number, "map": intent_map.to_dict(), "structure_errors": errors})
             write_json(record_path, {"approved": False, "rounds": rounds})
             if mapper_calls >= map_rounds:
-                return None, None, (
+                return accept_unapproved(
                     "Stopped before atoms: the intent map still fails its structure "
                     f"checks after {map_rounds} rounds: " + "; ".join(errors[:6])
                 )
@@ -398,6 +439,7 @@ def _build_reviewed_intent_map(
         intent_map.outline = outline
         _, decision = _normalize_review_result(intent_map, review_atom(intent_map))
         decision = _settle_left_out_objections(decision, set(left_out))
+        last_reviewed = (IntentMap.from_dict(intent_map.to_dict()), decision)
         rounds.append({"round": round_number, "map": intent_map.to_dict(), "decision": to_dict(decision)})
         if decision.action == "approve":
             record = {
@@ -419,7 +461,7 @@ def _build_reviewed_intent_map(
         if applied and not remaining:
             continue
         if mapper_calls >= map_rounds:
-            return None, None, (
+            return accept_unapproved(
                 f"Stopped before atoms: the intent map was not approved after {map_rounds} "
                 f"rounds. Last reason: {decision.reason}"
             )
@@ -429,7 +471,7 @@ def _build_reviewed_intent_map(
             previous=intent_map,
         )
         mapper_calls += 1
-    return None, None, "Stopped before atoms: the intent map was not approved."
+    return accept_unapproved("Stopped before atoms: the intent map was not approved.")
 
 
 def _missing_action_reason(
@@ -645,6 +687,7 @@ def author(
     max_schema_gap_repairs: int | None = None,
     map_intent: IntentMapper | None = None,
     max_map_rounds: int = MAP_ROUNDS,
+    noisy: bool = False,
 ) -> AuthorResult:
     """End-to-end Stage-1-through-2.5 pipeline.
 
@@ -663,6 +706,13 @@ def author(
     and ceilings are calculated from the approved conditions, and synthesis
     starts only when every node of the map is solved. Without it, Stage 2 uses
     keyword-selected source nodes as before.
+
+    ``noisy`` is for documents in which some sentences may not be requirements.
+    The schema is built once and then fixed, a map still rejected after its
+    rounds is used if it passes the structure checks, and a requirement that
+    gets no approved atom is dropped in the direction that allows less
+    (``IntentMap.drop_unsolved``) instead of stopping the run. Every dropped
+    requirement and its reason goes to ``stage2/dropped_requirements.json``.
     """
     spec_path = Path(spec_path)
     output_dir = Path(output_dir)
@@ -695,7 +745,7 @@ def author(
     # Support gaps already repaired once: one that is still missing afterwards
     # is not repaired again, which would loop.
     repaired_support: set[tuple[str, ...]] = set()
-    schema_gap_repair_limit = max_schema_gap_repairs
+    schema_gap_repair_limit = 0 if noisy else max_schema_gap_repairs
 
     session.write_input_spec(spec_text, filename=spec_path.name)
     if resume_from:
@@ -1057,6 +1107,7 @@ def author(
             schema_can_grow=propose_schema_atoms is not None
             and not _schema_gap_budget_spent(schema_gap_repair_limit, schema_gap_repair_count),
             map_rounds=max_map_rounds,
+            noisy=noisy,
         )
         if intent_map is None:
             _write_stage0_artifacts(
@@ -1113,10 +1164,15 @@ def author(
         # The map's conditions are the requirement frontier, in document order.
         property_frontier_nodes = [
             source_doc.by_id[node_id] for node_id in intent_map.condition_node_ids(source_doc)
+            if intent_map.scopes_for_node(node_id)
         ]
     else:
         property_frontier_nodes = source_doc.authorization_nodes()
     frontier_ids = [node.id for node in property_frontier_nodes]
+    if noisy:
+        max_property_proposals = max(
+            max_property_proposals, NOISY_PROPOSALS_PER_CONDITION * len(property_frontier_nodes),
+        )
     unresolved_node_ids: set[str] = set()
     node_attempts: dict[str, int] = {}
     node_decision_start: dict[str, int] = {}
@@ -1773,7 +1829,7 @@ def author(
             proposed=len(prop_atoms),
             queued=len(pending_property_atoms),
         )
-        if unrepaired_prior_conflict is not None:
+        if unrepaired_prior_conflict is not None and not noisy:
             session.write_stage2_intent_graph(
                 build_property_intent_graph(plan.properties),
             )
@@ -1986,6 +2042,22 @@ def author(
             active_spec_text = ""
     property_frontier_exhausted = all(node.id in completed_property_node_ids for node in property_frontier_nodes)
     save_property_checkpoint()
+    dropped_requirements: list[dict[str, Any]] = []
+    if noisy and intent_map is not None and not property_frontier_exhausted:
+        node_text = {node.id: node.text for node in source_doc.nodes}
+        give_up_reasons = {
+            d.edit_delta.get("source_node_ids", [""])[0]: d.reason
+            for d in decisions2 if d.atom_name.startswith("unresolved_")
+        }
+        dropped_requirements = intent_map.drop_unsolved(plan.properties)
+        for item in dropped_requirements:
+            item["text"] = node_text.get(item["node_id"], "")
+            item["reason"] = give_up_reasons.get(
+                item["node_id"], "Not reached within the proposal budget."
+            )
+        write_json(session.base / "stage2" / "dropped_requirements.json", dropped_requirements)
+        write_json(session.base / "stage0" / "intent_map_after_drops.json", intent_map.to_dict())
+        property_frontier_exhausted = True
     if not property_frontier_exhausted:
         decisions2.append(
             AtomDecision(
@@ -2230,6 +2302,10 @@ def author(
         plan=plan,
         schema_text=schema_text,
         final_user_approved=final_user_approved,
+        notes=[
+            f"Noisy mode dropped {len({d['node_id'] for d in dropped_requirements})} requirement(s) "
+            "that got no approved atom; see stage2/dropped_requirements.json."
+        ] if dropped_requirements else [],
     )
 
 
@@ -2726,7 +2802,12 @@ def _repair_named_prior_property(
     )
     if replacement is None:
         return False
-    replacement = attach_source_ids(replacement, source_ids_from_text(spec_text))
+    # The replacement revises the prior atom, so it grounds the prior's
+    # requirement, not the one whose packet asked for the repair.
+    replacement = attach_source_ids(
+        replace(replacement, source_excerpt=prior_atom.source_excerpt),
+        atom_source_ids(prior_atom),
+    )
     replacement = _align_repaired_property_atom(
         rejected_atom=prior_atom,
         replacement=replacement,

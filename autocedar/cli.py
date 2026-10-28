@@ -33,7 +33,7 @@ from autocedar.llm import (
     DEFAULT_EFFORT,
     LLMClient,
 )
-from autocedar.pipeline import MAP_ROUNDS, author as author_pipeline
+from autocedar.pipeline import DEFAULT_MAX_PROPERTY_PROPOSALS, MAP_ROUNDS, author as author_pipeline
 from autocedar.progress import format_property_progress
 from autocedar.property_atomizer import propose_property_atom
 from autocedar.schema_atomizer import propose_schema_atoms
@@ -277,6 +277,25 @@ def _build_parser() -> argparse.ArgumentParser:
             "documents can need more."
         ),
     )
+    author_p.add_argument(
+        "--noisy",
+        action="store_true",
+        help=(
+            "For documents in which some sentences may not be requirements. The "
+            "schema is built once and then fixed, and a requirement that gets no "
+            "approved atom is dropped (allowing less, never more) and listed in "
+            "stage2/dropped_requirements.json instead of stopping the run."
+        ),
+    )
+    author_p.add_argument(
+        "--max-proposals",
+        type=int,
+        default=DEFAULT_MAX_PROPERTY_PROPOSALS,
+        help=(
+            f"Maximum Stage 2 proposal and review steps (default: {DEFAULT_MAX_PROPERTY_PROPOSALS}). "
+            "--noisy raises it to fit the document."
+        ),
+    )
     author_p.set_defaults(func=_cmd_author)
 
     resume_p = sub.add_parser(
@@ -348,6 +367,25 @@ def _build_parser() -> argparse.ArgumentParser:
             f"Maximum intent-map rounds that go back to the mapper (default: {MAP_ROUNDS}). "
             "Objections AutoCedar applies itself do not count. Long or noisy "
             "documents can need more."
+        ),
+    )
+    resume_p.add_argument(
+        "--noisy",
+        action="store_true",
+        help=(
+            "For documents in which some sentences may not be requirements. The "
+            "schema is built once and then fixed, and a requirement that gets no "
+            "approved atom is dropped (allowing less, never more) and listed in "
+            "stage2/dropped_requirements.json instead of stopping the run."
+        ),
+    )
+    resume_p.add_argument(
+        "--max-proposals",
+        type=int,
+        default=DEFAULT_MAX_PROPERTY_PROPOSALS,
+        help=(
+            f"Maximum Stage 2 proposal and review steps (default: {DEFAULT_MAX_PROPERTY_PROPOSALS}). "
+            "--noisy raises it to fit the document."
         ),
     )
     resume_p.set_defaults(func=_cmd_resume)
@@ -751,6 +789,8 @@ def _cmd_author(args: argparse.Namespace) -> int:
         run_incremental_checks=False,
         max_schema_gap_repairs=getattr(args, "max_schema_gap_repairs", None),
         max_map_rounds=getattr(args, "max_map_rounds", MAP_ROUNDS),
+        max_property_proposals=getattr(args, "max_proposals", DEFAULT_MAX_PROPERTY_PROPOSALS),
+        noisy=getattr(args, "noisy", False),
     )
 
     completed = _authoring_completed(result)
@@ -808,6 +848,8 @@ def _cmd_resume(args: argparse.Namespace) -> int:
         run_incremental_checks=False,
         max_schema_gap_repairs=getattr(args, "max_schema_gap_repairs", None),
         max_map_rounds=getattr(args, "max_map_rounds", MAP_ROUNDS),
+        max_property_proposals=getattr(args, "max_proposals", DEFAULT_MAX_PROPERTY_PROPOSALS),
+        noisy=getattr(args, "noisy", False),
     )
 
     completed = _authoring_completed(result)

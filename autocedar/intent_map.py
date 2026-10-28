@@ -136,9 +136,19 @@ class IntentMap:
             return []
         slices = self.slice_by_id
         scope_ids = [slices[s].scope_id for s in sentence.slice_ids if s in slices]
-        scope_ids += list(sentence.restricts_scope_ids)
+        scope_ids += [s for s in sentence.restricts_scope_ids if self.needs_restriction_atom(s)]
         by_id = self.scope_by_id
         return [by_id[s] for s in dict.fromkeys(scope_ids) if s in by_id]
+
+    def needs_restriction_atom(self, scope_id: str) -> bool:
+        """Whether a restriction on this scope needs its own atom.
+
+        A scope that lists every way to allow it and has none is denied whole
+        (its ceiling denies every request), so a sentence that forbids it, such
+        as "the system will not update the legacy data", adds nothing to encode.
+        """
+        scope = self.scope_by_id.get(scope_id)
+        return not (scope is not None and scope.exhaustive is True and not self.scope_slices(scope_id))
 
     def slice_conditions(self, slice_id: str) -> list[str]:
         """Condition node ids of a slice, including restrictions on its scope."""
@@ -248,6 +258,56 @@ class IntentMap:
         self.sentences = kept
         return dropped
 
+    def drop_unsolved(self, approved: Iterable[PropertyAtom]) -> list[dict[str, Any]]:
+        """Remove each condition that has no approved atom, in the direction that allows less.
+
+        Noisy mode uses this instead of stopping. A slice that needs an unsolved
+        condition leaves the map, so nothing is allowed without that condition.
+        A scope with an unsolved restriction is denied whole: it loses its
+        slices and is marked complete, so its ceiling denies every request.
+        Returns one record per dropped (condition, scope) pair.
+        """
+        grounded = self.grounding(list(approved))
+        dropped: list[dict[str, Any]] = []
+        gone_slices: set[str] = set()
+        denied: set[str] = set()
+        slice_scope = {sl.id: sl.scope_id for sl in self.slices}
+        for sentence in self.conditions():
+            for scope in self.scopes_for_node(sentence.node_id):
+                if (sentence.node_id, scope.id) in grounded:
+                    continue
+                restricts = scope.id in sentence.restricts_scope_ids
+                slices = [i for i in sentence.slice_ids if slice_scope.get(i) == scope.id]
+                gone_slices.update(slices)
+                if restricts:
+                    denied.add(scope.id)
+                dropped.append({
+                    "node_id": sentence.node_id,
+                    "scope_id": scope.id,
+                    "effect": "scope denied" if restricts else "slice removed",
+                    "slices": slices,
+                })
+        for scope in self.scopes:
+            if scope.id in denied:
+                gone_slices.update(sl.id for sl in self.scope_slices(scope.id))
+                scope.exhaustive = True
+        removed_scopes = {sl.scope_id for sl in self.slices if sl.id in gone_slices}
+        self.slices = [sl for sl in self.slices if sl.id not in gone_slices]
+        for scope in self.scopes:
+            # A scope that lost every way to be allowed is denied, not left open.
+            if scope.id in removed_scopes and not self.scope_slices(scope.id):
+                scope.exhaustive = True
+        kept: list[MapSentence] = []
+        for sentence in self.sentences:
+            if sentence.kind == CONDITION:
+                sentence.slice_ids = [i for i in sentence.slice_ids if i not in gone_slices]
+                sentence.restricts_scope_ids = [i for i in sentence.restricts_scope_ids if i not in denied]
+                if not sentence.slice_ids and not sentence.restricts_scope_ids:
+                    continue
+            kept.append(sentence)
+        self.sentences = kept
+        return dropped
+
     def _edges(self) -> dict[str, list[str]]:
         """Child-to-parent edges: condition -> slice/scope -> root."""
         edges: dict[str, list[str]] = {}
@@ -295,7 +355,10 @@ class IntentMap:
         }
         scopes = {
             scope.id: all(slices[sl.id] for sl in self.scope_slices(scope.id))
-            and all(conditions.get(n, {}).get(scope.id, False) for n in self.restrictions(scope.id))
+            and (
+                not self.needs_restriction_atom(scope.id)
+                or all(conditions.get(n, {}).get(scope.id, False) for n in self.restrictions(scope.id))
+            )
             for scope in self.scopes
         }
         blocking = sorted(

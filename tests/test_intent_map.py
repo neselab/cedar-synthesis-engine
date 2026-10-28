@@ -437,3 +437,58 @@ def test_condition_atom_that_holds_for_every_request_fails_its_checks(tmp_path) 
     # A sentence that only grants its scope says so with a literal `true`.
     assert checked("true")[0].startswith("match-broadness: ok (unconditional")
     assert checked("true || resource.defectCount == 0")[0].startswith("match-broadness: FAILED")
+
+
+def _solved_except_on_hold(ids: dict[str, str]) -> list[PropertyAtom]:
+    return [
+        condition_atom(ids["release:inspector"], "release", CONDITIONS["inspector"]),
+        condition_atom(ids["release:defect count"], "release", CONDITIONS["defect count"]),
+        condition_atom(ids["signoff:inspector"], "signoff", CONDITIONS["inspector"]),
+    ]
+
+
+def test_drop_unsolved_removes_the_slice_that_needs_the_condition() -> None:
+    doc = compile_source_document(SPEC)
+    ids = node_ids(doc)
+    imap = work_order_map(doc)
+
+    dropped = imap.drop_unsolved(_solved_except_on_hold(ids))
+
+    assert dropped == [{
+        "node_id": ids["signoff:on hold"], "scope_id": "s_signoff",
+        "effect": "slice removed", "slices": ["sl_signoff"],
+    }]
+    # Sign-off is now denied whole; release keeps its slice.
+    assert [sl.id for sl in imap.slices] == ["sl_release"]
+    assert imap.scope_by_id["s_signoff"].exhaustive is True
+    assert imap.condition(ids["signoff:inspector"]) is None
+    assert imap.status(_solved_except_on_hold(ids))["root_solved"] is True
+
+
+def test_drop_unsolved_denies_a_scope_whose_restriction_is_unsolved() -> None:
+    doc = compile_source_document(SPEC)
+    ids = node_ids(doc)
+    imap = work_order_map(doc)
+    imap.scope_by_id["s_signoff"].exhaustive = False
+    imap.condition(ids["signoff:on hold"]).slice_ids = []
+    imap.condition(ids["signoff:on hold"]).restricts_scope_ids = ["s_signoff"]
+
+    dropped = imap.drop_unsolved(_solved_except_on_hold(ids))
+
+    assert [(d["node_id"], d["effect"]) for d in dropped] == [(ids["signoff:on hold"], "scope denied")]
+    assert imap.scope_slices("s_signoff") == []
+    assert imap.scope_by_id["s_signoff"].exhaustive is True
+    assert imap.condition(ids["signoff:on hold"]) is None
+
+
+def test_drop_unsolved_keeps_a_solved_map_unchanged() -> None:
+    doc = compile_source_document(SPEC)
+    ids = node_ids(doc)
+    imap = work_order_map(doc)
+    solved = _solved_except_on_hold(ids) + [
+        condition_atom(ids["signoff:on hold"], "signoff", CONDITIONS["on hold"]),
+    ]
+    before = imap.to_dict()
+
+    assert imap.drop_unsolved(solved) == []
+    assert imap.to_dict() == before

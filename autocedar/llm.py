@@ -140,6 +140,15 @@ def _load_prompt(name: str) -> str:
     return path.read_text()
 
 
+MALFORMED_OUTPUT_ATTEMPTS = 3
+_MALFORMED_OUTPUT = re.compile(r"returned (invalid|no structured) ")
+
+
+def _is_malformed_output(exc: Exception) -> bool:
+    """Whether a provider error says the model's answer did not parse."""
+    return bool(_MALFORMED_OUTPUT.search(str(exc)))
+
+
 # ---------------------------------------------------------------------------
 # Pydantic schemas for LLM-side structured output.
 #
@@ -1117,14 +1126,22 @@ class LLMClient:
         started = time.monotonic()
         result = None
         try:
-            result = self._backend.generate_structured(
-                model=self._model,
-                max_tokens=self._max_tokens,
-                reasoning_effort=effort_override or self._effort,
-                system=system,
-                messages=(ChatMessage(role="user", content=user_turn),),
-                output_type=output_format,
-            )
+            for attempt in range(MALFORMED_OUTPUT_ATTEMPTS):
+                try:
+                    result = self._backend.generate_structured(
+                        model=self._model,
+                        max_tokens=self._max_tokens,
+                        reasoning_effort=effort_override or self._effort,
+                        system=system,
+                        messages=(ChatMessage(role="user", content=user_turn),),
+                        output_type=output_format,
+                    )
+                    break
+                except Exception as exc:
+                    # A model answer that is not the requested JSON is a bad
+                    # sample, not a broken run: ask again.
+                    if attempt + 1 >= MALFORMED_OUTPUT_ATTEMPTS or not _is_malformed_output(exc):
+                        raise
         finally:
             if self._usage_callback:
                 usage = result.usage if result is not None else None

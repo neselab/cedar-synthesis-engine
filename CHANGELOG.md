@@ -5,6 +5,24 @@ versioning while the public provider and CLI interfaces stabilize.
 
 ## Unreleased
 
+- Added `--noisy` for documents in which some sentences may not be
+  requirements, such as the output of a sentence classifier. The schema is
+  built and reviewed once and then fixed; a map scope the schema does not
+  declare leaves the map; a map the reviewer still rejects after
+  `--max-map-rounds` is used if it passes the structure checks, with its open
+  objections recorded; and a requirement that gets no approved atom is dropped
+  instead of stopping the run. A dropped condition removes its slice, and a
+  dropped restriction denies its scope, so a drop allows less, never more.
+  Each drop and its reason goes to `stage2/dropped_requirements.json`. Without
+  `--noisy` nothing changes.
+- `--max-proposals` sets the Stage 2 proposal budget (default 128, as before).
+  `--noisy` raises it to 12 per requirement, so long documents are not cut off.
+- A model answer that does not parse as the requested JSON is asked again, up
+  to three times. Before, one malformed answer ended the run.
+- A restriction on a scope that lists every way to allow it and has none
+  ("the system will not update the legacy data") needs no atom: the scope's
+  ceiling already denies every request. A repaired prior atom keeps the
+  requirement it was written for.
 - Added `autocedar mcp`, a dependency-free stdio MCP server that lets coding
   agents check setup, verify workspaces, and run human-in-the-loop authoring.
   The server pauses at every atom until the agent relays the user's decision.

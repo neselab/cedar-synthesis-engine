@@ -15,7 +15,7 @@ import pytest
 from autocedar.atoms import PropertyAtom
 from autocedar.corpus import AtomDecision
 from autocedar.harness.orchestrator import run_verification
-from autocedar.intent_map import IntentMap, MapSentence, PermissionsQuestion
+from autocedar.intent_map import IntentMap, MapScope, MapSentence, MapSlice, PermissionsQuestion
 from autocedar.pipeline import MAX_CONDITION_ATTEMPTS, author
 from autocedar.source_doc import compile_source_document
 from tests.reviewers import approve_checked
@@ -711,3 +711,89 @@ def test_support_gap_still_missing_after_its_repair_is_not_repaired_again(tmp_pa
     assert len(repairs) == 1
     assert result.notes == []
     assert run_verification(str(result.candidate_path.parent)).loss == 0
+
+
+def test_noisy_mode_drops_an_unsolved_requirement_and_synthesizes_the_rest(tmp_path: Path) -> None:
+    spec, schema, doc = _setup(tmp_path)
+    ids = node_ids(doc)
+
+    result = author(
+        spec, tmp_path / "out", session_id="noisy-drop",
+        review_atom=approve_checked,
+        map_intent=lambda **kw: work_order_map(doc),
+        propose_property_atom=Proposer(doc, skip={ids["signoff:on hold"]}),
+        synthesize=_synthesize_exact,
+        schema_path_override=str(schema),
+        noisy=True,
+    )
+
+    assert result.candidate_path.is_file()
+    assert "dropped 1 requirement" in result.notes[0]
+    session = result.session_dir
+    dropped = json.loads((session / "stage2" / "dropped_requirements.json").read_text())
+    assert [(d["node_id"], d["effect"]) for d in dropped] == [(ids["signoff:on hold"], "slice removed")]
+    assert "not on hold" in dropped[0]["text"]
+    plan = (session / "stage2" / "final_plan" / "verification_plan.py").read_text()
+    # Sign-off lost its only slice, so it is denied whole rather than allowed
+    # without the on-hold condition.
+    assert '"name": "ceiling__s_signoff"' in plan
+    assert "floor__s_signoff" not in plan
+    assert '"name": "floor__s_release__sl_release"' in plan
+    assert run_verification(str(result.candidate_path.parent)).loss == 0
+
+
+def test_noisy_mode_uses_a_map_the_reviewer_still_rejects(tmp_path: Path) -> None:
+    spec, schema, doc = _setup(tmp_path)
+    calls: list[dict] = []
+
+    def reviewer(atom):
+        if isinstance(atom, IntentMap):
+            return AtomDecision("intent_map", "reject", reason="Sentence 3 is not a requirement.")
+        return approve_checked(atom)
+
+    result = author(
+        spec, tmp_path / "out", session_id="noisy-map",
+        review_atom=reviewer,
+        map_intent=lambda **kw: calls.append(kw) or work_order_map(doc),
+        propose_property_atom=Proposer(doc),
+        synthesize=_synthesize_exact,
+        schema_path_override=str(schema),
+        max_map_rounds=2,
+        noisy=True,
+    )
+
+    assert len(calls) == 2
+    assert result.candidate_path.is_file()
+    record = json.loads((result.session_dir / "stage0" / "intent_map.json").read_text())
+    assert record["approved"] is False
+    assert record["accepted_in_noisy_mode"] is True
+    assert "not a requirement" in record["open_objections"]
+
+
+def test_noisy_mode_leaves_out_a_scope_the_fixed_schema_lacks(tmp_path: Path) -> None:
+    spec, schema, doc = _setup(tmp_path)
+    ids = node_ids(doc)
+
+    def mapper(**kw) -> IntentMap:
+        imap = work_order_map(doc)
+        imap.scopes.append(MapScope("s_archive", "archive", "User", "WorkOrder", True, "Archive"))
+        imap.slices.append(MapSlice("sl_archive", "s_archive", "anyone archives"))
+        imap.sentences = [s for s in imap.sentences if s.node_id != ids["rule"]]
+        imap.sentences.append(MapSentence(ids["rule"], "condition", ["sl_archive"]))
+        return imap
+
+    result = author(
+        spec, tmp_path / "out", session_id="noisy-schema",
+        review_atom=approve_checked,
+        map_intent=mapper,
+        propose_property_atom=Proposer(doc),
+        synthesize=_synthesize_exact,
+        schema_path_override=str(schema),
+        noisy=True,
+    )
+
+    assert result.candidate_path.is_file()
+    record = json.loads((result.session_dir / "stage0" / "intent_map.json").read_text())
+    assert record["approved"] is True
+    assert record["rounds"][0]["left_out"] == [ids["rule"]]
+    assert "s_archive" not in {s["id"] for s in record["map"]["scopes"]}

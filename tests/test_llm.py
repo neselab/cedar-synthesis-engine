@@ -1076,3 +1076,50 @@ def test_repair_planner_uses_its_own_prompt_not_an_atomization_prompt() -> None:
     system = " ".join(b["text"] for b in blocks) if isinstance(blocks, list) else str(blocks)
     assert "You plan AutoCedar's next step" in system
     assert "Return one condition atom" not in system
+
+
+class _FlakyBackend:
+    """Fails with the given errors in turn, then answers."""
+
+    def __init__(self, errors: list[Exception], parsed: Any) -> None:
+        self.errors = list(errors)
+        self.parsed = parsed
+        self.calls = 0
+
+    def generate_structured(self, **kwargs: Any) -> Any:
+        self.calls += 1
+        if self.errors:
+            raise self.errors.pop(0)
+        return SimpleNamespace(parsed=self.parsed, usage=None)
+
+
+def test_malformed_model_output_is_asked_again() -> None:
+    backend = _FlakyBackend(
+        [RuntimeError("Codex returned invalid SchemaAtomsResponse JSON: Expecting value")],
+        SchemaAtomsResponse(atoms=[]),
+    )
+    client = LLMClient(backend=backend)  # type: ignore[arg-type]
+
+    assert client.propose_schema_atoms("Doctors can read records.") == []
+    assert backend.calls == 2
+
+
+def test_malformed_output_stops_after_three_answers() -> None:
+    backend = _FlakyBackend(
+        [RuntimeError("Claude CLI returned no structured SchemaAtomsResponse result.")] * 3,
+        SchemaAtomsResponse(atoms=[]),
+    )
+    client = LLMClient(backend=backend)  # type: ignore[arg-type]
+
+    with pytest.raises(RuntimeError, match="no structured"):
+        client.propose_schema_atoms("Doctors can read records.")
+    assert backend.calls == 3
+
+
+def test_other_provider_errors_are_not_retried_by_the_parse_loop() -> None:
+    backend = _FlakyBackend([RuntimeError("Codex auth expired")], SchemaAtomsResponse(atoms=[]))
+    client = LLMClient(backend=backend)  # type: ignore[arg-type]
+
+    with pytest.raises(RuntimeError, match="auth expired"):
+        client.propose_schema_atoms("Doctors can read records.")
+    assert backend.calls == 1
