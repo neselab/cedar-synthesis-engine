@@ -59,6 +59,12 @@ versioning while the public provider and CLI interfaces stabilize.
   fails the schema (up to 5 turns), retry up to twice if the call still runs
   out of turns or the CLI cannot parse the model's tool call
   (`malformed_tool_use_exhausted`), and report the CLI's error kind.
+- A condition atom written as `when { true }` passes its checks again: it
+  says the sentence only grants its scope ("Reviewers can view the overview"),
+  and model or human review judges that reading. Any other condition that
+  holds for every request of its scope still fails, as it usually means a
+  `has` test on an undeclared field. Before, every sentence that only grants
+  access was blocked, so runs on such documents stopped before synthesis.
 - A condition whose arithmetic can overflow on its own (`+`, `-`, `*`, or
   datetime `.offset(...)`) is accepted when earlier requirements of its slice
   bound the operands; floors place it after them, so Cedar's `&&` checks the

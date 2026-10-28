@@ -36,6 +36,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, Literal, Optional
 
+from autocedar.cedar_text import policy_conditions, split_policies
 from autocedar.symcc_result import formal_verdict
 
 from autocedar.atoms import (
@@ -582,10 +583,20 @@ def _check_match_shape(
     )
     if always_matches.tool_error:
         checks.append(SymbolicCheck(name="match-broadness", passed=False, detail=always_matches.raw_output))
+    elif always_matches.passed and atom.constraint_type == "condition" and _states_no_condition(atom.reference_cedar):
+        # `when { true }` says on its face that the sentence only grants its
+        # scope ("Reviewers can view the overview"); review judges that reading.
+        checks.append(
+            SymbolicCheck(
+                name="match-broadness",
+                passed=True,
+                detail="unconditional: the requirement adds no condition beyond its scope",
+            ),
+        )
     elif always_matches.passed and atom.constraint_type == "condition":
-        # A requirement that holds for every request of its scope restricts
-        # nothing: usually a `has` test on a field the schema does not declare,
-        # which Cedar treats as absent.
+        # Any other condition that holds for every request of its scope
+        # restricts nothing by accident: usually a `has` test on a field the
+        # schema does not declare, which Cedar treats as absent.
         checks.append(
             SymbolicCheck(
                 name="match-broadness",
@@ -614,6 +625,18 @@ def _check_match_shape(
             ),
         )
     return checks
+
+
+def _states_no_condition(cedar_text: str) -> bool:
+    """Whether the policy's only condition is a literal `when { true }`, or it has none."""
+    policies = split_policies(cedar_text)
+    if len(policies) != 1:
+        return False
+    try:
+        conditions = policy_conditions(policies[0])
+    except ValueError:
+        return False
+    return "".join(conditions.split()) in ("", "when{true}")
 
 
 def _check_joint_consistency(

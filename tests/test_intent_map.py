@@ -434,3 +434,6 @@ def test_condition_atom_that_holds_for_every_request_fails_its_checks(tmp_path) 
     vanished = checked("!(resource has frozen && resource.frozen) || resource.defectCount == 0")
     assert vanished[0].startswith("match-broadness: FAILED")
     assert checked("resource.defectCount == 0")[0].startswith("match-broadness: ok")
+    # A sentence that only grants its scope says so with a literal `true`.
+    assert checked("true")[0].startswith("match-broadness: ok (unconditional")
+    assert checked("true || resource.defectCount == 0")[0].startswith("match-broadness: FAILED")
