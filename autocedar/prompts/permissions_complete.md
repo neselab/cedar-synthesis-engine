@@ -14,3 +14,9 @@ AutoCedar then treats the listed permissions as examples, and more requests may
 be allowed.
 
 Say why in one sentence, quoting the document where it helps.
+
+A note that some sentences may not be access-control requirements (for
+example, sentences picked by an automatic classifier) is about extra sentences
+to ignore. It says nothing about whether the requirements that remain list
+every permission, so do not answer no because of it; judge the requirements
+themselves.

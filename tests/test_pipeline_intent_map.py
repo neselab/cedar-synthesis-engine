@@ -960,3 +960,36 @@ def test_noisy_resume_keeps_a_map_used_without_approval(tmp_path: Path) -> None:
 
     assert len(calls) == 1
     assert resumed.candidate_path.is_file()
+
+
+def test_resumed_map_with_an_unmarked_scope_asks_the_permissions_question(tmp_path: Path) -> None:
+    spec, schema, doc = _setup(tmp_path)
+    questions: list[PermissionsQuestion] = []
+
+    def reviewer(atom):
+        if isinstance(atom, PermissionsQuestion):
+            questions.append(atom)
+            return AtomDecision(atom.name, "approve", intent_acknowledged_by_user=True)
+        return approve_checked(atom)
+
+    common = dict(
+        review_atom=reviewer,
+        map_intent=lambda **kw: work_order_map(doc),
+        propose_property_atom=Proposer(doc),
+        synthesize=_synthesize_exact,
+        schema_path_override=str(schema),
+    )
+    first = author(spec, tmp_path / "out", session_id="first", **common)
+    # Clear one scope's answer, as when the question is to be asked again.
+    record_path = first.session_dir / "stage0" / "intent_map.json"
+    record = json.loads(record_path.read_text())
+    record["map"]["scopes"][1]["exhaustive"] = None
+    record_path.write_text(json.dumps(record))
+
+    resumed = author(spec, tmp_path / "out", session_id="again", resume_from=first.session_dir, **common)
+
+    assert [[s.id for s in q.scopes] for q in questions] == [["s_signoff"]]
+    again = json.loads((resumed.session_dir / "stage0" / "intent_map.json").read_text())
+    assert again["permissions_complete"]["complete"] is True
+    assert again["map"]["scopes"][1]["exhaustive"] is True
+    assert resumed.candidate_path.is_file()

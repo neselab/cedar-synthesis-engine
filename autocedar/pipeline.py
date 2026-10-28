@@ -329,16 +329,22 @@ def _build_reviewed_intent_map(
     """
     record_path = session.base / "stage0" / "intent_map.json"
     triples = schema_triples(schema_text, cedar_path=CEDAR_PATH)
+    outline = document_outline(source_doc)
     if resume_from is not None:
         prior = _read_json(resume_from / "stage0" / "intent_map.json", None)
         usable = prior.get("approved") or (noisy and prior.get("accepted_in_noisy_mode")) if isinstance(prior, dict) else False
         if usable and prior.get("map"):
             resumed = IntentMap.from_dict(prior["map"])
             if not resumed.structure_errors(source_doc, triples):
+                # A saved map can carry scopes whose completeness was never
+                # settled (or was cleared to ask again): ask now.
+                resumed.outline = outline
+                permissions = _settle_unmarked_scopes(resumed, review_atom)
+                if permissions is not None:
+                    prior = {**prior, "map": resumed.to_dict(), "permissions_complete": permissions}
                 write_json(record_path, prior)
                 decision = from_dict(AtomDecision, prior["decision"]) if prior.get("decision") else None
                 return resumed, decision, ""
-    outline = document_outline(source_doc)
     refused: set[tuple[str, str, str]] = set()
 
     def mapper_actions() -> str:

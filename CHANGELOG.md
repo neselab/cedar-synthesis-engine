@@ -29,6 +29,11 @@ versioning while the public provider and CLI interfaces stabilize.
   model review as not a requirement leaves the map without removing its slice:
   writer and reviewer agree it adds no condition. A resumed `--noisy` session
   keeps a map that was used without approval.
+- The permissions question now tells the model that a note about sentences
+  that may not be requirements concerns extra sentences, not missing
+  permissions. Before, the model answered no on the strength of that note
+  alone, which left every scope without a ceiling. A resumed map whose scopes
+  have no answer is asked the question again.
 - The `match-broadness` failure now says to write `when { true }` when a
   requirement adds nothing beyond its scope, instead of only pointing at
   undeclared fields.
