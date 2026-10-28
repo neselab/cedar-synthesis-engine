@@ -3141,7 +3141,9 @@ def _complete_schema_for_map(
     )
     saved = _read_json(record_path, {})
     if saved.get("done") and not late:
-        return saved.get("schema_text", schema_text)
+        # Already run (a resumed session): the schema in hand includes its
+        # fields and any added later, so keep it rather than the saved copy.
+        return schema_text
     text = {node.id: node.text for node in source_doc.nodes}
     if nodes is None:
         nodes = [n for n in intent_map.condition_node_ids(source_doc) if intent_map.scopes_for_node(n)]

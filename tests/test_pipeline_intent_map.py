@@ -1081,6 +1081,13 @@ def test_noisy_resume_does_not_run_the_schema_completion_again(tmp_path: Path) -
         noisy=True,
     )
     first = author(spec, tmp_path / "out", session_id="first", **common)
-    author(spec, tmp_path / "out", session_id="again", resume_from=first.session_dir, **common)
+    # A field added after the completion (as the late completion does) stays.
+    record_path = first.session_dir / "stage1_5" / "schema_completion.json"
+    record = json.loads(record_path.read_text())
+    record["schema_text"] = "stale copy"
+    record_path.write_text(json.dumps(record))
+    again = author(spec, tmp_path / "out", session_id="again", resume_from=first.session_dir, **common)
 
     assert len(requests) == 1
+    assert "stale copy" not in again.schema_text
+    assert again.candidate_path.is_file()
