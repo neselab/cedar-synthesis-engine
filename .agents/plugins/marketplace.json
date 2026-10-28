@@ -1,0 +1,20 @@
+{
+  "name": "neselab",
+  "interface": {
+    "displayName": "neselab"
+  },
+  "plugins": [
+    {
+      "name": "autocedar",
+      "source": {
+        "source": "local",
+        "path": "./plugins/autocedar"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    }
+  ]
+}

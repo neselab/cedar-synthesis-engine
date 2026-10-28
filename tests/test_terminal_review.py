@@ -21,7 +21,6 @@ from autocedar.atoms import (
 )
 from autocedar.ui.terminal import (
     VERIFIED_BADGE,
-    auto_approve,
     format_symbolic_verification_log,
     interactive_review_loop,
     render_property_atom,
@@ -143,28 +142,6 @@ def _liveness_property() -> PropertyAtom:
             "sugar-universal: ok (not applicable to primitives)",
         ],
     )
-
-
-def test_auto_approve_rejects_symbolically_failed_property_atoms() -> None:
-    atom = _property()
-    atom.symbolic_verified = False
-    atom.symbolic_verification_log = [
-        "type-correct: FAILED (cedar validate rejected reference policy)",
-    ]
-
-    decision = auto_approve(atom)
-
-    assert decision.action == "reject"
-    assert decision.intent_acknowledged_by_user is False
-    assert decision.symbolic_verified is False
-    assert "Symbolic verification failed" in decision.reason
-
-
-def test_auto_approve_advances_schema_atoms_without_claiming_human_intent() -> None:
-    decision = auto_approve(_entity())
-
-    assert decision.action == "approve"
-    assert decision.intent_acknowledged_by_user is False
 
 
 # ---------------------------------------------------------------------------
@@ -719,3 +696,42 @@ def test_loop_handles_empty_input_as_unknown_key() -> None:
         output_fn=captured,
     )
     assert reviewed[0].decision.action == "approve"
+
+
+def test_map_review_shows_the_map_and_rejects_without_asking_for_a_replacement() -> None:
+    from autocedar.intent_map import IntentMap
+
+    class NoReplacement:
+        def propose_alternative_atom(self, *args):
+            raise AssertionError("a map rejection must go back to the mapper")
+
+    m = IntentMap(review_text="INTENT MAP\nScope s_release: ...")
+    inputs = iter(["E", "R", "The hold rule belongs to sign off."])
+    output: list[str] = []
+
+    reviewed = interactive_review_loop(
+        [m], llm=NoReplacement(), spec_text="spec",
+        input_fn=lambda prompt="": next(inputs), output_fn=output.append,
+    )[0]
+
+    assert reviewed.decision.action == "reject"
+    assert reviewed.decision.reason == "The hold rule belongs to sign off."
+    assert any("INTENT MAP" in line for line in output)
+    assert any("cannot be edited field by field" in line for line in output)
+
+
+def test_permissions_question_is_answered_with_approve_or_reject() -> None:
+    from autocedar.intent_map import MapScope, PermissionsQuestion
+
+    question = PermissionsQuestion(scopes=[MapScope("s_signoff", "signoff", "User", "WorkOrder", None)])
+    inputs = iter(["E", "R", "The document only gives examples."])
+    output: list[str] = []
+
+    reviewed = interactive_review_loop(
+        [question], llm=None, spec_text="spec",
+        input_fn=lambda prompt="": next(inputs), output_fn=output.append,
+    )[0]
+
+    assert reviewed.decision.action == "reject"
+    assert any("IS THE LIST OF PERMISSIONS COMPLETE?" in line and "signoff" in line for line in output)
+    assert any("answer with A for yes or R for no" in line for line in output)

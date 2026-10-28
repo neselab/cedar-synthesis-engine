@@ -1,0 +1,1191 @@
+[
+  {
+    "name": "p0003_submitStep1_author_during_step1",
+    "rationale": "The requirement specifies that authors have the ability to submit during step 1. This requires two conditions: (1) the principal must be listed in the submission's authors set, and (2) the submission must have step1Open set to true. Both conditions must be satisfied for the action to be allowed.",
+    "plain_english_summary": "The principal must be an author of the submission, and step 1 must be open for submissions.",
+    "source_excerpt": "[source_id: src.cyberchair_access_control_intent.authorization_intent_covered.p0003.l9] Authors can submit abstracts/papers during step 1.",
+    "constraint_type": "condition",
+    "action": "submitStep1",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "Submission"
+    ],
+    "reference_cedar": "permit (principal is User, action == Action::\"submitStep1\", resource is Submission) when { resource.authors.contains(principal) && resource.step1Open };",
+    "required_schema_support": [
+      {
+        "kind": "action_principal",
+        "name": "",
+        "entity": "",
+        "action": "",
+        "field_name": "",
+        "type_name": "User",
+        "reason": "Principal must be of type User to perform submitStep1"
+      },
+      {
+        "kind": "action_resource",
+        "name": "",
+        "entity": "",
+        "action": "",
+        "field_name": "",
+        "type_name": "Submission",
+        "reason": "Resource must be of type Submission for submitStep1"
+      },
+      {
+        "kind": "attribute",
+        "name": "",
+        "entity": "Submission",
+        "action": "",
+        "field_name": "authors",
+        "type_name": "",
+        "reason": "Need to check if principal is in the authors set"
+      },
+      {
+        "kind": "attribute",
+        "name": "",
+        "entity": "Submission",
+        "action": "",
+        "field_name": "step1Open",
+        "type_name": "",
+        "reason": "Need to verify that step 1 is open for submissions"
+      }
+    ],
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "condition-shape: ok",
+      "identity-consistency: ok",
+      "satisfiable: ok",
+      "never-errors: ok",
+      "match-vacuity: ok (policy match condition is reachable)",
+      "match-broadness: ok (not universal)",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": false,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "submitFullPaper_step2_author",
+    "rationale": "The requirement explicitly states that authors (1) with step-2 credentials (2) can upload during step 2 (3). All three conditions must hold: the principal must be in the submission's authors set, the context must indicate step-2 credentials, and the submission's step-2 phase must be open.",
+    "plain_english_summary": "The principal must be listed as an author of the submission, must have step-2 credentials, and step 2 must currently be open.",
+    "source_excerpt": "[source_id: src.cyberchair_access_control_intent.authorization_intent_covered.p0004.l10] 2. Authors with step-2 credentials can upload full papers during step 2.",
+    "constraint_type": "condition",
+    "action": "submitFullPaper",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "Submission"
+    ],
+    "reference_cedar": "permit (principal is User, action == Action::\"submitFullPaper\", resource is Submission) when { resource.authors.contains(principal) && context.hasStep2Credential && resource.step2Open };",
+    "required_schema_support": [
+      {
+        "kind": "attribute",
+        "name": "",
+        "entity": "Submission",
+        "action": "",
+        "field_name": "authors",
+        "type_name": "",
+        "reason": "Required to check if principal is an author of the submission"
+      },
+      {
+        "kind": "context",
+        "name": "",
+        "entity": "",
+        "action": "",
+        "field_name": "hasStep2Credential",
+        "type_name": "",
+        "reason": "Required to verify the principal possesses step-2 credentials"
+      },
+      {
+        "kind": "attribute",
+        "name": "",
+        "entity": "Submission",
+        "action": "",
+        "field_name": "step2Open",
+        "type_name": "",
+        "reason": "Required to verify that step 2 is currently open"
+      }
+    ],
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "condition-shape: ok",
+      "identity-consistency: ok",
+      "satisfiable: ok",
+      "never-errors: ok",
+      "match-vacuity: ok (policy match condition is reachable)",
+      "match-broadness: ok (not universal)",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": false,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "author_during_step2",
+    "rationale": "The requirement states authors can correct step-1 information during step 2. This encodes the two conditions: the principal must appear in the submission's authors set, and the submission's step2Open flag must be true.",
+    "plain_english_summary": "The principal must be an author of the submission, and step 2 must be open for corrections.",
+    "source_excerpt": "[source_id: src.cyberchair_access_control_intent.authorization_intent_covered.p0005.l11] Authors can correct step-1 submission information during step 2.",
+    "constraint_type": "condition",
+    "action": "updateStep1Info",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "Submission"
+    ],
+    "reference_cedar": "permit (principal is User, action == Action::\"updateStep1Info\", resource is Submission) when { resource.authors.contains(principal) && resource.step2Open };",
+    "required_schema_support": [
+      {
+        "kind": "entity",
+        "name": "User",
+        "entity": "",
+        "action": "",
+        "field_name": "",
+        "type_name": "",
+        "reason": ""
+      },
+      {
+        "kind": "entity",
+        "name": "Submission",
+        "entity": "",
+        "action": "",
+        "field_name": "",
+        "type_name": "",
+        "reason": ""
+      },
+      {
+        "kind": "attribute",
+        "name": "",
+        "entity": "Submission",
+        "action": "",
+        "field_name": "authors",
+        "type_name": "",
+        "reason": ""
+      },
+      {
+        "kind": "attribute",
+        "name": "",
+        "entity": "Submission",
+        "action": "",
+        "field_name": "step2Open",
+        "type_name": "",
+        "reason": ""
+      }
+    ],
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "condition-shape: ok",
+      "identity-consistency: ok",
+      "satisfiable: ok",
+      "never-errors: ok",
+      "match-vacuity: ok (policy match condition is reachable)",
+      "match-broadness: ok (not universal)",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": false,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "submitCameraReady_author_of_selected_after_review",
+    "rationale": "The requirement explicitly requires three conditions: the user must be listed as an author (author role check via resource.authors), the submission must be selected for the conference (selected flag), and the review phase must be finished (reviewProcessDone flag indicates review is complete). The Cedar syntax now matches the approved pattern used in this scope.",
+    "plain_english_summary": "The principal must be an author of the submission, the submission must be marked as selected, and the review process must be complete.",
+    "source_excerpt": "[source_id: src.cyberchair_access_control_intent.authorization_intent_covered.p0006.l12] Authors of selected submissions can submit camera-ready papers after review.",
+    "constraint_type": "condition",
+    "action": "submitCameraReady",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "Submission"
+    ],
+    "reference_cedar": "permit (principal is User, action == Action::\"submitCameraReady\", resource is Submission) when {\n    resource.authors.contains(principal) &&\n    resource.selected &&\n    resource.reviewProcessDone\n};",
+    "required_schema_support": [
+      {
+        "kind": "action",
+        "name": "submitCameraReady",
+        "entity": "",
+        "action": "",
+        "field_name": "",
+        "type_name": "",
+        "reason": ""
+      },
+      {
+        "kind": "action_principal",
+        "name": "",
+        "entity": "",
+        "action": "submitCameraReady",
+        "field_name": "",
+        "type_name": "User",
+        "reason": ""
+      },
+      {
+        "kind": "action_resource",
+        "name": "",
+        "entity": "",
+        "action": "submitCameraReady",
+        "field_name": "",
+        "type_name": "Submission",
+        "reason": ""
+      },
+      {
+        "kind": "attribute",
+        "name": "",
+        "entity": "Submission",
+        "action": "",
+        "field_name": "authors",
+        "type_name": "",
+        "reason": ""
+      },
+      {
+        "kind": "attribute",
+        "name": "",
+        "entity": "Submission",
+        "action": "",
+        "field_name": "selected",
+        "type_name": "",
+        "reason": ""
+      },
+      {
+        "kind": "attribute",
+        "name": "",
+        "entity": "Submission",
+        "action": "",
+        "field_name": "reviewProcessDone",
+        "type_name": "",
+        "reason": ""
+      }
+    ],
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "condition-shape: ok",
+      "identity-consistency: ok",
+      "satisfiable: ok",
+      "never-errors: ok",
+      "match-vacuity: ok (policy match condition is reachable)",
+      "match-broadness: ok (not universal)",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": false,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "assigned_reviewer_post_distribution_not_conflicted",
+    "rationale": "The requirement permits assigned reviewers to download papers after distribution, but excludes those with declared conflicts. This condition enforces all three requirements: reviewer assignment status, distribution timing, and conflict status.",
+    "plain_english_summary": "The principal must be an assigned reviewer of the submission, paper distribution must be complete, and the principal must not have declared a conflict of interest.",
+    "source_excerpt": "[source_id: src.cyberchair_access_control_intent.authorization_intent_covered.p0007.l13] \"Assigned reviewers can access/download assigned papers after paper distribution, unless they have declared a conflict of interest.\"",
+    "constraint_type": "condition",
+    "action": "downloadPaper",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "Submission"
+    ],
+    "reference_cedar": "permit (principal is User, action == Action::\"downloadPaper\", resource is Submission) when { resource.assignedReviewers.contains(principal) && resource.distributionDone && !(resource.conflictedReviewers.contains(principal)) };",
+    "required_schema_support": [
+      {
+        "kind": "action",
+        "name": "downloadPaper",
+        "entity": "",
+        "action": "",
+        "field_name": "",
+        "type_name": "",
+        "reason": ""
+      },
+      {
+        "kind": "action_principal",
+        "name": "",
+        "entity": "",
+        "action": "",
+        "field_name": "",
+        "type_name": "User",
+        "reason": ""
+      },
+      {
+        "kind": "action_resource",
+        "name": "",
+        "entity": "",
+        "action": "",
+        "field_name": "",
+        "type_name": "Submission",
+        "reason": ""
+      },
+      {
+        "kind": "attribute",
+        "name": "",
+        "entity": "Submission",
+        "action": "",
+        "field_name": "assignedReviewers",
+        "type_name": "",
+        "reason": ""
+      },
+      {
+        "kind": "attribute",
+        "name": "",
+        "entity": "Submission",
+        "action": "",
+        "field_name": "distributionDone",
+        "type_name": "",
+        "reason": ""
+      },
+      {
+        "kind": "attribute",
+        "name": "",
+        "entity": "Submission",
+        "action": "",
+        "field_name": "conflictedReviewers",
+        "type_name": "",
+        "reason": ""
+      }
+    ],
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "condition-shape: ok",
+      "identity-consistency: ok",
+      "satisfiable: ok",
+      "never-errors: ok",
+      "match-vacuity: ok (policy match condition is reachable)",
+      "match-broadness: ok (not universal)",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": false,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "submitReview_assigned_non_conflicted_reviewer",
+    "rationale": "The requirement states assigned non-conflicted reviewers can submit reviews while review is open. This condition enforces all three constraints: principal must be assigned, must not be conflicted, and review must be open.",
+    "plain_english_summary": "The principal must be an assigned reviewer on the submission, not be in the conflicted reviewers set, and the review period must be open.",
+    "source_excerpt": "[source_id: src.cyberchair_access_control_intent.authorization_intent_covered.p0008.l15] Assigned non-conflicted reviewers can submit or update reviews while review is open.",
+    "constraint_type": "condition",
+    "action": "submitReview",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "Submission"
+    ],
+    "reference_cedar": "permit (principal is User, action == Action::\"submitReview\", resource is Submission) when { resource.assignedReviewers.contains(principal) && !resource.conflictedReviewers.contains(principal) && resource.reviewOpen };",
+    "required_schema_support": [
+      {
+        "kind": "entity",
+        "name": "User",
+        "entity": "",
+        "action": "",
+        "field_name": "",
+        "type_name": "",
+        "reason": "Principal type in this scope"
+      },
+      {
+        "kind": "entity",
+        "name": "Submission",
+        "entity": "",
+        "action": "",
+        "field_name": "",
+        "type_name": "",
+        "reason": "Resource type in this scope"
+      },
+      {
+        "kind": "attribute",
+        "name": "",
+        "entity": "Submission",
+        "action": "",
+        "field_name": "assignedReviewers",
+        "type_name": "",
+        "reason": "Required to check if principal is an assigned reviewer"
+      },
+      {
+        "kind": "attribute",
+        "name": "",
+        "entity": "Submission",
+        "action": "",
+        "field_name": "conflictedReviewers",
+        "type_name": "",
+        "reason": "Required to check if principal has a conflict"
+      },
+      {
+        "kind": "attribute",
+        "name": "",
+        "entity": "Submission",
+        "action": "",
+        "field_name": "reviewOpen",
+        "type_name": "",
+        "reason": "Required to check if review period is open"
+      },
+      {
+        "kind": "action",
+        "name": "submitReview",
+        "entity": "",
+        "action": "",
+        "field_name": "",
+        "type_name": "",
+        "reason": "Action in this scope"
+      }
+    ],
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "condition-shape: ok",
+      "identity-consistency: ok",
+      "satisfiable: ok",
+      "never-errors: ok",
+      "match-vacuity: ok (policy match condition is reachable)",
+      "match-broadness: ok (not universal)",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": false,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "updateReview_assigned_non_conflicted_reviewer",
+    "rationale": "The requirement states assigned non-conflicted reviewers can update reviews while review is open. This condition enforces all three constraints: principal must be assigned, must not be conflicted, and review must be open.",
+    "plain_english_summary": "The principal must be an assigned reviewer on the submission, not be in the conflicted reviewers set, and the review period must be open.",
+    "source_excerpt": "[source_id: src.cyberchair_access_control_intent.authorization_intent_covered.p0008.l15] Assigned non-conflicted reviewers can submit or update reviews while review is open.",
+    "constraint_type": "condition",
+    "action": "updateReview",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "Submission"
+    ],
+    "reference_cedar": "permit (principal is User, action == Action::\"updateReview\", resource is Submission) when { resource.assignedReviewers.contains(principal) && !resource.conflictedReviewers.contains(principal) && resource.reviewOpen };",
+    "required_schema_support": [
+      {
+        "kind": "entity",
+        "name": "User",
+        "entity": "",
+        "action": "",
+        "field_name": "",
+        "type_name": "",
+        "reason": "Principal type in this scope"
+      },
+      {
+        "kind": "entity",
+        "name": "Submission",
+        "entity": "",
+        "action": "",
+        "field_name": "",
+        "type_name": "",
+        "reason": "Resource type in this scope"
+      },
+      {
+        "kind": "attribute",
+        "name": "",
+        "entity": "Submission",
+        "action": "",
+        "field_name": "assignedReviewers",
+        "type_name": "",
+        "reason": "Required to check if principal is an assigned reviewer"
+      },
+      {
+        "kind": "attribute",
+        "name": "",
+        "entity": "Submission",
+        "action": "",
+        "field_name": "conflictedReviewers",
+        "type_name": "",
+        "reason": "Required to check if principal has a conflict"
+      },
+      {
+        "kind": "attribute",
+        "name": "",
+        "entity": "Submission",
+        "action": "",
+        "field_name": "reviewOpen",
+        "type_name": "",
+        "reason": "Required to check if review period is open"
+      },
+      {
+        "kind": "action",
+        "name": "updateReview",
+        "entity": "",
+        "action": "",
+        "field_name": "",
+        "type_name": "",
+        "reason": "Action in this scope"
+      }
+    ],
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "condition-shape: ok",
+      "identity-consistency: ok",
+      "satisfiable: ok",
+      "never-errors: ok",
+      "match-vacuity: ok (policy match condition is reachable)",
+      "match-broadness: ok (not universal)",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": false,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "reviewer_submitted_own_review",
+    "rationale": "The requirement explicitly conditions the action on the reviewer having submitted their own review first. This is checked by verifying that the principal appears in the submission's reviewersSubmitted set.",
+    "plain_english_summary": "The principal must have already submitted their own review for the submission.",
+    "source_excerpt": "[source_id: src.cyberchair_access_control_intent.authorization_intent_covered.p0009.l16] Reviewers can read other reviewers' reviews for a paper only after submitting their own review for that paper.",
+    "constraint_type": "condition",
+    "action": "readOtherReviews",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "Submission"
+    ],
+    "reference_cedar": "permit (principal is User, action == Action::\"readOtherReviews\", resource is Submission) when { resource.reviewersSubmitted.contains(principal) };",
+    "required_schema_support": [
+      {
+        "kind": "action",
+        "name": "readOtherReviews",
+        "entity": "",
+        "action": "",
+        "field_name": "",
+        "type_name": "",
+        "reason": ""
+      },
+      {
+        "kind": "action_principal",
+        "name": "",
+        "entity": "User",
+        "action": "readOtherReviews",
+        "field_name": "",
+        "type_name": "",
+        "reason": ""
+      },
+      {
+        "kind": "action_resource",
+        "name": "",
+        "entity": "Submission",
+        "action": "readOtherReviews",
+        "field_name": "",
+        "type_name": "",
+        "reason": ""
+      },
+      {
+        "kind": "attribute",
+        "name": "",
+        "entity": "Submission",
+        "action": "",
+        "field_name": "reviewersSubmitted",
+        "type_name": "",
+        "reason": ""
+      }
+    ],
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "condition-shape: ok",
+      "identity-consistency: ok",
+      "satisfiable: ok",
+      "never-errors: ok",
+      "match-vacuity: ok (policy match condition is reachable)",
+      "match-broadness: ok (not universal)",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": false,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "assigned_reviewer_can_declare_conflict",
+    "rationale": "The requirement specifies that reviewers can declare conflicts for assigned papers. This means the principal must be in the submission's assignedReviewers set to have permission to declare a conflict.",
+    "plain_english_summary": "The principal is an assigned reviewer for the submission.",
+    "source_excerpt": "[source_id: src.cyberchair_access_control_intent.authorization_intent_covered.p0010.l18] Reviewers can declare conflicts of interest for assigned papers.",
+    "constraint_type": "condition",
+    "action": "declareConflict",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "Submission"
+    ],
+    "reference_cedar": "permit (principal is User, action == Action::\"declareConflict\", resource is Submission) when {\n    resource.assignedReviewers.contains(principal)\n};",
+    "required_schema_support": [
+      {
+        "kind": "entity",
+        "name": "User",
+        "entity": "",
+        "action": "",
+        "field_name": "",
+        "type_name": "",
+        "reason": ""
+      },
+      {
+        "kind": "entity",
+        "name": "Submission",
+        "entity": "",
+        "action": "",
+        "field_name": "",
+        "type_name": "",
+        "reason": ""
+      },
+      {
+        "kind": "attribute",
+        "name": "",
+        "entity": "Submission",
+        "action": "",
+        "field_name": "assignedReviewers",
+        "type_name": "",
+        "reason": ""
+      },
+      {
+        "kind": "action",
+        "name": "",
+        "entity": "",
+        "action": "declareConflict",
+        "field_name": "",
+        "type_name": "",
+        "reason": ""
+      }
+    ],
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "condition-shape: ok",
+      "identity-consistency: ok",
+      "satisfiable: ok",
+      "never-errors: ok",
+      "match-vacuity: ok (policy match condition is reachable)",
+      "match-broadness: ok (not universal)",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": false,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "reviewer_submitted_all_reviews_not_conflicted",
+    "rationale": "The requirement explicitly conditions volunteering for conflicting papers on two prerequisites: (1) the reviewer must have completed all assigned reviews, checked via the User.submittedAllAssignedReviews attribute, and (2) the reviewer must not be in the paper's conflictedReviewers set. The role check ensures only reviewers (not authors or other users) can volunteer.",
+    "plain_english_summary": "The principal must be a Reviewer who has submitted all assigned reviews and is not conflicted with the paper.",
+    "source_excerpt": "[source_id: src.cyberchair_access_control_intent.authorization_intent_covered.p0011.l19] Reviewers may volunteer for papers with conflicting reviews only after they have submitted all assigned reviews and are not conflicted with the paper.",
+    "constraint_type": "condition",
+    "action": "volunteerForConflictingPaper",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "Submission"
+    ],
+    "reference_cedar": "permit (principal is User, action == Action::\"volunteerForConflictingPaper\", resource is Submission) when { principal.role == \"Reviewer\" && principal.submittedAllAssignedReviews && !(resource.conflictedReviewers.contains(principal)) };",
+    "required_schema_support": [
+      {
+        "kind": "entity",
+        "name": "User",
+        "entity": "",
+        "action": "",
+        "field_name": "",
+        "type_name": "",
+        "reason": ""
+      },
+      {
+        "kind": "entity",
+        "name": "Submission",
+        "entity": "",
+        "action": "",
+        "field_name": "",
+        "type_name": "",
+        "reason": ""
+      },
+      {
+        "kind": "action",
+        "name": "",
+        "entity": "",
+        "action": "volunteerForConflictingPaper",
+        "field_name": "",
+        "type_name": "",
+        "reason": ""
+      },
+      {
+        "kind": "attribute",
+        "name": "",
+        "entity": "User",
+        "action": "",
+        "field_name": "role",
+        "type_name": "",
+        "reason": ""
+      },
+      {
+        "kind": "attribute",
+        "name": "",
+        "entity": "User",
+        "action": "",
+        "field_name": "submittedAllAssignedReviews",
+        "type_name": "",
+        "reason": ""
+      },
+      {
+        "kind": "attribute",
+        "name": "",
+        "entity": "Submission",
+        "action": "",
+        "field_name": "conflictedReviewers",
+        "type_name": "",
+        "reason": ""
+      }
+    ],
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "condition-shape: ok",
+      "identity-consistency: ok",
+      "satisfiable: ok",
+      "never-errors: ok",
+      "match-vacuity: ok (policy match condition is reachable)",
+      "match-broadness: ok (not universal)",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": false,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "chair_pcc_role_check",
+    "rationale": "The requirement explicitly grants monitoring access only to users with the role 'Chair' or 'PCC'. The condition checks the principal's role attribute against these two permitted values using OR logic, as either role qualifies.",
+    "plain_english_summary": "The principal's role must be 'Chair' or 'PCC' to monitor the review process.",
+    "source_excerpt": "[source_id: src.cyberchair_access_control_intent.authorization_intent_covered.p0012.l21] 10. Chairs/PCC can monitor the review process and identify low-expertise papers.",
+    "constraint_type": "condition",
+    "action": "monitorReviewProcess",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "ReviewOverview"
+    ],
+    "reference_cedar": "permit (principal is User, action == Action::\"monitorReviewProcess\", resource is ReviewOverview) when {\n    principal.role == \"Chair\" || principal.role == \"PCC\"\n};",
+    "required_schema_support": [
+      {
+        "kind": "action",
+        "name": "monitorReviewProcess",
+        "entity": "",
+        "action": "",
+        "field_name": "",
+        "type_name": "",
+        "reason": ""
+      },
+      {
+        "kind": "action_principal",
+        "name": "",
+        "entity": "",
+        "action": "",
+        "field_name": "",
+        "type_name": "User",
+        "reason": ""
+      },
+      {
+        "kind": "action_resource",
+        "name": "",
+        "entity": "",
+        "action": "",
+        "field_name": "",
+        "type_name": "ReviewOverview",
+        "reason": ""
+      },
+      {
+        "kind": "attribute",
+        "name": "",
+        "entity": "User",
+        "action": "",
+        "field_name": "role",
+        "type_name": "",
+        "reason": ""
+      }
+    ],
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "condition-shape: ok",
+      "identity-consistency: ok",
+      "satisfiable: ok",
+      "never-errors: ok",
+      "match-vacuity: ok (policy match condition is reachable)",
+      "match-broadness: ok (not universal)",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": false,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "PCC_asks_additional_reviewer_for_low_expertise_paper",
+    "rationale": "The requirement explicitly states 'PCC can ask an additional reviewer to review a low-expertise paper.' This requires two conditions: (1) the principal must be a PCC, checked via the role attribute, and (2) the paper must be low-expertise, indicated by having only non-expert reviews (onlyNonExpertReviews flag). Both must be true to grant permission.",
+    "plain_english_summary": "A Program Committee Chair (PCC) can request an additional reviewer for a paper that has only non-expert reviews.",
+    "source_excerpt": "[source_id: src.cyberchair_access_control_intent.authorization_intent_covered.p0013.l22] 11. PCC can ask an additional reviewer to review a low-expertise paper.",
+    "constraint_type": "condition",
+    "action": "askAdditionalReviewer",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "ReviewOverview"
+    ],
+    "reference_cedar": "permit (principal is User, action == Action::\"askAdditionalReviewer\", resource is ReviewOverview) when {\n  principal.role == \"PCC\" && resource.paper.onlyNonExpertReviews == true\n};",
+    "required_schema_support": [
+      {
+        "kind": "action",
+        "name": "askAdditionalReviewer",
+        "entity": "",
+        "action": "",
+        "field_name": "",
+        "type_name": "",
+        "reason": "The action being authorized"
+      },
+      {
+        "kind": "action_principal",
+        "name": "User",
+        "entity": "",
+        "action": "",
+        "field_name": "",
+        "type_name": "",
+        "reason": "The principal type for this action"
+      },
+      {
+        "kind": "action_resource",
+        "name": "ReviewOverview",
+        "entity": "",
+        "action": "",
+        "field_name": "",
+        "type_name": "",
+        "reason": "The resource type for this action"
+      },
+      {
+        "kind": "attribute",
+        "name": "",
+        "entity": "User",
+        "action": "",
+        "field_name": "role",
+        "type_name": "",
+        "reason": "To check if the principal is a PCC"
+      },
+      {
+        "kind": "attribute",
+        "name": "",
+        "entity": "ReviewOverview",
+        "action": "",
+        "field_name": "paper",
+        "type_name": "",
+        "reason": "To access the associated Submission from the ReviewOverview resource"
+      },
+      {
+        "kind": "attribute",
+        "name": "",
+        "entity": "Submission",
+        "action": "",
+        "field_name": "onlyNonExpertReviews",
+        "type_name": "",
+        "reason": "To verify the paper has only non-expert reviews (low-expertise paper)"
+      }
+    ],
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "condition-shape: ok",
+      "identity-consistency: ok",
+      "satisfiable: ok",
+      "never-errors: ok",
+      "match-vacuity: ok (policy match condition is reachable)",
+      "match-broadness: ok (not universal)",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": false,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "reviewer_directory_allowed_users_access",
+    "rationale": "The requirement states reviewer directories are protected by per-directory allowed-user lists. This atom checks that the principal is in the ReviewerDirectory's allowedUsers set.",
+    "plain_english_summary": "A user can access a reviewer directory if and only if they are on the directory's allowed-users list.",
+    "source_excerpt": "[source_id: src.cyberchair_access_control_intent.authorization_intent_covered.p0014.l23] Reviewer directories and review files are protected from outsiders by per-directory allowed-user lists.",
+    "constraint_type": "condition",
+    "action": "accessReviewerDirectory",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "ReviewerDirectory"
+    ],
+    "reference_cedar": "permit (principal is User, action == Action::\"accessReviewerDirectory\", resource is ReviewerDirectory) when { resource.allowedUsers.contains(principal) };",
+    "required_schema_support": [
+      {
+        "kind": "entity",
+        "name": "User",
+        "entity": "",
+        "action": "",
+        "field_name": "",
+        "type_name": "",
+        "reason": ""
+      },
+      {
+        "kind": "entity",
+        "name": "ReviewerDirectory",
+        "entity": "",
+        "action": "",
+        "field_name": "",
+        "type_name": "",
+        "reason": ""
+      },
+      {
+        "kind": "action",
+        "name": "accessReviewerDirectory",
+        "entity": "",
+        "action": "",
+        "field_name": "",
+        "type_name": "",
+        "reason": ""
+      },
+      {
+        "kind": "action_principal",
+        "name": "",
+        "entity": "",
+        "action": "accessReviewerDirectory",
+        "field_name": "",
+        "type_name": "User",
+        "reason": ""
+      },
+      {
+        "kind": "action_resource",
+        "name": "",
+        "entity": "",
+        "action": "accessReviewerDirectory",
+        "field_name": "",
+        "type_name": "ReviewerDirectory",
+        "reason": ""
+      },
+      {
+        "kind": "attribute",
+        "name": "",
+        "entity": "ReviewerDirectory",
+        "action": "",
+        "field_name": "allowedUsers",
+        "type_name": "",
+        "reason": ""
+      }
+    ],
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "condition-shape: ok",
+      "identity-consistency: ok",
+      "satisfiable: ok",
+      "never-errors: ok",
+      "match-vacuity: ok (policy match condition is reachable)",
+      "match-broadness: ok (not universal)",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": false,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  },
+  {
+    "name": "review_file_directory_protection",
+    "rationale": "The requirement states review files are protected by per-directory allowed-user lists. Since review files exist within directories, access is controlled by the directory's allowedUsers list that the file references.",
+    "plain_english_summary": "A user can read a review file if and only if they are on the allowed-users list of the file's directory.",
+    "source_excerpt": "[source_id: src.cyberchair_access_control_intent.authorization_intent_covered.p0014.l23] Reviewer directories and review files are protected from outsiders by per-directory allowed-user lists.",
+    "constraint_type": "condition",
+    "action": "readReviewFile",
+    "principal_types": [
+      "User"
+    ],
+    "resource_types": [
+      "ReviewFile"
+    ],
+    "reference_cedar": "permit (principal is User, action == Action::\"readReviewFile\", resource is ReviewFile) when { resource.directory.allowedUsers.contains(principal) };",
+    "required_schema_support": [
+      {
+        "kind": "entity",
+        "name": "User",
+        "entity": "",
+        "action": "",
+        "field_name": "",
+        "type_name": "",
+        "reason": ""
+      },
+      {
+        "kind": "entity",
+        "name": "ReviewFile",
+        "entity": "",
+        "action": "",
+        "field_name": "",
+        "type_name": "",
+        "reason": ""
+      },
+      {
+        "kind": "entity",
+        "name": "ReviewerDirectory",
+        "entity": "",
+        "action": "",
+        "field_name": "",
+        "type_name": "",
+        "reason": ""
+      },
+      {
+        "kind": "action",
+        "name": "readReviewFile",
+        "entity": "",
+        "action": "",
+        "field_name": "",
+        "type_name": "",
+        "reason": ""
+      },
+      {
+        "kind": "action_principal",
+        "name": "",
+        "entity": "",
+        "action": "readReviewFile",
+        "field_name": "",
+        "type_name": "User",
+        "reason": ""
+      },
+      {
+        "kind": "action_resource",
+        "name": "",
+        "entity": "",
+        "action": "readReviewFile",
+        "field_name": "",
+        "type_name": "ReviewFile",
+        "reason": ""
+      },
+      {
+        "kind": "attribute",
+        "name": "",
+        "entity": "ReviewFile",
+        "action": "",
+        "field_name": "directory",
+        "type_name": "",
+        "reason": ""
+      },
+      {
+        "kind": "attribute",
+        "name": "",
+        "entity": "ReviewerDirectory",
+        "action": "",
+        "field_name": "allowedUsers",
+        "type_name": "",
+        "reason": ""
+      }
+    ],
+    "examples_adversarial": [],
+    "alternatives_considered": [],
+    "symbolic_verified": true,
+    "symbolic_verification_log": [
+      "type-correct: ok",
+      "condition-shape: ok",
+      "identity-consistency: ok",
+      "satisfiable: ok",
+      "never-errors: ok",
+      "match-vacuity: ok (policy match condition is reachable)",
+      "match-broadness: ok (not universal)",
+      "sugar-universal: ok (not applicable to primitives)"
+    ],
+    "intent_acknowledged_by_user": false,
+    "traceback_clauses": [],
+    "traceback_flags": [],
+    "rate_limit_window": null,
+    "rate_limit_threshold": null,
+    "rate_limit_counter_attr": null,
+    "disjoint_with": null,
+    "disjoint_target_body": null
+  }
+]

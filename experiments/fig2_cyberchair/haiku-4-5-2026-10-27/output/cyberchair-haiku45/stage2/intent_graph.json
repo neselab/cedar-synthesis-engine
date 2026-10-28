@@ -1,0 +1,455 @@
+{
+  "schema_version": 1,
+  "nodes": [
+    {
+      "id": "property:p0003_submitStep1_author_during_step1",
+      "kind": "property",
+      "name": "p0003_submitStep1_author_during_step1",
+      "constraint_type": "condition",
+      "summary": "The principal must be an author of the submission, and step 1 must be open for submissions.",
+      "source_excerpt": "[source_id: src.cyberchair_access_control_intent.authorization_intent_covered.p0003.l9] Authors can submit abstracts/papers during step 1.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": false
+    },
+    {
+      "id": "action:submitStep1",
+      "kind": "action",
+      "name": "submitStep1"
+    },
+    {
+      "id": "principal_type:User",
+      "kind": "principal_type",
+      "name": "User"
+    },
+    {
+      "id": "resource_type:Submission",
+      "kind": "resource_type",
+      "name": "Submission"
+    },
+    {
+      "id": "property:submitFullPaper_step2_author",
+      "kind": "property",
+      "name": "submitFullPaper_step2_author",
+      "constraint_type": "condition",
+      "summary": "The principal must be listed as an author of the submission, must have step-2 credentials, and step 2 must currently be open.",
+      "source_excerpt": "[source_id: src.cyberchair_access_control_intent.authorization_intent_covered.p0004.l10] 2. Authors with step-2 credentials can upload full papers during step 2.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": false
+    },
+    {
+      "id": "action:submitFullPaper",
+      "kind": "action",
+      "name": "submitFullPaper"
+    },
+    {
+      "id": "property:author_during_step2",
+      "kind": "property",
+      "name": "author_during_step2",
+      "constraint_type": "condition",
+      "summary": "The principal must be an author of the submission, and step 2 must be open for corrections.",
+      "source_excerpt": "[source_id: src.cyberchair_access_control_intent.authorization_intent_covered.p0005.l11] Authors can correct step-1 submission information during step 2.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": false
+    },
+    {
+      "id": "action:updateStep1Info",
+      "kind": "action",
+      "name": "updateStep1Info"
+    },
+    {
+      "id": "property:submitCameraReady_author_of_selected_after_review",
+      "kind": "property",
+      "name": "submitCameraReady_author_of_selected_after_review",
+      "constraint_type": "condition",
+      "summary": "The principal must be an author of the submission, the submission must be marked as selected, and the review process must be complete.",
+      "source_excerpt": "[source_id: src.cyberchair_access_control_intent.authorization_intent_covered.p0006.l12] Authors of selected submissions can submit camera-ready papers after review.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": false
+    },
+    {
+      "id": "action:submitCameraReady",
+      "kind": "action",
+      "name": "submitCameraReady"
+    },
+    {
+      "id": "property:assigned_reviewer_post_distribution_not_conflicted",
+      "kind": "property",
+      "name": "assigned_reviewer_post_distribution_not_conflicted",
+      "constraint_type": "condition",
+      "summary": "The principal must be an assigned reviewer of the submission, paper distribution must be complete, and the principal must not have declared a conflict of interest.",
+      "source_excerpt": "[source_id: src.cyberchair_access_control_intent.authorization_intent_covered.p0007.l13] \"Assigned reviewers can access/download assigned papers after paper distribution, unless they have declared a conflict of interest.\"",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": false
+    },
+    {
+      "id": "action:downloadPaper",
+      "kind": "action",
+      "name": "downloadPaper"
+    },
+    {
+      "id": "property:submitReview_assigned_non_conflicted_reviewer",
+      "kind": "property",
+      "name": "submitReview_assigned_non_conflicted_reviewer",
+      "constraint_type": "condition",
+      "summary": "The principal must be an assigned reviewer on the submission, not be in the conflicted reviewers set, and the review period must be open.",
+      "source_excerpt": "[source_id: src.cyberchair_access_control_intent.authorization_intent_covered.p0008.l15] Assigned non-conflicted reviewers can submit or update reviews while review is open.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": false
+    },
+    {
+      "id": "action:submitReview",
+      "kind": "action",
+      "name": "submitReview"
+    },
+    {
+      "id": "property:updateReview_assigned_non_conflicted_reviewer",
+      "kind": "property",
+      "name": "updateReview_assigned_non_conflicted_reviewer",
+      "constraint_type": "condition",
+      "summary": "The principal must be an assigned reviewer on the submission, not be in the conflicted reviewers set, and the review period must be open.",
+      "source_excerpt": "[source_id: src.cyberchair_access_control_intent.authorization_intent_covered.p0008.l15] Assigned non-conflicted reviewers can submit or update reviews while review is open.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": false
+    },
+    {
+      "id": "action:updateReview",
+      "kind": "action",
+      "name": "updateReview"
+    },
+    {
+      "id": "property:reviewer_submitted_own_review",
+      "kind": "property",
+      "name": "reviewer_submitted_own_review",
+      "constraint_type": "condition",
+      "summary": "The principal must have already submitted their own review for the submission.",
+      "source_excerpt": "[source_id: src.cyberchair_access_control_intent.authorization_intent_covered.p0009.l16] Reviewers can read other reviewers' reviews for a paper only after submitting their own review for that paper.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": false
+    },
+    {
+      "id": "action:readOtherReviews",
+      "kind": "action",
+      "name": "readOtherReviews"
+    },
+    {
+      "id": "property:assigned_reviewer_can_declare_conflict",
+      "kind": "property",
+      "name": "assigned_reviewer_can_declare_conflict",
+      "constraint_type": "condition",
+      "summary": "The principal is an assigned reviewer for the submission.",
+      "source_excerpt": "[source_id: src.cyberchair_access_control_intent.authorization_intent_covered.p0010.l18] Reviewers can declare conflicts of interest for assigned papers.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": false
+    },
+    {
+      "id": "action:declareConflict",
+      "kind": "action",
+      "name": "declareConflict"
+    },
+    {
+      "id": "property:reviewer_submitted_all_reviews_not_conflicted",
+      "kind": "property",
+      "name": "reviewer_submitted_all_reviews_not_conflicted",
+      "constraint_type": "condition",
+      "summary": "The principal must be a Reviewer who has submitted all assigned reviews and is not conflicted with the paper.",
+      "source_excerpt": "[source_id: src.cyberchair_access_control_intent.authorization_intent_covered.p0011.l19] Reviewers may volunteer for papers with conflicting reviews only after they have submitted all assigned reviews and are not conflicted with the paper.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": false
+    },
+    {
+      "id": "action:volunteerForConflictingPaper",
+      "kind": "action",
+      "name": "volunteerForConflictingPaper"
+    },
+    {
+      "id": "property:chair_pcc_role_check",
+      "kind": "property",
+      "name": "chair_pcc_role_check",
+      "constraint_type": "condition",
+      "summary": "The principal's role must be 'Chair' or 'PCC' to monitor the review process.",
+      "source_excerpt": "[source_id: src.cyberchair_access_control_intent.authorization_intent_covered.p0012.l21] 10. Chairs/PCC can monitor the review process and identify low-expertise papers.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": false
+    },
+    {
+      "id": "action:monitorReviewProcess",
+      "kind": "action",
+      "name": "monitorReviewProcess"
+    },
+    {
+      "id": "resource_type:ReviewOverview",
+      "kind": "resource_type",
+      "name": "ReviewOverview"
+    },
+    {
+      "id": "property:PCC_asks_additional_reviewer_for_low_expertise_paper",
+      "kind": "property",
+      "name": "PCC_asks_additional_reviewer_for_low_expertise_paper",
+      "constraint_type": "condition",
+      "summary": "A Program Committee Chair (PCC) can request an additional reviewer for a paper that has only non-expert reviews.",
+      "source_excerpt": "[source_id: src.cyberchair_access_control_intent.authorization_intent_covered.p0013.l22] 11. PCC can ask an additional reviewer to review a low-expertise paper.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": false
+    },
+    {
+      "id": "action:askAdditionalReviewer",
+      "kind": "action",
+      "name": "askAdditionalReviewer"
+    },
+    {
+      "id": "property:reviewer_directory_allowed_users_access",
+      "kind": "property",
+      "name": "reviewer_directory_allowed_users_access",
+      "constraint_type": "condition",
+      "summary": "A user can access a reviewer directory if and only if they are on the directory's allowed-users list.",
+      "source_excerpt": "[source_id: src.cyberchair_access_control_intent.authorization_intent_covered.p0014.l23] Reviewer directories and review files are protected from outsiders by per-directory allowed-user lists.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": false
+    },
+    {
+      "id": "action:accessReviewerDirectory",
+      "kind": "action",
+      "name": "accessReviewerDirectory"
+    },
+    {
+      "id": "resource_type:ReviewerDirectory",
+      "kind": "resource_type",
+      "name": "ReviewerDirectory"
+    },
+    {
+      "id": "property:review_file_directory_protection",
+      "kind": "property",
+      "name": "review_file_directory_protection",
+      "constraint_type": "condition",
+      "summary": "A user can read a review file if and only if they are on the allowed-users list of the file's directory.",
+      "source_excerpt": "[source_id: src.cyberchair_access_control_intent.authorization_intent_covered.p0014.l23] Reviewer directories and review files are protected from outsiders by per-directory allowed-user lists.",
+      "symbolic_verified": true,
+      "intent_acknowledged_by_user": false
+    },
+    {
+      "id": "action:readReviewFile",
+      "kind": "action",
+      "name": "readReviewFile"
+    },
+    {
+      "id": "resource_type:ReviewFile",
+      "kind": "resource_type",
+      "name": "ReviewFile"
+    }
+  ],
+  "edges": [
+    {
+      "source": "property:p0003_submitStep1_author_during_step1",
+      "target": "action:submitStep1",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:p0003_submitStep1_author_during_step1",
+      "target": "principal_type:User",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:p0003_submitStep1_author_during_step1",
+      "target": "resource_type:Submission",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:submitFullPaper_step2_author",
+      "target": "action:submitFullPaper",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:submitFullPaper_step2_author",
+      "target": "principal_type:User",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:submitFullPaper_step2_author",
+      "target": "resource_type:Submission",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:author_during_step2",
+      "target": "action:updateStep1Info",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:author_during_step2",
+      "target": "principal_type:User",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:author_during_step2",
+      "target": "resource_type:Submission",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:submitCameraReady_author_of_selected_after_review",
+      "target": "action:submitCameraReady",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:submitCameraReady_author_of_selected_after_review",
+      "target": "principal_type:User",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:submitCameraReady_author_of_selected_after_review",
+      "target": "resource_type:Submission",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:assigned_reviewer_post_distribution_not_conflicted",
+      "target": "action:downloadPaper",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:assigned_reviewer_post_distribution_not_conflicted",
+      "target": "principal_type:User",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:assigned_reviewer_post_distribution_not_conflicted",
+      "target": "resource_type:Submission",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:submitReview_assigned_non_conflicted_reviewer",
+      "target": "action:submitReview",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:submitReview_assigned_non_conflicted_reviewer",
+      "target": "principal_type:User",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:submitReview_assigned_non_conflicted_reviewer",
+      "target": "resource_type:Submission",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:updateReview_assigned_non_conflicted_reviewer",
+      "target": "action:updateReview",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:updateReview_assigned_non_conflicted_reviewer",
+      "target": "principal_type:User",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:updateReview_assigned_non_conflicted_reviewer",
+      "target": "resource_type:Submission",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:reviewer_submitted_own_review",
+      "target": "action:readOtherReviews",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:reviewer_submitted_own_review",
+      "target": "principal_type:User",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:reviewer_submitted_own_review",
+      "target": "resource_type:Submission",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:assigned_reviewer_can_declare_conflict",
+      "target": "action:declareConflict",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:assigned_reviewer_can_declare_conflict",
+      "target": "principal_type:User",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:assigned_reviewer_can_declare_conflict",
+      "target": "resource_type:Submission",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:reviewer_submitted_all_reviews_not_conflicted",
+      "target": "action:volunteerForConflictingPaper",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:reviewer_submitted_all_reviews_not_conflicted",
+      "target": "principal_type:User",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:reviewer_submitted_all_reviews_not_conflicted",
+      "target": "resource_type:Submission",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:chair_pcc_role_check",
+      "target": "action:monitorReviewProcess",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:chair_pcc_role_check",
+      "target": "principal_type:User",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:chair_pcc_role_check",
+      "target": "resource_type:ReviewOverview",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:PCC_asks_additional_reviewer_for_low_expertise_paper",
+      "target": "action:askAdditionalReviewer",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:PCC_asks_additional_reviewer_for_low_expertise_paper",
+      "target": "principal_type:User",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:PCC_asks_additional_reviewer_for_low_expertise_paper",
+      "target": "resource_type:ReviewOverview",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:reviewer_directory_allowed_users_access",
+      "target": "action:accessReviewerDirectory",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:reviewer_directory_allowed_users_access",
+      "target": "principal_type:User",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:reviewer_directory_allowed_users_access",
+      "target": "resource_type:ReviewerDirectory",
+      "type": "uses_resource_type"
+    },
+    {
+      "source": "property:review_file_directory_protection",
+      "target": "action:readReviewFile",
+      "type": "uses_action"
+    },
+    {
+      "source": "property:review_file_directory_protection",
+      "target": "principal_type:User",
+      "type": "uses_principal_type"
+    },
+    {
+      "source": "property:review_file_directory_protection",
+      "target": "resource_type:ReviewFile",
+      "type": "uses_resource_type"
+    }
+  ],
+  "summary": {
+    "properties": 14
+  }
+}

@@ -43,6 +43,7 @@ from autocedar.env import (
     load_dotenv,
 )
 from autocedar.harness_adapter import make_harness_synthesizer
+from autocedar.model_review import ModelReviewer
 from autocedar.llm import (
     ANTHROPIC_API_KEY_VALIDATION_MODEL,
     DEFAULT_EFFORT,
@@ -61,7 +62,7 @@ from autocedar.schema_atomizer import propose_schema_atoms
 from autocedar.ui.terminal import (
     ReviewedAtom,
     _apply_field_edit,
-    auto_approve,
+    render_intent_map,
     render_property_atom,
     render_property_reference,
     render_schema_atom,
@@ -2599,16 +2600,21 @@ class AutoCedarApp(App[None]):
                 return plan_property_repair(*args, llm=llm)
 
             reviewer = TuiAtomReviewer(self)
+            model_reviewer = ModelReviewer(llm, spec_text)
 
             def review_atom(atom: Any) -> Any:
                 check_paused()
                 if options.auto_approve:
-                    return auto_approve(atom)
+                    return model_reviewer(atom)
                 return reviewer(atom)
 
             review_atom.begin_stage = reviewer.begin_stage  # type: ignore[attr-defined]
             review_atom.end_stage = reviewer.end_stage  # type: ignore[attr-defined]
-            review_atom.schema_ready = reviewer.schema_ready  # type: ignore[attr-defined]
+            def schema_ready(schema_text: str) -> None:
+                model_reviewer.schema_ready(schema_text)
+                reviewer.schema_ready(schema_text)
+
+            review_atom.schema_ready = schema_ready  # type: ignore[attr-defined]
             review_atom.property_plan_ready = reviewer.property_plan_ready  # type: ignore[attr-defined]
             review_atom.property_progress = reviewer.property_progress  # type: ignore[attr-defined]
 
@@ -2634,6 +2640,7 @@ class AutoCedarApp(App[None]):
                 output_dir=options.out,
                 session_id=options.session_id,
                 review_atom=review_atom,
+                map_intent=lambda **kwargs: llm.build_intent_map(**kwargs),
                 propose_schema_atoms=schema_proposer,
                 propose_property_atom=property_proposer,
                 repair_schema_atom=schema_repairer,
@@ -2826,7 +2833,13 @@ class AutoCedarApp(App[None]):
 
     def _render_review_request(self, request: ReviewRequest) -> None:
         atom = request.current
-        if atom.__class__.__name__ == "PropertyAtom":
+        if atom.__class__.__name__ == "IntentMap":
+            text = escape(render_intent_map(atom))
+        elif atom.__class__.__name__ == "PermissionsQuestion":
+            text = escape(atom.render()) + "\n\n[bold]A[/] yes, the list is complete   [bold]R[/] no, the permissions are examples"
+        elif atom.__class__.__name__ == "SliceQuestion":
+            text = escape(atom.render()) + "\n\n[bold]A[/] yes, keep it   [bold]R[/] no, remove it"
+        elif atom.__class__.__name__ == "PropertyAtom":
             text = render_property_atom(atom, request.index, request.total)
         else:
             text = render_schema_atom(atom, request.index, request.total or request.index)
@@ -3123,7 +3136,10 @@ def _describe_author_action(options: AuthorOptions, *, from_draft: bool) -> str:
     if from_draft:
         lines.append(f"I’ll first save the current draft to {options.spec}.")
     if options.auto_approve:
-        lines.append("review: auto-approve is enabled, so HITL prompts will be skipped.")
+        lines.append(
+            "review: model review is on, so the model judges each atom against "
+            "the requirements instead of pausing for you (not a human approval).",
+        )
     else:
         lines.append("review: I’ll pause for A/R/E/Q/S/V atom review decisions.")
     return "\n".join(lines)
@@ -3257,7 +3273,7 @@ def parse_author_args(args: Sequence[str]) -> AuthorOptions:
             if effort is None:
                 raise ValueError("--effort must be one of: low, medium, high, max")
             options.effort = effort
-        elif token == "--auto-approve":
+        elif token in {"--model-review", "--auto-approve"}:
             options.auto_approve = True
         else:
             raise ValueError(f"Unknown /author option: {token}")
@@ -3520,6 +3536,8 @@ def _join_nonempty(values: Any) -> str:
 
 
 def _render_cedar_for_review(atom: Any) -> str:
+    if atom.__class__.__name__ in {"IntentMap", "PermissionsQuestion", "SliceQuestion"}:
+        return json.dumps(atom.to_dict(), indent=2)
     if atom.__class__.__name__ == "PropertyAtom":
         return render_property_reference(atom)
     return render_schema_declaration(atom)

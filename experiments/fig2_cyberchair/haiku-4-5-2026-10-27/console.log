@@ -1,0 +1,174 @@
+property progress: start | 0/12 sources complete | open 12 | approved 0 | decisions 0
+property progress: source start | source 1/12 | open 12 | approved 0 | decisions 0
+property progress: bundle proposed | source 1/12 | open 12 | approved 0 | decisions 0 | bundle 1 | queued 1
+property progress: atom review | source 1/12 | open 12 | approved 0 | decisions 0 | atom p0003_submitStep1_author_during_step1
+property progress: atom decision | source 1/12 | open 12 | approved 1 | rejected 0 | decisions 1 | atom p0003_submitStep1_author_during_step1 approve
+property progress: source complete | source 1/12 | open 11 | approved 1 | decisions 1
+property progress: source start | source 2/12 | open 11 | approved 1 | decisions 1
+property progress: bundle proposed | source 2/12 | open 11 | approved 1 | decisions 1 | bundle 1 | queued 1
+property progress: atom review | source 2/12 | open 11 | approved 1 | decisions 1 | atom submitFullPaper_step2_author
+property progress: atom decision | source 2/12 | open 11 | approved 2 | rejected 0 | decisions 2 | atom submitFullPaper_step2_author approve
+property progress: source complete | source 2/12 | open 10 | approved 2 | decisions 2
+property progress: source start | source 3/12 | open 10 | approved 2 | decisions 2
+property progress: bundle proposed | source 3/12 | open 10 | approved 2 | decisions 2 | bundle 1 | queued 1
+property progress: atom review | source 3/12 | open 10 | approved 2 | decisions 2 | atom author_during_step2
+property progress: atom decision | source 3/12 | open 10 | approved 3 | rejected 0 | decisions 3 | atom author_during_step2 approve
+property progress: source complete | source 3/12 | open 9 | approved 3 | decisions 3
+property progress: source start | source 4/12 | open 9 | approved 3 | decisions 3
+property progress: bundle proposed | source 4/12 | open 9 | approved 3 | decisions 3 | bundle 1 | queued 1
+property progress: atom review | source 4/12 | open 9 | approved 3 | decisions 3 | atom submitCameraReady_author_selected_reviewed
+property progress: atom decision | source 4/12 | open 9 | approved 4 | rejected 0 | decisions 4 | atom submitCameraReady_author_of_selected_after_review approve
+property progress: source complete | source 4/12 | open 8 | approved 4 | decisions 4
+property progress: source start | source 5/12 | open 8 | approved 4 | decisions 4
+property progress: bundle proposed | source 5/12 | open 8 | approved 4 | decisions 4 | bundle 1 | queued 1
+property progress: atom review | source 5/12 | open 8 | approved 4 | decisions 4 | atom assigned_reviewer_post_distribution_not_conflicted
+property progress: atom decision | source 5/12 | open 8 | approved 5 | rejected 0 | decisions 5 | atom assigned_reviewer_post_distribution_not_conflicted approve
+property progress: source complete | source 5/12 | open 7 | approved 5 | decisions 5
+property progress: source start | source 6/12 | open 7 | approved 5 | decisions 5
+property progress: bundle proposed | source 6/12 | open 7 | approved 5 | decisions 5 | bundle 2 | queued 2
+property progress: atom review | source 6/12 | open 7 | approved 5 | decisions 5 | queued 1 | atom assigned-non-conflicted-reviewer-submit
+property progress: atom decision | source 6/12 | open 7 | approved 6 | rejected 0 | decisions 6 | queued 1 | atom submitReview_assigned_non_conflicted_reviewer approve
+property progress: atom review | source 6/12 | open 7 | approved 6 | decisions 6 | atom assigned-non-conflicted-reviewer-update
+property progress: atom decision | source 6/12 | open 7 | approved 7 | rejected 0 | decisions 7 | atom updateReview_assigned_non_conflicted_reviewer approve
+property progress: source complete | source 6/12 | open 6 | approved 7 | decisions 7
+property progress: source start | source 7/12 | open 6 | approved 7 | decisions 7
+property progress: bundle proposed | source 7/12 | open 6 | approved 7 | decisions 7 | bundle 1 | queued 1
+property progress: atom review | source 7/12 | open 6 | approved 7 | decisions 7 | atom reviewer_submitted_own_review
+property progress: atom decision | source 7/12 | open 6 | approved 8 | rejected 0 | decisions 8 | atom reviewer_submitted_own_review approve
+property progress: source complete | source 7/12 | open 5 | approved 8 | decisions 8
+property progress: source start | source 8/12 | open 5 | approved 8 | decisions 8
+property progress: bundle proposed | source 8/12 | open 5 | approved 8 | decisions 8 | bundle 1 | queued 1
+property progress: atom review | source 8/12 | open 5 | approved 8 | decisions 8 | atom assigned_reviewer_can_declare_conflict
+property progress: atom decision | source 8/12 | open 5 | approved 9 | rejected 0 | decisions 9 | atom assigned_reviewer_can_declare_conflict approve
+property progress: source complete | source 8/12 | open 4 | approved 9 | decisions 9
+property progress: source start | source 9/12 | open 4 | approved 9 | decisions 9
+property progress: bundle proposed | source 9/12 | open 4 | approved 9 | decisions 9 | bundle 1 | queued 1
+property progress: atom review | source 9/12 | open 4 | approved 9 | decisions 9 | atom reviewer_submitted_all_reviews_not_conflicted
+property progress: atom decision | source 9/12 | open 4 | approved 10 | rejected 0 | decisions 10 | atom reviewer_submitted_all_reviews_not_conflicted approve
+property progress: source complete | source 9/12 | open 3 | approved 10 | decisions 10
+property progress: source start | source 10/12 | open 3 | approved 10 | decisions 10
+property progress: bundle proposed | source 10/12 | open 3 | approved 10 | decisions 10 | bundle 1 | queued 1
+property progress: atom review | source 10/12 | open 3 | approved 10 | decisions 10 | atom chair_pcc_role_check
+property progress: atom decision | source 10/12 | open 3 | approved 11 | rejected 0 | decisions 11 | atom chair_pcc_role_check approve
+property progress: source complete | source 10/12 | open 2 | approved 11 | decisions 11
+property progress: source start | source 11/12 | open 2 | approved 11 | decisions 11
+property progress: bundle proposed | source 11/12 | open 2 | approved 11 | decisions 11 | bundle 1 | queued 1
+property progress: atom review | source 11/12 | open 2 | approved 11 | decisions 11 | atom PCC_asks_additional_reviewer_for_low_expertise_paper
+property progress: atom decision | source 11/12 | open 2 | approved 12 | rejected 0 | decisions 12 | atom PCC_asks_additional_reviewer_for_low_expertise_paper approve
+property progress: source complete | source 11/12 | open 1 | approved 12 | decisions 12
+property progress: source start | source 12/12 | open 1 | approved 12 | decisions 12
+property progress: bundle proposed | source 12/12 | open 1 | approved 12 | decisions 12 | bundle 2 | queued 2
+property progress: atom review | source 12/12 | open 1 | approved 12 | decisions 12 | queued 1 | atom reviewer_directory_allowed_users
+property progress: atom decision | source 12/12 | open 1 | approved 13 | rejected 0 | decisions 13 | queued 1 | atom reviewer_directory_allowed_users_access approve
+property progress: atom review | source 12/12 | open 1 | approved 13 | decisions 13 | atom review_file_directory_protection
+property progress: atom decision | source 12/12 | open 1 | approved 14 | rejected 0 | decisions 14 | atom review_file_directory_protection approve
+property progress: source complete | source 12/12 | open 0 | approved 14 | decisions 14
+property progress: complete | 12/12 sources complete | open 0 | approved 14 | rejected 0 | decisions 14
+
+============================================================
+SCENARIO: scenario
+Phase 1:  claude-haiku-4-5
+Phase 2:  claude-haiku-4-5
+============================================================
+
+--- Phase 1: Using existing verification plan ---
+
+--- Review: skipped (--no-review) ---
+
+--- Phase 2: CEGIS Synthesis Loop ---
+  Checks loaded: 42
+
+  --- Iteration 1/20 ---
+  loss: 2/42  solver: 2.03s
+    floor__submitstep1__slice_p0003: PASS
+    ceiling__submitstep1: PASS
+    floor__submitfullpaper__slice_p0004: PASS
+    ceiling__submitfullpaper: PASS
+    floor__updatestep1info__slice_p0005: PASS
+    ceiling__updatestep1info: PASS
+    floor__submitcameraready__slice_p0006: PASS
+    ceiling__submitcameraready: PASS
+    floor__downloadpaper__slice_p0007: PASS
+    ceiling__downloadpaper: PASS
+    floor__submitreview__slice_p0008_submit: PASS
+    ceiling__submitreview: PASS
+    floor__updatereview__slice_p0008_update: PASS
+    ceiling__updatereview: PASS
+    floor__readotherreviews__slice_p0009: PASS
+    ceiling__readotherreviews: PASS
+    floor__declareconflict__slice_p0010: PASS
+    ceiling__declareconflict: PASS
+    floor__volunteerforconflictingpaper__slice_p0011: PASS
+    ceiling__volunteerforconflictingpaper: FAIL
+    floor__monitorreviewprocess__slice_p0012: PASS
+    ceiling__monitorreviewprocess: PASS
+    floor__askadditionalreviewer__slice_p0013: PASS
+    ceiling__askadditionalreviewer: FAIL
+    floor__accessreviewerdirectory__slice_p0014_dir: PASS
+    ceiling__accessreviewerdirectory: PASS
+    floor__readreviewfile__slice_p0014_file: PASS
+    ceiling__readreviewfile: PASS
+    no_runtime_errors__submitStep1__User__Submission: PASS
+    no_runtime_errors__submitFullPaper__User__Submission: PASS
+    no_runtime_errors__updateStep1Info__User__Submission: PASS
+    no_runtime_errors__submitCameraReady__User__Submission: PASS
+    no_runtime_errors__downloadPaper__User__Submission: PASS
+    no_runtime_errors__submitReview__User__Submission: PASS
+    no_runtime_errors__updateReview__User__Submission: PASS
+    no_runtime_errors__readOtherReviews__User__Submission: PASS
+    no_runtime_errors__declareConflict__User__Submission: PASS
+    no_runtime_errors__volunteerForConflictingPaper__User__Submission: PASS
+    no_runtime_errors__monitorReviewProcess__User__ReviewOverview: PASS
+    no_runtime_errors__askAdditionalReviewer__User__ReviewOverview: PASS
+    no_runtime_errors__accessReviewerDirectory__User__ReviewerDirectory: PASS
+    no_runtime_errors__readReviewFile__User__ReviewFile: PASS
+
+  --- Iteration 2/20 ---
+  loss: 0/42  solver: 2.00s
+    floor__submitstep1__slice_p0003: PASS
+    ceiling__submitstep1: PASS
+    floor__submitfullpaper__slice_p0004: PASS
+    ceiling__submitfullpaper: PASS
+    floor__updatestep1info__slice_p0005: PASS
+    ceiling__updatestep1info: PASS
+    floor__submitcameraready__slice_p0006: PASS
+    ceiling__submitcameraready: PASS
+    floor__downloadpaper__slice_p0007: PASS
+    ceiling__downloadpaper: PASS
+    floor__submitreview__slice_p0008_submit: PASS
+    ceiling__submitreview: PASS
+    floor__updatereview__slice_p0008_update: PASS
+    ceiling__updatereview: PASS
+    floor__readotherreviews__slice_p0009: PASS
+    ceiling__readotherreviews: PASS
+    floor__declareconflict__slice_p0010: PASS
+    ceiling__declareconflict: PASS
+    floor__volunteerforconflictingpaper__slice_p0011: PASS
+    ceiling__volunteerforconflictingpaper: PASS
+    floor__monitorreviewprocess__slice_p0012: PASS
+    ceiling__monitorreviewprocess: PASS
+    floor__askadditionalreviewer__slice_p0013: PASS
+    ceiling__askadditionalreviewer: PASS
+    floor__accessreviewerdirectory__slice_p0014_dir: PASS
+    ceiling__accessreviewerdirectory: PASS
+    floor__readreviewfile__slice_p0014_file: PASS
+    ceiling__readreviewfile: PASS
+    no_runtime_errors__submitStep1__User__Submission: PASS
+    no_runtime_errors__submitFullPaper__User__Submission: PASS
+    no_runtime_errors__updateStep1Info__User__Submission: PASS
+    no_runtime_errors__submitCameraReady__User__Submission: PASS
+    no_runtime_errors__downloadPaper__User__Submission: PASS
+    no_runtime_errors__submitReview__User__Submission: PASS
+    no_runtime_errors__updateReview__User__Submission: PASS
+    no_runtime_errors__readOtherReviews__User__Submission: PASS
+    no_runtime_errors__declareConflict__User__Submission: PASS
+    no_runtime_errors__volunteerForConflictingPaper__User__Submission: PASS
+    no_runtime_errors__monitorReviewProcess__User__ReviewOverview: PASS
+    no_runtime_errors__askAdditionalReviewer__User__ReviewOverview: PASS
+    no_runtime_errors__accessReviewerDirectory__User__ReviewerDirectory: PASS
+    no_runtime_errors__readReviewFile__User__ReviewFile: PASS
+
+  CONVERGED in 2 iteration(s)
+session:   /Users/zeitgeist/research/cedar-synthesis-engine-fixes/experiments/fig2_cyberchair/haiku-4-5-2026-10-27/output/cyberchair-haiku45
+candidate: /Users/zeitgeist/research/cedar-synthesis-engine-fixes/experiments/fig2_cyberchair/haiku-4-5-2026-10-27/output/cyberchair-haiku45/harness_runs/scenario/candidate.cedar
+approved:  False

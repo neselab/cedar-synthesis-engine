@@ -45,7 +45,30 @@ from autocedar.critic import (
     score_candidate as score_candidate_default,
     stub_llm_scorer,
 )
-from autocedar.grounding import symbolic_verify_atom
+from autocedar.grounding import (
+    CEDAR_PATH,
+    _check_never_errors,
+    _is_symcc_tool_error,
+    _run_symcc,
+    _states_no_condition,
+    symbolic_verify_atom,
+)
+from autocedar.intent_map import (
+    GUARDED_BY_SLICE,
+    IntentMap,
+    PermissionsQuestion,
+    SliceQuestion,
+    atom_fits_scope,
+    merge_conditions,
+    needs_slice_guard,
+    build_condition_packet,
+    condition_atom_issue,
+    derive_boundary_atoms,
+    describe_schema_actions,
+    schema_declarations,
+    schema_triples,
+    _bare_action,
+)
 from autocedar.persistence import session_spec, write_json
 from autocedar.plan_verification import (
     generate_atom_traceback,
@@ -70,11 +93,27 @@ from autocedar.source_doc import (
     build_schema_packets,
     build_source_intent_dag,
     compile_source_document,
+    document_outline,
     select_property_packet,
     source_ids_from_text,
 )
 
 DEFAULT_MAX_PROPERTY_PROPOSALS = 128
+# Rounds to build, check and review the intent map before giving up.
+MAP_ROUNDS = 3
+# Proposals for one condition before AutoCedar stops and reports it.
+MAX_CONDITION_ATTEMPTS = 3
+# Noisy mode scales the proposal budget with the document: about one proposal
+# and three atom reviews for each of a condition's attempts.
+NOISY_PROPOSALS_PER_CONDITION = 12
+NO_NEW_FIELD_NOTE = (
+    "The schema will not gain the field this atom uses: the schema completion "
+    "found the requirement expressible with what the schema declares. Rewrite "
+    "the condition with declared attributes only, following entity references "
+    "where needed (for example resource.<reference>.<attribute>)."
+)
+# Requirements per schema-completion request in noisy mode.
+SCHEMA_COMPLETION_BATCH = 30
 
 
 # ---------------------------------------------------------------------------
@@ -91,6 +130,10 @@ PropertyProposer = Callable[
     [str, str, list[PropertyAtom], list[AtomDecision]],
     PropertyProposalResult,
 ]
+
+# Stage 0.5: map the whole document into scopes, slices and conditions.
+# Called with outline=, schema_actions=, feedback=, previous=.
+IntentMapper = Callable[..., IntentMap]
 
 # Stage 2 repair: propose one replacement after the user rejects a property atom.
 PropertyRepairer = Callable[[str, str, PropertyAtom, str, list[PropertyAtom]], Optional[PropertyAtom]]
@@ -147,16 +190,6 @@ def _stub_property_proposer(
     """Test helper: return no next Stage 2 atom."""
     _ = spec_text, schema_path, prior_atoms, prior_decisions
     return None
-
-
-def _stub_auto_approve(atom: Any) -> AtomDecision:
-    """Test helper: advance plumbing without claiming human intent review."""
-    return AtomDecision(
-        atom_name=getattr(atom, "name", "?"),
-        action="approve",
-        intent_acknowledged_by_user=False,
-        symbolic_verified=getattr(atom, "symbolic_verified", False),
-    )
 
 
 def _default_property_repair_plan(
@@ -244,6 +277,7 @@ def _write_stage0_artifacts(
     schema_gaps: list[dict[str, Any]] | None = None,
 ) -> None:
     """Persist the source-grounded intent DAG and coverage ledger."""
+    intent_map = _approved_session_map(session.base)
     session.write_stage0_intent_dag(
         build_source_intent_dag(
             source_doc,
@@ -252,6 +286,7 @@ def _write_stage0_artifacts(
             schema_atoms=schema_atoms or [],
             property_atoms=property_atoms or [],
             schema_gaps=schema_gaps or [],
+            intent_map=intent_map,
         ),
     )
     session.write_stage0_coverage_ledger(
@@ -260,8 +295,357 @@ def _write_stage0_artifacts(
             completed_property_node_ids=completed_property_node_ids,
             schema_packets=schema_context_packets,
             property_packets=property_context_packets,
+            frontier_ids=intent_map.condition_node_ids(source_doc) if intent_map else None,
         ),
     )
+
+
+def _build_reviewed_intent_map(
+    *,
+    map_intent: IntentMapper,
+    source_doc: Any,
+    schema_text: str,
+    review_atom: AtomReviewer,
+    session: Session,
+    resume_from: Path | None,
+    extend_schema: Callable[[list[tuple[str, str, str]], str], str | None] | None = None,
+    schema_can_grow: bool = False,
+    map_rounds: int = MAP_ROUNDS,
+    noisy: bool = False,
+) -> tuple[IntentMap | None, AtomDecision | None, str]:
+    """Map the document, check the map's structure, and have it reviewed.
+
+    Like a LEAP blueprint, the map is the plan every later step follows, so it
+    is reviewed before any atom is written. A reviewer names its objections;
+    AutoCedar applies the ones it can (moving a condition, reclassifying or
+    dropping a sentence, unmarking a scope) and reviews the corrected map
+    again. Other objections, a rejection without objections, or a failed
+    structure check go back to the mapper, for up to ``map_rounds`` mapper rounds.
+
+    A scope whose action the schema does not declare is a schema gap, as in
+    Stage 2: ``extend_schema`` asks for the missing actions through the
+    reviewed schema repair, and the same map is checked against the result.
+    It returns None when it makes no attempt (no repair budget left). When the
+    schema review refuses an action, that decision stands: the scopes that need
+    it leave the map, and the map reviewer is told which sentences left and why.
+
+    In noisy mode the schema is fixed, so scopes it does not declare leave the
+    map at once, and a map the reviewer still rejects after ``map_rounds``
+    rounds is used anyway if it passes the structure checks. Its open
+    objections are recorded instead of stopping the run.
+    """
+    record_path = session.base / "stage0" / "intent_map.json"
+    triples = schema_triples(schema_text, cedar_path=CEDAR_PATH)
+    outline = document_outline(source_doc)
+    if resume_from is not None:
+        prior = _read_json(resume_from / "stage0" / "intent_map.json", None)
+        usable = prior.get("approved") or (noisy and prior.get("accepted_in_noisy_mode")) if isinstance(prior, dict) else False
+        if usable and prior.get("map"):
+            resumed = IntentMap.from_dict(prior["map"])
+            if not resumed.structure_errors(source_doc, triples):
+                # A saved map can carry scopes whose completeness was never
+                # settled (or was cleared to ask again): ask now.
+                resumed.outline = outline
+                permissions = _settle_unmarked_scopes(resumed, review_atom, per_scope=noisy)
+                if permissions is not None:
+                    prior = {**prior, "map": resumed.to_dict(), "permissions_complete": permissions}
+                write_json(record_path, prior)
+                decision = from_dict(AtomDecision, prior["decision"]) if prior.get("decision") else None
+                return resumed, decision, ""
+    refused: set[tuple[str, str, str]] = set()
+
+    def mapper_actions() -> str:
+        text = describe_schema_actions(triples)
+        if not schema_can_grow:
+            return text
+        text += (
+            "\n\nThe schema can still gain actions and types. If a requirement needs an "
+            "action, principal type, or resource type not listed, give its scope a new "
+            "name; AutoCedar adds it to the schema after review."
+        )
+        if refused:
+            text += " The schema review refused these, so leave their sentences out: " + "; ".join(
+                f"{a} ({p} to {r})" for p, a, r in sorted(refused)
+            )
+        return text
+
+    def build_map(**kwargs: Any) -> IntentMap:
+        built = map_intent(outline=outline, schema_actions=mapper_actions(), **kwargs)
+        # AutoCedar never assumes a list of permissions is incomplete: a scope
+        # the map does not mark complete waits for the yes/no question.
+        for scope in built.scopes:
+            if scope.exhaustive is False:
+                scope.exhaustive = None
+        built.merge_duplicate_slices()
+        return built
+
+    rounds: list[dict[str, Any]] = []
+    node_ids = {node.id for node in source_doc.nodes}
+    _notify_review_stage(review_atom, "Intent map review", 1)
+    intent_map = build_map(feedback="", previous=None)
+    mapper_calls = 1
+    # Objections AutoCedar applies itself cost a review but no mapper call, so
+    # reviews are capped separately from mapper rounds.
+    left_out: list[str] = []
+    last_reviewed: tuple[IntentMap, AtomDecision] | None = None
+
+    def accept_unapproved(reason: str) -> tuple[IntentMap | None, AtomDecision | None, str]:
+        if not noisy or last_reviewed is None:
+            return None, None, reason
+        current_ok = not intent_map.structure_errors(source_doc, triples)
+        chosen = intent_map if current_ok else last_reviewed[0]
+        decision = last_reviewed[1]
+        record: dict[str, Any] = {
+            "approved": False,
+            "accepted_in_noisy_mode": True,
+            "open_objections": reason,
+            "map": chosen.to_dict(),
+            "decision": to_dict(decision),
+            "rounds": rounds,
+        }
+        chosen.review_text = chosen.render(source_doc)
+        chosen.outline = outline
+        permissions = _settle_unmarked_scopes(chosen, review_atom, per_scope=noisy)
+        if permissions is not None:
+            record["map"] = chosen.to_dict()
+            record["permissions_complete"] = permissions
+        write_json(record_path, record)
+        _notify_review_stage_complete(review_atom, "Intent map review", [decision])
+        return chosen, decision, ""
+
+    for round_number in range(1, 2 * map_rounds + 1):
+        missing = intent_map.missing_actions(triples)
+        ask = [t for t in missing if t not in refused]
+        if missing and noisy:
+            refused.update(missing)
+            dropped = intent_map.drop_scopes(missing)
+            left_out.extend(dropped)
+            rounds.append({"round": round_number, "schema_lacks": [list(t) for t in missing], "left_out": dropped})
+            write_json(record_path, {"approved": False, "rounds": rounds})
+        elif missing and extend_schema is not None:
+            extended = extend_schema(ask, _missing_action_reason(intent_map, ask, source_doc)) if ask else None
+            if extended is not None:
+                triples = schema_triples(extended, cedar_path=CEDAR_PATH)
+                refused.update(intent_map.missing_actions(triples))
+            if extended is not None or not ask:
+                dropped = intent_map.drop_scopes([t for t in missing if t in refused])
+                left_out.extend(dropped)
+                rounds.append({
+                    "round": round_number,
+                    "schema_extended_for": [list(t) for t in ask if t not in refused],
+                    "schema_refused": [list(t) for t in missing if t in refused],
+                    "left_out": dropped,
+                })
+                write_json(record_path, {"approved": False, "rounds": rounds})
+        errors = intent_map.structure_errors(source_doc, triples)
+        if errors:
+            rounds.append({"round": round_number, "map": intent_map.to_dict(), "structure_errors": errors})
+            write_json(record_path, {"approved": False, "rounds": rounds})
+            if mapper_calls >= map_rounds:
+                return accept_unapproved(
+                    "Stopped before atoms: the intent map still fails its structure "
+                    f"checks after {map_rounds} rounds: " + "; ".join(errors[:6])
+                )
+            try:
+                intent_map = build_map(
+                    feedback="\n".join(f"- {e}" for e in errors),
+                    previous=intent_map,
+                )
+            except Exception as exc:
+                if not noisy or last_reviewed is None:
+                    raise
+                return accept_unapproved(f"The mapper failed on a revision: {exc}")
+            mapper_calls += 1
+            continue
+        intent_map.review_text = intent_map.render(source_doc) + _left_out_note(left_out, source_doc)
+        intent_map.outline = outline
+        _, decision = _normalize_review_result(intent_map, review_atom(intent_map))
+        decision = _settle_left_out_objections(decision, set(left_out))
+        last_reviewed = (IntentMap.from_dict(intent_map.to_dict()), decision)
+        rounds.append({"round": round_number, "map": intent_map.to_dict(), "decision": to_dict(decision)})
+        if decision.action == "approve":
+            record = {
+                "approved": True,
+                "map": intent_map.to_dict(),
+                "decision": to_dict(decision),
+                "rounds": rounds,
+            }
+            permissions = _settle_unmarked_scopes(intent_map, review_atom, per_scope=noisy)
+            if permissions is not None:
+                record["map"] = intent_map.to_dict()
+                record["permissions_complete"] = permissions
+            write_json(record_path, record)
+            _notify_review_stage_complete(review_atom, "Intent map review", [decision])
+            return intent_map, decision, ""
+        applied, remaining = _apply_map_objections(intent_map, decision, node_ids)
+        rounds[-1].update(objections_applied=applied, objections_for_mapper=remaining)
+        write_json(record_path, {"approved": False, "rounds": rounds})
+        if applied and not remaining:
+            continue
+        if mapper_calls >= map_rounds:
+            return accept_unapproved(
+                f"Stopped before atoms: the intent map was not approved after {map_rounds} "
+                f"rounds. Last reason: {decision.reason}"
+            )
+        feedback = "\n".join(f"- {o.get('detail') or o.get('kind')}" for o in remaining)
+        try:
+            intent_map = build_map(
+                feedback=feedback or decision.reason or "The reviewer rejected the map.",
+                previous=intent_map,
+            )
+        except Exception as exc:
+            # Noisy mode keeps the last reviewed map rather than losing the run
+            # to one failed revision call (a long map can outlast the deadline).
+            if not noisy:
+                raise
+            return accept_unapproved(f"The mapper failed on a revision: {exc}")
+        mapper_calls += 1
+    return accept_unapproved("Stopped before atoms: the intent map was not approved.")
+
+
+def _missing_action_reason(
+    intent_map: IntentMap,
+    missing: list[tuple[str, str, str]],
+    source_doc: Any,
+) -> str:
+    """The missing actions, each with the sentences that need it."""
+    text = {node.id: node.text for node in source_doc.nodes}
+    lines = ["The intent map needs requests that the schema does not declare:"]
+    for principal, action, resource in missing:
+        node_ids: list[str] = []
+        for scope in intent_map.scopes:
+            if (scope.principal_type, _bare_action(scope.action), scope.resource_type) != (principal, action, resource):
+                continue
+            for sl in intent_map.scope_slices(scope.id):
+                node_ids.extend(intent_map.slice_conditions(sl.id))
+            node_ids.extend(intent_map.restrictions(scope.id))
+        quoted = "; ".join(f'"{text[n]}"' for n in dict.fromkeys(node_ids) if n in text)
+        lines.append(f"- action {action}, principal {principal}, resource {resource}: {quoted}")
+    lines.append("Add each action, and any entity type it needs, so these requirements can be expressed.")
+    return "\n".join(lines)
+
+
+def _schema_refusal_reason(repair_records: list[dict[str, Any]]) -> str:
+    """Why the last schema repair produced nothing: the review's reasons, or validation."""
+    record = repair_records[-1] if repair_records else {}
+    reasons = [
+        (d.get("edit_delta") or {}).get("model_review") or d.get("reason") or ""
+        for d in record.get("decisions", [])
+        if d.get("action") != "approve"
+    ]
+    reasons = [r for r in reasons if r]
+    if reasons:
+        return " ".join(reasons)[:1200]
+    if record.get("schema_validation"):
+        return "The repaired schema did not pass `cedar validate`."
+    return "No schema change was proposed."
+
+
+def _left_out_note(node_ids: list[str], source_doc: Any) -> str:
+    if not node_ids:
+        return ""
+    text = {node.id: node.text for node in source_doc.nodes}
+    lines = [
+        "",
+        "LEFT OUT AFTER SCHEMA REVIEW",
+        "The schema review refused to add the actions these sentences need, as "
+        "they state no access-control requirement the schema should express. "
+        "AutoCedar left them out of the map; do not ask to add them again.",
+    ]
+    lines += [f"- [{n}] {text.get(n, '')}" for n in dict.fromkeys(node_ids)]
+    return "\n" + "\n".join(lines)
+
+
+def _schema_gap_budget_spent(limit: int | None, used: int) -> bool:
+    return limit is not None and used >= limit
+
+
+def _settle_left_out_objections(decision: AtomDecision, left_out: set[str]) -> AtomDecision:
+    """Drop objections that ask again for sentences the schema review left out.
+
+    The schema review's refusal is the decision on those sentences; the map
+    review does not reopen it. A rejection whose objections all concern them
+    is an approval of the rest of the map.
+    """
+    objections = (decision.edit_delta or {}).get("map_objections") or []
+    if decision.action == "approve" or not objections or not left_out:
+        return decision
+    settled = [o for o in objections if o.get("node_id") in left_out]
+    if not settled:
+        return decision
+    kept = [o for o in objections if o.get("node_id") not in left_out]
+    delta = {**(decision.edit_delta or {}), "map_objections": kept, "settled_by_schema_review": settled}
+    if kept:
+        return replace(decision, edit_delta=delta)
+    return replace(
+        decision,
+        action="approve",
+        reason="Every remaining objection asked again for sentences the schema review left out.",
+        edit_delta=delta,
+    )
+
+
+def _apply_map_objections(
+    intent_map: IntentMap,
+    decision: AtomDecision,
+    node_ids: set[str],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Apply the objections a map reviewer named; return (applied, left for the mapper)."""
+    applied: list[dict[str, Any]] = []
+    remaining: list[dict[str, Any]] = []
+    for objection in (decision.edit_delta or {}).get("map_objections") or []:
+        problem = intent_map.apply_objection(objection, node_ids)
+        if problem:
+            remaining.append({**objection, "not_applied": problem})
+        else:
+            applied.append(objection)
+    return applied, remaining
+
+
+def _settle_unmarked_scopes(
+    intent_map: IntentMap, review_atom: AtomReviewer, *, per_scope: bool = False,
+) -> dict[str, Any] | None:
+    """Ask whether the document lists every permission for the scopes it leaves unmarked.
+
+    AutoCedar does not assume either answer: the reviewer (a person, or the
+    model under model review) says yes or no. By default one answer applies to
+    every unmarked scope. With ``per_scope`` (noisy mode) each scope is asked
+    on its own, since a document of extracted sentences can list every way to
+    allow one action and only examples of another.
+    """
+    unmarked = [scope for scope in intent_map.scopes if scope.exhaustive is None]
+    if not unmarked:
+        return None
+    groups = [[scope] for scope in unmarked] if per_scope else [unmarked]
+    answers: list[dict[str, Any]] = []
+    for group in groups:
+        question = PermissionsQuestion(scopes=group, outline=intent_map.outline)
+        _, decision = _normalize_review_result(question, review_atom(question))
+        complete = decision.action == "approve"
+        for scope in group:
+            scope.exhaustive = complete
+        delta = decision.edit_delta or {}
+        answers.append({
+            "complete": complete,
+            "answered_by": "model" if delta.get("review_channel") == "model" else "person",
+            "reason": decision.reason or delta.get("model_review", ""),
+            "scope_ids": [scope.id for scope in group],
+        })
+    if not per_scope:
+        return answers[0]
+    return {
+        "complete": all(a["complete"] for a in answers),
+        "answered_by": answers[0]["answered_by"],
+        "per_scope": answers,
+        "scope_ids": [scope.id for scope in unmarked],
+    }
+
+
+def _approved_session_map(base: Path) -> IntentMap | None:
+    record = _read_json(base / "stage0" / "intent_map.json", None)
+    if isinstance(record, dict) and record.get("approved") and record.get("map"):
+        return IntentMap.from_dict(record["map"])
+    return None
 
 
 def _run_incremental_candidate_check(
@@ -345,6 +729,9 @@ def author(
     run_incremental_checks: bool = False,
     max_property_proposals: int = DEFAULT_MAX_PROPERTY_PROPOSALS,
     max_schema_gap_repairs: int | None = None,
+    map_intent: IntentMapper | None = None,
+    max_map_rounds: int = MAP_ROUNDS,
+    noisy: bool = False,
 ) -> AuthorResult:
     """End-to-end Stage-1-through-2.5 pipeline.
 
@@ -356,6 +743,20 @@ def author(
     pre-built schema (rather than composing one from atoms via the
     proposer). When set, Stage 1 atom-proposal is skipped and the
     pipeline composes its schema text directly from disk.
+
+    ``map_intent`` turns on the task graph (``autocedar.intent_map``): the
+    document is mapped into scopes, slices and conditions, the map is
+    reviewed, each condition gets its own atom from map-scoped context, floors
+    and ceilings are calculated from the approved conditions, and synthesis
+    starts only when every node of the map is solved. Without it, Stage 2 uses
+    keyword-selected source nodes as before.
+
+    ``noisy`` is for documents in which some sentences may not be requirements.
+    The schema is built once and then fixed, a map still rejected after its
+    rounds is used if it passes the structure checks, and a requirement that
+    gets no approved atom is dropped in the direction that allows less
+    (``IntentMap.drop_unsolved``) instead of stopping the run. Every dropped
+    requirement and its reason goes to ``stage2/dropped_requirements.json``.
     """
     spec_path = Path(spec_path)
     output_dir = Path(output_dir)
@@ -381,7 +782,14 @@ def author(
         list(resume_checkpoint.schema_gap_repairs) if resume_checkpoint else []
     )
     schema_gap_repair_count = 0
-    schema_gap_repair_limit = max_schema_gap_repairs
+    # Requirements whose schema repair the schema review refused, with its
+    # reason: that decision stands, so their atoms are rewritten within the
+    # schema instead of asking for the same support again.
+    schema_refusals: dict[str, str] = {}
+    # Support gaps already repaired once: one that is still missing afterwards
+    # is not repaired again, which would loop.
+    repaired_support: set[tuple[str, ...]] = set()
+    schema_gap_repair_limit = 0 if noisy else max_schema_gap_repairs
 
     session.write_input_spec(spec_text, filename=spec_path.name)
     if resume_from:
@@ -690,6 +1098,102 @@ def author(
     session.write_stage1_final_schema(schema_text)
     _notify_schema_ready(review_atom, schema_text)
 
+    # ──── Stage 0.5: intent map (the task graph) ────
+    intent_map: IntentMap | None = None
+    map_decision: AtomDecision | None = None
+    if map_intent is not None:
+
+        def extend_schema_for_map(missing: list[tuple[str, str, str]], reason: str) -> str | None:
+            nonlocal schema_text, schema_gap_repair_count
+            if propose_schema_atoms is None or _schema_gap_budget_spent(
+                schema_gap_repair_limit, schema_gap_repair_count
+            ):
+                return None
+            gap = {
+                "atom_name": "intent_map",
+                "stage": "intent_map",
+                "reason": reason,
+                "tags": ["intent_map_missing_action"],
+                "required_action": "repair_schema_before_map_review",
+                "repair_plan": {"action": "repair_schema", "reason": reason, "repair_instruction": reason},
+                "missing_actions": [list(t) for t in missing],
+            }
+            schema_gaps.append(gap)
+            session.write_stage1_5_schema_gaps(schema_gaps)
+            repaired = _repair_schema_gap_and_validate(
+                spec_text=spec_text,
+                schema_text=schema_text,
+                schema_path=schema_path,
+                gap=gap,
+                session=session,
+                review_atom=review_atom,
+                propose_schema_atoms=propose_schema_atoms,
+                fix_schema=fix_schema,
+                draft=draft,
+                approved_schema_atoms=approved_schema_atoms,
+                approved_schema_names=approved_schema_names,
+                repair_records=schema_gap_repairs,
+            )
+            if repaired is not None:
+                schema_text = repaired
+                schema_gap_repair_count += 1
+                _notify_schema_ready(review_atom, schema_text)
+            return schema_text
+
+        intent_map, map_decision, map_note = _build_reviewed_intent_map(
+            map_intent=map_intent,
+            source_doc=source_doc,
+            schema_text=schema_text,
+            review_atom=review_atom,
+            session=session,
+            resume_from=Path(resume_from) if resume_from else None,
+            extend_schema=extend_schema_for_map,
+            schema_can_grow=propose_schema_atoms is not None
+            and not _schema_gap_budget_spent(schema_gap_repair_limit, schema_gap_repair_count),
+            map_rounds=max_map_rounds,
+            noisy=noisy,
+        )
+        if intent_map is None:
+            _write_stage0_artifacts(
+                session,
+                source_doc,
+                schema_context_packets,
+                property_context_packets,
+                completed_property_node_ids,
+                schema_atoms=approved_schema_atoms,
+            )
+            session.flush_transcript()
+            return AuthorResult(
+                session_id=session_id,
+                session_dir=session.base,
+                candidate_path=Path(""),
+                plan=VerificationPlanDraft(properties=[]),
+                schema_text=schema_text,
+                final_user_approved=False,
+                notes=[map_note],
+            )
+
+    if noisy and intent_map is not None and propose_schema_atoms is not None:
+        if resume_from:
+            # A resumed session keeps the completion it already ran.
+            for name in ("schema_completion.json", "schema_completion_late.json"):
+                prior_record = _read_json(Path(resume_from) / "stage1_5" / name, None)
+                if prior_record is not None and not (session.base / "stage1_5" / name).exists():
+                    write_json(session.base / "stage1_5" / name, prior_record)
+        completed_schema = _complete_schema_for_map(
+            intent_map=intent_map,
+            source_doc=source_doc,
+            spec_text=spec_text,
+            schema_text=schema_text,
+            schema_path=schema_path,
+            session=session,
+            review_atom=review_atom,
+            propose_schema_atoms=propose_schema_atoms,
+        )
+        if completed_schema != schema_text:
+            schema_text = completed_schema
+            _notify_schema_ready(review_atom, schema_text)
+
     # ──── Stage 2: property elicitation ────
     # Stage 2 is intentionally clocked by HITL review: ask for one property
     # atom, verify it, let the human approve/edit/reject it, then pass that
@@ -721,7 +1225,47 @@ def author(
         session.write_stage2_attribution_decisions(attributions2)
         session.write_stage2_decisions(decisions2)
         session.write_stage2_symbolic_verification_logs(verification_logs)
-    property_frontier_nodes = source_doc.authorization_nodes()
+    if intent_map is not None:
+        # The map's conditions are the requirement frontier, in document order.
+        property_frontier_nodes = [
+            source_doc.by_id[node_id] for node_id in intent_map.condition_node_ids(source_doc)
+            if intent_map.scopes_for_node(node_id)
+        ]
+    else:
+        property_frontier_nodes = source_doc.authorization_nodes()
+    frontier_ids = [node.id for node in property_frontier_nodes]
+    if noisy:
+        max_property_proposals = max(
+            max_property_proposals, NOISY_PROPOSALS_PER_CONDITION * len(property_frontier_nodes),
+        )
+    unresolved_node_ids: set[str] = set()
+    node_attempts: dict[str, int] = {}
+    late_completion_tried: set[str] = set()
+    node_decision_start: dict[str, int] = {}
+
+    def packet_for(node: Any, step: int) -> Any:
+        if intent_map is not None:
+            return build_condition_packet(source_doc, intent_map, node, plan.properties, step)
+        packet = select_property_packet(
+            source_doc,
+            node,
+            approved_schema_atoms=approved_schema_atoms,
+            approved_property_atoms=plan.properties,
+            prior_decisions=decisions2,
+        )
+        packet.id = f"{packet.id}.step{step:04d}"
+        return packet
+
+    def give_up_on_node(node: Any, reason: str) -> None:
+        unresolved_node_ids.add(node.id)
+        decisions2.append(AtomDecision(
+            atom_name=f"unresolved_{node.id}",
+            action="reject",
+            reason=reason,
+            edit_delta={"stage": "stage2_condition_unresolved", "source_node_ids": [node.id]},
+        ))
+        session.write_stage2_decisions(decisions2)
+
     property_frontier_total = len(property_frontier_nodes)
     property_frontier_index = {
         node.id: index for index, node in enumerate(property_frontier_nodes, start=1)
@@ -732,10 +1276,7 @@ def author(
     active_spec_text = ""
     pending_property_atoms = list(resume_checkpoint.pending_properties) if resume_checkpoint else []
     if active_property_node is not None:
-        active_packet = select_property_packet(
-            source_doc, active_property_node, approved_schema_atoms=approved_schema_atoms,
-            approved_property_atoms=plan.properties, prior_decisions=decisions2,
-        )
+        active_packet = packet_for(active_property_node, 1)
         active_spec_text = active_packet.to_prompt_text(include_review_context=False)
 
     def save_property_checkpoint(retry_atom: PropertyAtom | None = None,
@@ -779,12 +1320,14 @@ def author(
                     node
                     for node in property_frontier_nodes
                     if node.id not in completed_property_node_ids
+                    and node.id not in unresolved_node_ids
                 ),
                 None,
             )
             if active_property_node is None:
-                property_frontier_exhausted = True
+                property_frontier_exhausted = not unresolved_node_ids
                 break
+            node_decision_start.setdefault(active_property_node.id, len(decisions2))
             pending_property_atoms = []
             _notify_property_progress(
                 review_atom,
@@ -800,14 +1343,7 @@ def author(
                 queued=0,
             )
         if not pending_property_atoms:
-            active_packet = select_property_packet(
-                source_doc,
-                active_property_node,
-                approved_schema_atoms=approved_schema_atoms,
-                approved_property_atoms=plan.properties,
-                prior_decisions=decisions2,
-            )
-            active_packet.id = f"{active_packet.id}.step{len(property_context_packets) + 1:04d}"
+            active_packet = packet_for(active_property_node, len(property_context_packets) + 1)
             property_context_packets.append(active_packet)
             session.write_stage0_context_packet(active_packet.id, active_packet.to_dict())
             active_spec_text = active_packet.to_prompt_text(include_review_context=False)
@@ -815,7 +1351,9 @@ def author(
                 active_spec_text,
                 str(schema_path),
                 plan.properties,
-                decisions2,
+                decisions2
+                if intent_map is None
+                else decisions2[node_decision_start.get(active_property_node.id, 0):],
             )
             proposed = _normalize_property_proposals(proposal_result)
             fingerprint = hashlib.sha256(json.dumps({
@@ -826,12 +1364,25 @@ def author(
             }, sort_keys=True).encode()).hexdigest()
             repeated_proposals[fingerprint] = repeated_proposals.get(fingerprint, 0) + 1
             if repeated_proposals[fingerprint] >= 3:
-                raise RuntimeError(
-                    f"Property authoring made no progress on source {active_property_node.id} "
-                    "after three identical proposals. Reviews are saved; inspect the source "
-                    "and review feedback before resuming."
+                if intent_map is None:
+                    raise RuntimeError(
+                        f"Property authoring made no progress on source {active_property_node.id} "
+                        "after three identical proposals. Reviews are saved; inspect the source "
+                        "and review feedback before resuming."
+                    )
+                give_up_on_node(
+                    active_property_node,
+                    "Three identical proposals without progress; reported before synthesis.",
                 )
+                active_property_node = None
+                active_packet = None
+                active_spec_text = ""
+                continue
             proposal_was_batch = isinstance(proposal_result, list)
+            if intent_map is not None:
+                taken = set(approved_property_names)
+                for atom in proposed:
+                    _ground_in_condition(atom, active_property_node, taken)
             pending_property_atoms.extend(
                 (attach_source_ids(atom, active_packet.focus_node_ids), proposal_was_batch)
                 for atom in proposed
@@ -853,9 +1404,10 @@ def author(
                 queued=len(pending_property_atoms),
             )
             if not pending_property_atoms:
-                completion_blocker = _source_node_completion_blocker(
-                    active_packet.focus_node_ids,
-                    plan.properties,
+                completion_blocker = (
+                    _map_completion_blocker(intent_map, active_property_node, plan.properties)
+                    if intent_map is not None
+                    else _source_node_completion_blocker(active_packet.focus_node_ids, plan.properties)
                 )
                 if completion_blocker is not None:
                     decisions2.append(
@@ -887,6 +1439,11 @@ def author(
                         queued=0,
                         reason=completion_blocker,
                     )
+                    if intent_map is not None and _attempts_exhausted(node_attempts, active_property_node):
+                        give_up_on_node(active_property_node, completion_blocker)
+                        active_property_node = None
+                        active_packet = None
+                        active_spec_text = ""
                     continue
                 completed_property_node_ids.add(active_property_node.id)
                 session.write_stage0_coverage_ledger(
@@ -895,6 +1452,7 @@ def author(
                         completed_property_node_ids=completed_property_node_ids,
                         schema_packets=schema_context_packets,
                         property_packets=property_context_packets,
+                        frontier_ids=frontier_ids,
                     ),
                 )
                 _notify_property_progress(
@@ -932,7 +1490,18 @@ def author(
             proposed=len(prop_atoms),
             queued=len(pending_property_atoms),
         )
-        support_gaps = missing_schema_support(atom.required_schema_support, schema_text)
+        # With the map and a spent gap budget the schema is fixed: Cedar
+        # validation of the atom is the real check, and a declared hook the
+        # schema lacks fails there and is repaired within the schema.
+        schema_fixed_here = intent_map is not None and (
+            _schema_gap_budget_spent(schema_gap_repair_limit, schema_gap_repair_count)
+            or (active_property_node is not None and active_property_node.id in schema_refusals)
+        )
+        support_gaps = (
+            []
+            if schema_fixed_here
+            else missing_schema_support(atom.required_schema_support, schema_text)
+        )
         if support_gaps:
             gap_reason = (
                 "The proposed property atom depends on schema support that is "
@@ -981,6 +1550,18 @@ def author(
                         f"({schema_gap_repair_limit}); stopped before property review.",
                     ],
                 )
+            support_key = (atom.name, *sorted(item.detail for item in support_gaps))
+            if (
+                support_key in repaired_support
+                and intent_map is not None
+                and active_property_node is not None
+            ):
+                schema_refusals[active_property_node.id] = (
+                    "A schema repair for this support was applied, but the support is "
+                    "still missing: " + describe_missing_schema_support(support_gaps)
+                )
+                pending_property_atoms.insert(0, (atom, atom_from_batch))
+                continue
             repaired = _repair_schema_gap_and_validate(
                 spec_text=active_spec_text,
                 schema_text=schema_text,
@@ -995,6 +1576,10 @@ def author(
                 approved_schema_names=approved_schema_names,
                 repair_records=schema_gap_repairs,
             )
+            if repaired is None and intent_map is not None and active_property_node is not None:
+                schema_refusals[active_property_node.id] = _schema_refusal_reason(schema_gap_repairs)
+                pending_property_atoms.insert(0, (atom, atom_from_batch))
+                continue
             if repaired is None:
                 _write_stage0_artifacts(
                     session,
@@ -1022,6 +1607,7 @@ def author(
                 )
             schema_text = repaired
             schema_gap_repair_count += 1
+            repaired_support.add(support_key)
             _notify_schema_ready(review_atom, schema_text)
             if atom_from_batch:
                 pending_property_atoms.insert(0, (atom, atom_from_batch))
@@ -1044,11 +1630,49 @@ def author(
         pending_schema_gap: dict[str, Any] | None = None
         while True:
             symbolic_verify_atom(current_atom, str(schema_path), prior_atoms=plan.properties)
+            if intent_map is not None and active_property_node is not None:
+                _check_against_map(intent_map, current_atom, active_property_node)
+                _check_safety_in_slice(
+                    intent_map, current_atom, active_property_node, plan.properties, schema_path,
+                    session.base / "stage2" / "slice_safety",
+                )
+            field_error = _undeclared_field_error(current_atom) if noisy else ""
+            field_note = ""
+            if (
+                field_error
+                and intent_map is not None
+                and propose_schema_atoms is not None
+                and active_property_node is not None
+                and active_property_node.id not in late_completion_tried
+            ):
+                # The schema completion missed a field this requirement needs:
+                # ask once more for this requirement, then check the same atom.
+                late_completion_tried.add(active_property_node.id)
+                completed_schema = _complete_schema_for_map(
+                    intent_map=intent_map,
+                    source_doc=source_doc,
+                    spec_text=spec_text,
+                    schema_text=schema_text,
+                    schema_path=schema_path,
+                    session=session,
+                    review_atom=review_atom,
+                    propose_schema_atoms=propose_schema_atoms,
+                    nodes=[active_property_node.id],
+                    note=field_error,
+                )
+                if completed_schema != schema_text:
+                    schema_text = completed_schema
+                    _notify_schema_ready(review_atom, schema_text)
+                    continue
+            if field_error and active_property_node is not None and active_property_node.id in late_completion_tried:
+                field_note = NO_NEW_FIELD_NOTE
             verification_logs[current_atom.name] = list(current_atom.symbolic_verification_log)
             reviewed_atom, decision = _normalize_review_result(
                 current_atom,
                 review_atom(current_atom),
             )
+            if field_note and decision.action == "reject":
+                decision = replace(decision, reason=field_note + " " + (decision.reason or ""))
             if decision.action == "reject" and repairs_attempted < 2:
                 # Persist the user's feedback before calling a potentially slow
                 # repair planner. Recovery may repropose, but must not forget it.
@@ -1064,6 +1688,38 @@ def author(
                     schema_text,
                     list(current_atom.symbolic_verification_log),
                 )
+                refusal = (
+                    schema_refusals.get(active_property_node.id, "")
+                    if active_property_node is not None
+                    else ""
+                )
+                if (
+                    repair_plan.action == "repair_schema"
+                    and intent_map is not None
+                    and (
+                        refusal
+                        or _schema_gap_budget_spent(schema_gap_repair_limit, schema_gap_repair_count)
+                    )
+                ):
+                    # The schema cannot change any more, or not for this
+                    # requirement, so the atom has to be rewritten within it. A
+                    # requirement it cannot express stays unsolved and stops the
+                    # run by name.
+                    fixed = (
+                        f"The schema review refused to add what this atom needs: {refusal} "
+                        "The schema will not change for this requirement."
+                        if refusal
+                        else "The schema is fixed: it cannot gain entities, attributes, or "
+                        "context fields."
+                    )
+                    repair_plan = replace(
+                        repair_plan,
+                        action="repair_current_property",
+                        repair_instruction=(
+                            f"{fixed} Rewrite the atom using only what the schema "
+                            "already declares. " + (repair_plan.repair_instruction or reason)
+                        ),
+                    )
                 repair_plans.append(
                     {
                         "atom_name": current_atom.name,
@@ -1185,6 +1841,8 @@ def author(
                     plan.properties,
                 )
                 if replacement is not None:
+                    if intent_map is not None and active_property_node is not None:
+                        _ground_in_condition(replacement, active_property_node, set(approved_property_names))
                     replacement = attach_source_ids(replacement, active_packet.focus_node_ids)
                     replacement = _align_repaired_property_atom(
                         rejected_atom=reviewed_atom,
@@ -1207,6 +1865,12 @@ def author(
                 and reviewed_atom is not current_atom
             ):
                 symbolic_verify_atom(reviewed_atom, str(schema_path), prior_atoms=plan.properties)
+                if intent_map is not None and active_property_node is not None:
+                    _check_against_map(intent_map, reviewed_atom, active_property_node)
+                    _check_safety_in_slice(
+                        intent_map, reviewed_atom, active_property_node, plan.properties, schema_path,
+                        session.base / "stage2" / "slice_safety",
+                    )
                 verification_logs[reviewed_atom.name] = list(
                     reviewed_atom.symbolic_verification_log,
                 )
@@ -1263,7 +1927,7 @@ def author(
             proposed=len(prop_atoms),
             queued=len(pending_property_atoms),
         )
-        if unrepaired_prior_conflict is not None:
+        if unrepaired_prior_conflict is not None and not noisy:
             session.write_stage2_intent_graph(
                 build_property_intent_graph(plan.properties),
             )
@@ -1357,6 +2021,9 @@ def author(
                 approved_schema_names=approved_schema_names,
                 repair_records=schema_gap_repairs,
             )
+            if repaired is None and intent_map is not None and active_property_node is not None:
+                schema_refusals[active_property_node.id] = _schema_refusal_reason(schema_gap_repairs)
+                continue
             if repaired is None:
                 session.write_stage2_intent_graph(
                     build_property_intent_graph(plan.properties),
@@ -1404,9 +2071,10 @@ def author(
             and active_property_node is not None
             and active_packet is not None
         ):
-            completion_blocker = _source_node_completion_blocker(
-                active_packet.focus_node_ids,
-                plan.properties,
+            completion_blocker = (
+                _map_completion_blocker(intent_map, active_property_node, plan.properties)
+                if intent_map is not None
+                else _source_node_completion_blocker(active_packet.focus_node_ids, plan.properties)
             )
             if completion_blocker is not None:
                 decisions2.append(
@@ -1438,6 +2106,11 @@ def author(
                     queued=0,
                     reason=completion_blocker,
                 )
+                if intent_map is not None and _attempts_exhausted(node_attempts, active_property_node):
+                    give_up_on_node(active_property_node, completion_blocker)
+                    active_property_node = None
+                    active_packet = None
+                    active_spec_text = ""
                 continue
             completed_property_node_ids.add(active_property_node.id)
             session.write_stage0_coverage_ledger(
@@ -1446,6 +2119,7 @@ def author(
                     completed_property_node_ids=completed_property_node_ids,
                     schema_packets=schema_context_packets,
                     property_packets=property_context_packets,
+                    frontier_ids=frontier_ids,
                 ),
             )
             _notify_property_progress(
@@ -1466,6 +2140,35 @@ def author(
             active_spec_text = ""
     property_frontier_exhausted = all(node.id in completed_property_node_ids for node in property_frontier_nodes)
     save_property_checkpoint()
+    dropped_requirements: list[dict[str, Any]] = []
+    if noisy and intent_map is not None and not property_frontier_exhausted:
+        node_text = {node.id: node.text for node in source_doc.nodes}
+        give_up_reasons = {
+            d.edit_delta.get("source_node_ids", [""])[0]: d.reason
+            for d in decisions2 if d.atom_name.startswith("unresolved_")
+        }
+        dropped_requirements = intent_map.drop_unsolved(
+            plan.properties, _no_condition_nodes(prop_atoms, decisions2, plan.properties),
+        )
+        for item in dropped_requirements:
+            item["text"] = node_text.get(item["node_id"], "")
+            item["reason"] = give_up_reasons.get(
+                item["node_id"], "Not reached within the proposal budget."
+            )
+        property_frontier_exhausted = True
+    if noisy and intent_map is not None and property_frontier_exhausted:
+        slice_answers: list[dict[str, Any]] = []
+        dropped_requirements += intent_map.drop_unconditional_slices(
+            plan.properties,
+            lambda atom: _states_no_condition(atom.reference_cedar),
+            keep=lambda scope, sl, others: _keep_unconditional_slice(
+                intent_map, source_doc, scope, sl, others, review_atom, slice_answers,
+            ),
+        )
+        write_json(session.base / "stage2" / "unconditional_slices.json", slice_answers)
+        if dropped_requirements:
+            write_json(session.base / "stage2" / "dropped_requirements.json", dropped_requirements)
+            write_json(session.base / "stage0" / "intent_map_after_drops.json", intent_map.to_dict())
     if not property_frontier_exhausted:
         decisions2.append(
             AtomDecision(
@@ -1527,6 +2230,8 @@ def author(
             for node in property_frontier_nodes
             if node.id not in completed_property_node_ids
         ]
+        if intent_map is not None:
+            write_json(session.base / "stage2" / "map_status.json", intent_map.status(plan.properties))
         return AuthorResult(
             session_id=session_id,
             session_dir=session.base,
@@ -1534,14 +2239,56 @@ def author(
             plan=plan,
             schema_text=schema_text,
             final_user_approved=False,
-            notes=[
-                "Stage 2 stopped before covering the full source DAG; "
-                f"{len(open_nodes)} authorization source node(s) remain open.",
-            ],
+            notes=(
+                _map_stop_notes(intent_map, source_doc, plan.properties)
+                if intent_map is not None
+                else [
+                    "Stage 2 stopped before covering the full source DAG; "
+                    f"{len(open_nodes)} authorization source node(s) remain open.",
+                ]
+            ),
         )
 
+    # ──── Stage 2 boundaries: calculated from the intent map ────
+    boundary_plan = plan
+    if intent_map is not None:
+        status = intent_map.status(plan.properties)
+        write_json(session.base / "stage2" / "map_status.json", status)
+        derived, derive_issues = derive_boundary_atoms(intent_map, plan.properties, cedar_path=CEDAR_PATH)
+        derive_issues += _dead_slice_floors(derived, schema_path, session.base / "stage2" / "derived")
+        write_json(session.base / "stage2" / "derived_boundaries.json", {
+            "atoms": [to_dict(a) for a in derived],
+            "issues": derive_issues,
+        })
+        if not status["root_solved"] or derive_issues:
+            _write_stage0_artifacts(
+                session,
+                source_doc,
+                schema_context_packets,
+                property_context_packets,
+                completed_property_node_ids,
+                schema_atoms=approved_schema_atoms,
+                property_atoms=plan.properties,
+                schema_gaps=schema_gaps,
+            )
+            session.flush_transcript()
+            return AuthorResult(
+                session_id=session_id,
+                session_dir=session.base,
+                candidate_path=Path(""),
+                plan=plan,
+                schema_text=schema_text,
+                final_user_approved=False,
+                notes=(
+                    _map_stop_notes(intent_map, source_doc, plan.properties)
+                    if not status["root_solved"]
+                    else ["Stopped before synthesis: " + "; ".join(derive_issues[:6])]
+                ),
+            )
+        boundary_plan = VerificationPlanDraft(properties=derived)
+
     # ──── Stage 1.75: pre-synthesis unsat detection ────
-    consistency_plan = compile_plan_for_consistency(plan)
+    consistency_plan = compile_plan_for_consistency(boundary_plan)
     consistency = symbolic_consistency_check(consistency_plan, str(schema_path))
     session.write_stage1_75_unsat_core(
         unsat=consistency.unsat,
@@ -1592,14 +2339,14 @@ def author(
         )
 
     # ──── Stage 2 final compile (sugar resolution + §8.8 patches) ────
-    compiled = compile_plan(plan)
+    compiled = compile_plan(boundary_plan)
     session.write_stage2_final_plan(compiled.verification_plan_py, compiled.references)
 
     # Materialize a complete scenario directory for Stage 3.
     stage3_spec_text = approved_target_spec(
         original_spec_name=spec_path.name,
         schema_atoms=approved_schema_atoms,
-        property_atoms=plan.properties,
+        property_atoms=[*plan.properties, *(boundary_plan.properties if intent_map else [])],
     )
     scenario_dir = _materialize_scenario_dir(
         session_dir=session.base,
@@ -1631,6 +2378,8 @@ def author(
         stage2_decisions=decisions2,
         schema_gap_repairs=schema_gap_repairs,
     )
+    if map_decision is not None and not map_decision.intent_acknowledged_by_user:
+        final_user_approved = False
     final_approval_reason = (
         "All accepted schema and property atoms were explicitly acknowledged "
         "by a user."
@@ -1664,6 +2413,11 @@ def author(
         plan=plan,
         schema_text=schema_text,
         final_user_approved=final_user_approved,
+        notes=[
+            f"Noisy mode dropped {len({d['node_id'] for d in dropped_requirements if 'node_id' in d})} "
+            f"requirement(s) and {sum(1 for d in dropped_requirements if 'slice' in d)} unconditional "
+            "slice(s); see stage2/dropped_requirements.json."
+        ] if dropped_requirements else [],
     )
 
 
@@ -1840,6 +2594,144 @@ def _normalize_property_proposals(result: PropertyProposalResult) -> list[Proper
     if isinstance(result, PropertyAtom):
         return [result]
     return [atom for atom in result if isinstance(atom, PropertyAtom)]
+
+
+def _ground_in_condition(atom: PropertyAtom, node: Any, taken: set[str]) -> PropertyAtom:
+    """Tie an atom to its condition node, durably, under a unique name."""
+    attach_source_ids(atom, [node.id])
+    if node.id not in atom.source_excerpt:
+        atom.source_excerpt = f"[source_id: {node.id}] {atom.source_excerpt}".strip()
+    if atom.name in taken:
+        base = f"{atom.name}__{re.sub(r'[^A-Za-z0-9_]+', '_', atom.action) or 'scope'}"
+        atom.name = base if base not in taken else f"{base}__p{node.ordinal:04d}"
+    taken.add(atom.name)
+    return atom
+
+
+def _check_against_map(intent_map: IntentMap, atom: PropertyAtom, node: Any) -> None:
+    """Fail an atom whose kind or scope the map does not allow for its node."""
+    issue = condition_atom_issue(intent_map, atom, node.id)
+    if issue:
+        atom.symbolic_verified = False
+        atom.symbolic_verification_log = [
+            *atom.symbolic_verification_log,
+            f"map-scope: FAILED ({issue})",
+        ]
+
+
+def _map_completion_blocker(intent_map: IntentMap, node: Any, approved: list[PropertyAtom]) -> str | None:
+    """A condition is solved only when every scope it applies to has an approved atom."""
+    missing = intent_map.unsolved_scopes(node.id, approved)
+    if not missing:
+        return None
+    scopes = "; ".join(
+        f"{s.id} ({s.principal_type} / {s.action} / {s.resource_type})" for s in missing
+    )
+    return (
+        "This requirement has no approved condition atom yet for scope(s) "
+        f"{scopes}. Propose one condition atom for each."
+    )
+
+
+def _attempts_exhausted(attempts: dict[str, int], node: Any) -> bool:
+    attempts[node.id] = attempts.get(node.id, 0) + 1
+    return attempts[node.id] >= MAX_CONDITION_ATTEMPTS
+
+
+def _map_stop_notes(intent_map: IntentMap, source_doc: Any, approved: list[PropertyAtom]) -> list[str]:
+    status = intent_map.status(approved)
+    text = {node.id: node.text for node in source_doc.nodes}
+    blocked = status["blocking_conditions"]
+    return [
+        f"Stopped before synthesis: {len(blocked)} requirement(s) in the intent map "
+        "have no approved condition atom, so the plan would be incomplete. "
+        "Blocked: " + "; ".join(f"[{n}] {text.get(n, '')}" for n in blocked[:12]),
+    ]
+
+
+def _check_safety_in_slice(
+    intent_map: IntentMap,
+    atom: PropertyAtom,
+    node: Any,
+    approved: list[PropertyAtom],
+    schema_path: Path,
+    workdir: Path,
+) -> None:
+    """Re-check a condition atom that can raise a runtime error alone.
+
+    A requirement such as an elapsed-time window may overflow on its own while
+    an earlier condition of its slice (a range check) rules those values out.
+    Floors put such an atom after the slice's other conditions, and Cedar's &&
+    stops at the first false conjunct, so the atom is checked the same way:
+    after the approved conditions that come before it, in every slice it joins.
+    """
+    log = atom.symbolic_verification_log or []
+    failed = [line for line in log if line.startswith("never-errors: FAILED")]
+    if atom.constraint_type != "condition" or not failed:
+        return
+    order = {s.node_id: i for i, s in enumerate(intent_map.sentences)}
+    grounded = intent_map.grounding(approved)
+    workdir.mkdir(parents=True, exist_ok=True)
+    checked = False
+    for scope in intent_map.scopes_for_node(node.id):
+        if not atom_fits_scope(atom, scope):
+            continue
+        for sl in intent_map.scope_slices(scope.id):
+            members = intent_map.slice_conditions(sl.id)
+            if node.id not in members:
+                continue
+            guards = [
+                grounded[(n, scope.id)]
+                for n in sorted(members, key=lambda n: order.get(n, 0))
+                if order.get(n, 0) < order.get(node.id, 0)
+                and (n, scope.id) in grounded
+                and not needs_slice_guard(grounded[(n, scope.id)])
+            ]
+            if not guards:
+                return
+            merged = merge_conditions(scope, [*guards, atom], cedar_path=CEDAR_PATH)
+            check = _check_never_errors(
+                replace(atom, name=f"{atom.name}__{sl.id}", reference_cedar=merged),
+                str(schema_path),
+                workdir,
+            )
+            if not check.passed:
+                return
+            checked = True
+    if checked:
+        atom.symbolic_verification_log = [GUARDED_BY_SLICE if line in failed else line for line in log]
+        atom.symbolic_verified = not any("FAILED" in line for line in atom.symbolic_verification_log)
+
+
+def _dead_slice_floors(derived: list[PropertyAtom], schema_path: Path, workdir: Path) -> list[str]:
+    """Slices whose conditions contradict each other, or that can raise a runtime error."""
+    problems: list[str] = []
+    workdir.mkdir(parents=True, exist_ok=True)
+    for atom in derived:
+        if atom.constraint_type != "floor":
+            continue
+        path = workdir / f"{atom.name}.cedar"
+        path.write_text(atom.reference_cedar)
+        denies, output = _run_symcc(
+            str(schema_path),
+            atom.principal_types[0],
+            atom.action,
+            atom.resource_types[0],
+            "always-denies",
+            ["--policies", str(path)],
+        )
+        if _is_symcc_tool_error(output):
+            problems.append(f"{atom.name}: the verifier could not check this slice: {output[:300]}")
+        elif denies:
+            problems.append(
+                f"{atom.name}: its conditions contradict each other, so no request of "
+                "this slice can be allowed.",
+            )
+        safety = _check_never_errors(atom, str(schema_path), workdir)
+        if not safety.passed:
+            problems.append(f"{atom.name}: its conditions together can raise a runtime error: "
+                            f"{safety.detail[:300]}")
+    return problems
 
 
 def _source_node_completion_blocker(
@@ -2022,7 +2914,12 @@ def _repair_named_prior_property(
     )
     if replacement is None:
         return False
-    replacement = attach_source_ids(replacement, source_ids_from_text(spec_text))
+    # The replacement revises the prior atom, so it grounds the prior's
+    # requirement, not the one whose packet asked for the repair.
+    replacement = attach_source_ids(
+        replace(replacement, source_excerpt=prior_atom.source_excerpt),
+        atom_source_ids(prior_atom),
+    )
     replacement = _align_repaired_property_atom(
         rejected_atom=prior_atom,
         replacement=replacement,
@@ -2135,71 +3032,279 @@ def _repair_schema_gap_and_validate(
     if draft is not None:
         for atom in approved_repairs:
             _route_into_schema_draft(atom, draft)
-        validation = compose_and_validate(
-            draft,
-            schema_path,
-            llm=_SchemaFixAdapter(fix_schema) if fix_schema is not None else None,
-            spec_text=spec_text,
-        )
-        schema_text = validation.schema_text
-        validation_log = [
-            {
-                "attempt_number": attempt.attempt_number,
-                "schema_text": attempt.schema_text,
-                "validator_passed": attempt.validator_passed,
-                "validator_error": attempt.validator_error,
-                "llm_was_called": attempt.llm_was_called,
-                "schema_override": False,
-                "schema_gap_repair": True,
-            }
-            for attempt in validation.attempts
-        ]
-        repair_record["schema_validation"] = validation_log
-        session.write_stage1_schema_validation(validation_log)
-        session.write_stage1_5_schema_gap_repairs(repair_records)
-        if not validation.succeeded:
-            return None
-        session.write_stage1_final_schema(schema_text)
-        return schema_text
 
+    # Apply the repair to the schema as it stands. Recomposing the draft would
+    # drop what the schema fixer added when the schema was first built (types
+    # it declared after a validation error), so the draft is only a fallback.
     amended_schema = apply_schema_atoms_to_text(schema_text, approved_repairs)
-    if amended_schema is None:
+    if amended_schema is not None:
+        schema_path.write_text(amended_schema)
+        schema_ok, schema_error = cedar_validate_schema(schema_path)
         repair_record["schema_validation"] = [
             {
                 "attempt_number": 1,
-                "schema_text": schema_text,
-                "validator_passed": False,
-                "validator_error": (
-                    "approved schema repair atoms could not be applied "
-                    "deterministically to the supplied schema"
-                ),
+                "schema_text": amended_schema,
+                "validator_passed": schema_ok,
+                "validator_error": "" if schema_ok else schema_error,
                 "llm_was_called": False,
-                "schema_override": True,
+                "schema_override": draft is None,
                 "schema_gap_repair": True,
             },
         ]
+        session.write_stage1_schema_validation(repair_record["schema_validation"])
         session.write_stage1_5_schema_gap_repairs(repair_records)
+        if schema_ok:
+            session.write_stage1_final_schema(amended_schema)
+            return amended_schema
+        schema_path.write_text(schema_text)
+    if draft is None:
+        if amended_schema is None:
+            repair_record["schema_validation"] = [
+                {
+                    "attempt_number": 1,
+                    "schema_text": schema_text,
+                    "validator_passed": False,
+                    "validator_error": (
+                        "approved schema repair atoms could not be applied "
+                        "deterministically to the supplied schema"
+                    ),
+                    "llm_was_called": False,
+                    "schema_override": True,
+                    "schema_gap_repair": True,
+                },
+            ]
+            session.write_stage1_5_schema_gap_repairs(repair_records)
         return None
-    schema_path.write_text(amended_schema)
-    schema_ok, schema_error = cedar_validate_schema(schema_path)
+
+    validation = compose_and_validate(
+        draft,
+        schema_path,
+        llm=_SchemaFixAdapter(fix_schema) if fix_schema is not None else None,
+        spec_text=spec_text,
+    )
     validation_log = [
         {
-            "attempt_number": 1,
-            "schema_text": amended_schema,
-            "validator_passed": schema_ok,
-            "validator_error": "" if schema_ok else schema_error,
-            "llm_was_called": False,
-            "schema_override": True,
+            "attempt_number": attempt.attempt_number,
+            "schema_text": attempt.schema_text,
+            "validator_passed": attempt.validator_passed,
+            "validator_error": attempt.validator_error,
+            "llm_was_called": attempt.llm_was_called,
+            "schema_override": False,
             "schema_gap_repair": True,
-        },
+        }
+        for attempt in validation.attempts
     ]
-    repair_record["schema_validation"] = validation_log
+    lost = (
+        sorted(schema_declarations(schema_text, cedar_path=CEDAR_PATH)
+               - schema_declarations(validation.schema_text, cedar_path=CEDAR_PATH))
+        if validation.succeeded
+        else []
+    )
+    if lost:
+        # A draft that never held what the schema fixer declared recomposes
+        # into a valid schema without it; that is not a repair.
+        validation_log.append({
+            "attempt_number": len(validation_log) + 1,
+            "schema_text": validation.schema_text,
+            "validator_passed": False,
+            "validator_error": "the recomposed schema drops declarations: " + ", ".join(lost),
+            "llm_was_called": False,
+            "schema_override": False,
+            "schema_gap_repair": True,
+        })
+    repair_record["schema_validation"] = list(repair_record.get("schema_validation") or []) + validation_log
     session.write_stage1_schema_validation(validation_log)
     session.write_stage1_5_schema_gap_repairs(repair_records)
-    if not schema_ok:
+    if not validation.succeeded or lost:
+        schema_path.write_text(schema_text)
         return None
-    session.write_stage1_final_schema(amended_schema)
-    return amended_schema
+    session.write_stage1_final_schema(validation.schema_text)
+    return validation.schema_text
+
+
+def _complete_schema_for_map(
+    *,
+    intent_map: IntentMap,
+    source_doc: Any,
+    spec_text: str,
+    schema_text: str,
+    schema_path: Path,
+    session: Session,
+    review_atom: AtomReviewer,
+    propose_schema_atoms: SchemaProposer,
+    nodes: list[str] | None = None,
+    note: str = "",
+) -> str:
+    """Noisy mode: add the fields the mapped requirements need, once, before Stage 2.
+
+    Stage 1 builds the schema from the whole document, noise included, and
+    can miss a field a requirement needs (a context flag, a set of courses).
+    With the schema fixed in Stage 2, such a requirement could only be
+    dropped. So the model reads the mapped requirements in batches and names
+    the missing entity attributes and action context fields; each is reviewed
+    and added on its own if Cedar validates the result. New entity types and
+    actions are not added here: the map has already settled which requests
+    exist. Records go to ``stage1_5/schema_completion.json``.
+
+    With ``nodes``, it asks once more for those requirements only, with
+    ``note`` (the Cedar error of an atom that used a field the schema lacks);
+    such records go to ``stage1_5/schema_completion_late.json``.
+    """
+    late = nodes is not None
+    record_path = session.base / "stage1_5" / (
+        "schema_completion_late.json" if late else "schema_completion.json"
+    )
+    saved = _read_json(record_path, {})
+    if saved.get("done") and not late:
+        # Already run (a resumed session): the schema in hand includes its
+        # fields and any added later, so keep it rather than the saved copy.
+        return schema_text
+    text = {node.id: node.text for node in source_doc.nodes}
+    if nodes is None:
+        nodes = [n for n in intent_map.condition_node_ids(source_doc) if intent_map.scopes_for_node(n)]
+    actions = {action for _, action, _ in schema_triples(schema_text, cedar_path=CEDAR_PATH)}
+    batches: list[dict[str, Any]] = list(saved.get("batches", [])) if late else []
+    _notify_review_stage(review_atom, "Schema completion review", None)
+    for start in range(0, len(nodes), SCHEMA_COMPLETION_BATCH):
+        batch = nodes[start:start + SCHEMA_COMPLETION_BATCH]
+        lines = [
+            f"- [{n}] {text.get(n, '')} (scopes: "
+            + "; ".join(f"{s.principal_type} / {s.action} / {s.resource_type}" for s in intent_map.scopes_for_node(n))
+            + ")"
+            for n in batch
+        ]
+        request = _schema_completion_spec(spec_text, schema_text, lines, note)
+        proposed = [attach_source_ids(atom, batch) for atom in propose_schema_atoms(request)]
+        record: dict[str, Any] = {"requirements": batch, "proposed": [to_dict(a) for a in proposed],
+                                  "decisions": [], "added": [], "skipped": []}
+        for atom in proposed:
+            if isinstance(atom, ActionAtom) and _bare_action_name(atom.name) not in actions:
+                record["skipped"].append({"atom": atom.name, "why": "new action"})
+                continue
+            if not isinstance(atom, (AttributeAtom, ActionAtom)):
+                record["skipped"].append({"atom": atom.name, "why": f"not a field ({type(atom).__name__})"})
+                continue
+            reviewed, decision = _normalize_review_result(atom, review_atom(atom))
+            record["decisions"].append(to_dict(decision))
+            if decision.action != "approve":
+                continue
+            patched = apply_schema_atoms_to_text(schema_text, [reviewed])
+            if patched is None:
+                record["skipped"].append({"atom": atom.name, "why": "could not be added to the schema text"})
+                continue
+            schema_path.write_text(patched)
+            ok, error = cedar_validate_schema(schema_path)
+            if not ok:
+                schema_path.write_text(schema_text)
+                record["skipped"].append({"atom": atom.name, "why": error[:500]})
+                continue
+            schema_text = patched
+            record["added"].append(atom.name)
+        batches.append(record)
+        write_json(record_path, {"done": False, "batches": batches, "schema_text": schema_text})
+    write_json(record_path, {"done": True, "batches": batches, "schema_text": schema_text})
+    session.write_stage1_final_schema(schema_text)
+    return schema_text
+
+
+_UNDECLARED_FIELD = re.compile(r"attribute\s+`[^`]+`.*?not\s+found|unknown attribute|has no attribute", re.S)
+
+
+def _undeclared_field_error(atom: PropertyAtom) -> str:
+    """The type-check failure of an atom that used a field the schema lacks, if any."""
+    for line in atom.symbolic_verification_log or []:
+        line = str(line)
+        if "type-correct: FAILED" in line and _UNDECLARED_FIELD.search(line):
+            return line[:1500]
+    return ""
+
+
+def _keep_unconditional_slice(
+    intent_map: IntentMap,
+    source_doc: Any,
+    scope: Any,
+    sl: Any,
+    others: list[Any],
+    review_atom: AtomReviewer,
+    answers: list[dict[str, Any]],
+) -> bool:
+    """Ask the reviewer whether a slice with no condition is a real permission."""
+    text = {node.id: node.text for node in source_doc.nodes}
+    question = SliceQuestion(
+        scope=scope,
+        sentences=[text.get(n, n) for n in intent_map.slice_conditions(sl.id)
+                   if n not in intent_map.restrictions(scope.id)],
+        other_slices=[
+            f"{o.summary or o.id}: " + " AND ".join(
+                text.get(n, n) for n in intent_map.slice_conditions(o.id)
+                if n not in intent_map.restrictions(scope.id)
+            )
+            for o in others
+        ],
+        outline=intent_map.outline,
+    )
+    _, decision = _normalize_review_result(question, review_atom(question))
+    keep = decision.action == "approve"
+    answers.append({
+        "scope_id": scope.id,
+        "slice": sl.id,
+        "keep": keep,
+        "reason": decision.reason or (decision.edit_delta or {}).get("model_review", ""),
+    })
+    return keep
+
+
+def _no_condition_nodes(
+    proposed: list[PropertyAtom], decisions: list[AtomDecision], approved: list[PropertyAtom],
+) -> set[str]:
+    """Requirements whose every proposed atom said `when { true }` and was rejected by model review.
+
+    Writer and reviewer then agree the sentence adds no condition; they differ
+    only on whether it needs an atom at all ("not an access-control
+    sentence"), so it can leave the map without changing what is allowed.
+    """
+    model_rejected = {
+        d.atom_name for d in decisions
+        if d.action == "reject" and (d.reason or "").startswith("Model review")
+    }
+    by_node: dict[str, list[PropertyAtom]] = {}
+    for atom in proposed:
+        for node_id in atom_source_ids(atom):
+            by_node.setdefault(node_id, []).append(atom)
+    solved = {node_id for atom in approved for node_id in atom_source_ids(atom)}
+    return {
+        node_id for node_id, atoms in by_node.items()
+        if node_id not in solved
+        and all(_states_no_condition(a.reference_cedar) and a.name in model_rejected for a in atoms)
+    }
+
+
+def _bare_action_name(name: str) -> str:
+    return name.split("::")[-1].strip('"')
+
+
+def _schema_completion_spec(
+    spec_text: str, schema_text: str, requirements: list[str], note: str = "",
+) -> str:
+    return (
+        f"{spec_text}\n\n"
+        "<schema_completion>\n"
+        "AutoCedar has mapped the access-control requirements below. Each one "
+        "must be written as a Cedar condition on its scope's principal, "
+        "resource, and request context, using only what the schema declares.\n\n"
+        "Requirements:\n" + "\n".join(requirements) + "\n\n"
+        + (f"A condition written for this requirement failed Cedar validation:\n{note}\n\n" if note else "")
+        + "Current Cedar schema:\n"
+        f"```cedarschema\n{schema_text}\n```\n\n"
+        "Propose ONLY the schema atoms these requirements still need: an "
+        "AttributeAtom for a missing field on an existing entity, or an "
+        "ActionAtom with an existing action's name that adds request context "
+        "attribute(s). Do not add entity types or actions, and do not repeat "
+        "what the schema already declares. Use types the schema already has. "
+        "If a requirement can be written with the declared fields, propose "
+        "nothing for it. Return an empty list if nothing is missing.\n"
+        "</schema_completion>\n"
+    )
 
 
 def _schema_gap_repair_spec(
@@ -2207,14 +3312,24 @@ def _schema_gap_repair_spec(
     schema_text: str,
     gap: dict[str, Any],
 ) -> str:
+    if gap.get("stage") == "intent_map":
+        lead = (
+            "AutoCedar is building the intent map. The map needs requests that "
+            "the current schema does not declare.\n\n"
+            f"Map reason: {gap.get('reason', '')}\n\n"
+        )
+    else:
+        lead = (
+            "AutoCedar is in Stage 2 property review. The human rejected a "
+            "property atom because the current schema cannot express a named "
+            "requirement boundary.\n\n"
+            f"Rejected property atom: {gap.get('atom_name', '')}\n"
+            f"HITL reason: {gap.get('reason', '')}\n\n"
+        )
     return (
         f"{spec_text}\n\n"
         "<schema_gap_repair>\n"
-        "AutoCedar is in Stage 2 property review. The human rejected a "
-        "property atom because the current schema cannot express a named "
-        "requirement boundary.\n\n"
-        f"Rejected property atom: {gap.get('atom_name', '')}\n"
-        f"HITL reason: {gap.get('reason', '')}\n\n"
+        f"{lead}"
         "Current Cedar schema:\n"
         f"```cedarschema\n{schema_text}\n```\n\n"
         "Propose ONLY the missing Stage 1 schema atom(s) required to express "

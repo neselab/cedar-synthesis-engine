@@ -31,6 +31,9 @@ ConstraintType = Literal[
     "liveness",
     "rate_limit",
     "disjointness",
+    # One condition of a slice in the intent map; AutoCedar calculates floors
+    # and ceilings from approved conditions (see autocedar.intent_map).
+    "condition",
 ]
 
 PRIMITIVE_CONSTRAINTS: tuple[str, ...] = ("ceiling", "floor", "liveness")
@@ -288,6 +291,24 @@ class VerificationPlanDraft:
     """
 
     properties: list[PropertyAtom] = field(default_factory=list)
+
+
+def request_environments(atom: PropertyAtom) -> list[tuple[str, str]]:
+    """Every (principal type, resource type) pair a property atom applies to.
+
+    ``cedar symcc`` checks one request environment at a time, so a bound over
+    two principal types needs one check per type. An empty side yields ``""``,
+    which callers treat as a misconfigured atom.
+    """
+    principals = list(atom.principal_types) or [""]
+    resources = list(atom.resource_types) or [""]
+    return [(p, r) for p in principals for r in resources]
+
+
+def shared_environments(a: PropertyAtom, b: PropertyAtom) -> list[tuple[str, str]]:
+    """Request environments both atoms apply to, in ``a``'s order."""
+    other = set(request_environments(b))
+    return [env for env in request_environments(a) if env in other]
 
 
 # ---------------------------------------------------------------------------

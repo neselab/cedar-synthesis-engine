@@ -1,0 +1,15 @@
+{
+  "name": "neselab",
+  "owner": {
+    "name": "neselab",
+    "url": "https://github.com/neselab"
+  },
+  "description": "Plugins from the AutoCedar project.",
+  "plugins": [
+    {
+      "name": "autocedar",
+      "source": "./plugins/autocedar",
+      "description": "Author Cedar access-control policies from natural-language requirements with human-reviewed targets and symbolic verification."
+    }
+  ]
+}

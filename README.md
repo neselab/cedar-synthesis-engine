@@ -221,6 +221,37 @@ directory.
 The Docker image pins Cedar CLI 4.10.0 with SymCC `analyze` enabled and installs
 CVC5 in the image. It should not depend on your host machine's Cedar or CVC5.
 
+### Option D: Plugin For Claude Code Or Codex
+
+AutoCedar also ships as an agent plugin. The plugin adds an `autocedar` skill and
+an MCP server (`autocedar mcp`) with six tools:
+
+- `doctor` and `verify`;
+- `author_start`, `author_status`, `author_review` and `author_pause`.
+
+The agent drives the authoring pipeline and shows you each atom. You still decide
+every atom: the agent relays your approve, reject, or edit decision and is told
+never to decide on its own.
+
+Claude Code:
+
+```bash
+claude plugin marketplace add neselab/cedar-synthesis-engine
+claude plugin install autocedar@neselab
+```
+
+Codex:
+
+```bash
+codex plugin marketplace add neselab/cedar-synthesis-engine
+codex plugin add autocedar@neselab
+```
+
+The server starts through `uvx`, so [uv](https://docs.astral.sh/uv/) must be on
+your `PATH`. Ask the agent to run `doctor` first; it reports missing Cedar or CVC5
+with the fix. Inside Claude Code, the `claude-cli` provider reuses your Claude
+Code login; inside Codex, the `codex` provider reuses your Codex login.
+
 ### First Things To Type
 
 Once the TUI opens, try:
@@ -404,13 +435,48 @@ be a boolean flag, use `E cedar_type=Bool`. AutoCedar re-presents the edited
 atom before you approve it. If you edit a property atom, symbolic checks are
 rerun after approval so stale verification results are not reused.
 
-After the schema is established, AutoCedar asks the model for bounded local
-Stage 2 property bundles from a source packet plus the current schema and
-approved target. This cuts repeated model round trips without changing the
-review contract: each returned property atom is still symbolically checked and
-sent through HITL review one by one before it can enter the formal target. Each
-source packet records the current source node, nearby clauses, related
-definitions, approved atoms, and prior review history.
+After the schema is established, AutoCedar maps the whole document before it
+writes any property. The **intent map** is a task graph in the style of LEAP's
+AND-OR proof blueprint:
+
+- a **scope** is the requests for one principal type, action, and resource
+  type; a request is allowed when one of the scope's slices holds;
+- a **slice** is one way to be allowed; all of its conditions must hold;
+- a **condition** is a requirement sentence, attached to the slices it
+  constrains (or to a whole scope it restricts);
+- **rules for interpretation** (how "unless" clauses work, what brackets mean)
+  go with every later step; every other sentence carries no requirement.
+
+You review the map first, with the same keys: `A` approves it, `R reason` sends
+it back to the model with your reason, and `S` shows it as JSON. With
+`--model-review`, the model reviewer names each objection (move a condition,
+add a missing one, reclassify or drop a sentence, unmark a scope); AutoCedar
+applies those itself and reviews the map again, and sends any other objection
+back to the mapper. The map cannot
+be edited field by field. AutoCedar also checks its structure: every scope's
+action and types exist in the schema, every slice has a condition, and every
+condition has a slice.
+
+Each scope is marked complete when the document says it lists every way to
+allow it ("only", "if and only if", or "deny anything else"), and unmarked
+otherwise. If any scope
+is unmarked, AutoCedar asks once after you approve the map: is the list of
+permissions complete? `A` answers yes (anything not allowed is denied) and `R`
+answers no (the listed permissions are examples). With `--model-review`, the
+model answers, and the answer is recorded as the model's assumption in
+`stage0/intent_map.json`.
+
+Then AutoCedar asks for one **condition atom** per condition and scope: the
+Cedar for exactly that requirement. Each call receives the requirement, the
+other conditions of its slice, the scope's approved conditions, and the rules
+for interpretation, all taken from the map. Each atom is symbolically checked
+and reviewed one by one. A requirement counts as done only when every scope it
+applies to has an approved atom; after three failed attempts, AutoCedar stops
+before synthesis and names the requirement. AutoCedar then calculates the
+floors and ceilings itself: a slice's floor joins its conditions with AND, and
+a scope's floors are joined with OR. When the document lists every way to allow
+a scope, its ceiling is the same set of permits, so the plan is exact. It also
+checks that no slice's conditions contradict each other.
 During this stage, AutoCedar prints property progress and shows a TUI progress
 bar over source packets, with details such as the current source packet, open
 source-node count, approved/rejected atom count, and queued atoms so long
@@ -876,6 +942,19 @@ uv run autocedar synthesize cedarbench/scenarios/realworld/emergency_break_glass
   --phase1-model gpt-5.5 \
   --phase2-model gpt-5.5
 ```
+
+`author` and `resume` pause for you to review each atom. When no person is
+available, as in batch experiments, add `--model-review`: the model then judges
+each atom against the requirements in your place, checking that the text
+supports it, that it applies to the right action and types, and that its Cedar
+matches its summary. Rejected atoms go to the repair planner with the reason.
+Model review is recorded as such and never counts as human approval.
+`--auto-approve`, the flag's earlier name, still works and means the same thing.
+By default the model that writes the atoms also reviews them. To review with a
+different model, add `--review-provider` and/or `--review-model`, for example
+`--provider claude-cli --model claude-haiku-4-5 --model-review --review-provider
+codex --review-model gpt-6.1-sol`. Each model decision records the model that
+made it (`review_model` in `stage2/decisions.json`).
 
 ### Output Files
 

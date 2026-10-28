@@ -1,0 +1,98 @@
+[
+  {
+    "atom_name": "p0003_submitStep1_author_during_step1",
+    "reviewer_reason": "Symbolic verification failed; the atom cannot enter the target. type-correct: FAILED (cedar validate rc=1: \u00d7 failed to parse policy set\n  \u2570\u2500\u25b6 expected an entity uid, found name `submitStep1`\n   \u256d\u2500\u2500\u2500\u2500\n 1 \u2502 permit (principal is User, action == submitStep1, resource is Submission) when { resource.authors.contains(principal) && resource.step1Open };\n   \u00b7                                      \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n   \u2570\u2500)",
+    "action": "repair_current_property",
+    "target_atom": null,
+    "reason": "Cedar syntax error: action reference missing `Action::` prefix. The action must be `Action::\"submitStep1\"` not `submitStep1`.",
+    "repair_instruction": "Fix the reference_cedar policy by changing `action == submitStep1` to `action == Action::\"submitStep1\"`. The complete corrected policy should be: `permit (principal is User, action == Action::\"submitStep1\", resource is Submission) when { resource.authors.contains(principal) && resource.step1Open };`",
+    "schema_gap_summary": "",
+    "symbolic_log": [
+      "type-correct: FAILED (cedar validate rc=1: \u00d7 failed to parse policy set\n  \u2570\u2500\u25b6 expected an entity uid, found name `submitStep1`\n   \u256d\u2500\u2500\u2500\u2500\n 1 \u2502 permit (principal is User, action == submitStep1, resource is Submission) when { resource.authors.contains(principal) && resource.step1Open };\n   \u00b7                                      \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n   \u2570\u2500)"
+    ]
+  },
+  {
+    "atom_name": "submitCameraReady_author_selected_reviewed",
+    "reviewer_reason": "Symbolic verification failed; the atom cannot enter the target. type-correct: FAILED (cedar validate rc=1: \u00d7 failed to parse policy set\n  \u2570\u2500\u25b6 type constraints using `:` are not supported\n   \u256d\u2500[1:20]\n 1 \u2502 permit (principal: User, action == submitCameraReady, resource: Submission) when {\n   \u00b7                    \u2500\u2500\u2500\u2500\n 2 \u2502     resource.authors.contains(principal) &&\n   \u2570\u2500\u2500\u2500\u2500\n  help: try using `is` instead\n\nE)",
+    "action": "repair_current_property",
+    "target_atom": null,
+    "reason": "The atom encodes the correct intent and logic, but the Cedar syntax is invalid. The code uses `:` for type constraints (e.g., `principal: User`), but Cedar requires `is` (e.g., `principal is User`). Additionally, the action name must be qualified with `Action::` to match the valid schema and prior approved atoms.",
+    "repair_instruction": "Correct the Cedar policy syntax:\n\n1. Replace `principal: User` with `principal is User`\n2. Replace `resource: Submission` with `resource is Submission`  \n3. Replace `action == submitCameraReady` with `action == Action::\"submitCameraReady\"`\n\nThe corrected policy should be:\n```cedar\npermit (principal is User, action == Action::\"submitCameraReady\", resource is Submission) when {\n    resource.authors.contains(principal) &&\n    resource.selected &&\n    resource.reviewProcessDone\n};\n```\n\nThis follows the exact Cedar syntax pattern used in all prior approved atoms for this scope (submitStep1, submitFullPaper, updateStep1Info).",
+    "schema_gap_summary": "",
+    "symbolic_log": [
+      "type-correct: FAILED (cedar validate rc=1: \u00d7 failed to parse policy set\n  \u2570\u2500\u25b6 type constraints using `:` are not supported\n   \u256d\u2500[1:20]\n 1 \u2502 permit (principal: User, action == submitCameraReady, resource: Submission) when {\n   \u00b7                    \u2500\u2500\u2500\u2500\n 2 \u2502     resource.authors.contains(principal) &&\n   \u2570\u2500\u2500\u2500\u2500\n  help: try using `is` instead\n\nE)"
+    ]
+  },
+  {
+    "atom_name": "assigned_reviewer_post_distribution_not_conflicted",
+    "reviewer_reason": "Symbolic verification failed; the atom cannot enter the target. type-correct: FAILED (cedar validate rc=1: \u00d7 failed to parse policy set\n  \u2570\u2500\u25b6 expected an entity uid, found name `downloadPaper`\n   \u256d\u2500\u2500\u2500\u2500\n 1 \u2502 permit (principal is User, action == downloadPaper, resource is Submission) when { resource.assignedReviewers.contains(principal) && resource.distributionDone && !(resource.conflictedReviewers.contain)",
+    "action": "repair_current_property",
+    "target_atom": null,
+    "reason": "The Cedar policy has a syntax error: action values must be entity UIDs in the format `Action::\"actionName\"`, not bare names. The current atom writes `action == downloadPaper` but Cedar requires `action == Action::\"downloadPaper\"`. All prior approved atoms in this scope correctly use `Action::` prefix (e.g., `action == Action::\"submitStep1\"`, `action == Action::\"submitCameraReady\"`). The intent and logic are correct; only the syntax needs repair.",
+    "repair_instruction": "Change the reference_cedar field from:\n```cedar\npermit (principal is User, action == downloadPaper, resource is Submission) when { resource.assignedReviewers.contains(principal) && resource.distributionDone && !(resource.conflictedReviewers.contains(principal)) };\n```\nto:\n```cedar\npermit (principal is User, action == Action::\"downloadPaper\", resource is Submission) when { resource.assignedReviewers.contains(principal) && resource.distributionDone && !(resource.conflictedReviewers.contains(principal)) };\n```\nThis matches the Cedar syntax pattern used by all prior approved atoms in the scope.",
+    "schema_gap_summary": "",
+    "symbolic_log": [
+      "type-correct: FAILED (cedar validate rc=1: \u00d7 failed to parse policy set\n  \u2570\u2500\u25b6 expected an entity uid, found name `downloadPaper`\n   \u256d\u2500\u2500\u2500\u2500\n 1 \u2502 permit (principal is User, action == downloadPaper, resource is Submission) when { resource.assignedReviewers.contains(principal) && resource.distributionDone && !(resource.conflictedReviewers.contain)"
+    ]
+  },
+  {
+    "atom_name": "assigned-non-conflicted-reviewer-submit",
+    "reviewer_reason": "Symbolic verification failed; the atom cannot enter the target. type-correct: FAILED (cedar validate rc=1: \u00d7 failed to parse policy set\n  \u2570\u2500\u25b6 expected an entity uid, found name `submitReview`\n   \u256d\u2500\u2500\u2500\u2500\n 1 \u2502 permit (principal is User, action == submitReview, resource is Submission) when { resource.assignedReviewers.contains(principal) && !resource.conflictedReviewers.contains(principal) && resource.reviewO)",
+    "action": "repair_current_property",
+    "target_atom": null,
+    "reason": "Cedar syntax error: actions must be entity UIDs with `Action::` prefix. Current atom uses bare `submitReview` instead of `Action::\"submitReview\"`, matching the pattern in all approved atoms.",
+    "repair_instruction": "Change the reference_cedar from `action == submitReview` to `action == Action::\"submitReview\"`. The corrected policy should be:\n\n```cedar\npermit (principal is User, action == Action::\"submitReview\", resource is Submission) when { resource.assignedReviewers.contains(principal) && !resource.conflictedReviewers.contains(principal) && resource.reviewOpen };\n```\n\nThis matches the Cedar syntax pattern used in all prior approved atoms.",
+    "schema_gap_summary": "",
+    "symbolic_log": [
+      "type-correct: FAILED (cedar validate rc=1: \u00d7 failed to parse policy set\n  \u2570\u2500\u25b6 expected an entity uid, found name `submitReview`\n   \u256d\u2500\u2500\u2500\u2500\n 1 \u2502 permit (principal is User, action == submitReview, resource is Submission) when { resource.assignedReviewers.contains(principal) && !resource.conflictedReviewers.contains(principal) && resource.reviewO)"
+    ]
+  },
+  {
+    "atom_name": "assigned-non-conflicted-reviewer-update",
+    "reviewer_reason": "Symbolic verification failed; the atom cannot enter the target. type-correct: FAILED (cedar validate rc=1: \u00d7 failed to parse policy set\n  \u2570\u2500\u25b6 expected an entity uid, found name `updateReview`\n   \u256d\u2500\u2500\u2500\u2500\n 1 \u2502 permit (principal is User, action == updateReview, resource is Submission) when { resource.assignedReviewers.contains(principal) && !resource.conflictedReviewers.contains(principal) && resource.reviewO)",
+    "action": "repair_current_property",
+    "target_atom": null,
+    "reason": "Cedar syntax error: action values must be wrapped as `Action::\"actionName\"`. The atom's condition logic and intent are correct; only the Cedar policy syntax is broken.",
+    "repair_instruction": "Replace `action == updateReview` with `action == Action::\"updateReview\"` in the reference_cedar policy to match the correct Cedar entity UID syntax used in all prior approved atoms.",
+    "schema_gap_summary": "",
+    "symbolic_log": [
+      "type-correct: FAILED (cedar validate rc=1: \u00d7 failed to parse policy set\n  \u2570\u2500\u25b6 expected an entity uid, found name `updateReview`\n   \u256d\u2500\u2500\u2500\u2500\n 1 \u2502 permit (principal is User, action == updateReview, resource is Submission) when { resource.assignedReviewers.contains(principal) && !resource.conflictedReviewers.contains(principal) && resource.reviewO)"
+    ]
+  },
+  {
+    "atom_name": "PCC_asks_additional_reviewer_for_low_expertise_paper",
+    "reviewer_reason": "Symbolic verification failed; the atom cannot enter the target. type-correct: FAILED (cedar validate rc=1: \u00d7 failed to parse policy set\n  \u2570\u2500\u25b6 expected an entity uid, found name `askAdditionalReviewer`\n   \u256d\u2500[1:38]\n 1 \u2502 permit (principal is User, action == askAdditionalReviewer, resource is ReviewOverview) when {\n   \u00b7                                      \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n 2 \u2502   principal.role == \"PCC\")",
+    "action": "repair_current_property",
+    "target_atom": null,
+    "reason": "Cedar syntax error: action must use the `Action::` prefix and be quoted. The error \"expected an entity uid, found name\" occurs because `askAdditionalReviewer` is bare; Cedar requires `Action::\"askAdditionalReviewer\"`.",
+    "repair_instruction": "In the reference_cedar field, change `action == askAdditionalReviewer` to `action == Action::\"askAdditionalReviewer\"` to match Cedar's action syntax, consistent with all prior approved atoms (e.g., `monitorReviewProcess` uses `action == Action::\"monitorReviewProcess\"`). The condition logic itself is correct.",
+    "schema_gap_summary": "",
+    "symbolic_log": [
+      "type-correct: FAILED (cedar validate rc=1: \u00d7 failed to parse policy set\n  \u2570\u2500\u25b6 expected an entity uid, found name `askAdditionalReviewer`\n   \u256d\u2500[1:38]\n 1 \u2502 permit (principal is User, action == askAdditionalReviewer, resource is ReviewOverview) when {\n   \u00b7                                      \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n 2 \u2502   principal.role == \"PCC\")"
+    ]
+  },
+  {
+    "atom_name": "reviewer_directory_allowed_users",
+    "reviewer_reason": "Symbolic verification failed; the atom cannot enter the target. type-correct: FAILED (cedar validate rc=1: \u00d7 failed to parse policy set\n  \u2570\u2500\u25b6 expected an entity uid, found name `accessReviewerDirectory`\n   \u256d\u2500\u2500\u2500\u2500\n 1 \u2502 permit (principal is User, action == accessReviewerDirectory, resource is ReviewerDirectory) when { resource.allowedUsers.contains(principal) };\n   \u00b7                                      \u2500\u2500\u2500)",
+    "action": "repair_current_property",
+    "target_atom": null,
+    "reason": "Cedar syntax error: action comparisons must use the `Action::` namespace prefix. The atom's intent and logic are correct; only the Cedar code requires repair.",
+    "repair_instruction": "Change the reference_cedar policy from:\n```\npermit (principal is User, action == accessReviewerDirectory, resource is ReviewerDirectory) when { resource.allowedUsers.contains(principal) };\n```\nto:\n```\npermit (principal is User, action == Action::\"accessReviewerDirectory\", resource is ReviewerDirectory) when { resource.allowedUsers.contains(principal) };\n```\n\nThis matches the Cedar syntax pattern used in all prior approved atoms.",
+    "schema_gap_summary": "",
+    "symbolic_log": [
+      "type-correct: FAILED (cedar validate rc=1: \u00d7 failed to parse policy set\n  \u2570\u2500\u25b6 expected an entity uid, found name `accessReviewerDirectory`\n   \u256d\u2500\u2500\u2500\u2500\n 1 \u2502 permit (principal is User, action == accessReviewerDirectory, resource is ReviewerDirectory) when { resource.allowedUsers.contains(principal) };\n   \u00b7                                      \u2500\u2500\u2500)"
+    ]
+  },
+  {
+    "atom_name": "review_file_directory_protection",
+    "reviewer_reason": "Symbolic verification failed; the atom cannot enter the target. type-correct: FAILED (cedar validate rc=1: \u00d7 failed to parse policy set\n  \u2570\u2500\u25b6 expected an entity uid, found name `readReviewFile`\n   \u256d\u2500\u2500\u2500\u2500\n 1 \u2502 permit (principal is User, action == readReviewFile, resource is ReviewFile) when { resource.directory.allowedUsers.contains(principal) };\n   \u00b7                                      \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n   )",
+    "action": "repair_current_property",
+    "target_atom": null,
+    "reason": "Cedar syntax error: action reference must use `Action::` prefix. The atom's intent and logic are correct; only the action reference syntax needs correction to match Cedar's entity uid format.",
+    "repair_instruction": "Change `action == readReviewFile` to `action == Action::\\\"readReviewFile\\\"` in the reference_cedar field. This matches the syntax used in all prior approved atoms (e.g., `Action::\\\"submitStep1\\\"`).",
+    "schema_gap_summary": "",
+    "symbolic_log": [
+      "type-correct: FAILED (cedar validate rc=1: \u00d7 failed to parse policy set\n  \u2570\u2500\u25b6 expected an entity uid, found name `readReviewFile`\n   \u256d\u2500\u2500\u2500\u2500\n 1 \u2502 permit (principal is User, action == readReviewFile, resource is ReviewFile) when { resource.directory.allowedUsers.contains(principal) };\n   \u00b7                                      \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n   )"
+    ]
+  }
+]

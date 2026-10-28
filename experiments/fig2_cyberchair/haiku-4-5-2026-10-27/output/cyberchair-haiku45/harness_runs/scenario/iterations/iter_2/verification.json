@@ -1,0 +1,344 @@
+{
+  "loss": 0,
+  "results": [
+    {
+      "check_name": "floor__submitstep1__slice_p0003",
+      "check_type": "implies",
+      "description": "Requests in slice 'Author, during step 1' must be allowed.",
+      "passed": true,
+      "counterexample": "",
+      "tool_error": false
+    },
+    {
+      "check_name": "ceiling__submitstep1",
+      "check_type": "implies",
+      "description": "Only requests in one of this scope's slices may be allowed.",
+      "passed": true,
+      "counterexample": "",
+      "tool_error": false
+    },
+    {
+      "check_name": "floor__submitfullpaper__slice_p0004",
+      "check_type": "implies",
+      "description": "Requests in slice 'Author with step-2 credentials, during step 2' must be allowed.",
+      "passed": true,
+      "counterexample": "",
+      "tool_error": false
+    },
+    {
+      "check_name": "ceiling__submitfullpaper",
+      "check_type": "implies",
+      "description": "Only requests in one of this scope's slices may be allowed.",
+      "passed": true,
+      "counterexample": "",
+      "tool_error": false
+    },
+    {
+      "check_name": "floor__updatestep1info__slice_p0005",
+      "check_type": "implies",
+      "description": "Requests in slice 'Author, during step 2' must be allowed.",
+      "passed": true,
+      "counterexample": "",
+      "tool_error": false
+    },
+    {
+      "check_name": "ceiling__updatestep1info",
+      "check_type": "implies",
+      "description": "Only requests in one of this scope's slices may be allowed.",
+      "passed": true,
+      "counterexample": "",
+      "tool_error": false
+    },
+    {
+      "check_name": "floor__submitcameraready__slice_p0006",
+      "check_type": "implies",
+      "description": "Requests in slice 'Author of selected submission, after review' must be allowed.",
+      "passed": true,
+      "counterexample": "",
+      "tool_error": false
+    },
+    {
+      "check_name": "ceiling__submitcameraready",
+      "check_type": "implies",
+      "description": "Only requests in one of this scope's slices may be allowed.",
+      "passed": true,
+      "counterexample": "",
+      "tool_error": false
+    },
+    {
+      "check_name": "floor__downloadpaper__slice_p0007",
+      "check_type": "implies",
+      "description": "Requests in slice 'Assigned reviewer, after paper distribution, not conflicted' must be allowed.",
+      "passed": true,
+      "counterexample": "",
+      "tool_error": false
+    },
+    {
+      "check_name": "ceiling__downloadpaper",
+      "check_type": "implies",
+      "description": "Only requests in one of this scope's slices may be allowed.",
+      "passed": true,
+      "counterexample": "",
+      "tool_error": false
+    },
+    {
+      "check_name": "floor__submitreview__slice_p0008_submit",
+      "check_type": "implies",
+      "description": "Requests in slice 'Assigned non-conflicted reviewer, while review open' must be allowed.",
+      "passed": true,
+      "counterexample": "",
+      "tool_error": false
+    },
+    {
+      "check_name": "ceiling__submitreview",
+      "check_type": "implies",
+      "description": "Only requests in one of this scope's slices may be allowed.",
+      "passed": true,
+      "counterexample": "",
+      "tool_error": false
+    },
+    {
+      "check_name": "floor__updatereview__slice_p0008_update",
+      "check_type": "implies",
+      "description": "Requests in slice 'Assigned non-conflicted reviewer, while review open' must be allowed.",
+      "passed": true,
+      "counterexample": "",
+      "tool_error": false
+    },
+    {
+      "check_name": "ceiling__updatereview",
+      "check_type": "implies",
+      "description": "Only requests in one of this scope's slices may be allowed.",
+      "passed": true,
+      "counterexample": "",
+      "tool_error": false
+    },
+    {
+      "check_name": "floor__readotherreviews__slice_p0009",
+      "check_type": "implies",
+      "description": "Requests in slice 'Reviewer who submitted own review for paper' must be allowed.",
+      "passed": true,
+      "counterexample": "",
+      "tool_error": false
+    },
+    {
+      "check_name": "ceiling__readotherreviews",
+      "check_type": "implies",
+      "description": "Only requests in one of this scope's slices may be allowed.",
+      "passed": true,
+      "counterexample": "",
+      "tool_error": false
+    },
+    {
+      "check_name": "floor__declareconflict__slice_p0010",
+      "check_type": "implies",
+      "description": "Requests in slice 'Reviewer, for assigned paper' must be allowed.",
+      "passed": true,
+      "counterexample": "",
+      "tool_error": false
+    },
+    {
+      "check_name": "ceiling__declareconflict",
+      "check_type": "implies",
+      "description": "Only requests in one of this scope's slices may be allowed.",
+      "passed": true,
+      "counterexample": "",
+      "tool_error": false
+    },
+    {
+      "check_name": "floor__volunteerforconflictingpaper__slice_p0011",
+      "check_type": "implies",
+      "description": "Requests in slice 'Reviewer, completed all assignments, not conflicted with paper' must be allowed.",
+      "passed": true,
+      "counterexample": "",
+      "tool_error": false
+    },
+    {
+      "check_name": "ceiling__volunteerforconflictingpaper",
+      "check_type": "implies",
+      "description": "Only requests in one of this scope's slices may be allowed.",
+      "passed": true,
+      "counterexample": "",
+      "tool_error": false
+    },
+    {
+      "check_name": "floor__monitorreviewprocess__slice_p0012",
+      "check_type": "implies",
+      "description": "Requests in slice 'Chair or PCC' must be allowed.",
+      "passed": true,
+      "counterexample": "",
+      "tool_error": false
+    },
+    {
+      "check_name": "ceiling__monitorreviewprocess",
+      "check_type": "implies",
+      "description": "Only requests in one of this scope's slices may be allowed.",
+      "passed": true,
+      "counterexample": "",
+      "tool_error": false
+    },
+    {
+      "check_name": "floor__askadditionalreviewer__slice_p0013",
+      "check_type": "implies",
+      "description": "Requests in slice 'PCC' must be allowed.",
+      "passed": true,
+      "counterexample": "",
+      "tool_error": false
+    },
+    {
+      "check_name": "ceiling__askadditionalreviewer",
+      "check_type": "implies",
+      "description": "Only requests in one of this scope's slices may be allowed.",
+      "passed": true,
+      "counterexample": "",
+      "tool_error": false
+    },
+    {
+      "check_name": "floor__accessreviewerdirectory__slice_p0014_dir",
+      "check_type": "implies",
+      "description": "Requests in slice 'User on allowed-user list' must be allowed.",
+      "passed": true,
+      "counterexample": "",
+      "tool_error": false
+    },
+    {
+      "check_name": "ceiling__accessreviewerdirectory",
+      "check_type": "implies",
+      "description": "Only requests in one of this scope's slices may be allowed.",
+      "passed": true,
+      "counterexample": "",
+      "tool_error": false
+    },
+    {
+      "check_name": "floor__readreviewfile__slice_p0014_file",
+      "check_type": "implies",
+      "description": "Requests in slice 'User on allowed-user list' must be allowed.",
+      "passed": true,
+      "counterexample": "",
+      "tool_error": false
+    },
+    {
+      "check_name": "ceiling__readreviewfile",
+      "check_type": "implies",
+      "description": "Only requests in one of this scope's slices may be allowed.",
+      "passed": true,
+      "counterexample": "",
+      "tool_error": false
+    },
+    {
+      "check_name": "no_runtime_errors__submitStep1__User__Submission",
+      "check_type": "never-errors",
+      "description": "The policy must never raise an evaluation error for submitStep1 requests (principal User, resource Submission).",
+      "passed": true,
+      "counterexample": "",
+      "tool_error": false
+    },
+    {
+      "check_name": "no_runtime_errors__submitFullPaper__User__Submission",
+      "check_type": "never-errors",
+      "description": "The policy must never raise an evaluation error for submitFullPaper requests (principal User, resource Submission).",
+      "passed": true,
+      "counterexample": "",
+      "tool_error": false
+    },
+    {
+      "check_name": "no_runtime_errors__updateStep1Info__User__Submission",
+      "check_type": "never-errors",
+      "description": "The policy must never raise an evaluation error for updateStep1Info requests (principal User, resource Submission).",
+      "passed": true,
+      "counterexample": "",
+      "tool_error": false
+    },
+    {
+      "check_name": "no_runtime_errors__submitCameraReady__User__Submission",
+      "check_type": "never-errors",
+      "description": "The policy must never raise an evaluation error for submitCameraReady requests (principal User, resource Submission).",
+      "passed": true,
+      "counterexample": "",
+      "tool_error": false
+    },
+    {
+      "check_name": "no_runtime_errors__downloadPaper__User__Submission",
+      "check_type": "never-errors",
+      "description": "The policy must never raise an evaluation error for downloadPaper requests (principal User, resource Submission).",
+      "passed": true,
+      "counterexample": "",
+      "tool_error": false
+    },
+    {
+      "check_name": "no_runtime_errors__submitReview__User__Submission",
+      "check_type": "never-errors",
+      "description": "The policy must never raise an evaluation error for submitReview requests (principal User, resource Submission).",
+      "passed": true,
+      "counterexample": "",
+      "tool_error": false
+    },
+    {
+      "check_name": "no_runtime_errors__updateReview__User__Submission",
+      "check_type": "never-errors",
+      "description": "The policy must never raise an evaluation error for updateReview requests (principal User, resource Submission).",
+      "passed": true,
+      "counterexample": "",
+      "tool_error": false
+    },
+    {
+      "check_name": "no_runtime_errors__readOtherReviews__User__Submission",
+      "check_type": "never-errors",
+      "description": "The policy must never raise an evaluation error for readOtherReviews requests (principal User, resource Submission).",
+      "passed": true,
+      "counterexample": "",
+      "tool_error": false
+    },
+    {
+      "check_name": "no_runtime_errors__declareConflict__User__Submission",
+      "check_type": "never-errors",
+      "description": "The policy must never raise an evaluation error for declareConflict requests (principal User, resource Submission).",
+      "passed": true,
+      "counterexample": "",
+      "tool_error": false
+    },
+    {
+      "check_name": "no_runtime_errors__volunteerForConflictingPaper__User__Submission",
+      "check_type": "never-errors",
+      "description": "The policy must never raise an evaluation error for volunteerForConflictingPaper requests (principal User, resource Submission).",
+      "passed": true,
+      "counterexample": "",
+      "tool_error": false
+    },
+    {
+      "check_name": "no_runtime_errors__monitorReviewProcess__User__ReviewOverview",
+      "check_type": "never-errors",
+      "description": "The policy must never raise an evaluation error for monitorReviewProcess requests (principal User, resource ReviewOverview).",
+      "passed": true,
+      "counterexample": "",
+      "tool_error": false
+    },
+    {
+      "check_name": "no_runtime_errors__askAdditionalReviewer__User__ReviewOverview",
+      "check_type": "never-errors",
+      "description": "The policy must never raise an evaluation error for askAdditionalReviewer requests (principal User, resource ReviewOverview).",
+      "passed": true,
+      "counterexample": "",
+      "tool_error": false
+    },
+    {
+      "check_name": "no_runtime_errors__accessReviewerDirectory__User__ReviewerDirectory",
+      "check_type": "never-errors",
+      "description": "The policy must never raise an evaluation error for accessReviewerDirectory requests (principal User, resource ReviewerDirectory).",
+      "passed": true,
+      "counterexample": "",
+      "tool_error": false
+    },
+    {
+      "check_name": "no_runtime_errors__readReviewFile__User__ReviewFile",
+      "check_type": "never-errors",
+      "description": "The policy must never raise an evaluation error for readReviewFile requests (principal User, resource ReviewFile).",
+      "passed": true,
+      "counterexample": "",
+      "tool_error": false
+    }
+  ],
+  "solver_time_s": 2.004890374955721,
+  "reused_verification": false,
+  "prompt_characters": 52176
+}

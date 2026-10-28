@@ -4,6 +4,7 @@ Solver Wrapper for the Cedar Synthesis Engine.
 Uses Cedar CLI v4.10+ with `symcc` subcommand for formal verification.
 The solver uses CVC5 under the hood — no @domain annotations needed.
 """
+from autocedar.cedar_text import is_template, split_policies
 from autocedar.symcc_result import formal_verdict
 
 import json
@@ -168,18 +169,33 @@ def _run_symcc(
         passed = formal_verdict(output) is True
         return passed, output
     except subprocess.TimeoutExpired:
-        return False, "Cedar symcc execution error: CVC5 solver timed out (30s limit)."
+        return False, (
+            "Cedar symcc execution error: CVC5 solver timed out "
+            f"({_symcc_timeout():g}s, then {SYMCC_RETRY_FACTOR * _symcc_timeout():g}s)."
+        )
     except FileNotFoundError:
         return False, f"Cedar CLI not found at {CEDAR_PATH}. Set CEDAR env var."
 
 
+SYMCC_RETRY_FACTOR = 4
+
+
+def _symcc_timeout() -> float:
+    try:
+        return max(float(os.environ.get("AUTOCEDAR_SYMCC_TIMEOUT_SECONDS", "30")), 1.0)
+    except ValueError:
+        return 30.0
+
+
 def _run_symcc_command(cmd: list[str]) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        cmd,
-        capture_output=True,
-        text=True,
-        timeout=30,
-    )
+    # A large candidate can outlast the limit on one check while the next run
+    # of the same check passes; a timeout is a tool limit, not a verdict, so
+    # one longer attempt follows before it counts as a tool error.
+    timeout = _symcc_timeout()
+    try:
+        return subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+    except subprocess.TimeoutExpired:
+        return subprocess.run(cmd, capture_output=True, text=True, timeout=SYMCC_RETRY_FACTOR * timeout)
 
 
 def _with_plain_error_format(extra_args: list[str]) -> list[str]:
@@ -398,18 +414,71 @@ def run_never_errors_check(
     principal_type: str,
     action: str,
     resource_type: str,
+    check_name: str = "no_runtime_errors",
+    description: str = "Policy must not produce runtime errors for any input",
 ) -> CheckResult:
-    """Check: policy never produces runtime errors."""
-    passed, output = _run_symcc(
-        schema_path, principal_type, action, resource_type,
-        "never-errors",
-        ["--policies", candidate_path],
-    )
-    return CheckResult(
-        check_name="no_runtime_errors",
-        check_type="never-errors",
-        description="Policy must not produce runtime errors for any input",
-        passed=passed,
-        counterexample="" if passed else output,
-        tool_error=_is_symcc_tool_error(output),
-    )
+    """Check: no policy in the candidate can raise a runtime error.
+
+    ``cedar symcc never-errors`` analyzes exactly one policy, so each static
+    policy is checked on its own. Cedar parses the candidate first, and the
+    policies are then cut from the text and checked as Cedar text: Cedar's
+    JSON reader stops at 128 levels of nesting, which a long chain of || or
+    && can pass.
+    """
+
+    def result(passed: bool, counterexample: str = "", tool_error: bool = False) -> CheckResult:
+        return CheckResult(
+            check_name=check_name,
+            check_type="never-errors",
+            description=description,
+            passed=passed,
+            counterexample=counterexample,
+            tool_error=tool_error,
+        )
+
+    try:
+        parsed = subprocess.run(
+            [CEDAR_PATH, "translate-policy", "--direction", "cedar-to-json",
+             "--policies", candidate_path, "--error-format", "plain"],
+            capture_output=True, text=True, timeout=30,
+        )
+        policy_set = json.loads(parsed.stdout) if parsed.returncode == 0 else None
+        with open(candidate_path) as f:
+            rules = [p for p in split_policies(f.read()) if not is_template(p)]
+    except (OSError, subprocess.TimeoutExpired, json.JSONDecodeError) as exc:
+        return result(False, f"Could not split the candidate into policies: {exc}", tool_error=True)
+    if not isinstance(policy_set, dict):
+        return result(
+            False,
+            "Could not split the candidate into policies: " + _subprocess_output(parsed),
+            tool_error=True,
+        )
+    expected = len(policy_set.get("staticPolicies") or {})
+    if len(rules) != expected:
+        return result(
+            False,
+            f"Could not split the candidate into policies: Cedar found {expected}, "
+            f"the text split gave {len(rules)}.",
+            tool_error=True,
+        )
+
+    work_dir = os.path.dirname(os.path.abspath(candidate_path))
+    for index, rule in enumerate(rules, start=1):
+        single_path = os.path.join(work_dir, f".never_errors_{index}.cedar")
+        with open(single_path, "w") as f:
+            f.write(rule + "\n")
+        try:
+            passed, output = _run_symcc(
+                schema_path, principal_type, action, resource_type,
+                "never-errors",
+                ["--policies", single_path],
+            )
+            if _is_symcc_tool_error(output):
+                return result(False, output, tool_error=True)
+            if not passed:
+                return result(False, f"Rule {index} of {len(rules)}:\n{rule}\n{output}")
+        finally:
+            os.remove(single_path)
+    return result(True)
+
+

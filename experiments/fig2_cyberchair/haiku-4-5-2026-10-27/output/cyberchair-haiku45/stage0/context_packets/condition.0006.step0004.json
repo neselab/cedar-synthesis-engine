@@ -1,0 +1,12 @@
+{
+  "id": "condition.0006.step0004",
+  "kind": "condition",
+  "focus_node_ids": [
+    "src.cyberchair_access_control_intent.authorization_intent_covered.p0006.l12"
+  ],
+  "scope_ids": [
+    "submitCameraReady"
+  ],
+  "related_node_ids": [],
+  "text": "<autocedar_condition_packet id=\"condition.0006.step0004\">\nRequirement to encode:\n[source_id: src.cyberchair_access_control_intent.authorization_intent_covered.p0006.l12; section: CyberChair Access Control Intent / Authorization Intent Covered] 4. Authors of selected submissions can submit camera-ready papers after review.\n\nWrite one condition atom for each scope below. AutoCedar joins the conditions of a slice with AND and the slices of a scope with OR, so encode only what this requirement says.\n\nScope submitCameraReady: principal User, action submitCameraReady, resource Submission (every way to allow it is listed).\n  It is a condition of slice slice_p0006: Author of selected submission, after review\n  The other conditions of this slice (encoded separately):\n    - none\n  Approved condition atoms of this scope:\n    - none yet\n\nRules for interpretation (apply them to every requirement):\n  - none\n</autocedar_condition_packet>\n"
+}

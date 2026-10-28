@@ -11,7 +11,7 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
-from typing import Sequence
+from typing import Any, Sequence
 
 from autocedar import __version__
 from autocedar.api_key import (
@@ -33,11 +33,12 @@ from autocedar.llm import (
     DEFAULT_EFFORT,
     LLMClient,
 )
-from autocedar.pipeline import author as author_pipeline
+from autocedar.pipeline import DEFAULT_MAX_PROPERTY_PROPOSALS, MAP_ROUNDS, author as author_pipeline
 from autocedar.progress import format_property_progress
 from autocedar.property_atomizer import propose_property_atom
 from autocedar.schema_atomizer import propose_schema_atoms
-from autocedar.ui.terminal import auto_approve, interactive_review_loop
+from autocedar.model_review import ModelReviewer
+from autocedar.ui.terminal import interactive_review_loop
 from autocedar.providers import (
     AuthStore,
     CANONICAL_PROVIDER_IDS,
@@ -230,20 +231,69 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Adaptive thinking effort for Stage 1/2 atomization (default: provider setting).",
     )
     author_p.add_argument(
-        "--auto-approve",
+        "--model-review",
+        dest="model_review",
         action="store_true",
         help=(
-            "Advance atoms without interactive review, for plumbing tests only; "
-            "this does not count as human semantic approval."
+            "Review atoms without a person: the model judges each atom against "
+            "the requirements. This does not count as human approval."
         ),
+    )
+    author_p.add_argument(
+        "--auto-approve",
+        dest="model_review",
+        action="store_true",
+        help=argparse.SUPPRESS,
+    )
+    author_p.add_argument(
+        "--review-provider",
+        choices=CANONICAL_PROVIDER_IDS,
+        default=None,
+        help="Provider for --model-review (default: the provider that writes the atoms).",
+    )
+    author_p.add_argument(
+        "--review-model",
+        default=None,
+        help="Model for --model-review (default: the model that writes the atoms).",
     )
     author_p.add_argument(
         "--max-schema-gap-repairs",
         type=int,
         default=None,
         help=(
-            "Optional maximum Stage 2 schema-repair loops before stopping "
-            "(default: no cap)."
+            "Optional maximum Stage 2 schema-repair loops (default: no cap). "
+            "After that the schema is fixed: atoms that need a missing field "
+            "are rewritten within the schema, and a requirement that still "
+            "cannot be expressed stops the run by name."
+        ),
+    )
+    author_p.add_argument(
+        "--max-map-rounds",
+        type=int,
+        default=MAP_ROUNDS,
+        help=(
+            f"Maximum intent-map rounds that go back to the mapper (default: {MAP_ROUNDS}). "
+            "Objections AutoCedar applies itself do not count. Long or noisy "
+            "documents can need more."
+        ),
+    )
+    author_p.add_argument(
+        "--noisy",
+        action="store_true",
+        help=(
+            "For documents in which some sentences may not be requirements. The "
+            "schema is built once and then fixed, and a requirement that gets no "
+            "approved atom is dropped (allowing less, never more) and listed in "
+            "stage2/dropped_requirements.json instead of stopping the run."
+        ),
+    )
+    author_p.add_argument(
+        "--max-proposals",
+        type=int,
+        default=DEFAULT_MAX_PROPERTY_PROPOSALS,
+        help=(
+            f"Maximum Stage 2 proposal and review steps (default: {DEFAULT_MAX_PROPERTY_PROPOSALS}). "
+            "--noisy raises it to fit the document."
         ),
     )
     author_p.set_defaults(func=_cmd_author)
@@ -273,17 +323,69 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Adaptive thinking effort for continued authoring (default: provider setting).",
     )
     resume_p.add_argument(
-        "--auto-approve",
+        "--model-review",
+        dest="model_review",
         action="store_true",
-        help="Approve newly proposed atoms without interactive review, for plumbing tests only.",
+        help=(
+            "Review newly proposed atoms without a person: the model judges each "
+            "atom against the requirements. This does not count as human approval."
+        ),
+    )
+    resume_p.add_argument(
+        "--auto-approve",
+        dest="model_review",
+        action="store_true",
+        help=argparse.SUPPRESS,
+    )
+    resume_p.add_argument(
+        "--review-provider",
+        choices=CANONICAL_PROVIDER_IDS,
+        default=None,
+        help="Provider for --model-review (default: the provider that writes the atoms).",
+    )
+    resume_p.add_argument(
+        "--review-model",
+        default=None,
+        help="Model for --model-review (default: the model that writes the atoms).",
     )
     resume_p.add_argument(
         "--max-schema-gap-repairs",
         type=int,
         default=None,
         help=(
-            "Optional maximum Stage 2 schema-repair loops before stopping "
-            "(default: no cap)."
+            "Optional maximum Stage 2 schema-repair loops (default: no cap). "
+            "After that the schema is fixed: atoms that need a missing field "
+            "are rewritten within the schema, and a requirement that still "
+            "cannot be expressed stops the run by name."
+        ),
+    )
+    resume_p.add_argument(
+        "--max-map-rounds",
+        type=int,
+        default=MAP_ROUNDS,
+        help=(
+            f"Maximum intent-map rounds that go back to the mapper (default: {MAP_ROUNDS}). "
+            "Objections AutoCedar applies itself do not count. Long or noisy "
+            "documents can need more."
+        ),
+    )
+    resume_p.add_argument(
+        "--noisy",
+        action="store_true",
+        help=(
+            "For documents in which some sentences may not be requirements. The "
+            "schema is built once and then fixed, and a requirement that gets no "
+            "approved atom is dropped (allowing less, never more) and listed in "
+            "stage2/dropped_requirements.json instead of stopping the run."
+        ),
+    )
+    resume_p.add_argument(
+        "--max-proposals",
+        type=int,
+        default=DEFAULT_MAX_PROPERTY_PROPOSALS,
+        help=(
+            f"Maximum Stage 2 proposal and review steps (default: {DEFAULT_MAX_PROPERTY_PROPOSALS}). "
+            "--noisy raises it to fit the document."
         ),
     )
     resume_p.set_defaults(func=_cmd_resume)
@@ -294,6 +396,12 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     verify_p.add_argument("workspace", help="Directory with schema, candidate, and verification_plan.py.")
     verify_p.set_defaults(func=_cmd_verify)
+
+    mcp_p = sub.add_parser(
+        "mcp",
+        help="Serve AutoCedar tools to coding agents (Claude Code, Codex) over MCP stdio.",
+    )
+    mcp_p.set_defaults(func=_cmd_mcp)
 
     synth_p = sub.add_parser(
         "synthesize",
@@ -653,54 +761,11 @@ def _cmd_author(args: argparse.Namespace) -> int:
 
     spec_text = spec_path.read_text()
 
-    def schema_proposer(text: str):
-        return propose_schema_atoms(text, llm)
-
-    def property_proposer(text: str, schema_path: str, prior_atoms, prior_decisions):
-        return propose_property_atom(text, schema_path, llm, prior_atoms, prior_decisions)
-
-    def schema_repairer(text: str, rejected_atom, reason: str, prior_atoms):
-        _ = prior_atoms
-        return llm.propose_alternative_atom(rejected_atom, reason, text)
-
-    def schema_fixer(schema_text: str, cedar_error: str, text: str) -> str:
-        return llm.fix_schema(schema_text, cedar_error, text)
-
-    def property_repairer(
-        text: str,
-        schema_path: str,
-        rejected_atom,
-        reason: str,
-        prior_atoms,
-    ):
-        schema_text = Path(schema_path).read_text()
-        return llm.propose_alternative_property_atom(
-            rejected_atom,
-            reason,
-            text,
-            schema_text,
-            prior_atoms,
-        )
-
-    def property_repair_planner(
-        text: str,
-        schema_path: str,
-        current_atom,
-        decision,
-        prior_atoms,
-        schema_text: str,
-        symbolic_log,
-    ):
-        from autocedar.property_atomizer import plan_property_repair
-
-        return plan_property_repair(
-            text, schema_path, current_atom, decision, prior_atoms,
-            schema_text, symbolic_log, llm=llm,
-        )
+    model_reviewer = ModelReviewer(_review_llm(args, config, llm), spec_text)
 
     def reviewer(atom):
-        if args.auto_approve:
-            return auto_approve(atom)
+        if _model_review_enabled(args):
+            return model_reviewer(atom)
         reviewed = interactive_review_loop(
             [atom],
             llm=llm,
@@ -712,27 +777,20 @@ def _cmd_author(args: argparse.Namespace) -> int:
         print(f"property progress: {format_property_progress(payload)}", flush=True)
 
     reviewer.property_progress = property_progress  # type: ignore[attr-defined]
+    reviewer.schema_ready = model_reviewer.schema_ready  # type: ignore[attr-defined]
 
     result = author_pipeline(
         spec_path=spec_path,
         output_dir=Path(args.out),
         session_id=args.session_id,
         review_atom=reviewer,
-        propose_schema_atoms=schema_proposer,
-        propose_property_atom=property_proposer,
-        repair_schema_atom=schema_repairer,
-        fix_schema=schema_fixer,
-        plan_property_repair=property_repair_planner,
-        repair_property_atom=property_repairer,
-        synthesize=make_harness_synthesizer(
-            phase1_model=model,
-            phase2_model=model,
-            provider=config.provider,
-            no_review=True,
-        ),
+        **author_hooks(llm, model=model, provider=config.provider),
         schema_path_override=args.schema,
         run_incremental_checks=False,
         max_schema_gap_repairs=getattr(args, "max_schema_gap_repairs", None),
+        max_map_rounds=getattr(args, "max_map_rounds", MAP_ROUNDS),
+        max_property_proposals=getattr(args, "max_proposals", DEFAULT_MAX_PROPERTY_PROPOSALS),
+        noisy=getattr(args, "noisy", False),
     )
 
     completed = _authoring_completed(result)
@@ -762,6 +820,56 @@ def _cmd_resume(args: argparse.Namespace) -> int:
     effort = config.reasoning_effort or DEFAULT_EFFORT
     llm = LLMClient(provider=config.provider, model=model, effort=effort)
     spec_text = spec_path.read_text()
+    model_reviewer = ModelReviewer(_review_llm(args, config, llm), spec_text)
+
+    def reviewer(atom):
+        if _model_review_enabled(args):
+            return model_reviewer(atom)
+        reviewed = interactive_review_loop(
+            [atom],
+            llm=llm,
+            spec_text=spec_text,
+        )
+        return reviewed[0]
+
+    def property_progress(payload):
+        print(f"property progress: {format_property_progress(payload)}", flush=True)
+
+    reviewer.property_progress = property_progress  # type: ignore[attr-defined]
+    reviewer.schema_ready = model_reviewer.schema_ready  # type: ignore[attr-defined]
+
+    result = author_pipeline(
+        spec_path=spec_path,
+        output_dir=Path(args.out),
+        session_id=args.session_id,
+        review_atom=reviewer,
+        **author_hooks(llm, model=model, provider=config.provider),
+        resume_from=session_dir,
+        run_incremental_checks=False,
+        max_schema_gap_repairs=getattr(args, "max_schema_gap_repairs", None),
+        max_map_rounds=getattr(args, "max_map_rounds", MAP_ROUNDS),
+        max_property_proposals=getattr(args, "max_proposals", DEFAULT_MAX_PROPERTY_PROPOSALS),
+        noisy=getattr(args, "noisy", False),
+    )
+
+    completed = _authoring_completed(result)
+    print(f"session:   {result.session_dir}")
+    if completed:
+        print(f"candidate: {result.candidate_path}")
+    print(f"approved:  {result.final_user_approved}")
+    if result.notes:
+        print("notes:")
+        for note in result.notes:
+            print(f"  - {note}")
+    return 0 if completed else 1
+
+
+def author_hooks(llm: LLMClient, *, model: str | None, provider: str) -> dict:
+    """Model-backed callbacks for ``pipeline.author``, shared by every front end.
+
+    The CLI, the TUI-free ``resume`` command, and the MCP server all drive the
+    same pipeline; only the atom reviewer differs between them.
+    """
 
     def schema_proposer(text: str):
         return propose_schema_atoms(text, llm)
@@ -808,53 +916,28 @@ def _cmd_resume(args: argparse.Namespace) -> int:
             schema_text, symbolic_log, llm=llm,
         )
 
-    def reviewer(atom):
-        if args.auto_approve:
-            return auto_approve(atom)
-        reviewed = interactive_review_loop(
-            [atom],
-            llm=llm,
-            spec_text=spec_text,
-        )
-        return reviewed[0]
-
-    def property_progress(payload):
-        print(f"property progress: {format_property_progress(payload)}", flush=True)
-
-    reviewer.property_progress = property_progress  # type: ignore[attr-defined]
-
-    result = author_pipeline(
-        spec_path=spec_path,
-        output_dir=Path(args.out),
-        session_id=args.session_id,
-        review_atom=reviewer,
-        propose_schema_atoms=schema_proposer,
-        propose_property_atom=property_proposer,
-        repair_schema_atom=schema_repairer,
-        fix_schema=schema_fixer,
-        plan_property_repair=property_repair_planner,
-        repair_property_atom=property_repairer,
-        synthesize=make_harness_synthesizer(
+    return {
+        "map_intent": lambda **kwargs: llm.build_intent_map(**kwargs),
+        "propose_schema_atoms": schema_proposer,
+        "propose_property_atom": property_proposer,
+        "repair_schema_atom": schema_repairer,
+        "fix_schema": schema_fixer,
+        "plan_property_repair": property_repair_planner,
+        "repair_property_atom": property_repairer,
+        "synthesize": make_harness_synthesizer(
             phase1_model=model,
             phase2_model=model,
-            provider=config.provider,
+            provider=provider,
             no_review=True,
         ),
-        resume_from=session_dir,
-        run_incremental_checks=False,
-        max_schema_gap_repairs=getattr(args, "max_schema_gap_repairs", None),
-    )
+    }
 
-    completed = _authoring_completed(result)
-    print(f"session:   {result.session_dir}")
-    if completed:
-        print(f"candidate: {result.candidate_path}")
-    print(f"approved:  {result.final_user_approved}")
-    if result.notes:
-        print("notes:")
-        for note in result.notes:
-            print(f"  - {note}")
-    return 0 if completed else 1
+
+def _cmd_mcp(args: argparse.Namespace) -> int:
+    _ = args
+    from autocedar.mcp_server import serve_stdio
+
+    return serve_stdio()
 
 
 def _cmd_verify(args: argparse.Namespace) -> int:
@@ -943,11 +1026,39 @@ def _command_provider_config(args: argparse.Namespace):
     )
 
 
+def _review_llm(args: argparse.Namespace, config: Any, llm: LLMClient) -> LLMClient:
+    """The model that reviews atoms: the writing model unless --review-* says otherwise."""
+    provider = getattr(args, "review_provider", None)
+    model = getattr(args, "review_model", None)
+    if not provider and not model:
+        return llm
+    if not _model_review_enabled(args):
+        raise SystemExit("--review-provider and --review-model need --model-review.")
+    review = resolve_provider_config(
+        session=SessionOverrides(
+            provider=provider or config.provider,
+            model=model,
+            reasoning_effort=getattr(args, "effort", None),
+        ),
+    )
+    _require_provider_auth(review.provider)
+    return LLMClient(
+        provider=review.provider,
+        model=review.model,
+        effort=review.reasoning_effort or DEFAULT_EFFORT,
+    )
+
+
+def _model_review_enabled(args: argparse.Namespace) -> bool:
+    # ``auto_approve`` is the attribute name older callers still pass.
+    return bool(getattr(args, "model_review", False) or getattr(args, "auto_approve", False))
+
+
 def _authoring_completed(result: object) -> bool:
     """Return true when the pipeline produced its final candidate artifact.
 
     Process completion and human semantic approval are intentionally separate:
-    an ``--auto-approve`` plumbing run may complete successfully while its
+    a ``--model-review`` run may complete successfully while its
     ``final_user_approved`` field remains false.
     """
     candidate_path = getattr(result, "candidate_path", None)

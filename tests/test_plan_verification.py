@@ -162,6 +162,84 @@ def test_consistency_check_ignores_different_actions(schema_path: str) -> None:
     assert result.unsat is False
 
 
+def _liveness_probe(name: str, when: str) -> PropertyAtom:
+    return PropertyAtom(
+        name=name,
+        rationale="slice",
+        plain_english_summary=name,
+        source_excerpt="...",
+        constraint_type="liveness",
+        action="read",
+        principal_types=["User"],
+        resource_types=["Resource"],
+        reference_cedar=(
+            'permit (principal is User, action == Action::"read", resource is Resource)\n'
+            f"when {{ {when} }};\n"
+        ),
+    )
+
+
+@requires_solvers
+def test_slice_outside_a_ceiling_is_reported(schema_path: str) -> None:
+    plan = VerificationPlanDraft(properties=[
+        _ceiling("owner_only", "principal == resource.owner"),
+        _liveness_probe("others_can_read", "principal != resource.owner"),
+    ])
+    result = symbolic_consistency_check(plan, schema_path)
+    assert result.unsat
+    assert result.core == ["others_can_read", "owner_only"]
+    assert "lies entirely outside owner_only" in result.detail
+
+
+@requires_solvers
+def test_slice_inside_a_ceiling_is_consistent(schema_path: str) -> None:
+    plan = VerificationPlanDraft(properties=[
+        _ceiling("owner_only", "principal == resource.owner"),
+        _liveness_probe("owner_can_read", "principal == resource.owner && !resource.legalHold"),
+    ])
+    assert not symbolic_consistency_check(plan, schema_path).unsat
+
+
+@requires_solvers
+def test_bounds_on_different_principal_types_are_not_compared(tmp_path: Path) -> None:
+    schema = tmp_path / "schema.cedarschema"
+    schema.write_text(textwrap.dedent("""\
+        entity Admin { active: Bool };
+        entity User { active: Bool };
+        entity Resource { owner: User };
+        action read appliesTo { principal: [Admin, User], resource: [Resource] };
+    """))
+    floor = PropertyAtom(
+        name="users_read",
+        rationale="floor",
+        plain_english_summary="users read",
+        source_excerpt="...",
+        constraint_type="floor",
+        action="read",
+        principal_types=["User"],
+        resource_types=["Resource"],
+        reference_cedar='permit (principal is User, action == Action::"read", resource is Resource);',
+    )
+    ceiling = PropertyAtom(
+        name="admins_active_only",
+        rationale="ceiling",
+        plain_english_summary="active admins only",
+        source_excerpt="...",
+        constraint_type="ceiling",
+        action="read",
+        principal_types=["Admin"],
+        resource_types=["Resource"],
+        reference_cedar=(
+            'permit (principal is Admin, action == Action::"read", resource is Resource) '
+            "when { principal.active };"
+        ),
+    )
+    # Checked in the floor's environment, the Admin ceiling would permit no
+    # User request and look like a conflict; the harness never compares them.
+    result = symbolic_consistency_check(VerificationPlanDraft(properties=[floor, ceiling]), str(schema))
+    assert not result.unsat
+
+
 def test_consistency_check_reports_symcc_setup_error(
     monkeypatch: pytest.MonkeyPatch,
     schema_path: str,

@@ -1,0 +1,12 @@
+{
+  "iteration": 1,
+  "loss": 2,
+  "checks_passed": 40,
+  "checks_total": 42,
+  "solver_time_s": 2.027,
+  "counterexample_count": 2,
+  "syntax_valid": true,
+  "status": "fail",
+  "input_tokens": 9,
+  "output_tokens": 6217
+}

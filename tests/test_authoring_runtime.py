@@ -19,7 +19,7 @@ from autocedar.persistence import write_json
 from autocedar.providers.base import ModelUsage
 from autocedar.source_doc import compile_source_document, select_property_packet
 from autocedar.tui import AutoCedarApp, AuthorOptions
-from autocedar.ui.terminal import auto_approve
+from tests.reviewers import approve_checked
 from tests.test_pipeline import _owner_must_floor
 
 
@@ -72,9 +72,9 @@ def test_property_prompt_keeps_all_encodings_once_and_logs_usage():
     llm = LLMClient(backend=Backend(), provider="codex", usage_callback=usage.append)
     doc = compile_source_document("Owners can read their own resources.")
     packet = select_property_packet(doc, doc.nodes[0], approved_property_atoms=atoms,
-                                    prior_decisions=[auto_approve(a) for a in atoms])
+                                    prior_decisions=[approve_checked(a) for a in atoms])
     llm.propose_property_atoms(packet.to_prompt_text(include_review_context=False), "schema",
-                              prior_atoms=atoms, prior_decisions=[auto_approve(a) for a in atoms])
+                              prior_atoms=atoms, prior_decisions=[approve_checked(a) for a in atoms])
     prompt = calls[0]["messages"][0].content
     for atom in atoms:
         assert prompt.count(f'"name":"{atom.name}"') == 1

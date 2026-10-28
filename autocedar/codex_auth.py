@@ -44,6 +44,15 @@ CODEX_PROVIDERS = {"codex", "openai", "openai-codex"}
 CODEX_REASONING_EFFORTS = ("low", "medium", "high")
 AUTOCEDAR_EFFORTS = ("low", "medium", "high", "max")
 _REFRESH_SKEW_SECONDS = 120
+# Overload and gateway errors come from the service, not the request, so the
+# same request is sent again after these pauses, within the call's deadline.
+# Overload arrives either as an HTTP status or as a failed response inside a
+# 200 stream ("Our servers are currently overloaded. Please try again later.").
+_TRANSIENT_STATUSES = frozenset({429, 500, 502, 503, 504})
+_TRANSIENT_ERROR_CODES = frozenset(
+    {"server_is_overloaded", "server_overloaded", "slow_down", "rate_limit_exceeded"}
+)
+_TRANSIENT_RETRY_DELAYS = (5.0, 15.0)
 
 _JSONRequester = Callable[[str, str, dict[str, str], Any | None, float], tuple[int, Any]]
 
@@ -524,6 +533,11 @@ class CodexAuthClient:
                 requester=self._requester,
             )
             credentials = self._credentials
+            status, response = send_request()
+        for delay in _TRANSIENT_RETRY_DELAYS:
+            if not _is_transient(status, response):
+                break
+            time.sleep(min(delay, max(deadline - time.monotonic(), 0.0)))
             status, response = send_request()
         if (
             status != 200
@@ -1165,6 +1179,18 @@ def _extract_response_usage(response: dict[str, Any]) -> ModelUsage:
 def _response_string(response: dict[str, Any], name: str) -> str | None:
     value = response.get(name)
     return value if isinstance(value, str) and value else None
+
+
+def _is_transient(status: int, response: Any) -> bool:
+    if status in _TRANSIENT_STATUSES:
+        return True
+    error = response.get("error") if isinstance(response, dict) else None
+    if not isinstance(error, dict):
+        return False
+    message = error.get("message")
+    return error.get("code") in _TRANSIENT_ERROR_CODES or (
+        isinstance(message, str) and "overloaded" in message.lower()
+    )
 
 
 def _format_codex_response_error(status: int, response: Any) -> str:

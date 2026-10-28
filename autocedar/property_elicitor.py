@@ -26,6 +26,7 @@ from dataclasses import dataclass
 from autocedar.atoms import (
     PropertyAtom,
     VerificationPlanDraft,
+    request_environments,
 )
 
 
@@ -202,7 +203,9 @@ def compile_plan(plan: VerificationPlanDraft) -> CompiledPlan:
 
         # 2. Build the plan entry. Liveness atoms may either use the legacy
         #    broad non-empty-action check (no reference) or a probe policy
-        #    whose overlap with the candidate must be non-empty.
+        #    whose overlap with the candidate must be non-empty. A slice only
+        #    needs one allowed request, so it stays a single check on its
+        #    first environment, which is stricter than any-environment.
         entry: dict = {
             "name": atom.name,
             "description": atom.plain_english_summary,
@@ -233,12 +236,29 @@ def compile_plan(plan: VerificationPlanDraft) -> CompiledPlan:
                 ref_cedar = wrap_when_with_conjuncts(ref_cedar, conjuncts)
 
         references[atom.name] = ref_cedar
-        if primitive_type == "implies":
-            entry["reference_path"] = f'os.path.join(REFS, {_reference_filename(atom.name)})'
-        else:  # floor
-            entry["floor_path"] = f'os.path.join(REFS, {_reference_filename(atom.name)})'
+        path_key = "reference_path" if primitive_type == "implies" else "floor_path"
+        path_value = f'os.path.join(REFS, {_reference_filename(atom.name)})'
 
-        plan_entries.append(entry)
+        # 4. A ceiling or floor binds every request environment it names.
+        #    symcc checks one (principal, resource) pair at a time, so an atom
+        #    over several types becomes one check per pair; checking only the
+        #    first pair would leave the others unbounded.
+        environments = request_environments(atom)
+        for principal_type, resource_type in environments:
+            env_entry = dict(entry, principal_type=principal_type, resource_type=resource_type)
+            if len(environments) > 1:
+                env_entry["name"] = f"{atom.name}__{principal_type}__{resource_type}"
+                env_entry["description"] = (
+                    f"{atom.plain_english_summary} "
+                    f"(principal {principal_type}, resource {resource_type})"
+                )
+            env_entry[path_key] = path_value
+            plan_entries.append(env_entry)
+
+    # 5. The candidate must also never raise a Cedar evaluation error (e.g. a
+    #    datetime overflow) in any environment the plan checks; matching the
+    #    bounds says nothing about errors on requests the bounds deny.
+    plan_entries.extend(_never_errors_entries(plan_entries))
 
     plan_text = _render_verification_plan_py(plan_entries)
     return CompiledPlan(
@@ -254,9 +274,10 @@ def compile_plan_for_consistency(plan: VerificationPlanDraft) -> VerificationPla
     synthesis. Raw sugar atoms are not the final intent surface, though:
     disjointness atoms patch same-action floors during compile-down. Checking
     raw floors directly against raw disjointness forbids creates false unsat
-    reports. This helper mirrors the floor patching used by ``compile_plan`` and
-    excludes disjointness atoms from pairwise floor⊆ceiling checks; they are
-    still emitted into the final harness plan as safety checks.
+    reports. This helper mirrors the floor patching used by ``compile_plan``.
+    Disjointness atoms and liveness probes pass through unchanged: Stage 1.75
+    keeps disjointness out of the floor⊆ceiling pairs but checks that no
+    ceiling or disjointness bound shuts out a liveness slice.
     """
     patches_per_action = _collect_disjointness_patches(plan)
     normalized: list[PropertyAtom] = []
@@ -264,8 +285,11 @@ def compile_plan_for_consistency(plan: VerificationPlanDraft) -> VerificationPla
     for atom in plan.properties:
         primitive_type = _resolve_primitive_type(atom)
         if primitive_type == "always-denies-liveness":
+            if atom.reference_cedar.strip():
+                normalized.append(atom)
             continue
         if atom.constraint_type == "disjointness":
+            normalized.append(atom)
             continue
 
         ref_cedar = atom.reference_cedar
@@ -301,6 +325,31 @@ def compile_plan_for_consistency(plan: VerificationPlanDraft) -> VerificationPla
         )
 
     return VerificationPlanDraft(properties=normalized)
+
+
+def _never_errors_entries(entries: list[dict]) -> list[dict]:
+    """One ``never-errors`` check per distinct request environment in the plan."""
+    seen: set[tuple[str, str, str]] = set()
+    out: list[dict] = []
+    for entry in entries:
+        key = (entry["principal_type"], entry["action"], entry["resource_type"])
+        if not all(key) or key in seen:
+            continue
+        seen.add(key)
+        principal_type, action, resource_type = key
+        action_name = action.removeprefix("Action::").strip('"')
+        out.append({
+            "name": f"no_runtime_errors__{action_name}__{principal_type}__{resource_type}",
+            "description": (
+                f"The policy must never raise an evaluation error for {action_name} "
+                f"requests (principal {principal_type}, resource {resource_type})."
+            ),
+            "type": "never-errors",
+            "principal_type": principal_type,
+            "action": action,
+            "resource_type": resource_type,
+        })
+    return out
 
 
 def _resolve_primitive_type(atom: PropertyAtom) -> str:
