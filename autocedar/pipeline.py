@@ -64,6 +64,7 @@ from autocedar.intent_map import (
     derive_boundary_atoms,
     describe_schema_actions,
     schema_triples,
+    _bare_action,
 )
 from autocedar.persistence import session_spec, write_json
 from autocedar.plan_verification import (
@@ -293,6 +294,7 @@ def _build_reviewed_intent_map(
     review_atom: AtomReviewer,
     session: Session,
     resume_from: Path | None,
+    extend_schema: Callable[[list[tuple[str, str, str]], str], str | None] | None = None,
 ) -> tuple[IntentMap | None, AtomDecision | None, str]:
     """Map the document, check the map's structure, and have it reviewed.
 
@@ -302,6 +304,10 @@ def _build_reviewed_intent_map(
     dropping a sentence, unmarking a scope) and reviews the corrected map
     again. Other objections, a rejection without objections, or a failed
     structure check go back to the mapper, for up to MAP_ROUNDS mapper rounds.
+
+    A scope whose action the schema does not declare is a schema gap, as in
+    Stage 2: ``extend_schema`` asks for the missing actions through the
+    reviewed schema repair, and the same map is checked against the result.
     """
     record_path = session.base / "stage0" / "intent_map.json"
     triples = schema_triples(schema_text, cedar_path=CEDAR_PATH)
@@ -334,6 +340,14 @@ def _build_reviewed_intent_map(
     # Objections AutoCedar applies itself cost a review but no mapper call, so
     # reviews are capped separately from mapper rounds.
     for round_number in range(1, 2 * MAP_ROUNDS + 1):
+        missing = intent_map.missing_actions(triples)
+        if missing and extend_schema is not None:
+            extended = extend_schema(missing, _missing_action_reason(intent_map, missing, source_doc))
+            if extended is not None:
+                triples = schema_triples(extended, cedar_path=CEDAR_PATH)
+                actions = describe_schema_actions(triples)
+                rounds.append({"round": round_number, "schema_extended_for": [list(t) for t in missing]})
+                write_json(record_path, {"approved": False, "rounds": rounds})
         errors = intent_map.structure_errors(source_doc, triples)
         if errors:
             rounds.append({"round": round_number, "map": intent_map.to_dict(), "structure_errors": errors})
@@ -384,6 +398,28 @@ def _build_reviewed_intent_map(
         )
         mapper_calls += 1
     return None, None, "Stopped before atoms: the intent map was not approved."
+
+
+def _missing_action_reason(
+    intent_map: IntentMap,
+    missing: list[tuple[str, str, str]],
+    source_doc: Any,
+) -> str:
+    """The missing actions, each with the sentences that need it."""
+    text = {node.id: node.text for node in source_doc.nodes}
+    lines = ["The intent map needs requests that the schema does not declare:"]
+    for principal, action, resource in missing:
+        node_ids: list[str] = []
+        for scope in intent_map.scopes:
+            if (scope.principal_type, _bare_action(scope.action), scope.resource_type) != (principal, action, resource):
+                continue
+            for sl in intent_map.scope_slices(scope.id):
+                node_ids.extend(intent_map.slice_conditions(sl.id))
+            node_ids.extend(intent_map.restrictions(scope.id))
+        quoted = "; ".join(f'"{text[n]}"' for n in dict.fromkeys(node_ids) if n in text)
+        lines.append(f"- action {action}, principal {principal}, resource {resource}: {quoted}")
+    lines.append("Add each action, and any entity type it needs, so these requirements can be expressed.")
+    return "\n".join(lines)
 
 
 def _schema_gap_budget_spent(limit: int | None, used: int) -> bool:
@@ -876,6 +912,43 @@ def author(
     intent_map: IntentMap | None = None
     map_decision: AtomDecision | None = None
     if map_intent is not None:
+
+        def extend_schema_for_map(missing: list[tuple[str, str, str]], reason: str) -> str | None:
+            nonlocal schema_text, schema_gap_repair_count
+            if _schema_gap_budget_spent(schema_gap_repair_limit, schema_gap_repair_count):
+                return None
+            gap = {
+                "atom_name": "intent_map",
+                "stage": "intent_map",
+                "reason": reason,
+                "tags": ["intent_map_missing_action"],
+                "required_action": "repair_schema_before_map_review",
+                "repair_plan": {"action": "repair_schema", "reason": reason, "repair_instruction": reason},
+                "missing_actions": [list(t) for t in missing],
+            }
+            schema_gaps.append(gap)
+            session.write_stage1_5_schema_gaps(schema_gaps)
+            repaired = _repair_schema_gap_and_validate(
+                spec_text=spec_text,
+                schema_text=schema_text,
+                schema_path=schema_path,
+                gap=gap,
+                session=session,
+                review_atom=review_atom,
+                propose_schema_atoms=propose_schema_atoms,
+                fix_schema=fix_schema,
+                draft=draft,
+                approved_schema_atoms=approved_schema_atoms,
+                approved_schema_names=approved_schema_names,
+                repair_records=schema_gap_repairs,
+            )
+            if repaired is None:
+                return None
+            schema_text = repaired
+            schema_gap_repair_count += 1
+            _notify_schema_ready(review_atom, schema_text)
+            return schema_text
+
         intent_map, map_decision, map_note = _build_reviewed_intent_map(
             map_intent=map_intent,
             source_doc=source_doc,
@@ -883,6 +956,7 @@ def author(
             review_atom=review_atom,
             session=session,
             resume_from=Path(resume_from) if resume_from else None,
+            extend_schema=extend_schema_for_map,
         )
         if intent_map is None:
             _write_stage0_artifacts(
@@ -2699,14 +2773,24 @@ def _schema_gap_repair_spec(
     schema_text: str,
     gap: dict[str, Any],
 ) -> str:
+    if gap.get("stage") == "intent_map":
+        lead = (
+            "AutoCedar is building the intent map. The map needs requests that "
+            "the current schema does not declare.\n\n"
+            f"Map reason: {gap.get('reason', '')}\n\n"
+        )
+    else:
+        lead = (
+            "AutoCedar is in Stage 2 property review. The human rejected a "
+            "property atom because the current schema cannot express a named "
+            "requirement boundary.\n\n"
+            f"Rejected property atom: {gap.get('atom_name', '')}\n"
+            f"HITL reason: {gap.get('reason', '')}\n\n"
+        )
     return (
         f"{spec_text}\n\n"
         "<schema_gap_repair>\n"
-        "AutoCedar is in Stage 2 property review. The human rejected a "
-        "property atom because the current schema cannot express a named "
-        "requirement boundary.\n\n"
-        f"Rejected property atom: {gap.get('atom_name', '')}\n"
-        f"HITL reason: {gap.get('reason', '')}\n\n"
+        f"{lead}"
         "Current Cedar schema:\n"
         f"```cedarschema\n{schema_text}\n```\n\n"
         "Propose ONLY the missing Stage 1 schema atom(s) required to express "

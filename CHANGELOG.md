@@ -59,6 +59,12 @@ versioning while the public provider and CLI interfaces stabilize.
   fails the schema (up to 5 turns), retry up to twice if the call still runs
   out of turns or the CLI cannot parse the model's tool call
   (`malformed_tool_use_exhausted`), and report the CLI's error kind.
+- When the intent map needs an action that the schema does not declare, AutoCedar
+  now adds it through the reviewed schema repair that Stage 2 uses, and checks
+  the same map again. It shares Stage 2's repair budget, so a fixed schema
+  (`--max-schema-gap-repairs 0`) is unchanged. Before, the map could not name
+  a requirement the generated schema had missed, so its review kept rejecting
+  it until the run stopped.
 - Schema repair after a `cedar validate` failure has its own prompt. It used the
   schema-construction prompt, so a model could return schema atoms instead of
   the corrected schema, and the run ended on a parse error.

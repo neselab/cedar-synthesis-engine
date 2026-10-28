@@ -214,6 +214,15 @@ class IntentMap:
             errors.append("The map has a cycle.")
         return errors
 
+    def missing_actions(self, schema_triples: set[tuple[str, str, str]]) -> list[tuple[str, str, str]]:
+        """(principal type, action, resource type) of each scope the schema does not declare."""
+        missing: list[tuple[str, str, str]] = []
+        for scope in self.scopes:
+            triple = (scope.principal_type, _bare_action(scope.action), scope.resource_type)
+            if schema_triples and triple not in schema_triples and triple not in missing:
+                missing.append(triple)
+        return missing
+
     def _edges(self) -> dict[str, list[str]]:
         """Child-to-parent edges: condition -> slice/scope -> root."""
         edges: dict[str, list[str]] = {}

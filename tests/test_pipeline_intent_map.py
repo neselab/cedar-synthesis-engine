@@ -355,6 +355,48 @@ def test_objection_the_map_cannot_apply_goes_to_the_mapper(tmp_path: Path) -> No
     assert calls[1]["feedback"] == "- Release needs a second slice for supervisors."
 
 
+def test_map_scope_without_a_schema_action_extends_the_schema(tmp_path: Path) -> None:
+    from autocedar.atoms import ActionAtom
+
+    spec, schema, doc = _setup(tmp_path)
+    schema.write_text(SCHEMA.replace("action release, signoff", "action release"))
+    requests: list[str] = []
+
+    def propose_schema_atoms(text: str):
+        requests.append(text)
+        return [ActionAtom(name="signoff", rationale="stub", plain_english_summary="Sign off a work order.",
+                           source_excerpt="", principal_types=["User"], resource_types=["WorkOrder"])]
+
+    def run(session_id: str, **kw):
+        return author(
+            spec, tmp_path / "out", session_id=session_id,
+            review_atom=approve_checked,
+            map_intent=lambda **_: work_order_map(doc),
+            propose_schema_atoms=propose_schema_atoms,
+            propose_property_atom=Proposer(doc),
+            synthesize=_synthesize_exact,
+            schema_path_override=str(schema),
+            **kw,
+        )
+
+    result = run("extend")
+
+    assert result.notes == []
+    assert "action signoff" in result.schema_text
+    assert len(requests) == 1
+    assert "action signoff, principal User, resource WorkOrder" in requests[0]
+    assert "the work order is not on hold" in requests[0]  # the sentence that needs it
+    record = json.loads((result.session_dir / "stage0" / "intent_map.json").read_text())
+    assert record["rounds"][0] == {"round": 1, "schema_extended_for": [["User", "signoff", "WorkOrder"]]}
+    assert run_verification(str(result.candidate_path.parent)).loss == 0
+
+    # A spent repair budget leaves the schema as it is, and the map stops on the gap.
+    schema.write_text(SCHEMA.replace("action release, signoff", "action release"))
+    stopped = run("fixed", max_schema_gap_repairs=0)
+    assert len(requests) == 1
+    assert "the schema has no action 'signoff'" in stopped.notes[0]
+
+
 def test_fixed_schema_turns_a_schema_gap_into_a_rewrite_of_the_atom(tmp_path: Path) -> None:
     from dataclasses import replace
 
