@@ -1036,6 +1036,22 @@ def test_fix_schema_includes_error_text_in_user_turn() -> None:
     assert "EXPECTED IDENTIFIER" in user_msg["content"]
 
 
+def test_schema_fix_uses_its_own_prompt_not_the_atomization_prompt() -> None:
+    from autocedar.llm import SchemaFixResponse
+
+    fixed = SchemaFixResponse(fixed_schema_text="entity User;", explanation="closed the list")
+    fake = _FakeAnthropic(_make_response(fixed))
+    client = LLMClient(client=fake)
+
+    result = client.fix_schema(schema_text="entity User in [;", cedar_error_message="EXPECTED IDENTIFIER", spec_text="...")
+
+    assert result == "entity User;"
+    blocks = fake.messages.last_kwargs["system"]
+    system = " ".join(b["text"] for b in blocks) if isinstance(blocks, list) else str(blocks)
+    assert "You fix a Cedar schema" in system
+    assert system.count("fixed_schema_text") == 1
+
+
 def test_repair_planner_uses_its_own_prompt_not_an_atomization_prompt() -> None:
     from autocedar.atoms import PropertyAtom
     from autocedar.llm import PropertyRejectionPlanResponse

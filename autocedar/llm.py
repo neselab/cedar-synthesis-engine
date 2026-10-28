@@ -1056,12 +1056,11 @@ class LLMClient:
     ) -> str:
         """Ask the LLM to fix a schema that ``cedar validate`` rejected.
 
-        Returns the corrected schema text. The schema-fix prompt is a
-        separate template; we keep the cache-controlled (system + spec)
-        block consistent across calls so the cache continues to hit
-        across propose/fix turns.
+        Returns the corrected schema text. The schema-fix prompt is its own
+        template: given the atomization prompt, a model returns schema atoms,
+        which do not parse as a SchemaFixResponse.
         """
-        system_prompt = _load_prompt("schema_atomization.md")
+        system_prompt = _load_prompt("schema_fix.md")
         user_turn = (
             "The schema you proposed failed `cedar validate`. The "
             "validator error is:\n\n"

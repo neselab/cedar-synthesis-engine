@@ -59,6 +59,9 @@ versioning while the public provider and CLI interfaces stabilize.
   fails the schema (up to 5 turns), retry up to twice if the call still runs
   out of turns or the CLI cannot parse the model's tool call
   (`malformed_tool_use_exhausted`), and report the CLI's error kind.
+- Schema repair after a `cedar validate` failure has its own prompt. It used the
+  schema-construction prompt, so a model could return schema atoms instead of
+  the corrected schema, and the run ended on a parse error.
 - A condition atom written as `when { true }` passes its checks again: it
   says the sentence only grants its scope ("Reviewers can view the overview"),
   and model or human review judges that reading. Any other condition that
