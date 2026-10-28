@@ -836,3 +836,35 @@ def test_noisy_mode_completes_the_schema_for_the_mapped_requirements(tmp_path: P
     batch = record["batches"][0]
     assert batch["added"] == ["WorkOrder__onHold"]
     assert [s["atom"] for s in batch["skipped"]] == ["archive", "WorkOrder__site"]
+
+
+def test_noisy_mode_keeps_the_last_reviewed_map_when_a_revision_call_fails(tmp_path: Path) -> None:
+    spec, schema, doc = _setup(tmp_path)
+    calls: list[dict] = []
+
+    def mapper(**kw) -> IntentMap:
+        calls.append(kw)
+        if len(calls) > 1:
+            raise RuntimeError("Codex request timed out after 240s")
+        return work_order_map(doc)
+
+    def reviewer(atom):
+        if isinstance(atom, IntentMap):
+            return AtomDecision("intent_map", "reject", reason="Merge the two slices.")
+        return approve_checked(atom)
+
+    result = author(
+        spec, tmp_path / "out", session_id="noisy-timeout",
+        review_atom=reviewer,
+        map_intent=mapper,
+        propose_property_atom=Proposer(doc),
+        synthesize=_synthesize_exact,
+        schema_path_override=str(schema),
+        noisy=True,
+    )
+
+    assert len(calls) == 2
+    assert result.candidate_path.is_file()
+    record = json.loads((result.session_dir / "stage0" / "intent_map.json").read_text())
+    assert record["accepted_in_noisy_mode"] is True
+    assert "timed out" in record["open_objections"]

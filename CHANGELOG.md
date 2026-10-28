@@ -21,6 +21,8 @@ versioning while the public provider and CLI interfaces stabilize.
   validates is added (`stage1_5/schema_completion.json`). New entity types and
   actions are not added there. Without this step, a fixed schema that missed a
   field (a context flag, a student's courses) dropped a real requirement.
+  If a call to revise the map fails, for example a long map that outlasts
+  the request deadline, `--noisy` uses the last reviewed map.
 - `--max-proposals` sets the Stage 2 proposal budget (default 128, as before).
   `--noisy` raises it to 12 per requirement, so long documents are not cut off.
 - A model answer that does not parse as the requested JSON is asked again, up

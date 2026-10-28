@@ -431,10 +431,15 @@ def _build_reviewed_intent_map(
                     "Stopped before atoms: the intent map still fails its structure "
                     f"checks after {map_rounds} rounds: " + "; ".join(errors[:6])
                 )
-            intent_map = build_map(
-                feedback="\n".join(f"- {e}" for e in errors),
-                previous=intent_map,
-            )
+            try:
+                intent_map = build_map(
+                    feedback="\n".join(f"- {e}" for e in errors),
+                    previous=intent_map,
+                )
+            except Exception as exc:
+                if not noisy or last_reviewed is None:
+                    raise
+                return accept_unapproved(f"The mapper failed on a revision: {exc}")
             mapper_calls += 1
             continue
         intent_map.review_text = intent_map.render(source_doc) + _left_out_note(left_out, source_doc)
@@ -468,10 +473,17 @@ def _build_reviewed_intent_map(
                 f"rounds. Last reason: {decision.reason}"
             )
         feedback = "\n".join(f"- {o.get('detail') or o.get('kind')}" for o in remaining)
-        intent_map = build_map(
-            feedback=feedback or decision.reason or "The reviewer rejected the map.",
-            previous=intent_map,
-        )
+        try:
+            intent_map = build_map(
+                feedback=feedback or decision.reason or "The reviewer rejected the map.",
+                previous=intent_map,
+            )
+        except Exception as exc:
+            # Noisy mode keeps the last reviewed map rather than losing the run
+            # to one failed revision call (a long map can outlast the deadline).
+            if not noisy:
+                raise
+            return accept_unapproved(f"The mapper failed on a revision: {exc}")
         mapper_calls += 1
     return accept_unapproved("Stopped before atoms: the intent map was not approved.")
 
