@@ -1091,3 +1091,38 @@ def test_noisy_resume_does_not_run_the_schema_completion_again(tmp_path: Path) -
     assert len(requests) == 1
     assert "stale copy" not in again.schema_text
     assert again.candidate_path.is_file()
+
+
+def test_noisy_mode_asks_the_permissions_question_for_each_scope(tmp_path: Path) -> None:
+    spec, schema, doc = _setup(tmp_path)
+    questions: list[PermissionsQuestion] = []
+
+    def mapper(**kw) -> IntentMap:
+        m = work_order_map(doc)
+        for scope in m.scopes:
+            scope.exhaustive = None
+        return m
+
+    def reviewer(atom):
+        if isinstance(atom, PermissionsQuestion):
+            questions.append(atom)
+            yes = atom.scopes[0].id == "s_release"
+            return AtomDecision(atom.name, "approve" if yes else "reject", reason="" if yes else "Examples.")
+        return approve_checked(atom)
+
+    result = author(
+        spec, tmp_path / "out", session_id="noisy-per-scope",
+        review_atom=reviewer,
+        map_intent=mapper,
+        propose_property_atom=Proposer(doc),
+        synthesize=_synthesize_exact,
+        schema_path_override=str(schema),
+        noisy=True,
+    )
+
+    assert [[s.id for s in q.scopes] for q in questions] == [["s_release"], ["s_signoff"]]
+    record = json.loads((result.session_dir / "stage0" / "intent_map.json").read_text())
+    assert [a["complete"] for a in record["permissions_complete"]["per_scope"]] == [True, False]
+    plan = (result.session_dir / "stage2" / "final_plan" / "verification_plan.py").read_text()
+    assert '"name": "ceiling__s_release"' in plan
+    assert '"name": "ceiling__s_signoff"' not in plan

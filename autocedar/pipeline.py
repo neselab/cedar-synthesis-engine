@@ -346,7 +346,7 @@ def _build_reviewed_intent_map(
                 # A saved map can carry scopes whose completeness was never
                 # settled (or was cleared to ask again): ask now.
                 resumed.outline = outline
-                permissions = _settle_unmarked_scopes(resumed, review_atom)
+                permissions = _settle_unmarked_scopes(resumed, review_atom, per_scope=noisy)
                 if permissions is not None:
                     prior = {**prior, "map": resumed.to_dict(), "permissions_complete": permissions}
                 write_json(record_path, prior)
@@ -405,7 +405,7 @@ def _build_reviewed_intent_map(
         }
         chosen.review_text = chosen.render(source_doc)
         chosen.outline = outline
-        permissions = _settle_unmarked_scopes(chosen, review_atom)
+        permissions = _settle_unmarked_scopes(chosen, review_atom, per_scope=noisy)
         if permissions is not None:
             record["map"] = chosen.to_dict()
             record["permissions_complete"] = permissions
@@ -470,7 +470,7 @@ def _build_reviewed_intent_map(
                 "decision": to_dict(decision),
                 "rounds": rounds,
             }
-            permissions = _settle_unmarked_scopes(intent_map, review_atom)
+            permissions = _settle_unmarked_scopes(intent_map, review_atom, per_scope=noisy)
             if permissions is not None:
                 record["map"] = intent_map.to_dict()
                 record["permissions_complete"] = permissions
@@ -602,26 +602,41 @@ def _apply_map_objections(
     return applied, remaining
 
 
-def _settle_unmarked_scopes(intent_map: IntentMap, review_atom: AtomReviewer) -> dict[str, Any] | None:
-    """Ask once whether the document lists every permission for the scopes it leaves unmarked.
+def _settle_unmarked_scopes(
+    intent_map: IntentMap, review_atom: AtomReviewer, *, per_scope: bool = False,
+) -> dict[str, Any] | None:
+    """Ask whether the document lists every permission for the scopes it leaves unmarked.
 
     AutoCedar does not assume either answer: the reviewer (a person, or the
-    model under model review) says yes or no, and the answer applies to every
-    unmarked scope.
+    model under model review) says yes or no. By default one answer applies to
+    every unmarked scope. With ``per_scope`` (noisy mode) each scope is asked
+    on its own, since a document of extracted sentences can list every way to
+    allow one action and only examples of another.
     """
     unmarked = [scope for scope in intent_map.scopes if scope.exhaustive is None]
     if not unmarked:
         return None
-    question = PermissionsQuestion(scopes=unmarked, outline=intent_map.outline)
-    _, decision = _normalize_review_result(question, review_atom(question))
-    complete = decision.action == "approve"
-    for scope in unmarked:
-        scope.exhaustive = complete
-    delta = decision.edit_delta or {}
+    groups = [[scope] for scope in unmarked] if per_scope else [unmarked]
+    answers: list[dict[str, Any]] = []
+    for group in groups:
+        question = PermissionsQuestion(scopes=group, outline=intent_map.outline)
+        _, decision = _normalize_review_result(question, review_atom(question))
+        complete = decision.action == "approve"
+        for scope in group:
+            scope.exhaustive = complete
+        delta = decision.edit_delta or {}
+        answers.append({
+            "complete": complete,
+            "answered_by": "model" if delta.get("review_channel") == "model" else "person",
+            "reason": decision.reason or delta.get("model_review", ""),
+            "scope_ids": [scope.id for scope in group],
+        })
+    if not per_scope:
+        return answers[0]
     return {
-        "complete": complete,
-        "answered_by": "model" if delta.get("review_channel") == "model" else "person",
-        "reason": decision.reason or delta.get("model_review", ""),
+        "complete": all(a["complete"] for a in answers),
+        "answered_by": answers[0]["answered_by"],
+        "per_scope": answers,
         "scope_ids": [scope.id for scope in unmarked],
     }
 

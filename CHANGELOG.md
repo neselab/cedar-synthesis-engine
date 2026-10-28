@@ -5,6 +5,10 @@ versioning while the public provider and CLI interfaces stabilize.
 
 ## Unreleased
 
+- In `--noisy`, the permissions question is asked for each unmarked scope on
+  its own. A document of extracted sentences can list every way to allow one
+  action and only examples of another; one shared answer left every scope of
+  such a document without a ceiling.
 - A synthesis check whose solver call times out gets one more attempt with
   four times the limit before it counts as a tool error.
   `AUTOCEDAR_SYMCC_TIMEOUT_SECONDS` sets the limit (default 30). Before, one
