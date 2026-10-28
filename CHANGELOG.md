@@ -68,6 +68,10 @@ versioning while the public provider and CLI interfaces stabilize.
   sentences left and why, so the two reviews do not overrule each other in
   turn. Before, the map could not name a requirement the generated schema had
   missed, so its review kept rejecting it until the run stopped.
+- When the schema review refuses a Stage 2 schema repair on the map path, the
+  run goes on: that requirement's atoms are rewritten within the schema, with
+  the review's reason in the instruction, and a requirement that still cannot
+  be expressed stops the run by name. Before, one refused repair ended the run.
 - Schema repair after a `cedar validate` failure has its own prompt. It used the
   schema-construction prompt, so a model could return schema atoms instead of
   the corrected schema, and the run ended on a parse error.

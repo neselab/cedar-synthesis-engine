@@ -451,6 +451,22 @@ def _missing_action_reason(
     return "\n".join(lines)
 
 
+def _schema_refusal_reason(repair_records: list[dict[str, Any]]) -> str:
+    """Why the last schema repair produced nothing: the review's reasons, or validation."""
+    record = repair_records[-1] if repair_records else {}
+    reasons = [
+        (d.get("edit_delta") or {}).get("model_review") or d.get("reason") or ""
+        for d in record.get("decisions", [])
+        if d.get("action") != "approve"
+    ]
+    reasons = [r for r in reasons if r]
+    if reasons:
+        return " ".join(reasons)[:1200]
+    if record.get("schema_validation"):
+        return "The repaired schema did not pass `cedar validate`."
+    return "No schema change was proposed."
+
+
 def _left_out_note(node_ids: list[str], source_doc: Any) -> str:
     if not node_ids:
         return ""
@@ -643,6 +659,10 @@ def author(
         list(resume_checkpoint.schema_gap_repairs) if resume_checkpoint else []
     )
     schema_gap_repair_count = 0
+    # Requirements whose schema repair the schema review refused, with its
+    # reason: that decision stands, so their atoms are rewritten within the
+    # schema instead of asking for the same support again.
+    schema_refusals: dict[str, str] = {}
     schema_gap_repair_limit = max_schema_gap_repairs
 
     session.write_input_spec(spec_text, filename=spec_path.name)
@@ -1318,10 +1338,13 @@ def author(
         # With the map and a spent gap budget the schema is fixed: Cedar
         # validation of the atom is the real check, and a declared hook the
         # schema lacks fails there and is repaired within the schema.
+        schema_fixed_here = intent_map is not None and (
+            _schema_gap_budget_spent(schema_gap_repair_limit, schema_gap_repair_count)
+            or (active_property_node is not None and active_property_node.id in schema_refusals)
+        )
         support_gaps = (
             []
-            if intent_map is not None
-            and _schema_gap_budget_spent(schema_gap_repair_limit, schema_gap_repair_count)
+            if schema_fixed_here
             else missing_schema_support(atom.required_schema_support, schema_text)
         )
         if support_gaps:
@@ -1386,6 +1409,10 @@ def author(
                 approved_schema_names=approved_schema_names,
                 repair_records=schema_gap_repairs,
             )
+            if repaired is None and intent_map is not None and active_property_node is not None:
+                schema_refusals[active_property_node.id] = _schema_refusal_reason(schema_gap_repairs)
+                pending_property_atoms.insert(0, (atom, atom_from_batch))
+                continue
             if repaired is None:
                 _write_stage0_artifacts(
                     session,
@@ -1461,20 +1488,35 @@ def author(
                     schema_text,
                     list(current_atom.symbolic_verification_log),
                 )
+                refusal = (
+                    schema_refusals.get(active_property_node.id, "")
+                    if active_property_node is not None
+                    else ""
+                )
                 if (
                     repair_plan.action == "repair_schema"
                     and intent_map is not None
-                    and _schema_gap_budget_spent(schema_gap_repair_limit, schema_gap_repair_count)
+                    and (
+                        refusal
+                        or _schema_gap_budget_spent(schema_gap_repair_limit, schema_gap_repair_count)
+                    )
                 ):
-                    # The schema cannot change any more, so the atom has to be
-                    # rewritten within it. A requirement it cannot express stays
-                    # unsolved and stops the run by name.
+                    # The schema cannot change any more, or not for this
+                    # requirement, so the atom has to be rewritten within it. A
+                    # requirement it cannot express stays unsolved and stops the
+                    # run by name.
+                    fixed = (
+                        f"The schema review refused to add what this atom needs: {refusal} "
+                        "The schema will not change for this requirement."
+                        if refusal
+                        else "The schema is fixed: it cannot gain entities, attributes, or "
+                        "context fields."
+                    )
                     repair_plan = replace(
                         repair_plan,
                         action="repair_current_property",
                         repair_instruction=(
-                            "The schema is fixed: it cannot gain entities, attributes, or "
-                            "context fields. Rewrite the atom using only what the schema "
+                            f"{fixed} Rewrite the atom using only what the schema "
                             "already declares. " + (repair_plan.repair_instruction or reason)
                         ),
                     )
@@ -1779,6 +1821,9 @@ def author(
                 approved_schema_names=approved_schema_names,
                 repair_records=schema_gap_repairs,
             )
+            if repaired is None and intent_map is not None and active_property_node is not None:
+                schema_refusals[active_property_node.id] = _schema_refusal_reason(schema_gap_repairs)
+                continue
             if repaired is None:
                 session.write_stage2_intent_graph(
                     build_property_intent_graph(plan.properties),

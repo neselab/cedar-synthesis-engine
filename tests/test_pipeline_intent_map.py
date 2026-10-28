@@ -489,6 +489,59 @@ def test_fixed_schema_turns_a_schema_gap_into_a_rewrite_of_the_atom(tmp_path: Pa
     assert run_verification(str(result.candidate_path.parent)).loss == 0
 
 
+def test_schema_repair_the_review_refuses_turns_into_a_rewrite(tmp_path: Path) -> None:
+    from dataclasses import replace
+
+    from autocedar.atoms import AttributeAtom
+    from autocedar.pipeline import PropertyRepairPlan
+
+    spec, schema, doc = _setup(tmp_path)
+    target = node_ids(doc)["release:defect count"]
+
+    class GapProposer(Proposer):
+        def __call__(self, packet, schema_path, prior_atoms, decisions):
+            atoms = super().__call__(packet, schema_path, prior_atoms, decisions)
+            if _focus(packet) == target:
+                atoms = [replace(a, reference_cedar=a.reference_cedar.replace("defectCount", "openDefects"))
+                         for a in atoms]
+            return atoms
+
+    def reviewer(atom):
+        if isinstance(atom, AttributeAtom):
+            return AtomDecision(atom.name, "reject", reason="defectCount already says this.")
+        return approve_checked(atom)
+
+    instructions: list[str] = []
+
+    def repairer(text, schema_path, rejected, reason, prior):
+        instructions.append(reason)
+        return replace(rejected, name=rejected.name + "_fixed",
+                       reference_cedar=rejected.reference_cedar.replace("openDefects", "defectCount"))
+
+    result = author(
+        spec, tmp_path / "out", session_id="refused-field",
+        review_atom=reviewer,
+        map_intent=lambda **kw: work_order_map(doc),
+        propose_schema_atoms=lambda text: [AttributeAtom(
+            name="openDefects", rationale="stub", plain_english_summary="Open defects.", source_excerpt="",
+            on_entity="WorkOrder", field_name="openDefects", cedar_type="Long")],
+        propose_property_atom=GapProposer(doc),
+        plan_property_repair=lambda *a: PropertyRepairPlan(
+            action="repair_schema", reason="needs WorkOrder.openDefects",
+            repair_instruction="Add WorkOrder.openDefects."),
+        repair_property_atom=repairer,
+        synthesize=_synthesize_exact,
+        schema_path_override=str(schema),
+    )
+
+    assert result.notes == []
+    assert "openDefects" not in result.schema_text
+    assert instructions and instructions[0].startswith(
+        "The schema review refused to add what this atom needs: defectCount already says this."
+    )
+    assert run_verification(str(result.candidate_path.parent)).loss == 0
+
+
 GUARD_SPEC = """# Work orders
 
 ## Permission to release a work order
