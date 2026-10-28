@@ -295,6 +295,7 @@ def _build_reviewed_intent_map(
     session: Session,
     resume_from: Path | None,
     extend_schema: Callable[[list[tuple[str, str, str]], str], str | None] | None = None,
+    schema_can_grow: bool = False,
 ) -> tuple[IntentMap | None, AtomDecision | None, str]:
     """Map the document, check the map's structure, and have it reviewed.
 
@@ -308,6 +309,9 @@ def _build_reviewed_intent_map(
     A scope whose action the schema does not declare is a schema gap, as in
     Stage 2: ``extend_schema`` asks for the missing actions through the
     reviewed schema repair, and the same map is checked against the result.
+    It returns None when it makes no attempt (no repair budget left). When the
+    schema review refuses an action, that decision stands: the scopes that need
+    it leave the map, and the map reviewer is told which sentences left and why.
     """
     record_path = session.base / "stage0" / "intent_map.json"
     triples = schema_triples(schema_text, cedar_path=CEDAR_PATH)
@@ -320,10 +324,25 @@ def _build_reviewed_intent_map(
                 decision = from_dict(AtomDecision, prior["decision"]) if prior.get("decision") else None
                 return resumed, decision, ""
     outline = document_outline(source_doc)
-    actions = describe_schema_actions(triples)
+    refused: set[tuple[str, str, str]] = set()
+
+    def mapper_actions() -> str:
+        text = describe_schema_actions(triples)
+        if not schema_can_grow:
+            return text
+        text += (
+            "\n\nThe schema can still gain actions and types. If a requirement needs an "
+            "action, principal type, or resource type not listed, give its scope a new "
+            "name; AutoCedar adds it to the schema after review."
+        )
+        if refused:
+            text += " The schema review refused these, so leave their sentences out: " + "; ".join(
+                f"{a} ({p} to {r})" for p, a, r in sorted(refused)
+            )
+        return text
 
     def build_map(**kwargs: Any) -> IntentMap:
-        built = map_intent(outline=outline, schema_actions=actions, **kwargs)
+        built = map_intent(outline=outline, schema_actions=mapper_actions(), **kwargs)
         # AutoCedar never assumes a list of permissions is incomplete: a scope
         # the map does not mark complete waits for the yes/no question.
         for scope in built.scopes:
@@ -339,14 +358,24 @@ def _build_reviewed_intent_map(
     mapper_calls = 1
     # Objections AutoCedar applies itself cost a review but no mapper call, so
     # reviews are capped separately from mapper rounds.
+    left_out: list[str] = []
     for round_number in range(1, 2 * MAP_ROUNDS + 1):
         missing = intent_map.missing_actions(triples)
+        ask = [t for t in missing if t not in refused]
         if missing and extend_schema is not None:
-            extended = extend_schema(missing, _missing_action_reason(intent_map, missing, source_doc))
+            extended = extend_schema(ask, _missing_action_reason(intent_map, ask, source_doc)) if ask else None
             if extended is not None:
                 triples = schema_triples(extended, cedar_path=CEDAR_PATH)
-                actions = describe_schema_actions(triples)
-                rounds.append({"round": round_number, "schema_extended_for": [list(t) for t in missing]})
+                refused.update(intent_map.missing_actions(triples))
+            if extended is not None or not ask:
+                dropped = intent_map.drop_scopes([t for t in missing if t in refused])
+                left_out.extend(dropped)
+                rounds.append({
+                    "round": round_number,
+                    "schema_extended_for": [list(t) for t in ask if t not in refused],
+                    "schema_refused": [list(t) for t in missing if t in refused],
+                    "left_out": dropped,
+                })
                 write_json(record_path, {"approved": False, "rounds": rounds})
         errors = intent_map.structure_errors(source_doc, triples)
         if errors:
@@ -363,7 +392,7 @@ def _build_reviewed_intent_map(
             )
             mapper_calls += 1
             continue
-        intent_map.review_text = intent_map.render(source_doc)
+        intent_map.review_text = intent_map.render(source_doc) + _left_out_note(left_out, source_doc)
         intent_map.outline = outline
         _, decision = _normalize_review_result(intent_map, review_atom(intent_map))
         rounds.append({"round": round_number, "map": intent_map.to_dict(), "decision": to_dict(decision)})
@@ -420,6 +449,21 @@ def _missing_action_reason(
         lines.append(f"- action {action}, principal {principal}, resource {resource}: {quoted}")
     lines.append("Add each action, and any entity type it needs, so these requirements can be expressed.")
     return "\n".join(lines)
+
+
+def _left_out_note(node_ids: list[str], source_doc: Any) -> str:
+    if not node_ids:
+        return ""
+    text = {node.id: node.text for node in source_doc.nodes}
+    lines = [
+        "",
+        "LEFT OUT AFTER SCHEMA REVIEW",
+        "The schema review refused to add the actions these sentences need, as "
+        "they state no access-control requirement the schema should express. "
+        "AutoCedar left them out of the map; do not ask to add them again.",
+    ]
+    lines += [f"- [{n}] {text.get(n, '')}" for n in dict.fromkeys(node_ids)]
+    return "\n" + "\n".join(lines)
 
 
 def _schema_gap_budget_spent(limit: int | None, used: int) -> bool:
@@ -915,7 +959,9 @@ def author(
 
         def extend_schema_for_map(missing: list[tuple[str, str, str]], reason: str) -> str | None:
             nonlocal schema_text, schema_gap_repair_count
-            if _schema_gap_budget_spent(schema_gap_repair_limit, schema_gap_repair_count):
+            if propose_schema_atoms is None or _schema_gap_budget_spent(
+                schema_gap_repair_limit, schema_gap_repair_count
+            ):
                 return None
             gap = {
                 "atom_name": "intent_map",
@@ -942,11 +988,10 @@ def author(
                 approved_schema_names=approved_schema_names,
                 repair_records=schema_gap_repairs,
             )
-            if repaired is None:
-                return None
-            schema_text = repaired
-            schema_gap_repair_count += 1
-            _notify_schema_ready(review_atom, schema_text)
+            if repaired is not None:
+                schema_text = repaired
+                schema_gap_repair_count += 1
+                _notify_schema_ready(review_atom, schema_text)
             return schema_text
 
         intent_map, map_decision, map_note = _build_reviewed_intent_map(
@@ -957,6 +1002,8 @@ def author(
             session=session,
             resume_from=Path(resume_from) if resume_from else None,
             extend_schema=extend_schema_for_map,
+            schema_can_grow=propose_schema_atoms is not None
+            and not _schema_gap_budget_spent(schema_gap_repair_limit, schema_gap_repair_count),
         )
         if intent_map is None:
             _write_stage0_artifacts(

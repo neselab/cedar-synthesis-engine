@@ -223,6 +223,31 @@ class IntentMap:
                 missing.append(triple)
         return missing
 
+    def drop_scopes(self, triples: list[tuple[str, str, str]]) -> list[str]:
+        """Remove the scopes for these requests, their slices, and conditions left without a scope.
+
+        Returns the node ids of the conditions that left the map.
+        """
+        gone = {
+            s.id for s in self.scopes
+            if (s.principal_type, _bare_action(s.action), s.resource_type) in triples
+        }
+        gone_slices = {sl.id for sl in self.slices if sl.scope_id in gone}
+        self.scopes = [s for s in self.scopes if s.id not in gone]
+        self.slices = [sl for sl in self.slices if sl.id not in gone_slices]
+        dropped: list[str] = []
+        kept: list[MapSentence] = []
+        for sentence in self.sentences:
+            if sentence.kind == CONDITION:
+                sentence.slice_ids = [i for i in sentence.slice_ids if i not in gone_slices]
+                sentence.restricts_scope_ids = [i for i in sentence.restricts_scope_ids if i not in gone]
+                if not sentence.slice_ids and not sentence.restricts_scope_ids:
+                    dropped.append(sentence.node_id)
+                    continue
+            kept.append(sentence)
+        self.sentences = kept
+        return dropped
+
     def _edges(self) -> dict[str, list[str]]:
         """Child-to-parent edges: condition -> slice/scope -> root."""
         edges: dict[str, list[str]] = {}

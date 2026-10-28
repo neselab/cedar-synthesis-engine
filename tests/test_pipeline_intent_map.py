@@ -361,6 +361,11 @@ def test_map_scope_without_a_schema_action_extends_the_schema(tmp_path: Path) ->
     spec, schema, doc = _setup(tmp_path)
     schema.write_text(SCHEMA.replace("action release, signoff", "action release"))
     requests: list[str] = []
+    mapper_actions: list[str] = []
+
+    def mapper(**kw):
+        mapper_actions.append(kw["schema_actions"])
+        return work_order_map(doc)
 
     def propose_schema_atoms(text: str):
         requests.append(text)
@@ -371,7 +376,7 @@ def test_map_scope_without_a_schema_action_extends_the_schema(tmp_path: Path) ->
         return author(
             spec, tmp_path / "out", session_id=session_id,
             review_atom=approve_checked,
-            map_intent=lambda **_: work_order_map(doc),
+            map_intent=mapper,
             propose_schema_atoms=propose_schema_atoms,
             propose_property_atom=Proposer(doc),
             synthesize=_synthesize_exact,
@@ -385,9 +390,12 @@ def test_map_scope_without_a_schema_action_extends_the_schema(tmp_path: Path) ->
     assert "action signoff" in result.schema_text
     assert len(requests) == 1
     assert "action signoff, principal User, resource WorkOrder" in requests[0]
+    assert "The schema can still gain actions" in mapper_actions[0]
     assert "the work order is not on hold" in requests[0]  # the sentence that needs it
     record = json.loads((result.session_dir / "stage0" / "intent_map.json").read_text())
-    assert record["rounds"][0] == {"round": 1, "schema_extended_for": [["User", "signoff", "WorkOrder"]]}
+    assert record["rounds"][0] == {
+        "round": 1, "schema_extended_for": [["User", "signoff", "WorkOrder"]], "schema_refused": [], "left_out": [],
+    }
     assert run_verification(str(result.candidate_path.parent)).loss == 0
 
     # A spent repair budget leaves the schema as it is, and the map stops on the gap.
@@ -395,6 +403,44 @@ def test_map_scope_without_a_schema_action_extends_the_schema(tmp_path: Path) ->
     stopped = run("fixed", max_schema_gap_repairs=0)
     assert len(requests) == 1
     assert "the schema has no action 'signoff'" in stopped.notes[0]
+    assert not any("can still gain" in a for a in mapper_actions[1:])
+
+
+def test_action_the_schema_review_refuses_leaves_the_map(tmp_path: Path) -> None:
+    from autocedar.atoms import ActionAtom
+
+    spec, schema, doc = _setup(tmp_path)
+    schema.write_text(SCHEMA.replace("action release, signoff", "action release"))
+    ids = node_ids(doc)
+    map_texts: list[str] = []
+
+    def reviewer(atom):
+        if isinstance(atom, ActionAtom):
+            return AtomDecision(atom.name, "reject", reason="Not an access-control requirement.")
+        if isinstance(atom, IntentMap):
+            map_texts.append(atom.review_text)
+        return approve_checked(atom)
+
+    result = author(
+        spec, tmp_path / "out", session_id="refused",
+        review_atom=reviewer,
+        map_intent=lambda **_: work_order_map(doc),
+        propose_schema_atoms=lambda text: [ActionAtom(
+            name="signoff", rationale="stub", plain_english_summary="Sign off a work order.",
+            source_excerpt="", principal_types=["User"], resource_types=["WorkOrder"])],
+        propose_property_atom=Proposer(doc),
+        synthesize=_synthesize_exact,
+        schema_path_override=str(schema),
+    )
+
+    assert result.notes == []
+    assert "signoff" not in result.schema_text
+    record = json.loads((result.session_dir / "stage0" / "intent_map.json").read_text())
+    assert record["rounds"][0]["schema_refused"] == [["User", "signoff", "WorkOrder"]]
+    assert sorted(record["rounds"][0]["left_out"]) == sorted([ids["signoff:inspector"], ids["signoff:on hold"]])
+    assert "LEFT OUT AFTER SCHEMA REVIEW" in map_texts[0] and "not on hold" in map_texts[0]
+    assert [s["id"] for s in record["map"]["scopes"]] == ["s_release"]
+    assert run_verification(str(result.candidate_path.parent)).loss == 0
 
 
 def test_fixed_schema_turns_a_schema_gap_into_a_rewrite_of_the_atom(tmp_path: Path) -> None:
