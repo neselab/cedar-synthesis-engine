@@ -178,3 +178,23 @@ def test_atom_with_several_policies_gets_a_real_never_errors_verdict(tmp_path: P
     symbolic_verify_atom(atom, str(schema))
 
     assert "never-errors: ok" in "\n".join(atom.symbolic_verification_log)
+
+
+def test_symcc_check_that_times_out_gets_one_longer_attempt(monkeypatch) -> None:
+    import subprocess as sp
+
+    from autocedar.harness import solver_wrapper
+
+    calls: list[float] = []
+
+    def fake_run(cmd, capture_output, text, timeout):
+        calls.append(timeout)
+        if len(calls) == 1:
+            raise sp.TimeoutExpired(cmd, timeout)
+        return sp.CompletedProcess(cmd, 0, "ok", "")
+
+    monkeypatch.setenv("AUTOCEDAR_SYMCC_TIMEOUT_SECONDS", "5")
+    monkeypatch.setattr(solver_wrapper.subprocess, "run", fake_run)
+
+    assert solver_wrapper._run_symcc_command(["cedar"]).stdout == "ok"
+    assert calls == [5.0, 5.0 * solver_wrapper.SYMCC_RETRY_FACTOR]

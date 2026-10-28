@@ -169,18 +169,33 @@ def _run_symcc(
         passed = formal_verdict(output) is True
         return passed, output
     except subprocess.TimeoutExpired:
-        return False, "Cedar symcc execution error: CVC5 solver timed out (30s limit)."
+        return False, (
+            "Cedar symcc execution error: CVC5 solver timed out "
+            f"({_symcc_timeout():g}s, then {SYMCC_RETRY_FACTOR * _symcc_timeout():g}s)."
+        )
     except FileNotFoundError:
         return False, f"Cedar CLI not found at {CEDAR_PATH}. Set CEDAR env var."
 
 
+SYMCC_RETRY_FACTOR = 4
+
+
+def _symcc_timeout() -> float:
+    try:
+        return max(float(os.environ.get("AUTOCEDAR_SYMCC_TIMEOUT_SECONDS", "30")), 1.0)
+    except ValueError:
+        return 30.0
+
+
 def _run_symcc_command(cmd: list[str]) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        cmd,
-        capture_output=True,
-        text=True,
-        timeout=30,
-    )
+    # A large candidate can outlast the limit on one check while the next run
+    # of the same check passes; a timeout is a tool limit, not a verdict, so
+    # one longer attempt follows before it counts as a tool error.
+    timeout = _symcc_timeout()
+    try:
+        return subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+    except subprocess.TimeoutExpired:
+        return subprocess.run(cmd, capture_output=True, text=True, timeout=SYMCC_RETRY_FACTOR * timeout)
 
 
 def _with_plain_error_format(extra_args: list[str]) -> list[str]:

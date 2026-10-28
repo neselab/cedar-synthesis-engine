@@ -5,6 +5,10 @@ versioning while the public provider and CLI interfaces stabilize.
 
 ## Unreleased
 
+- A synthesis check whose solver call times out gets one more attempt with
+  four times the limit before it counts as a tool error.
+  `AUTOCEDAR_SYMCC_TIMEOUT_SECONDS` sets the limit (default 30). Before, one
+  slow check on a large candidate stopped synthesis.
 - Added `--noisy` for documents in which some sentences may not be
   requirements, such as the output of a sentence classifier. The schema is
   built and reviewed once and then fixed; a map scope the schema does not
