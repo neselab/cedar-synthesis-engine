@@ -396,6 +396,7 @@ def _build_reviewed_intent_map(
         intent_map.review_text = intent_map.render(source_doc) + _left_out_note(left_out, source_doc)
         intent_map.outline = outline
         _, decision = _normalize_review_result(intent_map, review_atom(intent_map))
+        decision = _settle_left_out_objections(decision, set(left_out))
         rounds.append({"round": round_number, "map": intent_map.to_dict(), "decision": to_dict(decision)})
         if decision.action == "approve":
             record = {
@@ -485,6 +486,31 @@ def _left_out_note(node_ids: list[str], source_doc: Any) -> str:
 
 def _schema_gap_budget_spent(limit: int | None, used: int) -> bool:
     return limit is not None and used >= limit
+
+
+def _settle_left_out_objections(decision: AtomDecision, left_out: set[str]) -> AtomDecision:
+    """Drop objections that ask again for sentences the schema review left out.
+
+    The schema review's refusal is the decision on those sentences; the map
+    review does not reopen it. A rejection whose objections all concern them
+    is an approval of the rest of the map.
+    """
+    objections = (decision.edit_delta or {}).get("map_objections") or []
+    if decision.action == "approve" or not objections or not left_out:
+        return decision
+    settled = [o for o in objections if o.get("node_id") in left_out]
+    if not settled:
+        return decision
+    kept = [o for o in objections if o.get("node_id") not in left_out]
+    delta = {**(decision.edit_delta or {}), "map_objections": kept, "settled_by_schema_review": settled}
+    if kept:
+        return replace(decision, edit_delta=delta)
+    return replace(
+        decision,
+        action="approve",
+        reason="Every remaining objection asked again for sentences the schema review left out.",
+        edit_delta=delta,
+    )
 
 
 def _apply_map_objections(

@@ -66,7 +66,9 @@ versioning while the public provider and CLI interfaces stabilize.
   mapper is told it may name new actions. When the schema review refuses an
   action, its scopes leave the map, and the map reviewer is told which
   sentences left and why, so the two reviews do not overrule each other in
-  turn. Before, the map could not name a requirement the generated schema had
+  turn: map-review objections that ask again for those sentences are settled,
+  and a rejection with only such objections approves the rest of the map.
+  Before, the map could not name a requirement the generated schema had
   missed, so its review kept rejecting it until the run stopped.
 - `--max-map-rounds` (default 3, as before) sets how many times the intent map
   can go back to the mapper. Long or noisy documents can need more rounds.

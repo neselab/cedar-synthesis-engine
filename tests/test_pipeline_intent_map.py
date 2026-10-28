@@ -433,17 +433,23 @@ def test_action_the_schema_review_refuses_leaves_the_map(tmp_path: Path) -> None
     ids = node_ids(doc)
     map_texts: list[str] = []
 
+    mapper_calls: list[dict] = []
+
     def reviewer(atom):
         if isinstance(atom, ActionAtom):
             return AtomDecision(atom.name, "reject", reason="Not an access-control requirement.")
         if isinstance(atom, IntentMap):
             map_texts.append(atom.review_text)
+            # The map review asks again for a sentence the schema review left out.
+            return AtomDecision("intent_map", "reject", reason="Sign off is missing.", edit_delta={
+                "map_objections": [{"kind": "other", "detail": "Add sign off.", "node_id": ids["signoff:on hold"]}],
+            })
         return approve_checked(atom)
 
     result = author(
         spec, tmp_path / "out", session_id="refused",
         review_atom=reviewer,
-        map_intent=lambda **_: work_order_map(doc),
+        map_intent=lambda **kw: mapper_calls.append(kw) or work_order_map(doc),
         propose_schema_atoms=lambda text: [ActionAtom(
             name="signoff", rationale="stub", plain_english_summary="Sign off a work order.",
             source_excerpt="", principal_types=["User"], resource_types=["WorkOrder"])],
@@ -459,6 +465,10 @@ def test_action_the_schema_review_refuses_leaves_the_map(tmp_path: Path) -> None
     assert sorted(record["rounds"][0]["left_out"]) == sorted([ids["signoff:inspector"], ids["signoff:on hold"]])
     assert "LEFT OUT AFTER SCHEMA REVIEW" in map_texts[0] and "not on hold" in map_texts[0]
     assert [s["id"] for s in record["map"]["scopes"]] == ["s_release"]
+    # That refusal stands: the objection is settled, and the mapper is not asked again.
+    assert len(mapper_calls) == 1 and len(map_texts) == 1
+    assert record["decision"]["action"] == "approve"
+    assert record["decision"]["edit_delta"]["settled_by_schema_review"][0]["node_id"] == ids["signoff:on hold"]
     assert run_verification(str(result.candidate_path.parent)).loss == 0
 
 
