@@ -15,6 +15,12 @@ versioning while the public provider and CLI interfaces stabilize.
   dropped restriction denies its scope, so a drop allows less, never more.
   Each drop and its reason goes to `stage2/dropped_requirements.json`. Without
   `--noisy` nothing changes.
+  Before Stage 2, `--noisy` completes the schema once for the mapped
+  requirements: the model names the entity attributes and action context
+  fields they need, in batches of 30, and each reviewed field that Cedar
+  validates is added (`stage1_5/schema_completion.json`). New entity types and
+  actions are not added there. Without this step, a fixed schema that missed a
+  field (a context flag, a student's courses) dropped a real requirement.
 - `--max-proposals` sets the Stage 2 proposal budget (default 128, as before).
   `--noisy` raises it to 12 per requirement, so long documents are not cut off.
 - A model answer that does not parse as the requested JSON is asked again, up

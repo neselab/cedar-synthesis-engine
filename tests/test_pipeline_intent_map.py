@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from autocedar.atoms import PropertyAtom
+from autocedar.atoms import ActionAtom, AttributeAtom, PropertyAtom
 from autocedar.corpus import AtomDecision
 from autocedar.harness.orchestrator import run_verification
 from autocedar.intent_map import IntentMap, MapScope, MapSentence, MapSlice, PermissionsQuestion
@@ -797,3 +797,42 @@ def test_noisy_mode_leaves_out_a_scope_the_fixed_schema_lacks(tmp_path: Path) ->
     assert record["approved"] is True
     assert record["rounds"][0]["left_out"] == [ids["rule"]]
     assert "s_archive" not in {s["id"] for s in record["map"]["scopes"]}
+
+
+def test_noisy_mode_completes_the_schema_for_the_mapped_requirements(tmp_path: Path) -> None:
+    spec, schema, doc = _setup(tmp_path)
+    schema.write_text(SCHEMA.replace(", onHold: Bool", ""))
+    requests: list[str] = []
+
+    def propose_schema_atoms(text: str):
+        requests.append(text)
+        return [
+            AttributeAtom("WorkOrder__onHold", "stub", "", "", on_entity="WorkOrder",
+                          field_name="onHold", cedar_type="Bool"),
+            ActionAtom("archive", "stub", "", "", principal_types=["User"], resource_types=["WorkOrder"]),
+            AttributeAtom("WorkOrder__site", "stub", "", "", on_entity="WorkOrder",
+                          field_name="site", cedar_type="Site"),
+        ]
+
+    result = author(
+        spec, tmp_path / "out", session_id="noisy-complete",
+        review_atom=approve_checked,
+        map_intent=lambda **kw: work_order_map(doc),
+        propose_property_atom=Proposer(doc),
+        propose_schema_atoms=propose_schema_atoms,
+        synthesize=_synthesize_exact,
+        schema_path_override=str(schema),
+        noisy=True,
+    )
+
+    # One request names every mapped requirement; the field it needed is added,
+    # a new action and a field of an undeclared type are not.
+    assert len(requests) == 1 and "not on hold" in requests[0]
+    assert result.notes == []
+    assert result.candidate_path.is_file()
+    assert "onHold: Bool" in result.schema_text and "site" not in result.schema_text
+    record = json.loads((result.session_dir / "stage1_5" / "schema_completion.json").read_text())
+    assert record["done"] is True
+    batch = record["batches"][0]
+    assert batch["added"] == ["WorkOrder__onHold"]
+    assert [s["atom"] for s in batch["skipped"]] == ["archive", "WorkOrder__site"]

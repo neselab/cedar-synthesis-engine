@@ -104,6 +104,8 @@ MAX_CONDITION_ATTEMPTS = 3
 # Noisy mode scales the proposal budget with the document: about one proposal
 # and three atom reviews for each of a condition's attempts.
 NOISY_PROPOSALS_PER_CONDITION = 12
+# Requirements per schema-completion request in noisy mode.
+SCHEMA_COMPLETION_BATCH = 30
 
 
 # ---------------------------------------------------------------------------
@@ -1128,6 +1130,21 @@ def author(
                 final_user_approved=False,
                 notes=[map_note],
             )
+
+    if noisy and intent_map is not None and propose_schema_atoms is not None:
+        completed_schema = _complete_schema_for_map(
+            intent_map=intent_map,
+            source_doc=source_doc,
+            spec_text=spec_text,
+            schema_text=schema_text,
+            schema_path=schema_path,
+            session=session,
+            review_atom=review_atom,
+            propose_schema_atoms=propose_schema_atoms,
+        )
+        if completed_schema != schema_text:
+            schema_text = completed_schema
+            _notify_schema_ready(review_atom, schema_text)
 
     # ──── Stage 2: property elicitation ────
     # Stage 2 is intentionally clocked by HITL review: ask for one property
@@ -3008,6 +3025,104 @@ def _repair_schema_gap_and_validate(
         return None
     session.write_stage1_final_schema(validation.schema_text)
     return validation.schema_text
+
+
+def _complete_schema_for_map(
+    *,
+    intent_map: IntentMap,
+    source_doc: Any,
+    spec_text: str,
+    schema_text: str,
+    schema_path: Path,
+    session: Session,
+    review_atom: AtomReviewer,
+    propose_schema_atoms: SchemaProposer,
+) -> str:
+    """Noisy mode: add the fields the mapped requirements need, once, before Stage 2.
+
+    Stage 1 builds the schema from the whole document, noise included, and
+    can miss a field a requirement needs (a context flag, a set of courses).
+    With the schema fixed in Stage 2, such a requirement could only be
+    dropped. So the model reads the mapped requirements in batches and names
+    the missing entity attributes and action context fields; each is reviewed
+    and added on its own if Cedar validates the result. New entity types and
+    actions are not added here: the map has already settled which requests
+    exist. Records go to ``stage1_5/schema_completion.json``.
+    """
+    record_path = session.base / "stage1_5" / "schema_completion.json"
+    saved = _read_json(record_path, {})
+    if saved.get("done"):
+        return saved.get("schema_text", schema_text)
+    text = {node.id: node.text for node in source_doc.nodes}
+    nodes = [n for n in intent_map.condition_node_ids(source_doc) if intent_map.scopes_for_node(n)]
+    actions = {action for _, action, _ in schema_triples(schema_text, cedar_path=CEDAR_PATH)}
+    batches: list[dict[str, Any]] = []
+    _notify_review_stage(review_atom, "Schema completion review", None)
+    for start in range(0, len(nodes), SCHEMA_COMPLETION_BATCH):
+        batch = nodes[start:start + SCHEMA_COMPLETION_BATCH]
+        lines = [
+            f"- [{n}] {text.get(n, '')} (scopes: "
+            + "; ".join(f"{s.principal_type} / {s.action} / {s.resource_type}" for s in intent_map.scopes_for_node(n))
+            + ")"
+            for n in batch
+        ]
+        request = _schema_completion_spec(spec_text, schema_text, lines)
+        proposed = [attach_source_ids(atom, batch) for atom in propose_schema_atoms(request)]
+        record: dict[str, Any] = {"requirements": batch, "proposed": [to_dict(a) for a in proposed],
+                                  "decisions": [], "added": [], "skipped": []}
+        for atom in proposed:
+            if isinstance(atom, ActionAtom) and _bare_action_name(atom.name) not in actions:
+                record["skipped"].append({"atom": atom.name, "why": "new action"})
+                continue
+            if not isinstance(atom, (AttributeAtom, ActionAtom)):
+                record["skipped"].append({"atom": atom.name, "why": f"not a field ({type(atom).__name__})"})
+                continue
+            reviewed, decision = _normalize_review_result(atom, review_atom(atom))
+            record["decisions"].append(to_dict(decision))
+            if decision.action != "approve":
+                continue
+            patched = apply_schema_atoms_to_text(schema_text, [reviewed])
+            if patched is None:
+                record["skipped"].append({"atom": atom.name, "why": "could not be added to the schema text"})
+                continue
+            schema_path.write_text(patched)
+            ok, error = cedar_validate_schema(schema_path)
+            if not ok:
+                schema_path.write_text(schema_text)
+                record["skipped"].append({"atom": atom.name, "why": error[:500]})
+                continue
+            schema_text = patched
+            record["added"].append(atom.name)
+        batches.append(record)
+        write_json(record_path, {"done": False, "batches": batches, "schema_text": schema_text})
+    write_json(record_path, {"done": True, "batches": batches, "schema_text": schema_text})
+    session.write_stage1_final_schema(schema_text)
+    return schema_text
+
+
+def _bare_action_name(name: str) -> str:
+    return name.split("::")[-1].strip('"')
+
+
+def _schema_completion_spec(spec_text: str, schema_text: str, requirements: list[str]) -> str:
+    return (
+        f"{spec_text}\n\n"
+        "<schema_completion>\n"
+        "AutoCedar has mapped the access-control requirements below. Each one "
+        "must be written as a Cedar condition on its scope's principal, "
+        "resource, and request context, using only what the schema declares.\n\n"
+        "Requirements:\n" + "\n".join(requirements) + "\n\n"
+        "Current Cedar schema:\n"
+        f"```cedarschema\n{schema_text}\n```\n\n"
+        "Propose ONLY the schema atoms these requirements still need: an "
+        "AttributeAtom for a missing field on an existing entity, or an "
+        "ActionAtom with an existing action's name that adds request context "
+        "attribute(s). Do not add entity types or actions, and do not repeat "
+        "what the schema already declares. Use types the schema already has. "
+        "If a requirement can be written with the declared fields, propose "
+        "nothing for it. Return an empty list if nothing is missing.\n"
+        "</schema_completion>\n"
+    )
 
 
 def _schema_gap_repair_spec(
