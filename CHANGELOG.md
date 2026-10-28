@@ -67,7 +67,8 @@ versioning while the public provider and CLI interfaces stabilize.
   avoided `*` and invented schema fields for a product such as usage × rate.
 - The Codex provider now sends a request again, after pauses of 5 and 15
   seconds within the call's deadline, when the service answers with an
-  overload or gateway error (429, 500, 502, 503, 504). Before, one such answer
+  overload or gateway error (429, 500, 502, 503, 504), or with a failed
+  response that reports overload inside a 200 stream. Before, one such answer
   ended the run.
 - Fixed a crash, and a false tool error from the never-errors check, on a
   condition with a long chain of `||` or `&&` (about 60 terms or more).

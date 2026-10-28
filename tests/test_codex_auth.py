@@ -376,6 +376,47 @@ def test_codex_parse_retries_gateway_errors_then_names_the_last(monkeypatch) -> 
     assert statuses == []
 
 
+def test_codex_parse_retries_overload_reported_inside_a_200_stream(monkeypatch) -> None:
+    credentials = CodexCredentials(
+        access_token=_codex_jwt("acct_parse"),
+        refresh_token="refresh",
+        source="test",
+        auth_path=None,
+        base_url=DEFAULT_CODEX_BASE_URL,
+    )
+    pauses: list[float] = []
+    monkeypatch.setattr(codex_auth.time, "sleep", pauses.append)
+    responses = [
+        {"error": {"message": "Our servers are currently overloaded. Please try again later."}},
+        {"error": {"code": "context_length_exceeded", "message": "Your input exceeds the context window."}},
+    ]
+
+    def requester(method: str, url: str, headers: dict[str, str], body: Any, timeout: float):
+        _ = method, url, headers, body, timeout
+        if responses:
+            return 200, responses.pop(0)
+        return 200, {
+            "usage": {"input_tokens": 12, "output_tokens": 3},
+            "output": [
+                {
+                    "type": "message",
+                    "content": [{"type": "output_text", "text": '{"answer":"OK"}'}],
+                },
+            ],
+        }
+
+    client = CodexAuthClient(credentials=credentials, requester=requester)
+    with pytest.raises(CodexAuthError, match="context window"):
+        client.messages.parse(
+            model="gpt-test",
+            system=[{"type": "text", "text": "system prompt"}],
+            messages=[{"role": "user", "content": "user turn"}],
+            output_format=_Answer,
+        )
+    # The overload was retried; the context error that followed was not.
+    assert pauses == [5.0]
+
+
 def test_codex_parse_retries_once_after_empty_text_output() -> None:
     credentials = CodexCredentials(
         access_token=_codex_jwt("acct_parse"),
