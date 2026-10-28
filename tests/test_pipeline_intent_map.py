@@ -993,3 +993,66 @@ def test_resumed_map_with_an_unmarked_scope_asks_the_permissions_question(tmp_pa
     assert again["permissions_complete"]["complete"] is True
     assert again["map"]["scopes"][1]["exhaustive"] is True
     assert resumed.candidate_path.is_file()
+
+
+def test_noisy_mode_removes_an_unconditional_slice_that_would_override_real_conditions(tmp_path: Path) -> None:
+    spec, schema, doc = _setup(tmp_path)
+    ids = node_ids(doc)
+    base = Proposer(doc)
+
+    def mapper(**kw) -> IntentMap:
+        imap = work_order_map(doc)
+        imap.slices.append(MapSlice("sl_links", "s_release", "release through a link"))
+        imap.sentences = [s for s in imap.sentences if s.node_id != ids["rule"]]
+        imap.sentences.append(MapSentence(ids["rule"], "condition", ["sl_links"]))
+        return imap
+
+    def proposer(packet, schema_path, prior_atoms, decisions):
+        if _focus(packet) != ids["rule"]:
+            return base(packet, schema_path, prior_atoms, decisions)
+        return [PropertyAtom(
+            name="release_through_link", rationale="stub", plain_english_summary="no condition",
+            source_excerpt="", constraint_type="condition", action="release",
+            principal_types=["User"], resource_types=["WorkOrder"],
+            reference_cedar='permit (principal is User, action == Action::"release", resource is WorkOrder) when { true };',
+        )]
+
+    result = author(
+        spec, tmp_path / "out", session_id="noisy-unconditional",
+        review_atom=approve_checked,
+        map_intent=mapper,
+        propose_property_atom=proposer,
+        synthesize=_synthesize_exact,
+        schema_path_override=str(schema),
+        noisy=True,
+    )
+
+    assert result.candidate_path.is_file()
+    assert "1 unconditional slice" in result.notes[0]
+    plan = (result.session_dir / "stage2" / "final_plan" / "verification_plan.py").read_text()
+    assert "sl_links" not in plan
+    assert '"name": "floor__s_release__sl_release"' in plan
+    candidate = result.candidate_path.read_text()
+    assert "defectCount" in candidate
+
+
+def test_noisy_mode_tells_the_writer_when_a_missing_field_will_not_be_added(tmp_path: Path) -> None:
+    spec, schema, doc = _setup(tmp_path)
+    schema.write_text(SCHEMA.replace(", onHold: Bool", ""))
+    proposer = Proposer(doc)
+
+    result = author(
+        spec, tmp_path / "out", session_id="noisy-no-field",
+        review_atom=approve_checked,
+        map_intent=lambda **kw: work_order_map(doc),
+        propose_property_atom=proposer,
+        propose_schema_atoms=lambda text: [],
+        synthesize=_synthesize_exact,
+        schema_path_override=str(schema),
+        noisy=True,
+    )
+
+    on_hold = node_ids(doc)["signoff:on hold"]
+    retries = [decisions for node, decisions in proposer.calls if node == on_hold][1:]
+    assert retries and any("will not gain the field" in d.reason for d in retries[0])
+    assert result.candidate_path.is_file()

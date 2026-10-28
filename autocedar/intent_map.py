@@ -30,7 +30,7 @@ import subprocess
 import tempfile
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, Iterable, Optional
+from typing import Any, Callable, Iterable, Optional
 
 from autocedar.atoms import PropertyAtom
 from autocedar.cedar_text import policy_conditions
@@ -329,6 +329,53 @@ class IntentMap:
                     continue
             kept.append(sentence)
         self.sentences = kept
+        return dropped
+
+    def drop_unconditional_slices(
+        self,
+        approved: Iterable[PropertyAtom],
+        is_unconditional: Callable[[PropertyAtom], bool],
+    ) -> list[dict[str, Any]]:
+        """Remove a slice that adds no condition from a scope whose other slices do.
+
+        Slices are ORed, so a slice whose own conditions are all `when { true }`
+        allows every request of its scope and makes the scope's real conditions
+        ("reviewers download the papers assigned to them") dead. In a noisy
+        document such a slice usually comes from a sentence about the interface
+        ("links are generated to download the paper"). Noisy mode removes it,
+        in the direction that allows less, and reports it.
+        """
+        grounded = self.grounding(list(approved))
+        dropped: list[dict[str, Any]] = []
+        for scope in self.scopes:
+            own = {
+                sl.id: [s.node_id for s in self.conditions() if sl.id in s.slice_ids]
+                for sl in self.scope_slices(scope.id)
+            }
+            trivial = {
+                sl_id for sl_id, nodes in own.items()
+                if all(
+                    (n, scope.id) in grounded and is_unconditional(grounded[(n, scope.id)])
+                    for n in nodes
+                )
+            }
+            if not trivial or len(trivial) == len(own):
+                continue
+            for sl_id in sorted(trivial):
+                dropped.append({
+                    "node_ids": own[sl_id],
+                    "scope_id": scope.id,
+                    "slice": sl_id,
+                    "effect": "unconditional slice removed; the scope's other slices have conditions",
+                })
+            self.slices = [sl for sl in self.slices if sl.id not in trivial]
+            for sentence in self.sentences:
+                if sentence.kind == CONDITION:
+                    sentence.slice_ids = [i for i in sentence.slice_ids if i not in trivial]
+        self.sentences = [
+            s for s in self.sentences
+            if s.kind != CONDITION or s.slice_ids or s.restricts_scope_ids
+        ]
         return dropped
 
     def _edges(self) -> dict[str, list[str]]:

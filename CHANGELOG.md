@@ -29,6 +29,13 @@ versioning while the public provider and CLI interfaces stabilize.
   model review as not a requirement leaves the map without removing its slice:
   writer and reviewer agree it adds no condition. A resumed `--noisy` session
   keeps a map that was used without approval.
+- In `--noisy`, a slice whose own conditions are all `when { true }` is
+  removed from a scope whose other slices have conditions, and reported.
+  Slices are ORed, so such a slice (often from a sentence about links or
+  screens) allowed every request and made the real conditions dead. When the
+  schema completion adds no field for an atom that used a missing one, the
+  rejection now says the field will not come and asks for declared
+  attributes, so the next attempt does not repeat the field.
 - The permissions question now tells the model that a note about sentences
   that may not be requirements concerns extra sentences, not missing
   permissions. Before, the model answered no on the strength of that note

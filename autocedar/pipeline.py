@@ -105,6 +105,12 @@ MAX_CONDITION_ATTEMPTS = 3
 # Noisy mode scales the proposal budget with the document: about one proposal
 # and three atom reviews for each of a condition's attempts.
 NOISY_PROPOSALS_PER_CONDITION = 12
+NO_NEW_FIELD_NOTE = (
+    "The schema will not gain the field this atom uses: the schema completion "
+    "found the requirement expressible with what the schema declares. Rewrite "
+    "the condition with declared attributes only, following entity references "
+    "where needed (for example resource.<reference>.<attribute>)."
+)
 # Requirements per schema-completion request in noisy mode.
 SCHEMA_COMPLETION_BATCH = 30
 
@@ -1609,6 +1615,7 @@ def author(
                     session.base / "stage2" / "slice_safety",
                 )
             field_error = _undeclared_field_error(current_atom) if noisy else ""
+            field_note = ""
             if (
                 field_error
                 and intent_map is not None
@@ -1635,11 +1642,15 @@ def author(
                     schema_text = completed_schema
                     _notify_schema_ready(review_atom, schema_text)
                     continue
+            if field_error and active_property_node is not None and active_property_node.id in late_completion_tried:
+                field_note = NO_NEW_FIELD_NOTE
             verification_logs[current_atom.name] = list(current_atom.symbolic_verification_log)
             reviewed_atom, decision = _normalize_review_result(
                 current_atom,
                 review_atom(current_atom),
             )
+            if field_note and decision.action == "reject":
+                decision = replace(decision, reason=field_note + " " + (decision.reason or ""))
             if decision.action == "reject" and repairs_attempted < 2:
                 # Persist the user's feedback before calling a potentially slow
                 # repair planner. Recovery may repropose, but must not forget it.
@@ -2122,9 +2133,14 @@ def author(
             item["reason"] = give_up_reasons.get(
                 item["node_id"], "Not reached within the proposal budget."
             )
-        write_json(session.base / "stage2" / "dropped_requirements.json", dropped_requirements)
-        write_json(session.base / "stage0" / "intent_map_after_drops.json", intent_map.to_dict())
         property_frontier_exhausted = True
+    if noisy and intent_map is not None and property_frontier_exhausted:
+        dropped_requirements += intent_map.drop_unconditional_slices(
+            plan.properties, lambda atom: _states_no_condition(atom.reference_cedar),
+        )
+        if dropped_requirements:
+            write_json(session.base / "stage2" / "dropped_requirements.json", dropped_requirements)
+            write_json(session.base / "stage0" / "intent_map_after_drops.json", intent_map.to_dict())
     if not property_frontier_exhausted:
         decisions2.append(
             AtomDecision(
@@ -2370,8 +2386,9 @@ def author(
         schema_text=schema_text,
         final_user_approved=final_user_approved,
         notes=[
-            f"Noisy mode dropped {len({d['node_id'] for d in dropped_requirements})} requirement(s) "
-            "that got no approved atom; see stage2/dropped_requirements.json."
+            f"Noisy mode dropped {len({d['node_id'] for d in dropped_requirements if 'node_id' in d})} "
+            f"requirement(s) and {sum(1 for d in dropped_requirements if 'slice' in d)} unconditional "
+            "slice(s); see stage2/dropped_requirements.json."
         ] if dropped_requirements else [],
     )
 
