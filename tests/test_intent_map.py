@@ -520,3 +520,19 @@ def test_drop_unsolved_removes_a_slice_left_with_no_condition() -> None:
     # Sign-off would otherwise be allowed for everyone; it is denied instead.
     assert [sl.id for sl in imap.slices] == ["sl_release"]
     assert imap.scope_by_id["s_signoff"].exhaustive is True
+
+
+def test_condition_packet_asks_only_for_the_scopes_still_open() -> None:
+    doc = compile_source_document(SPEC)
+    ids = node_ids(doc)
+    imap = work_order_map(doc)
+    # One requirement in two scopes: release is solved, sign-off is not.
+    imap.condition(ids["release:inspector"]).slice_ids = ["sl_release", "sl_signoff"]
+    approved = [condition_atom(ids["release:inspector"], "release", CONDITIONS["inspector"])]
+    node = doc.by_id[ids["release:inspector"]]
+
+    packet = build_condition_packet(doc, imap, node, approved, 2)
+
+    assert packet.scope_ids == ["s_signoff"]
+    assert "Scope s_release" not in packet.text
+    assert "Already approved for this requirement" in packet.text and "release (User / WorkOrder)" in packet.text

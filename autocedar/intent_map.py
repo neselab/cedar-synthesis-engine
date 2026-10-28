@@ -634,6 +634,11 @@ def build_condition_packet(
     by_id = doc.by_id
     grounded = intent_map.grounding(approved)
     scopes = intent_map.scopes_for_node(node.id)
+    # A retry asks only for the scopes still open: listing a solved one first
+    # made models write it again and skip the open one.
+    open_scopes = [s for s in scopes if (node.id, s.id) not in grounded]
+    solved = [s for s in scopes if s not in open_scopes] if open_scopes else []
+    scopes = open_scopes or scopes
     sentence = intent_map.condition(node.id)
     related: list[str] = []
     lines = [
@@ -645,6 +650,12 @@ def build_condition_packet(
         "conditions of a slice with AND and the slices of a scope with OR, so "
         "encode only what this requirement says.",
     ]
+    if solved:
+        lines.append(
+            "Already approved for this requirement (do not write these again): "
+            + "; ".join(f"{_bare_action(s.action)} ({s.principal_type} / {s.resource_type})" for s in solved)
+            + "."
+        )
     for scope in scopes:
         listed = "every way to allow it is listed" if scope.exhaustive else "the listed ways are examples"
         lines += [

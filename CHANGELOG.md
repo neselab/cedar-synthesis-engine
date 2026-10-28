@@ -29,6 +29,10 @@ versioning while the public provider and CLI interfaces stabilize.
   model review as not a requirement leaves the map without removing its slice:
   writer and reviewer agree it adds no condition. A resumed `--noisy` session
   keeps a map that was used without approval.
+- A condition packet for a requirement already solved in some of its scopes
+  asks only for the open scopes and names the solved ones. Before, it listed
+  every scope again, and models rewrote the solved scope and skipped the open
+  one until the requirement was dropped.
 - In `--noisy`, a slice whose own conditions are all `when { true }` is
   removed from a scope whose other slices have conditions, and reported.
   Slices are ORed, so such a slice (often from a sentence about links or
