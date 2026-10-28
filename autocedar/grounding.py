@@ -603,8 +603,10 @@ def _check_match_shape(
                 passed=False,
                 detail=(
                     "the condition holds for every request of its scope, so it encodes no "
-                    "requirement; use only fields the schema declares (a `has` test on an "
-                    "undeclared field is always false)"
+                    "requirement. If the requirement adds nothing beyond its scope's principal "
+                    "type, action, and resource type, write exactly `when { true }`; otherwise "
+                    "use only fields the schema declares (a `has` test on an undeclared field "
+                    "is always false)"
                 ),
             ),
         )

@@ -258,16 +258,25 @@ class IntentMap:
         self.sentences = kept
         return dropped
 
-    def drop_unsolved(self, approved: Iterable[PropertyAtom]) -> list[dict[str, Any]]:
+    def drop_unsolved(
+        self,
+        approved: Iterable[PropertyAtom],
+        no_condition: Iterable[str] = (),
+    ) -> list[dict[str, Any]]:
         """Remove each condition that has no approved atom, in the direction that allows less.
 
         Noisy mode uses this instead of stopping. A slice that needs an unsolved
         condition leaves the map, so nothing is allowed without that condition.
         A scope with an unsolved restriction is denied whole: it loses its
         slices and is marked complete, so its ceiling denies every request.
+        A sentence in ``no_condition`` was judged to add no condition at all
+        (its only encoding, `when { true }`, was rejected as not a
+        requirement), so it leaves the map without taking its slices along;
+        a slice it leaves with no condition is removed.
         Returns one record per dropped (condition, scope) pair.
         """
         grounded = self.grounding(list(approved))
+        no_condition = set(no_condition)
         dropped: list[dict[str, Any]] = []
         gone_slices: set[str] = set()
         denied: set[str] = set()
@@ -275,6 +284,14 @@ class IntentMap:
         for sentence in self.conditions():
             for scope in self.scopes_for_node(sentence.node_id):
                 if (sentence.node_id, scope.id) in grounded:
+                    continue
+                if sentence.node_id in no_condition:
+                    dropped.append({
+                        "node_id": sentence.node_id,
+                        "scope_id": scope.id,
+                        "effect": "not a requirement; left the map",
+                        "slices": [],
+                    })
                     continue
                 restricts = scope.id in sentence.restricts_scope_ids
                 slices = [i for i in sentence.slice_ids if slice_scope.get(i) == scope.id]
@@ -291,6 +308,12 @@ class IntentMap:
             if scope.id in denied:
                 gone_slices.update(sl.id for sl in self.scope_slices(scope.id))
                 scope.exhaustive = True
+        self.sentences = [
+            s for s in self.sentences if not (s.kind == CONDITION and s.node_id in no_condition)
+        ]
+        # A slice whose only conditions were not requirements would allow its
+        # whole scope; it goes too.
+        gone_slices.update(sl.id for sl in self.slices if not self.slice_conditions(sl.id))
         removed_scopes = {sl.scope_id for sl in self.slices if sl.id in gone_slices}
         self.slices = [sl for sl in self.slices if sl.id not in gone_slices]
         for scope in self.scopes:

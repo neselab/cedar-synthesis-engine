@@ -868,3 +868,95 @@ def test_noisy_mode_keeps_the_last_reviewed_map_when_a_revision_call_fails(tmp_p
     record = json.loads((result.session_dir / "stage0" / "intent_map.json").read_text())
     assert record["accepted_in_noisy_mode"] is True
     assert "timed out" in record["open_objections"]
+
+
+def test_noisy_mode_removes_a_sentence_both_models_read_as_no_condition(tmp_path: Path) -> None:
+    spec, schema, doc = _setup(tmp_path)
+    ids = node_ids(doc)
+    noise = ids["signoff:on hold"]
+    base = Proposer(doc)
+
+    def proposer(packet, schema_path, prior_atoms, decisions):
+        atoms = base(packet, schema_path, prior_atoms, decisions)
+        if _focus(packet) == noise:
+            for atom in atoms:
+                atom.reference_cedar = atom.reference_cedar.replace("!resource.onHold", "true")
+        return atoms
+
+    def reviewer(atom):
+        if isinstance(atom, PropertyAtom) and noise in atom.source_excerpt and "true" in atom.reference_cedar:
+            return AtomDecision(atom.name, "reject", reason="Model review: not an access-control requirement.")
+        return approve_checked(atom)
+
+    result = author(
+        spec, tmp_path / "out", session_id="noisy-noise",
+        review_atom=reviewer,
+        map_intent=lambda **kw: work_order_map(doc),
+        propose_property_atom=proposer,
+        synthesize=_synthesize_exact,
+        schema_path_override=str(schema),
+        noisy=True,
+    )
+
+    assert result.candidate_path.is_file()
+    dropped = json.loads((result.session_dir / "stage2" / "dropped_requirements.json").read_text())
+    assert [(d["node_id"], d["effect"]) for d in dropped] == [(noise, "not a requirement; left the map")]
+    plan = (result.session_dir / "stage2" / "final_plan" / "verification_plan.py").read_text()
+    # Sign-off keeps its slice with the inspector condition alone.
+    assert '"name": "floor__s_signoff__sl_signoff"' in plan
+
+
+def test_noisy_mode_adds_a_field_an_atom_needed_after_the_schema_completion(tmp_path: Path) -> None:
+    spec, schema, doc = _setup(tmp_path)
+    schema.write_text(SCHEMA.replace(", onHold: Bool", ""))
+    requests: list[str] = []
+
+    def propose_schema_atoms(text: str):
+        requests.append(text)
+        if len(requests) == 1:
+            return []
+        return [AttributeAtom("WorkOrder__onHold", "stub", "", "", on_entity="WorkOrder",
+                              field_name="onHold", cedar_type="Bool")]
+
+    result = author(
+        spec, tmp_path / "out", session_id="noisy-late",
+        review_atom=approve_checked,
+        map_intent=lambda **kw: work_order_map(doc),
+        propose_property_atom=Proposer(doc),
+        propose_schema_atoms=propose_schema_atoms,
+        synthesize=_synthesize_exact,
+        schema_path_override=str(schema),
+        noisy=True,
+    )
+
+    assert len(requests) == 2 and "onHold" in requests[1]
+    assert result.notes == []
+    assert result.candidate_path.is_file()
+    assert "onHold: Bool" in result.schema_text
+    late = json.loads((result.session_dir / "stage1_5" / "schema_completion_late.json").read_text())
+    assert late["batches"][0]["added"] == ["WorkOrder__onHold"]
+
+
+def test_noisy_resume_keeps_a_map_used_without_approval(tmp_path: Path) -> None:
+    spec, schema, doc = _setup(tmp_path)
+    calls: list[dict] = []
+
+    def reviewer(atom):
+        if isinstance(atom, IntentMap):
+            return AtomDecision("intent_map", "reject", reason="Not a requirement.")
+        return approve_checked(atom)
+
+    common = dict(
+        review_atom=reviewer,
+        map_intent=lambda **kw: calls.append(kw) or work_order_map(doc),
+        propose_property_atom=Proposer(doc),
+        synthesize=_synthesize_exact,
+        schema_path_override=str(schema),
+        max_map_rounds=1,
+        noisy=True,
+    )
+    first = author(spec, tmp_path / "out", session_id="first", **common)
+    resumed = author(spec, tmp_path / "out", session_id="again", resume_from=first.session_dir, **common)
+
+    assert len(calls) == 1
+    assert resumed.candidate_path.is_file()

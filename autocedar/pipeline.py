@@ -50,6 +50,7 @@ from autocedar.grounding import (
     _check_never_errors,
     _is_symcc_tool_error,
     _run_symcc,
+    _states_no_condition,
     symbolic_verify_atom,
 )
 from autocedar.intent_map import (
@@ -330,7 +331,8 @@ def _build_reviewed_intent_map(
     triples = schema_triples(schema_text, cedar_path=CEDAR_PATH)
     if resume_from is not None:
         prior = _read_json(resume_from / "stage0" / "intent_map.json", None)
-        if isinstance(prior, dict) and prior.get("approved") and prior.get("map"):
+        usable = prior.get("approved") or (noisy and prior.get("accepted_in_noisy_mode")) if isinstance(prior, dict) else False
+        if usable and prior.get("map"):
             resumed = IntentMap.from_dict(prior["map"])
             if not resumed.structure_errors(source_doc, triples):
                 write_json(record_path, prior)
@@ -1204,6 +1206,7 @@ def author(
         )
     unresolved_node_ids: set[str] = set()
     node_attempts: dict[str, int] = {}
+    late_completion_tried: set[str] = set()
     node_decision_start: dict[str, int] = {}
 
     def packet_for(node: Any, step: int) -> Any:
@@ -1599,6 +1602,33 @@ def author(
                     intent_map, current_atom, active_property_node, plan.properties, schema_path,
                     session.base / "stage2" / "slice_safety",
                 )
+            field_error = _undeclared_field_error(current_atom) if noisy else ""
+            if (
+                field_error
+                and intent_map is not None
+                and propose_schema_atoms is not None
+                and active_property_node is not None
+                and active_property_node.id not in late_completion_tried
+            ):
+                # The schema completion missed a field this requirement needs:
+                # ask once more for this requirement, then check the same atom.
+                late_completion_tried.add(active_property_node.id)
+                completed_schema = _complete_schema_for_map(
+                    intent_map=intent_map,
+                    source_doc=source_doc,
+                    spec_text=spec_text,
+                    schema_text=schema_text,
+                    schema_path=schema_path,
+                    session=session,
+                    review_atom=review_atom,
+                    propose_schema_atoms=propose_schema_atoms,
+                    nodes=[active_property_node.id],
+                    note=field_error,
+                )
+                if completed_schema != schema_text:
+                    schema_text = completed_schema
+                    _notify_schema_ready(review_atom, schema_text)
+                    continue
             verification_logs[current_atom.name] = list(current_atom.symbolic_verification_log)
             reviewed_atom, decision = _normalize_review_result(
                 current_atom,
@@ -2078,7 +2108,9 @@ def author(
             d.edit_delta.get("source_node_ids", [""])[0]: d.reason
             for d in decisions2 if d.atom_name.startswith("unresolved_")
         }
-        dropped_requirements = intent_map.drop_unsolved(plan.properties)
+        dropped_requirements = intent_map.drop_unsolved(
+            plan.properties, _no_condition_nodes(prop_atoms, decisions2, plan.properties),
+        )
         for item in dropped_requirements:
             item["text"] = node_text.get(item["node_id"], "")
             item["reason"] = give_up_reasons.get(
@@ -3049,6 +3081,8 @@ def _complete_schema_for_map(
     session: Session,
     review_atom: AtomReviewer,
     propose_schema_atoms: SchemaProposer,
+    nodes: list[str] | None = None,
+    note: str = "",
 ) -> str:
     """Noisy mode: add the fields the mapped requirements need, once, before Stage 2.
 
@@ -3060,15 +3094,23 @@ def _complete_schema_for_map(
     and added on its own if Cedar validates the result. New entity types and
     actions are not added here: the map has already settled which requests
     exist. Records go to ``stage1_5/schema_completion.json``.
+
+    With ``nodes``, it asks once more for those requirements only, with
+    ``note`` (the Cedar error of an atom that used a field the schema lacks);
+    such records go to ``stage1_5/schema_completion_late.json``.
     """
-    record_path = session.base / "stage1_5" / "schema_completion.json"
+    late = nodes is not None
+    record_path = session.base / "stage1_5" / (
+        "schema_completion_late.json" if late else "schema_completion.json"
+    )
     saved = _read_json(record_path, {})
-    if saved.get("done"):
+    if saved.get("done") and not late:
         return saved.get("schema_text", schema_text)
     text = {node.id: node.text for node in source_doc.nodes}
-    nodes = [n for n in intent_map.condition_node_ids(source_doc) if intent_map.scopes_for_node(n)]
+    if nodes is None:
+        nodes = [n for n in intent_map.condition_node_ids(source_doc) if intent_map.scopes_for_node(n)]
     actions = {action for _, action, _ in schema_triples(schema_text, cedar_path=CEDAR_PATH)}
-    batches: list[dict[str, Any]] = []
+    batches: list[dict[str, Any]] = list(saved.get("batches", [])) if late else []
     _notify_review_stage(review_atom, "Schema completion review", None)
     for start in range(0, len(nodes), SCHEMA_COMPLETION_BATCH):
         batch = nodes[start:start + SCHEMA_COMPLETION_BATCH]
@@ -3078,7 +3120,7 @@ def _complete_schema_for_map(
             + ")"
             for n in batch
         ]
-        request = _schema_completion_spec(spec_text, schema_text, lines)
+        request = _schema_completion_spec(spec_text, schema_text, lines, note)
         proposed = [attach_source_ids(atom, batch) for atom in propose_schema_atoms(request)]
         record: dict[str, Any] = {"requirements": batch, "proposed": [to_dict(a) for a in proposed],
                                   "decisions": [], "added": [], "skipped": []}
@@ -3112,11 +3154,50 @@ def _complete_schema_for_map(
     return schema_text
 
 
+_UNDECLARED_FIELD = re.compile(r"attribute\s+`[^`]+`.*?not\s+found|unknown attribute|has no attribute", re.S)
+
+
+def _undeclared_field_error(atom: PropertyAtom) -> str:
+    """The type-check failure of an atom that used a field the schema lacks, if any."""
+    for line in atom.symbolic_verification_log or []:
+        line = str(line)
+        if "type-correct: FAILED" in line and _UNDECLARED_FIELD.search(line):
+            return line[:1500]
+    return ""
+
+
+def _no_condition_nodes(
+    proposed: list[PropertyAtom], decisions: list[AtomDecision], approved: list[PropertyAtom],
+) -> set[str]:
+    """Requirements whose every proposed atom said `when { true }` and was rejected by model review.
+
+    Writer and reviewer then agree the sentence adds no condition; they differ
+    only on whether it needs an atom at all ("not an access-control
+    sentence"), so it can leave the map without changing what is allowed.
+    """
+    model_rejected = {
+        d.atom_name for d in decisions
+        if d.action == "reject" and (d.reason or "").startswith("Model review")
+    }
+    by_node: dict[str, list[PropertyAtom]] = {}
+    for atom in proposed:
+        for node_id in atom_source_ids(atom):
+            by_node.setdefault(node_id, []).append(atom)
+    solved = {node_id for atom in approved for node_id in atom_source_ids(atom)}
+    return {
+        node_id for node_id, atoms in by_node.items()
+        if node_id not in solved
+        and all(_states_no_condition(a.reference_cedar) and a.name in model_rejected for a in atoms)
+    }
+
+
 def _bare_action_name(name: str) -> str:
     return name.split("::")[-1].strip('"')
 
 
-def _schema_completion_spec(spec_text: str, schema_text: str, requirements: list[str]) -> str:
+def _schema_completion_spec(
+    spec_text: str, schema_text: str, requirements: list[str], note: str = "",
+) -> str:
     return (
         f"{spec_text}\n\n"
         "<schema_completion>\n"
@@ -3124,7 +3205,8 @@ def _schema_completion_spec(spec_text: str, schema_text: str, requirements: list
         "must be written as a Cedar condition on its scope's principal, "
         "resource, and request context, using only what the schema declares.\n\n"
         "Requirements:\n" + "\n".join(requirements) + "\n\n"
-        "Current Cedar schema:\n"
+        + (f"A condition written for this requirement failed Cedar validation:\n{note}\n\n" if note else "")
+        + "Current Cedar schema:\n"
         f"```cedarschema\n{schema_text}\n```\n\n"
         "Propose ONLY the schema atoms these requirements still need: an "
         "AttributeAtom for a missing field on an existing entity, or an "

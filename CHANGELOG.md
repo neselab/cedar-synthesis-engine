@@ -23,6 +23,15 @@ versioning while the public provider and CLI interfaces stabilize.
   field (a context flag, a student's courses) dropped a real requirement.
   If a call to revise the map fails, for example a long map that outlasts
   the request deadline, `--noisy` uses the last reviewed map.
+  When an atom in Stage 2 fails Cedar validation on a field the schema lacks,
+  `--noisy` asks for that requirement's fields once more and checks the atom
+  again. A sentence whose every atom says `when { true }` and was rejected by
+  model review as not a requirement leaves the map without removing its slice:
+  writer and reviewer agree it adds no condition. A resumed `--noisy` session
+  keeps a map that was used without approval.
+- The `match-broadness` failure now says to write `when { true }` when a
+  requirement adds nothing beyond its scope, instead of only pointing at
+  undeclared fields.
 - `--max-proposals` sets the Stage 2 proposal budget (default 128, as before).
   `--noisy` raises it to 12 per requirement, so long documents are not cut off.
 - A model answer that does not parse as the requested JSON is asked again, up

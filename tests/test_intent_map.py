@@ -492,3 +492,31 @@ def test_drop_unsolved_keeps_a_solved_map_unchanged() -> None:
 
     assert imap.drop_unsolved(solved) == []
     assert imap.to_dict() == before
+
+
+def test_drop_unsolved_lets_a_non_requirement_leave_without_its_slice() -> None:
+    doc = compile_source_document(SPEC)
+    ids = node_ids(doc)
+    imap = work_order_map(doc)
+
+    dropped = imap.drop_unsolved(_solved_except_on_hold(ids), no_condition={ids["signoff:on hold"]})
+
+    assert [(d["node_id"], d["effect"]) for d in dropped] == [
+        (ids["signoff:on hold"], "not a requirement; left the map"),
+    ]
+    assert [sl.id for sl in imap.slices] == ["sl_release", "sl_signoff"]
+    assert imap.slice_conditions("sl_signoff") == [ids["signoff:inspector"]]
+    assert imap.condition(ids["signoff:on hold"]) is None
+
+
+def test_drop_unsolved_removes_a_slice_left_with_no_condition() -> None:
+    doc = compile_source_document(SPEC)
+    ids = node_ids(doc)
+    imap = work_order_map(doc)
+    solved = _solved_except_on_hold(ids)[:2]
+
+    imap.drop_unsolved(solved, no_condition={ids["signoff:inspector"], ids["signoff:on hold"]})
+
+    # Sign-off would otherwise be allowed for everyone; it is denied instead.
+    assert [sl.id for sl in imap.slices] == ["sl_release"]
+    assert imap.scope_by_id["s_signoff"].exhaustive is True
