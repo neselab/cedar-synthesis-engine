@@ -57,6 +57,7 @@ from autocedar.intent_map import (
     GUARDED_BY_SLICE,
     IntentMap,
     PermissionsQuestion,
+    SliceQuestion,
     atom_fits_scope,
     merge_conditions,
     needs_slice_guard,
@@ -2135,9 +2136,15 @@ def author(
             )
         property_frontier_exhausted = True
     if noisy and intent_map is not None and property_frontier_exhausted:
+        slice_answers: list[dict[str, Any]] = []
         dropped_requirements += intent_map.drop_unconditional_slices(
-            plan.properties, lambda atom: _states_no_condition(atom.reference_cedar),
+            plan.properties,
+            lambda atom: _states_no_condition(atom.reference_cedar),
+            keep=lambda scope, sl, others: _keep_unconditional_slice(
+                intent_map, source_doc, scope, sl, others, review_atom, slice_answers,
+            ),
         )
+        write_json(session.base / "stage2" / "unconditional_slices.json", slice_answers)
         if dropped_requirements:
             write_json(session.base / "stage2" / "dropped_requirements.json", dropped_requirements)
             write_json(session.base / "stage0" / "intent_map_after_drops.json", intent_map.to_dict())
@@ -3187,6 +3194,41 @@ def _undeclared_field_error(atom: PropertyAtom) -> str:
         if "type-correct: FAILED" in line and _UNDECLARED_FIELD.search(line):
             return line[:1500]
     return ""
+
+
+def _keep_unconditional_slice(
+    intent_map: IntentMap,
+    source_doc: Any,
+    scope: Any,
+    sl: Any,
+    others: list[Any],
+    review_atom: AtomReviewer,
+    answers: list[dict[str, Any]],
+) -> bool:
+    """Ask the reviewer whether a slice with no condition is a real permission."""
+    text = {node.id: node.text for node in source_doc.nodes}
+    question = SliceQuestion(
+        scope=scope,
+        sentences=[text.get(n, n) for n in intent_map.slice_conditions(sl.id)
+                   if n not in intent_map.restrictions(scope.id)],
+        other_slices=[
+            f"{o.summary or o.id}: " + " AND ".join(
+                text.get(n, n) for n in intent_map.slice_conditions(o.id)
+                if n not in intent_map.restrictions(scope.id)
+            )
+            for o in others
+        ],
+        outline=intent_map.outline,
+    )
+    _, decision = _normalize_review_result(question, review_atom(question))
+    keep = decision.action == "approve"
+    answers.append({
+        "scope_id": scope.id,
+        "slice": sl.id,
+        "keep": keep,
+        "reason": decision.reason or (decision.edit_delta or {}).get("model_review", ""),
+    })
+    return keep
 
 
 def _no_condition_nodes(

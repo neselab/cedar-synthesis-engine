@@ -335,15 +335,18 @@ class IntentMap:
         self,
         approved: Iterable[PropertyAtom],
         is_unconditional: Callable[[PropertyAtom], bool],
+        keep: Callable[[MapScope, MapSlice, list[MapSlice]], bool] = lambda scope, sl, others: False,
     ) -> list[dict[str, Any]]:
-        """Remove a slice that adds no condition from a scope whose other slices do.
+        """Remove a slice that adds no condition from a scope whose other slices do, unless ``keep``.
 
         Slices are ORed, so a slice whose own conditions are all `when { true }`
         allows every request of its scope and makes the scope's real conditions
-        ("reviewers download the papers assigned to them") dead. In a noisy
-        document such a slice usually comes from a sentence about the interface
-        ("links are generated to download the paper"). Noisy mode removes it,
-        in the direction that allows less, and reports it.
+        ("reviewers download the papers assigned to them") dead. Sometimes that
+        is what the document says ("HCPs can modify the office visit"); often
+        the slice comes from a sentence about the interface ("links are
+        generated to download the paper"). ``keep`` decides (noisy mode asks
+        the reviewer); a slice it does not keep is removed, in the direction
+        that allows less, and reported.
         """
         grounded = self.grounding(list(approved))
         dropped: list[dict[str, Any]] = []
@@ -361,6 +364,9 @@ class IntentMap:
             }
             if not trivial or len(trivial) == len(own):
                 continue
+            slices = self.slice_by_id
+            others = [slices[i] for i in own if i not in trivial]
+            trivial = {i for i in trivial if not keep(scope, slices[i], others)}
             for sl_id in sorted(trivial):
                 dropped.append({
                     "node_ids": own[sl_id],
@@ -584,6 +590,52 @@ class PermissionsQuestion:
 
     def to_dict(self) -> dict[str, Any]:
         return {"question": self.name, "scopes": [asdict(s) for s in self.scopes]}
+
+
+@dataclass
+class SliceQuestion:
+    """Asks whether a slice with no condition is a real permission of its scope.
+
+    Slices are ORed, so a slice whose conditions are all `when { true }`
+    allows every request of its scope and leaves the scope's other slices
+    without effect. Approve keeps it (the document grants the scope outright);
+    reject removes it (its sentences describe the interface or a case already
+    covered, not a grant on their own).
+    """
+
+    scope: MapScope
+    sentences: list[str]
+    other_slices: list[str]
+    outline: str = ""
+    name: str = "unconditional_slice"
+
+    def render(self) -> str:
+        lines = [
+            "IS THIS AN UNCONDITIONAL PERMISSION?",
+            "",
+            f"Scope: {_bare_action(self.scope.action)} (principal {self.scope.principal_type}, "
+            f"resource {self.scope.resource_type}).",
+            "This way to allow it adds no condition, so it allows every request of the scope:",
+        ]
+        lines += [f"  {s}" for s in self.sentences]
+        lines += ["", "The scope's other ways to allow it, which have conditions:"]
+        lines += [f"  - {s}" for s in self.other_slices]
+        lines += [
+            "",
+            "Approve: yes, the document grants this scope without conditions; the other "
+            "ways then add nothing.",
+            "Reject: no, these sentences describe the interface or restate a case, so "
+            "only the ways with conditions allow requests.",
+        ]
+        return "\n".join(lines)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "question": self.name,
+            "scope": asdict(self.scope),
+            "sentences": self.sentences,
+            "other_slices": self.other_slices,
+        }
 
 
 # ---------------------------------------------------------------------------

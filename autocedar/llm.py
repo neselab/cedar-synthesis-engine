@@ -48,6 +48,7 @@ from autocedar.intent_map import (
     MapSentence,
     MapSlice,
     PermissionsQuestion,
+    SliceQuestion,
     is_condition_packet,
 )
 from autocedar.providers import (
@@ -939,6 +940,17 @@ class LLMClient:
                 f"```json\n{json.dumps(intent_map.to_dict(), separators=(',', ':'))}\n```"
             ),
             output_format=MapReviewResponse,
+            effort_override=_stage2_effort(self._provider, self._effort),
+        )
+        return response.parsed_output
+
+    def answer_slice_question(self, *, question: SliceQuestion, outline: str) -> AtomReviewResponse:
+        """Answer whether an unconditional slice is a real permission (approve = keep it)."""
+        response = self._call_parse(
+            system_prompt=_load_prompt("unconditional_slice.md"),
+            spec_text=outline,
+            user_turn=question.render(),
+            output_format=AtomReviewResponse,
             effort_override=_stage2_effort(self._provider, self._effort),
         )
         return response.parsed_output

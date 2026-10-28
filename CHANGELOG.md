@@ -33,10 +33,13 @@ versioning while the public provider and CLI interfaces stabilize.
   asks only for the open scopes and names the solved ones. Before, it listed
   every scope again, and models rewrote the solved scope and skipped the open
   one until the requirement was dropped.
-- In `--noisy`, a slice whose own conditions are all `when { true }` is
-  removed from a scope whose other slices have conditions, and reported.
-  Slices are ORed, so such a slice (often from a sentence about links or
-  screens) allowed every request and made the real conditions dead. When the
+- In `--noisy`, when a scope has a slice whose own conditions are all
+  `when { true }` next to slices with conditions, the reviewer is asked
+  whether it is a real unconditional permission ("HCPs can modify the office
+  visit") or a sentence about the interface ("links are generated to download
+  the paper"). Slices are ORed, so such a slice allows every request and makes
+  the real conditions dead. A slice the reviewer does not keep is removed and
+  reported; answers go to `stage2/unconditional_slices.json`. When the
   schema completion adds no field for an atom that used a missing one, the
   rejection now says the field will not come and asks for declared
   attributes, so the next attempt does not repeat the field.

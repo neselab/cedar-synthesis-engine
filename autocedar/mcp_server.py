@@ -26,7 +26,7 @@ from typing import Any, Callable, Optional, TextIO
 from autocedar import __version__
 from autocedar.atoms import PropertyAtom
 from autocedar.corpus import AtomDecision
-from autocedar.intent_map import IntentMap, PermissionsQuestion
+from autocedar.intent_map import IntentMap, PermissionsQuestion, SliceQuestion
 from autocedar.ui.terminal import (
     ReviewedAtom,
     _apply_field_edit,
@@ -230,6 +230,12 @@ def _render_pending(request: _ReviewRequest) -> dict[str, Any]:
     if isinstance(atom, IntentMap):
         kind, cedar = "intent_map", json.dumps(atom.to_dict(), indent=2)
         options = options[:2]
+    elif isinstance(atom, SliceQuestion):
+        kind, cedar = "slice_question", json.dumps(atom.to_dict(), indent=2)
+        options = [
+            "approve (yes: the document grants this scope without conditions)",
+            "reject (no: remove this way to allow it)",
+        ]
     elif isinstance(atom, PermissionsQuestion):
         kind, cedar = "permissions_question", json.dumps(atom.to_dict(), indent=2)
         options = [

@@ -278,3 +278,30 @@ def test_review_options_parse_on_author_and_resume() -> None:
         args = parser.parse_args([*command, "--model-review", "--review-provider", "codex",
                                   "--review-model", "gpt-6.1-sol"])
         assert (args.review_provider, args.review_model) == ("codex", "gpt-6.1-sol")
+
+
+def test_unconditional_slice_question_goes_to_the_slice_prompt() -> None:
+    from autocedar.intent_map import MapScope, SliceQuestion
+
+    class QuestionLLM:
+        def __init__(self) -> None:
+            self.seen = {}
+
+        def answer_slice_question(self, **kwargs):
+            self.seen = kwargs
+            return AtomReviewResponse(decision="reject", reason="The links sentence describes the interface.")
+
+    llm = QuestionLLM()
+    question = SliceQuestion(
+        scope=MapScope("s_release", "release", "User", "WorkOrder", True),
+        sentences=["- Links are generated to release the work order."],
+        other_slices=["clean order: the inspector releases an order with no defects"],
+        outline="<spec outline>",
+    )
+
+    decision = ModelReviewer(llm, "raw spec")(question)
+
+    assert decision.action == "reject"
+    assert decision.atom_name == "unconditional_slice"
+    assert llm.seen["question"] is question and llm.seen["outline"] == "<spec outline>"
+    assert "Links are generated" in question.render()

@@ -15,7 +15,7 @@ import pytest
 from autocedar.atoms import ActionAtom, AttributeAtom, PropertyAtom
 from autocedar.corpus import AtomDecision
 from autocedar.harness.orchestrator import run_verification
-from autocedar.intent_map import IntentMap, MapScope, MapSentence, MapSlice, PermissionsQuestion
+from autocedar.intent_map import IntentMap, MapScope, MapSentence, MapSlice, PermissionsQuestion, SliceQuestion
 from autocedar.pipeline import MAX_CONDITION_ATTEMPTS, author
 from autocedar.source_doc import compile_source_document
 from tests.reviewers import approve_checked
@@ -995,10 +995,12 @@ def test_resumed_map_with_an_unmarked_scope_asks_the_permissions_question(tmp_pa
     assert resumed.candidate_path.is_file()
 
 
-def test_noisy_mode_removes_an_unconditional_slice_that_would_override_real_conditions(tmp_path: Path) -> None:
+@pytest.mark.parametrize("answer", ["reject", "approve"])
+def test_noisy_mode_asks_whether_an_unconditional_slice_is_a_real_permission(tmp_path: Path, answer: str) -> None:
     spec, schema, doc = _setup(tmp_path)
     ids = node_ids(doc)
     base = Proposer(doc)
+    questions: list[SliceQuestion] = []
 
     def mapper(**kw) -> IntentMap:
         imap = work_order_map(doc)
@@ -1017,23 +1019,31 @@ def test_noisy_mode_removes_an_unconditional_slice_that_would_override_real_cond
             reference_cedar='permit (principal is User, action == Action::"release", resource is WorkOrder) when { true };',
         )]
 
+    def reviewer(atom):
+        if isinstance(atom, SliceQuestion):
+            questions.append(atom)
+            return AtomDecision(atom.name, answer, reason="stub")
+        return approve_checked(atom)
+
     result = author(
-        spec, tmp_path / "out", session_id="noisy-unconditional",
-        review_atom=approve_checked,
+        spec, tmp_path / "out", session_id=f"noisy-unconditional-{answer}",
+        review_atom=reviewer,
         map_intent=mapper,
         propose_property_atom=proposer,
-        synthesize=_synthesize_exact,
+        synthesize=_synthesize_exact if answer == "reject" else _synthesize_floors,
         schema_path_override=str(schema),
         noisy=True,
     )
 
+    # One question, naming the scope, the slice's sentence and the other slice.
+    assert len(questions) == 1 and questions[0].scope.id == "s_release"
+    assert "unless clause" in questions[0].sentences[0]
+    assert "defect count" in questions[0].other_slices[0]
     assert result.candidate_path.is_file()
-    assert "1 unconditional slice" in result.notes[0]
     plan = (result.session_dir / "stage2" / "final_plan" / "verification_plan.py").read_text()
-    assert "sl_links" not in plan
-    assert '"name": "floor__s_release__sl_release"' in plan
-    candidate = result.candidate_path.read_text()
-    assert "defectCount" in candidate
+    assert ("sl_links" in plan) is (answer == "approve")
+    answers = json.loads((result.session_dir / "stage2" / "unconditional_slices.json").read_text())
+    assert answers[0]["keep"] is (answer == "approve")
 
 
 def test_noisy_mode_tells_the_writer_when_a_missing_field_will_not_be_added(tmp_path: Path) -> None:

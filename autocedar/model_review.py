@@ -16,7 +16,7 @@ from typing import Any
 
 from autocedar.atoms import PropertyAtom
 from autocedar.corpus import AtomDecision
-from autocedar.intent_map import IntentMap, PermissionsQuestion
+from autocedar.intent_map import IntentMap, PermissionsQuestion, SliceQuestion
 
 
 class ModelReviewer:
@@ -49,6 +49,11 @@ class ModelReviewer:
         if isinstance(atom, IntentMap):
             review = self.llm.review_intent_map(
                 intent_map=atom,
+                outline=atom.outline or self.spec_text,
+            )
+        elif isinstance(atom, SliceQuestion):
+            review = self.llm.answer_slice_question(
+                question=atom,
                 outline=atom.outline or self.spec_text,
             )
         elif isinstance(atom, PermissionsQuestion):
