@@ -644,3 +644,70 @@ def test_atom_that_can_overflow_without_a_guard_is_still_rejected(tmp_path: Path
 
     assert result.candidate_path == Path("")
     assert "Stopped before synthesis" in result.notes[0]
+
+
+def test_schema_repair_patches_the_schema_as_it_stands(tmp_path: Path) -> None:
+    """The fixer may have declared types the draft never held; recomposing the draft would drop them."""
+    from autocedar.atoms import AttributeAtom, EntityAtom, SchemaDraft
+    from autocedar.corpus import Session
+    from autocedar.pipeline import _repair_schema_gap_and_validate
+
+    schema_text = SCHEMA + "entity Team;\n"  # Team came from the schema fixer, not from an atom
+    schema_path = tmp_path / "schema.cedarschema"
+    schema_path.write_text(schema_text)
+    draft = SchemaDraft(entities={"User": EntityAtom("User", "", "", "")})
+    attr = AttributeAtom("WorkOrder__team", "", "", "", on_entity="WorkOrder", field_name="team", cedar_type="Team")
+
+    repaired = _repair_schema_gap_and_validate(
+        spec_text="...", schema_text=schema_text, schema_path=schema_path,
+        gap={"atom_name": "a", "reason": "needs WorkOrder.team"},
+        session=Session("repair", tmp_path / "out"), review_atom=approve_checked,
+        propose_schema_atoms=lambda text: [attr], fix_schema=None, draft=draft,
+        approved_schema_atoms=[], approved_schema_names=set(), repair_records=[],
+    )
+
+    assert repaired is not None
+    assert "entity Team;" in repaired and "team: Team" in repaired
+    assert schema_path.read_text() == repaired
+
+
+def test_support_gap_still_missing_after_its_repair_is_not_repaired_again(tmp_path: Path) -> None:
+    from dataclasses import replace
+
+    from autocedar.atoms import AttributeAtom, RequiredSchemaSupport
+    from autocedar.pipeline import PropertyRepairPlan
+
+    spec, schema, doc = _setup(tmp_path)
+    target = node_ids(doc)["release:defect count"]
+
+    class NeedsOpenDefects(Proposer):
+        def __call__(self, packet, schema_path, prior_atoms, decisions):
+            atoms = super().__call__(packet, schema_path, prior_atoms, decisions)
+            if _focus(packet) == target:
+                atoms = [replace(a, required_schema_support=[RequiredSchemaSupport(
+                    kind="attribute", name="WorkOrder.openDefects", entity="WorkOrder",
+                    field_name="openDefects", type_name="Long", reason="open defects")]) for a in atoms]
+            return atoms
+
+    repairs: list[str] = []
+
+    def propose_schema_atoms(text: str):
+        repairs.append(text)
+        # A repair that is approved but adds something else, so the support stays missing.
+        return [AttributeAtom("WorkOrder__note", "stub", "", "", on_entity="WorkOrder",
+                              field_name="note", cedar_type="String")]
+
+    result = author(
+        spec, tmp_path / "out", session_id="repeat-gap",
+        review_atom=approve_checked,
+        map_intent=lambda **kw: work_order_map(doc),
+        propose_schema_atoms=propose_schema_atoms,
+        propose_property_atom=NeedsOpenDefects(doc),
+        plan_property_repair=lambda *a: PropertyRepairPlan(action="repair_current_property", reason="x"),
+        synthesize=_synthesize_exact,
+        schema_path_override=str(schema),
+    )
+
+    assert len(repairs) == 1
+    assert result.notes == []
+    assert run_verification(str(result.candidate_path.parent)).loss == 0

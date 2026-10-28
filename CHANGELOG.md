@@ -72,6 +72,13 @@ versioning while the public provider and CLI interfaces stabilize.
   missed, so its review kept rejecting it until the run stopped.
 - `--max-map-rounds` (default 3, as before) sets how many times the intent map
   can go back to the mapper. Long or noisy documents can need more rounds.
+- Schema repair patches the schema as it stands, and falls back to recomposing
+  the draft only when the text cannot be patched; a recomposed schema that drops
+  a declared type or action is rejected. Patching now adds the comma a list needs
+  and finds slots written on one line or without a trailing comma. A support gap
+  still missing after its repair is not repaired again. Before, a schema whose
+  types came from the validation fixer lost them on every repair, and one
+  attribute was requested 67 times without end.
 - When the schema review refuses a Stage 2 schema repair on the map path, the
   run goes on: that requirement's atoms are rewritten within the schema, with
   the review's reason in the instruction, and a requirement that still cannot

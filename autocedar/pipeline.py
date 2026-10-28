@@ -63,6 +63,7 @@ from autocedar.intent_map import (
     condition_atom_issue,
     derive_boundary_atoms,
     describe_schema_actions,
+    schema_declarations,
     schema_triples,
     _bare_action,
 )
@@ -691,6 +692,9 @@ def author(
     # reason: that decision stands, so their atoms are rewritten within the
     # schema instead of asking for the same support again.
     schema_refusals: dict[str, str] = {}
+    # Support gaps already repaired once: one that is still missing afterwards
+    # is not repaired again, which would loop.
+    repaired_support: set[tuple[str, ...]] = set()
     schema_gap_repair_limit = max_schema_gap_repairs
 
     session.write_input_spec(spec_text, filename=spec_path.name)
@@ -1424,6 +1428,18 @@ def author(
                         f"({schema_gap_repair_limit}); stopped before property review.",
                     ],
                 )
+            support_key = (atom.name, *sorted(item.detail for item in support_gaps))
+            if (
+                support_key in repaired_support
+                and intent_map is not None
+                and active_property_node is not None
+            ):
+                schema_refusals[active_property_node.id] = (
+                    "A schema repair for this support was applied, but the support is "
+                    "still missing: " + describe_missing_schema_support(support_gaps)
+                )
+                pending_property_atoms.insert(0, (atom, atom_from_batch))
+                continue
             repaired = _repair_schema_gap_and_validate(
                 spec_text=active_spec_text,
                 schema_text=schema_text,
@@ -1469,6 +1485,7 @@ def author(
                 )
             schema_text = repaired
             schema_gap_repair_count += 1
+            repaired_support.add(support_key)
             _notify_schema_ready(review_atom, schema_text)
             if atom_from_batch:
                 pending_property_atoms.insert(0, (atom, atom_from_batch))
@@ -2822,71 +2839,94 @@ def _repair_schema_gap_and_validate(
     if draft is not None:
         for atom in approved_repairs:
             _route_into_schema_draft(atom, draft)
-        validation = compose_and_validate(
-            draft,
-            schema_path,
-            llm=_SchemaFixAdapter(fix_schema) if fix_schema is not None else None,
-            spec_text=spec_text,
-        )
-        schema_text = validation.schema_text
-        validation_log = [
-            {
-                "attempt_number": attempt.attempt_number,
-                "schema_text": attempt.schema_text,
-                "validator_passed": attempt.validator_passed,
-                "validator_error": attempt.validator_error,
-                "llm_was_called": attempt.llm_was_called,
-                "schema_override": False,
-                "schema_gap_repair": True,
-            }
-            for attempt in validation.attempts
-        ]
-        repair_record["schema_validation"] = validation_log
-        session.write_stage1_schema_validation(validation_log)
-        session.write_stage1_5_schema_gap_repairs(repair_records)
-        if not validation.succeeded:
-            return None
-        session.write_stage1_final_schema(schema_text)
-        return schema_text
 
+    # Apply the repair to the schema as it stands. Recomposing the draft would
+    # drop what the schema fixer added when the schema was first built (types
+    # it declared after a validation error), so the draft is only a fallback.
     amended_schema = apply_schema_atoms_to_text(schema_text, approved_repairs)
-    if amended_schema is None:
+    if amended_schema is not None:
+        schema_path.write_text(amended_schema)
+        schema_ok, schema_error = cedar_validate_schema(schema_path)
         repair_record["schema_validation"] = [
             {
                 "attempt_number": 1,
-                "schema_text": schema_text,
-                "validator_passed": False,
-                "validator_error": (
-                    "approved schema repair atoms could not be applied "
-                    "deterministically to the supplied schema"
-                ),
+                "schema_text": amended_schema,
+                "validator_passed": schema_ok,
+                "validator_error": "" if schema_ok else schema_error,
                 "llm_was_called": False,
-                "schema_override": True,
+                "schema_override": draft is None,
                 "schema_gap_repair": True,
             },
         ]
+        session.write_stage1_schema_validation(repair_record["schema_validation"])
         session.write_stage1_5_schema_gap_repairs(repair_records)
+        if schema_ok:
+            session.write_stage1_final_schema(amended_schema)
+            return amended_schema
+        schema_path.write_text(schema_text)
+    if draft is None:
+        if amended_schema is None:
+            repair_record["schema_validation"] = [
+                {
+                    "attempt_number": 1,
+                    "schema_text": schema_text,
+                    "validator_passed": False,
+                    "validator_error": (
+                        "approved schema repair atoms could not be applied "
+                        "deterministically to the supplied schema"
+                    ),
+                    "llm_was_called": False,
+                    "schema_override": True,
+                    "schema_gap_repair": True,
+                },
+            ]
+            session.write_stage1_5_schema_gap_repairs(repair_records)
         return None
-    schema_path.write_text(amended_schema)
-    schema_ok, schema_error = cedar_validate_schema(schema_path)
+
+    validation = compose_and_validate(
+        draft,
+        schema_path,
+        llm=_SchemaFixAdapter(fix_schema) if fix_schema is not None else None,
+        spec_text=spec_text,
+    )
     validation_log = [
         {
-            "attempt_number": 1,
-            "schema_text": amended_schema,
-            "validator_passed": schema_ok,
-            "validator_error": "" if schema_ok else schema_error,
-            "llm_was_called": False,
-            "schema_override": True,
+            "attempt_number": attempt.attempt_number,
+            "schema_text": attempt.schema_text,
+            "validator_passed": attempt.validator_passed,
+            "validator_error": attempt.validator_error,
+            "llm_was_called": attempt.llm_was_called,
+            "schema_override": False,
             "schema_gap_repair": True,
-        },
+        }
+        for attempt in validation.attempts
     ]
-    repair_record["schema_validation"] = validation_log
+    lost = (
+        sorted(schema_declarations(schema_text, cedar_path=CEDAR_PATH)
+               - schema_declarations(validation.schema_text, cedar_path=CEDAR_PATH))
+        if validation.succeeded
+        else []
+    )
+    if lost:
+        # A draft that never held what the schema fixer declared recomposes
+        # into a valid schema without it; that is not a repair.
+        validation_log.append({
+            "attempt_number": len(validation_log) + 1,
+            "schema_text": validation.schema_text,
+            "validator_passed": False,
+            "validator_error": "the recomposed schema drops declarations: " + ", ".join(lost),
+            "llm_was_called": False,
+            "schema_override": False,
+            "schema_gap_repair": True,
+        })
+    repair_record["schema_validation"] = list(repair_record.get("schema_validation") or []) + validation_log
     session.write_stage1_schema_validation(validation_log)
     session.write_stage1_5_schema_gap_repairs(repair_records)
-    if not schema_ok:
+    if not validation.succeeded or lost:
+        schema_path.write_text(schema_text)
         return None
-    session.write_stage1_final_schema(amended_schema)
-    return amended_schema
+    session.write_stage1_final_schema(validation.schema_text)
+    return validation.schema_text
 
 
 def _schema_gap_repair_spec(

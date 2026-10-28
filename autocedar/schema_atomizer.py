@@ -33,6 +33,12 @@ from autocedar.llm import LLMClient, Stage1Atom
 CEDAR_PATH = os.environ.get("CEDAR", os.path.expanduser("~/.cargo/bin/cedar"))
 
 
+def _separator(body: str) -> str:
+    """The comma a list body needs before another item: none if empty or already there."""
+    stripped = body.rstrip()
+    return "," if stripped and not stripped.endswith((",", "{")) else ""
+
+
 def _render_attribute(attr: AttributeAtom, indent: str = "    ") -> str:
     optional_marker = "?" if attr.optional else ""
     return f"{indent}{attr.field_name}{optional_marker}: {attr.cedar_type},"
@@ -204,7 +210,7 @@ def _add_entity_attribute(schema_text: str, attr: AttributeAtom) -> str | None:
     )
     match = block_pattern.search(schema_text)
     if match:
-        insertion = "\n" + _render_attribute(attr)
+        insertion = _separator(match.group("body")) + "\n" + _render_attribute(attr)
         return (
             schema_text[:match.start("tail")]
             + insertion
@@ -265,14 +271,16 @@ def _merge_action_atom(schema_text: str, atom: ActionAtom) -> str | None:
         return schema_text
 
     context_pattern = re.compile(
-        r"(?P<head>\n\s*context\s*:\s*\{)"
+        r"(?P<head>(?:^|[\n,])\s*context\s*:\s*\{)"
         r"(?P<body>.*?)"
-        r"(?P<tail>\n\s*\},)",
+        r"(?P<tail>\s*\},?)",
         re.DOTALL,
     )
     context_match = context_pattern.search(new_body)
     if context_match:
-        insertion = "".join("\n" + _render_attribute(attr, indent="        ") for attr in attrs_to_add)
+        insertion = _separator(context_match.group("body")) + "".join(
+            "\n" + _render_attribute(attr, indent="        ") for attr in attrs_to_add
+        )
         new_body = (
             new_body[:context_match.start("tail")]
             + insertion
@@ -282,14 +290,14 @@ def _merge_action_atom(schema_text: str, atom: ActionAtom) -> str | None:
         context_lines = ["    context: {"]
         context_lines.extend(_render_attribute(attr, indent="        ") for attr in attrs_to_add)
         context_lines.append("    },")
-        new_body = new_body.rstrip() + "\n" + "\n".join(context_lines)
+        new_body = new_body.rstrip() + _separator(new_body) + "\n" + "\n".join(context_lines)
 
     return schema_text[:match.start("body")] + new_body + schema_text[match.end("body"):]
 
 
 def _merge_action_type_list(action_body: str, slot: str, additions: list[str]) -> str:
     pattern = re.compile(
-        rf"(?P<head>\n\s*{re.escape(slot)}\s*:\s*\[)(?P<body>[^\]]*)(?P<tail>\],)",
+        rf"(?P<head>(?:^|[\n,])\s*{re.escape(slot)}\s*:\s*\[)(?P<body>[^\]]*)(?P<tail>\],?)",
         re.DOTALL,
     )
     match = pattern.search(action_body)
@@ -311,7 +319,7 @@ def _merge_action_type_list(action_body: str, slot: str, additions: list[str]) -
 
 def _action_context_has_attribute(action_body: str, field_name: str) -> bool:
     context_pattern = re.compile(
-        r"\n\s*context\s*:\s*\{(?P<body>.*?)\n\s*\},",
+        r"(?:^|[\n,])\s*context\s*:\s*\{(?P<body>.*?)\s*\},?",
         re.DOTALL,
     )
     match = context_pattern.search(action_body)

@@ -766,6 +766,22 @@ def schema_triples(schema_text: str, *, cedar_path: str) -> set[tuple[str, str, 
     return triples
 
 
+def schema_declarations(schema_text: str, *, cedar_path: str) -> set[str]:
+    """Every entity type and action the schema declares, namespace-qualified."""
+    data = json.loads(_cedar(
+        cedar_path,
+        ["translate-schema", "--direction", "cedar-to-json"],
+        schema_text,
+        input_flag="--schema",
+    ))
+    names: set[str] = set()
+    for namespace, body in data.items():
+        prefix = f"{namespace}::" if namespace else ""
+        names.update(f"{prefix}{name}" for name in (body.get("entityTypes") or {}))
+        names.update(f'{prefix}Action::"{name}"' for name in (body.get("actions") or {}))
+    return names
+
+
 def describe_schema_actions(triples: set[tuple[str, str, str]]) -> str:
     rows = sorted({f"- action {a}: principal {p}, resource {r}" for p, a, r in triples if "::" not in p})
     return "\n".join(rows) or "- none"
