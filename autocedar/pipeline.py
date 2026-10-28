@@ -1159,6 +1159,12 @@ def author(
             )
 
     if noisy and intent_map is not None and propose_schema_atoms is not None:
+        if resume_from:
+            # A resumed session keeps the completion it already ran.
+            for name in ("schema_completion.json", "schema_completion_late.json"):
+                prior_record = _read_json(Path(resume_from) / "stage1_5" / name, None)
+                if prior_record is not None and not (session.base / "stage1_5" / name).exists():
+                    write_json(session.base / "stage1_5" / name, prior_record)
         completed_schema = _complete_schema_for_map(
             intent_map=intent_map,
             source_doc=source_doc,

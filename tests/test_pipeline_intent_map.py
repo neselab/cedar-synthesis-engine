@@ -1066,3 +1066,21 @@ def test_noisy_mode_tells_the_writer_when_a_missing_field_will_not_be_added(tmp_
     retries = [decisions for node, decisions in proposer.calls if node == on_hold][1:]
     assert retries and any("will not gain the field" in d.reason for d in retries[0])
     assert result.candidate_path.is_file()
+
+
+def test_noisy_resume_does_not_run_the_schema_completion_again(tmp_path: Path) -> None:
+    spec, schema, doc = _setup(tmp_path)
+    requests: list[str] = []
+    common = dict(
+        review_atom=approve_checked,
+        map_intent=lambda **kw: work_order_map(doc),
+        propose_property_atom=Proposer(doc),
+        propose_schema_atoms=lambda text: requests.append(text) or [],
+        synthesize=_synthesize_exact,
+        schema_path_override=str(schema),
+        noisy=True,
+    )
+    first = author(spec, tmp_path / "out", session_id="first", **common)
+    author(spec, tmp_path / "out", session_id="again", resume_from=first.session_dir, **common)
+
+    assert len(requests) == 1
