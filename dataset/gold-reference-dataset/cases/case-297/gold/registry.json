@@ -1,0 +1,1290 @@
+{
+  "anchors": {
+    "executeContract": {
+      "atoms": {
+        "V10": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the contract's effective date has arrived (effective-date gate). Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.effectiveDate"
+              },
+              {
+                "op": "field",
+                "path": "context.currentDate"
+              }
+            ],
+            "op": "time_le"
+          },
+          "revision_notes": [
+            "Authorization requires that the contract's effective date has arrived (effective-date gate). Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the contract's effective date has arrived (effective-date gate). Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V10",
+            "meaning": "the contract's effective date has arrived (effective-date gate)",
+            "reads": "context.currentDate vs Contract.effectiveDate"
+          }
+        },
+        "V8": {
+          "allowed_forms": [
+            "obligation"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "obligation",
+            "rationale": "A descriptive quantity threshold without a suitable duty target is completed as an explicitly authored additional review, not as a minimum transaction size or lifecycle waiver.",
+            "required_fact": "executeContractV8ReviewCompleted",
+            "statement": "When the contract value crosses a money threshold, the additional review recorded by executeContractV8ReviewCompleted must be complete; smaller requests do not need this additional review.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "threshold": {
+              "type": "Long",
+              "values": [
+                1000000,
+                10000000,
+                100000000
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "threshold": 1000000
+            },
+            {
+              "threshold": 10000000
+            },
+            {
+              "threshold": 100000000
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.contractValue"
+              },
+              {
+                "name": "threshold",
+                "op": "parameter"
+              }
+            ],
+            "op": "gt"
+          },
+          "requirement": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.contractValue"
+                      },
+                      {
+                        "name": "threshold",
+                        "op": "parameter"
+                      }
+                    ],
+                    "op": "gt"
+                  }
+                ],
+                "op": "not"
+              },
+              {
+                "op": "field",
+                "path": "context.executeContractV8ReviewCompleted"
+              }
+            ],
+            "op": "any"
+          },
+          "revision_notes": [
+            "USD-cent thresholds for departmental through organization-wide contracts: $10000, $100000, $1000000. These are synthetic organization policy choices.",
+            "When the contract value crosses a money threshold, the additional review recorded by executeContractV8ReviewCompleted must be complete; smaller requests do not need this additional review.",
+            "Composition rationale: A descriptive quantity threshold without a suitable duty target is completed as an explicitly authored additional review, not as a minimum transaction size or lifecycle waiver."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "obligation",
+              "rationale": "A descriptive quantity threshold without a suitable duty target is completed as an explicitly authored additional review, not as a minimum transaction size or lifecycle waiver.",
+              "required_fact": "executeContractV8ReviewCompleted",
+              "statement": "When the contract value crosses a money threshold, the additional review recorded by executeContractV8ReviewCompleted must be complete; smaller requests do not need this additional review.",
+              "target": "@action"
+            },
+            "id": "V8",
+            "meaning": "the contract value crosses a money threshold",
+            "reads": "Contract.contractValue"
+          }
+        },
+        "V9": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the request is on the corporate network. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "op": "field",
+            "path": "context.onCorpNetwork"
+          },
+          "revision_notes": [
+            "Authorization requires that the request is on the corporate network. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the request is on the corporate network. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V9",
+            "meaning": "the request is on the corporate network",
+            "reads": "context.onCorpNetwork"
+          }
+        }
+      },
+      "bases": {
+        "G5": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.status"
+              },
+              {
+                "id": "signed",
+                "op": "entity",
+                "type": "ContractStatusValue"
+              }
+            ],
+            "op": "eq"
+          },
+          "signature": "V11",
+          "source": {
+            "id": "G5",
+            "meaning": "a contract may be executed only after it has been signed",
+            "reads": "Contract.status",
+            "signature": "V11"
+          }
+        }
+      },
+      "domain_gate": {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.contractValue"
+              },
+              {
+                "op": "literal",
+                "value": 0
+              }
+            ],
+            "op": "ge"
+          }
+        ],
+        "op": "all"
+      },
+      "eligibility": {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "ContractAdmin",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          }
+        ],
+        "op": "any"
+      },
+      "field_bindings": {
+        "Contract.contractValue": "resource.contractValue",
+        "Contract.effectiveDate": "resource.effectiveDate",
+        "Contract.status": "resource.status",
+        "context.currentDate": "context.currentDate",
+        "context.onCorpNetwork": "context.onCorpNetwork"
+      },
+      "overrides": {},
+      "resource_type": "Contract"
+    },
+    "reviewContract": {
+      "atoms": {
+        "V10": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the request falls within a permitted review window. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.reviewContractScheduledStart"
+                  },
+                  {
+                    "op": "field",
+                    "path": "context.currentDate"
+                  }
+                ],
+                "op": "time_le"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.currentDate"
+                  },
+                  {
+                    "op": "field",
+                    "path": "context.reviewContractScheduledEnd"
+                  }
+                ],
+                "op": "time_lt"
+              }
+            ],
+            "op": "all"
+          },
+          "revision_notes": [
+            "Authorization requires that the request falls within a permitted review window. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the request falls within a permitted review window. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V10",
+            "meaning": "the request falls within a permitted review window",
+            "reads": "context.currentDate"
+          }
+        },
+        "V2": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": false,
+            "kind": "require",
+            "rationale": "The original role predicate is already guaranteed by ordinary eligibility. Preserve it in the registry but exclude it from random condition selection; do not invent a supplemental role.",
+            "statement": "The original role remains an access requirement already implied by eligibility.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.roles"
+                  },
+                  {
+                    "id": "Reviewer",
+                    "op": "entity",
+                    "type": "Role"
+                  }
+                ],
+                "op": "contains"
+              }
+            ],
+            "op": "any"
+          },
+          "revision_notes": [
+            "The original role remains an access requirement already implied by eligibility.",
+            "Composition rationale: The original role predicate is already guaranteed by ordinary eligibility. Preserve it in the registry but exclude it from random condition selection; do not invent a supplemental role."
+          ],
+          "sampling_enabled": false,
+          "source": {
+            "business_semantics": {
+              "enabled": false,
+              "kind": "require",
+              "rationale": "The original role predicate is already guaranteed by ordinary eligibility. Preserve it in the registry but exclude it from random condition selection; do not invent a supplemental role.",
+              "statement": "The original role remains an access requirement already implied by eligibility.",
+              "target": "@action"
+            },
+            "id": "V2",
+            "meaning": "the requester holds a particular role",
+            "reads": "principal is Reviewer"
+          }
+        },
+        "V4": {
+          "allowed_forms": [
+            "prohibit"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "prohibit",
+            "rationale": "A conflict, self-dealing condition, hold, lock, or already-enabled flag blocks this operation instead of relaxing its safeguards.",
+            "statement": "Authorization is denied when the reviewer is conflicted out against the contract's counterparty.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.conflictedCounterparties"
+              },
+              {
+                "op": "field",
+                "path": "resource.counterparty"
+              }
+            ],
+            "op": "contains"
+          },
+          "revision_notes": [
+            "Authorization is denied when the reviewer is conflicted out against the contract's counterparty.",
+            "Composition rationale: A conflict, self-dealing condition, hold, lock, or already-enabled flag blocks this operation instead of relaxing its safeguards."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "prohibit",
+              "rationale": "A conflict, self-dealing condition, hold, lock, or already-enabled flag blocks this operation instead of relaxing its safeguards.",
+              "statement": "Authorization is denied when the reviewer is conflicted out against the contract's counterparty.",
+              "target": "@action"
+            },
+            "id": "V4",
+            "meaning": "the reviewer is conflicted out against the contract's counterparty",
+            "reads": "user.conflictedCounterparties contains Contract.counterparty"
+          }
+        },
+        "V8": {
+          "allowed_forms": [
+            "applicability"
+          ],
+          "allowed_targets": [
+            "G1"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "applicability",
+            "rationale": "Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional.",
+            "statement": "Whenever the contract value crosses a money threshold, enforce this duty: the drafter of a contract may not review it (separation of duty). Outside all selected triggers only this duty stops binding.",
+            "target": "G1"
+          },
+          "parameter_schema": {
+            "threshold": {
+              "type": "Long",
+              "values": [
+                1000000,
+                10000000,
+                100000000
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "threshold": 1000000
+            },
+            {
+              "threshold": 10000000
+            },
+            {
+              "threshold": 100000000
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.contractValue"
+              },
+              {
+                "name": "threshold",
+                "op": "parameter"
+              }
+            ],
+            "op": "gt"
+          },
+          "revision_notes": [
+            "USD-cent thresholds for departmental through organization-wide contracts: $10000, $100000, $1000000. These are synthetic organization policy choices.",
+            "Whenever the contract value crosses a money threshold, enforce this duty: the drafter of a contract may not review it (separation of duty). Outside all selected triggers only this duty stops binding.",
+            "Composition rationale: Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "applicability",
+              "rationale": "Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional.",
+              "statement": "Whenever the contract value crosses a money threshold, enforce this duty: the drafter of a contract may not review it (separation of duty). Outside all selected triggers only this duty stops binding.",
+              "target": "G1"
+            },
+            "id": "V8",
+            "meaning": "the contract value crosses a money threshold",
+            "reads": "Contract.contractValue"
+          }
+        },
+        "V9": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the request is on the corporate network. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "op": "field",
+            "path": "context.onCorpNetwork"
+          },
+          "revision_notes": [
+            "Authorization requires that the request is on the corporate network. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the request is on the corporate network. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V9",
+            "meaning": "the request is on the corporate network",
+            "reads": "context.onCorpNetwork"
+          }
+        }
+      },
+      "bases": {
+        "G1": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal"
+              },
+              {
+                "op": "field",
+                "path": "resource.drafter"
+              }
+            ],
+            "op": "ne"
+          },
+          "signature": "V1",
+          "source": {
+            "id": "G1",
+            "meaning": "the drafter of a contract may not review it (separation of duty)",
+            "reads": "principal vs Contract.drafter",
+            "signature": "V1"
+          }
+        },
+        "G5": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.status"
+              },
+              {
+                "id": "draft",
+                "op": "entity",
+                "type": "ContractStatusValue"
+              }
+            ],
+            "op": "eq"
+          },
+          "signature": "V11",
+          "source": {
+            "id": "G5",
+            "meaning": "a contract may be reviewed only while it is still in draft",
+            "reads": "Contract.status",
+            "signature": "V11"
+          }
+        }
+      },
+      "domain_gate": {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.contractValue"
+              },
+              {
+                "op": "literal",
+                "value": 0
+              }
+            ],
+            "op": "ge"
+          }
+        ],
+        "op": "all"
+      },
+      "eligibility": {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "Reviewer",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          }
+        ],
+        "op": "any"
+      },
+      "field_bindings": {
+        "Contract.contractValue": "resource.contractValue",
+        "Contract.counterparty": "resource.counterparty",
+        "Contract.drafter": "resource.drafter",
+        "Contract.status": "resource.status",
+        "context.currentDate": "context.currentDate",
+        "context.onCorpNetwork": "context.onCorpNetwork",
+        "context.reviewContractScheduledEnd": "context.reviewContractScheduledEnd",
+        "context.reviewContractScheduledStart": "context.reviewContractScheduledStart",
+        "user.conflictedCounterparties": "principal.conflictedCounterparties"
+      },
+      "overrides": {},
+      "resource_type": "Contract"
+    },
+    "signContract": {
+      "atoms": {
+        "V14": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that MFA was used (required for signature). Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "op": "field",
+            "path": "context.mfaUsed"
+          },
+          "revision_notes": [
+            "Authorization requires that MFA was used (required for signature). Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that MFA was used (required for signature). Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V14",
+            "meaning": "MFA was used (required for signature)",
+            "reads": "context.mfaUsed"
+          }
+        },
+        "V2": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the requester holds a particular role. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.roles"
+                  },
+                  {
+                    "id": "Signatory",
+                    "op": "entity",
+                    "type": "Role"
+                  }
+                ],
+                "op": "contains"
+              }
+            ],
+            "op": "any"
+          },
+          "revision_notes": [
+            "Authorization requires that the requester holds a particular role. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the requester holds a particular role. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V2",
+            "meaning": "the requester holds a particular role",
+            "reads": "principal is Signatory"
+          }
+        },
+        "V4": {
+          "allowed_forms": [
+            "prohibit"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "prohibit",
+            "rationale": "A conflict, self-dealing condition, hold, lock, or already-enabled flag blocks this operation instead of relaxing its safeguards.",
+            "statement": "Authorization is denied when the signatory is conflicted out against the contract's counterparty.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.conflictedCounterparties"
+              },
+              {
+                "op": "field",
+                "path": "resource.counterparty"
+              }
+            ],
+            "op": "contains"
+          },
+          "revision_notes": [
+            "Authorization is denied when the signatory is conflicted out against the contract's counterparty.",
+            "Composition rationale: A conflict, self-dealing condition, hold, lock, or already-enabled flag blocks this operation instead of relaxing its safeguards."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "prohibit",
+              "rationale": "A conflict, self-dealing condition, hold, lock, or already-enabled flag blocks this operation instead of relaxing its safeguards.",
+              "statement": "Authorization is denied when the signatory is conflicted out against the contract's counterparty.",
+              "target": "@action"
+            },
+            "id": "V4",
+            "meaning": "the signatory is conflicted out against the contract's counterparty",
+            "reads": "user.conflictedCounterparties contains Contract.counterparty"
+          }
+        },
+        "V8": {
+          "allowed_forms": [
+            "applicability"
+          ],
+          "allowed_targets": [
+            "G4"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "applicability",
+            "rationale": "Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional.",
+            "statement": "Whenever the contract value crosses a money threshold, enforce this duty: the signatory's delegated authority tier must dominate the contract's required authority tier (signing-authority amount tiers). Outside all selected triggers only this duty stops binding.",
+            "target": "G4"
+          },
+          "parameter_schema": {
+            "threshold": {
+              "type": "Long",
+              "values": [
+                1000000,
+                10000000,
+                100000000
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "threshold": 1000000
+            },
+            {
+              "threshold": 10000000
+            },
+            {
+              "threshold": 100000000
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.contractValue"
+              },
+              {
+                "name": "threshold",
+                "op": "parameter"
+              }
+            ],
+            "op": "gt"
+          },
+          "revision_notes": [
+            "USD-cent thresholds for departmental through organization-wide contracts: $10000, $100000, $1000000. These are synthetic organization policy choices.",
+            "Whenever the contract value crosses a money threshold, enforce this duty: the signatory's delegated authority tier must dominate the contract's required authority tier (signing-authority amount tiers). Outside all selected triggers only this duty stops binding.",
+            "Composition rationale: Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "applicability",
+              "rationale": "Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional.",
+              "statement": "Whenever the contract value crosses a money threshold, enforce this duty: the signatory's delegated authority tier must dominate the contract's required authority tier (signing-authority amount tiers). Outside all selected triggers only this duty stops binding.",
+              "target": "G4"
+            },
+            "id": "V8",
+            "meaning": "the contract value crosses a money threshold",
+            "reads": "Contract.contractValue"
+          }
+        }
+      },
+      "bases": {
+        "G1": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal"
+              },
+              {
+                "op": "field",
+                "path": "resource.reviewer"
+              }
+            ],
+            "op": "ne"
+          },
+          "signature": "V1",
+          "source": {
+            "id": "G1",
+            "meaning": "the reviewer of a contract may not be its signatory (separation of duty)",
+            "reads": "principal vs Contract.reviewer",
+            "signature": "V1"
+          }
+        },
+        "G4": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.signingAuthority"
+              },
+              {
+                "op": "field",
+                "path": "resource.requiredAuthority"
+              }
+            ],
+            "op": "ge"
+          },
+          "signature": "V6",
+          "source": {
+            "id": "G4",
+            "meaning": "the signatory's delegated authority tier must dominate the contract's required authority tier (signing-authority amount tiers)",
+            "reads": "user.signingAuthority vs Contract.requiredAuthority",
+            "signature": "V6"
+          }
+        },
+        "G5": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.status"
+              },
+              {
+                "id": "approved",
+                "op": "entity",
+                "type": "ContractStatusValue"
+              }
+            ],
+            "op": "eq"
+          },
+          "signature": "V11",
+          "source": {
+            "id": "G5",
+            "meaning": "a contract may be signed only after it has been approved",
+            "reads": "Contract.status",
+            "signature": "V11"
+          }
+        }
+      },
+      "domain_gate": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.signingAuthority"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.signingAuthority"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.signingAuthority"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 2
+                  }
+                ],
+                "op": "eq"
+              }
+            ],
+            "op": "any"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.contractValue"
+              },
+              {
+                "op": "literal",
+                "value": 0
+              }
+            ],
+            "op": "ge"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.requiredAuthority"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.requiredAuthority"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.requiredAuthority"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 2
+                  }
+                ],
+                "op": "eq"
+              }
+            ],
+            "op": "any"
+          }
+        ],
+        "op": "all"
+      },
+      "eligibility": {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "Signatory",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "ContractAdmin",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          }
+        ],
+        "op": "any"
+      },
+      "field_bindings": {
+        "Contract.contractValue": "resource.contractValue",
+        "Contract.counterparty": "resource.counterparty",
+        "Contract.requiredAuthority": "resource.requiredAuthority",
+        "Contract.reviewer": "resource.reviewer",
+        "Contract.status": "resource.status",
+        "context.escalationApproved": "context.escalationApproved",
+        "context.mfaUsed": "context.mfaUsed",
+        "user.conflictedCounterparties": "principal.conflictedCounterparties",
+        "user.signingAuthority": "principal.signingAuthority"
+      },
+      "overrides": {
+        "G3": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "context.escalationApproved"
+              },
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "principal.roles"
+                      },
+                      {
+                        "id": "Signatory",
+                        "op": "entity",
+                        "type": "Role"
+                      }
+                    ],
+                    "op": "contains"
+                  }
+                ],
+                "op": "any"
+              }
+            ],
+            "op": "all"
+          },
+          "source": {
+            "id": "G3",
+            "meaning": "an approved escalation lets a signatory sign a contract above their delegated authority tier",
+            "overrides": [
+              "G4"
+            ],
+            "reads": "context.escalationApproved",
+            "requires_adjudication": true
+          },
+          "targets": [
+            "G4"
+          ]
+        }
+      },
+      "resource_type": "Contract"
+    }
+  },
+  "business_review_revision": "2026-10-23-r1",
+  "context": {
+    "currentDate": {
+      "type": "datetime"
+    },
+    "escalationApproved": {
+      "type": "Bool"
+    },
+    "executeContractV8ReviewCompleted": {
+      "type": "Bool"
+    },
+    "mfaUsed": {
+      "type": "Bool"
+    },
+    "onCorpNetwork": {
+      "type": "Bool"
+    },
+    "reviewContractScheduledEnd": {
+      "description": "exclusive end of the declared Scheduled window",
+      "type": "datetime"
+    },
+    "reviewContractScheduledStart": {
+      "description": "inclusive start of the declared Scheduled window",
+      "type": "datetime"
+    }
+  },
+  "contract": "complete-spec-v4",
+  "decisions": [
+    "Added context.reviewContractScheduledEnd: exclusive end of the declared Scheduled window",
+    "Added context.reviewContractScheduledStart: inclusive start of the declared Scheduled window",
+    "All source identities denote User entities; role sets may overlap without implicit exclusivity.",
+    "All timestamps read by predicates are bounded inclusively to 2000-01-01 through 2100-01-01 UTC; requests outside the explicit domain gate deny.",
+    "Business revision v2: catalogs are declared synthetic organizational policies, not empirical norms. Selected-atom obligations are mandatory in both forms and cannot be waived by a base exception or override.",
+    "Money is nonnegative integer USD cents, at most 1,000,000,000. Counts are nonnegative integers at most 1,000,000 unless a narrower dictionary is declared.",
+    "Request context is treated as trusted input from the host; authorization does not attest network, emergency, signature, or scheduling facts.",
+    "Retained source repairs: exact lifecycle states, linked course roster, explicit promotion/filing facts, independent calibration expiry, comp expiry, and guarded override eligibility are intentional experiment definitions. Their typed ASTs and field descriptions, not the ambiguous source shorthand, are authoritative.",
+    "Rules operate on snapshots. A selected lifecycle base requires the exact named state unless its predicate explicitly lists alternatives.",
+    "Source business descriptions are retained for audit; the authored typed predicates and dictionaries define the experiment. No statutory compliance claim is made.",
+    "Source tag kinds are represented by Set<String>. Group membership is reflexive and transitive Cedar entity ancestry.",
+    "executeContract/V8: USD-cent thresholds for departmental through organization-wide contracts: $10000, $100000, $1000000. These are synthetic organization policy choices.",
+    "reviewContract/V2: Refines the original role test with the supplemental SeniorContractReviewer role. Eligibility stays unchanged; this qualification can be present or absent for an eligible requester.",
+    "reviewContract/V8: USD-cent thresholds for departmental through organization-wide contracts: $10000, $100000, $1000000. These are synthetic organization policy choices.",
+    "signContract/V8: USD-cent thresholds for departmental through organization-wide contracts: $10000, $100000, $1000000. These are synthetic organization policy choices."
+  ],
+  "domain": "contract_lifecycle",
+  "entities": {
+    "Contract": {
+      "attributes": {
+        "contractValue": {
+          "bounds": [
+            0,
+            1000000000
+          ],
+          "type": "Long",
+          "unit": "USD cents"
+        },
+        "counterparty": {
+          "type": "User"
+        },
+        "drafter": {
+          "type": "User"
+        },
+        "effectiveDate": {
+          "type": "datetime"
+        },
+        "requiredAuthority": {
+          "bounds": [
+            0,
+            2
+          ],
+          "levels": {
+            "director": 1,
+            "officer": 2,
+            "staff": 0
+          },
+          "type": "Long"
+        },
+        "reviewer": {
+          "type": "User"
+        },
+        "status": {
+          "type": "ContractStatusValue"
+        }
+      }
+    },
+    "ContractStatusValue": {
+      "enum": [
+        "draft",
+        "inReview",
+        "approved",
+        "signed",
+        "executed"
+      ]
+    },
+    "Group": {
+      "attributes": {},
+      "member_of": [
+        "Group"
+      ]
+    },
+    "Role": {
+      "enum": [
+        "Drafter",
+        "Reviewer",
+        "Signatory",
+        "ContractAdmin"
+      ]
+    },
+    "Signature": {
+      "attributes": {
+        "amount": {
+          "bounds": [
+            0,
+            1000000000
+          ],
+          "type": "Long",
+          "unit": "USD cents"
+        },
+        "contract": {
+          "type": "Contract"
+        },
+        "signedBy": {
+          "type": "User"
+        }
+      }
+    },
+    "User": {
+      "attributes": {
+        "conflictedCounterparties": {
+          "type": "Set<User>"
+        },
+        "roles": {
+          "type": "Set<Role>"
+        },
+        "signingAuthority": {
+          "bounds": [
+            0,
+            2
+          ],
+          "levels": {
+            "director": 1,
+            "officer": 2,
+            "staff": 0
+          },
+          "type": "Long"
+        }
+      }
+    }
+  },
+  "revision_contract": "business-composition-v4",
+  "source_action_chains": [
+    {
+      "chain": [
+        "reviewContract",
+        "signContract",
+        "executeContract"
+      ],
+      "linked_by": [
+        "status",
+        "drafter",
+        "reviewer"
+      ],
+      "shared_resource": "Contract"
+    }
+  ],
+  "source_sha256": "2907de8ce880b86d975423e46cde808f78a30bb93dc0a767cb3b4f0643c07c22",
+  "status": "authored experimental assumptions; not human semantic approval",
+  "version": "business-registry-v4"
+}

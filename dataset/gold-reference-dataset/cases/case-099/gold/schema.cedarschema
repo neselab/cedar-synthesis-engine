@@ -1,0 +1,31 @@
+entity Group in [Group] {  };
+entity Listing { category: String, categoryTier: Long, owner: User, price: Long, riskLabels: Set<String>, status: ListingStatusValue };
+entity ListingStatusValue enum ["draft", "active", "suspended", "delisted"];
+entity Payout { account: SellerAccount, amount: Long, approvedBy?: User, initiatedBy: User, status: PayoutStatusValue };
+entity PayoutStatusValue enum ["requested", "approved", "disbursed"];
+entity Role enum ["Seller", "PayoutAgent", "FinanceApprover", "RiskAnalyst"];
+entity SellerAccount { fraudStatus: SellerAccountFraudStatusValue, holder: User, kycTier: Long, region: String, watchlistCodes: Set<String> };
+entity SellerAccountFraudStatusValue enum ["clear", "review", "hold", "frozen"];
+entity User { homeRegion: String, roles: Set<Role>, verifiedTier: Long };
+action approvePayout appliesTo { principal: [User], resource: [Payout], context: {
+    approvePayoutScheduledEnd: datetime,
+    approvePayoutScheduledStart: datetime,
+    currentTime: datetime,
+    disbursePayoutV8ReviewCompleted: Bool,
+    emergencyDeclared: Bool,
+    mfaUsed: Bool,
+    onTrustedNetwork: Bool,
+    publishListingV8ReviewCompleted: Bool,
+  },
+};
+action disbursePayout appliesTo { principal: [User], resource: [Payout], context: {
+    approvePayoutScheduledEnd: datetime,
+    approvePayoutScheduledStart: datetime,
+    currentTime: datetime,
+    disbursePayoutV8ReviewCompleted: Bool,
+    emergencyDeclared: Bool,
+    mfaUsed: Bool,
+    onTrustedNetwork: Bool,
+    publishListingV8ReviewCompleted: Bool,
+  },
+};

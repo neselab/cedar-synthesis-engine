@@ -1,0 +1,7 @@
+Complimentary Benefit Access
+
+These are the only permissions for users to apply or authorize complimentary benefits on comp authorization records, and each permission requires all of its stated conditions to be met using current recorded facts. They do not change records or require either activity to occur before the other. Amounts in the supplied records are stored in whole US cents.
+
+A user with the front desk agent or guest services host role may apply a complimentary benefit only when the user's comp authority level is 0, 1, 2, or 3, the record's guest tier is 0, 1, 2, or 3, and its comp value is at least $0.00. The record must have authorized status and include beverage among its comp types. If the comp value exceeds $25.00, the host application must confirm completion of the additional review; this review requirement does not apply at $25.00 or below.
+
+A user with the shift manager or front office manager role may authorize a complimentary benefit only when the record's comp value is at least $0.00, its item count is at least zero, and its loyalty group is the same group as, or a descendant of, the user's assigned group. The user must differ from the record's requester unless the host application has declared a VIP escalation and the user has the front office manager role. That exception waives only the requirement to differ from the requester; all other authorization requirements still apply.

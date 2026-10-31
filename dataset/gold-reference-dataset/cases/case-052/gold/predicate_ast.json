@@ -1,0 +1,195 @@
+{
+  "sendCommand": {
+    "args": [
+      {
+        "op": "literal",
+        "value": true
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.roles"
+                  },
+                  {
+                    "id": "Operator",
+                    "op": "entity",
+                    "type": "Role"
+                  }
+                ],
+                "op": "contains"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.roles"
+                  },
+                  {
+                    "id": "Technician",
+                    "op": "entity",
+                    "type": "Role"
+                  }
+                ],
+                "op": "contains"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.roles"
+                  },
+                  {
+                    "id": "FleetAdmin",
+                    "op": "entity",
+                    "type": "Role"
+                  }
+                ],
+                "op": "contains"
+              }
+            ],
+            "op": "any"
+          }
+        ],
+        "op": "any"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "literal",
+                "value": true
+              }
+            ],
+            "op": "not"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.status"
+              },
+              {
+                "id": "active",
+                "op": "entity",
+                "type": "DeviceStatusValue"
+              }
+            ],
+            "op": "eq"
+          }
+        ],
+        "op": "any"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.sendCommandScheduledStart"
+                  },
+                  {
+                    "op": "field",
+                    "path": "context.currentTime"
+                  }
+                ],
+                "op": "time_le"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.currentTime"
+                  },
+                  {
+                    "op": "field",
+                    "path": "context.sendCommandScheduledEnd"
+                  }
+                ],
+                "op": "time_lt"
+              }
+            ],
+            "op": "all"
+          }
+        ],
+        "op": "any"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.maintenanceMode"
+                  },
+                  {
+                    "op": "literal",
+                    "value": true
+                  }
+                ],
+                "op": "eq"
+              }
+            ],
+            "op": "not"
+          },
+          {
+            "op": "field",
+            "path": "context.maintenanceCommandAuthorized"
+          }
+        ],
+        "op": "any"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.firmwareTags"
+              },
+              {
+                "op": "literal",
+                "value": "stable"
+              }
+            ],
+            "op": "contains"
+          }
+        ],
+        "op": "any"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "context.sourceIp"
+              },
+              {
+                "args": [
+                  {
+                    "op": "literal",
+                    "value": "10.0.0.0/8"
+                  }
+                ],
+                "op": "ip"
+              }
+            ],
+            "op": "ip_in"
+          }
+        ],
+        "op": "any"
+      }
+    ],
+    "op": "all"
+  }
+}

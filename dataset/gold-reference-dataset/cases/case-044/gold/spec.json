@@ -1,0 +1,59 @@
+{
+  "domain": "kubernetes_rbac",
+  "format_version": "complete-spec-v4",
+  "grouping": {
+    "applicability_triggers": "any",
+    "exception": "any",
+    "requirements": "all"
+  },
+  "parts": [
+    {
+      "anchor": "applyManifest",
+      "bases": [
+        "G1"
+      ],
+      "conditions": [
+        {
+          "atom": "V13",
+          "form": "require",
+          "parameters": {
+            "label": "external"
+          },
+          "target": "@action"
+        },
+        {
+          "atom": "V5",
+          "form": "require",
+          "parameters": {},
+          "target": "@action"
+        },
+        {
+          "atom": "V6",
+          "form": "applicability",
+          "parameters": {
+            "threshold": 50
+          },
+          "target": "G1"
+        },
+        {
+          "atom": "V9",
+          "form": "require",
+          "parameters": {
+            "cidr": "172.16.0.0/12"
+          },
+          "target": "@action"
+        }
+      ],
+      "overrides": []
+    }
+  ],
+  "provenance": {
+    "arithmetic_safety_patches": [],
+    "kind": "less-specific-200 revised intent",
+    "source_case": "case-044",
+    "source_spec_sha256": "a7de57f8f2d320f46578cf923da16b71272930e0322b6293ef6dcfcafb214671",
+    "transformation": "Drop only artificial 2000-2100 timestamp windows and catalog maxima 1000000/1000000000; retain all other gates."
+  },
+  "registry_sha256": "9055ed8d359721545cfd1da61b47608f82684c3a12faea104ad2761754c31d37",
+  "source_sha256": "2907de8ce880b86d975423e46cde808f78a30bb93dc0a767cb3b4f0643c07c22"
+}

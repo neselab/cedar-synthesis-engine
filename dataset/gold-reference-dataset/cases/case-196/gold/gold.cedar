@@ -1,0 +1,2 @@
+permit (principal is User, action == Action::"dispatchShipment", resource is Shipment)
+when { (((resource.pieceCount >= 0)) && ((principal.roles.contains(Role::"Driver") || principal.roles.contains(Role::"DispatchManager"))) && (!(true) || (principal != resource.planner) || (context.expediteDeclared && (principal.roles.contains(Role::"DispatchManager")))) && ((resource.trackingCode like "CARRIER-B-*")) && (!((resource.pieceCount > 100)) || (principal.roles.contains(Role::"DispatchManager")))) };

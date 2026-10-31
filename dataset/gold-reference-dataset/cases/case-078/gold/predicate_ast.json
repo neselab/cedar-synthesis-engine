@@ -1,0 +1,276 @@
+{
+  "confirmDelivery": {
+    "args": [
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.pieceCount"
+              },
+              {
+                "op": "literal",
+                "value": 0
+              }
+            ],
+            "op": "ge"
+          }
+        ],
+        "op": "all"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.roles"
+                  },
+                  {
+                    "id": "Driver",
+                    "op": "entity",
+                    "type": "Role"
+                  }
+                ],
+                "op": "contains"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.roles"
+                  },
+                  {
+                    "id": "DepotSupervisor",
+                    "op": "entity",
+                    "type": "Role"
+                  }
+                ],
+                "op": "contains"
+              }
+            ],
+            "op": "any"
+          }
+        ],
+        "op": "any"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "literal",
+                "value": true
+              }
+            ],
+            "op": "not"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.status"
+              },
+              {
+                "id": "intransit",
+                "op": "entity",
+                "type": "ShipmentStatusValue"
+              }
+            ],
+            "op": "eq"
+          }
+        ],
+        "op": "any"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.hazmatClass"
+                  },
+                  {
+                    "op": "literal",
+                    "value": "flammable"
+                  }
+                ],
+                "op": "contains"
+              }
+            ],
+            "op": "not"
+          },
+          {
+            "op": "field",
+            "path": "context.custodySignatureCaptured"
+          }
+        ],
+        "op": "any"
+      },
+      {
+        "args": [
+          {
+            "op": "field",
+            "path": "context.proofOfDelivery"
+          }
+        ],
+        "op": "any"
+      }
+    ],
+    "op": "all"
+  },
+  "dispatchShipment": {
+    "args": [
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.pieceCount"
+              },
+              {
+                "op": "literal",
+                "value": 0
+              }
+            ],
+            "op": "ge"
+          }
+        ],
+        "op": "all"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.roles"
+                  },
+                  {
+                    "id": "Driver",
+                    "op": "entity",
+                    "type": "Role"
+                  }
+                ],
+                "op": "contains"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.roles"
+                  },
+                  {
+                    "id": "DispatchManager",
+                    "op": "entity",
+                    "type": "Role"
+                  }
+                ],
+                "op": "contains"
+              }
+            ],
+            "op": "any"
+          }
+        ],
+        "op": "any"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "literal",
+                "value": true
+              }
+            ],
+            "op": "not"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.status"
+              },
+              {
+                "id": "created",
+                "op": "entity",
+                "type": "ShipmentStatusValue"
+              }
+            ],
+            "op": "eq"
+          }
+        ],
+        "op": "any"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.hazmatClass"
+              },
+              {
+                "op": "literal",
+                "value": "toxic"
+              }
+            ],
+            "op": "contains"
+          }
+        ],
+        "op": "any"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.pieceCount"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1000
+                  }
+                ],
+                "op": "gt"
+              }
+            ],
+            "op": "not"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.roles"
+                  },
+                  {
+                    "id": "DispatchManager",
+                    "op": "entity",
+                    "type": "Role"
+                  }
+                ],
+                "op": "contains"
+              }
+            ],
+            "op": "any"
+          }
+        ],
+        "op": "any"
+      }
+    ],
+    "op": "all"
+  }
+}

@@ -1,0 +1,2 @@
+permit (principal is User, action == Action::"adjustSetpoint", resource is Actuator)
+when { (true && ((principal.roles.contains(Role::"ZoneController") || principal.roles.contains(Role::"MaintenanceTech") || principal.roles.contains(Role::"FacilityManager"))) && (!(true) || (resource.status == ActuatorStatusValue::"online")) && (((context.adjustSetpointScheduledStart <= context.currentTime) && (context.currentTime < context.adjustSetpointScheduledEnd))) && (resource.deviceTags.contains("managed")) && ((principal.memberOf in resource.zoneGroup)) && (context.onSiteNetwork)) };

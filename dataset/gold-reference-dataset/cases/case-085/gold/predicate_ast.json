@@ -1,0 +1,260 @@
+{
+  "releaseToProduction": {
+    "args": [
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.defectCount"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "ge"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.defectCount"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 100
+                  }
+                ],
+                "op": "le"
+              }
+            ],
+            "op": "all"
+          }
+        ],
+        "op": "all"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.roles"
+                  },
+                  {
+                    "id": "Inspector",
+                    "op": "entity",
+                    "type": "Role"
+                  }
+                ],
+                "op": "contains"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.roles"
+                  },
+                  {
+                    "id": "QualityManager",
+                    "op": "entity",
+                    "type": "Role"
+                  }
+                ],
+                "op": "contains"
+              }
+            ],
+            "op": "any"
+          }
+        ],
+        "op": "any"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "literal",
+                "value": true
+              }
+            ],
+            "op": "not"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.status"
+              },
+              {
+                "id": "inspected",
+                "op": "entity",
+                "type": "WorkOrderStatusValue"
+              }
+            ],
+            "op": "eq"
+          }
+        ],
+        "op": "any"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.holdFlag"
+              },
+              {
+                "op": "literal",
+                "value": false
+              }
+            ],
+            "op": "eq"
+          }
+        ],
+        "op": "any"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.partCode"
+              },
+              {
+                "op": "literal",
+                "value": "SAFETY-*"
+              }
+            ],
+            "op": "like"
+          }
+        ],
+        "op": "any"
+      }
+    ],
+    "op": "all"
+  },
+  "signoffWorkOrder": {
+    "args": [
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.defectCount"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "ge"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.defectCount"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 100
+                  }
+                ],
+                "op": "le"
+              }
+            ],
+            "op": "all"
+          }
+        ],
+        "op": "all"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.roles"
+                  },
+                  {
+                    "id": "Inspector",
+                    "op": "entity",
+                    "type": "Role"
+                  }
+                ],
+                "op": "contains"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.roles"
+                  },
+                  {
+                    "id": "QualityManager",
+                    "op": "entity",
+                    "type": "Role"
+                  }
+                ],
+                "op": "contains"
+              }
+            ],
+            "op": "any"
+          }
+        ],
+        "op": "any"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "literal",
+                "value": true
+              }
+            ],
+            "op": "not"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal"
+              },
+              {
+                "op": "field",
+                "path": "resource.operator"
+              }
+            ],
+            "op": "ne"
+          }
+        ],
+        "op": "any"
+      },
+      {
+        "args": [
+          {
+            "op": "field",
+            "path": "context.onPlantNetwork"
+          }
+        ],
+        "op": "any"
+      }
+    ],
+    "op": "all"
+  }
+}

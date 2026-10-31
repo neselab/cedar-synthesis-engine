@@ -1,0 +1,1407 @@
+{
+  "anchors": {
+    "approveClaim": {
+      "atoms": {
+        "V10": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the request falls within the SLA review window. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.approveClaimScheduledStart"
+                  },
+                  {
+                    "op": "field",
+                    "path": "context.currentTime"
+                  }
+                ],
+                "op": "time_le"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.currentTime"
+                  },
+                  {
+                    "op": "field",
+                    "path": "context.approveClaimScheduledEnd"
+                  }
+                ],
+                "op": "time_lt"
+              }
+            ],
+            "op": "all"
+          },
+          "revision_notes": [
+            "Authorization requires that the request falls within the SLA review window. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the request falls within the SLA review window. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V10",
+            "meaning": "the request falls within the SLA review window",
+            "reads": "context.currentTime"
+          }
+        },
+        "V12": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the claim is not flagged with a fraud hold. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.fraudHold"
+              },
+              {
+                "op": "literal",
+                "value": false
+              }
+            ],
+            "op": "eq"
+          },
+          "revision_notes": [
+            "Authorization requires that the claim is not flagged with a fraud hold. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the claim is not flagged with a fraud hold. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V12",
+            "meaning": "the claim is not flagged with a fraud hold",
+            "reads": "Claim.fraudHold"
+          }
+        },
+        "V5": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the claim code matches or has a prefix. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "pattern": {
+              "type": "String",
+              "values": [
+                "AUTO-*",
+                "LIABILITY-*",
+                "PROPERTY-*"
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "pattern": "AUTO-*"
+            },
+            {
+              "pattern": "PROPERTY-*"
+            },
+            {
+              "pattern": "LIABILITY-*"
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.claimCode"
+              },
+              {
+                "name": "pattern",
+                "op": "parameter"
+              }
+            ],
+            "op": "like"
+          },
+          "revision_notes": [
+            "Authorization requires that the claim code matches or has a prefix. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the claim code matches or has a prefix. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V5",
+            "meaning": "the claim code matches or has a prefix",
+            "reads": "Claim.claimCode"
+          }
+        },
+        "V6": {
+          "allowed_forms": [
+            "applicability"
+          ],
+          "allowed_targets": [
+            "G1"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "applicability",
+            "rationale": "Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional.",
+            "statement": "Whenever the line-item count crosses a threshold, enforce this duty: the adjuster who handled the claim may not approve it. Outside all selected triggers only this duty stops binding.",
+            "target": "G1"
+          },
+          "parameter_schema": {
+            "threshold": {
+              "type": "Long",
+              "values": [
+                100,
+                20,
+                5
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "threshold": 5
+            },
+            {
+              "threshold": 20
+            },
+            {
+              "threshold": 100
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.lineItemCount"
+              },
+              {
+                "name": "threshold",
+                "op": "parameter"
+              }
+            ],
+            "op": "gt"
+          },
+          "revision_notes": [
+            "Declared synthetic review/acceptance bands measured in line items per claim. Source-explicit refill > 0 and production-release defect == 0 remain unchanged.",
+            "Whenever the line-item count crosses a threshold, enforce this duty: the adjuster who handled the claim may not approve it. Outside all selected triggers only this duty stops binding.",
+            "Composition rationale: Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "applicability",
+              "rationale": "Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional.",
+              "statement": "Whenever the line-item count crosses a threshold, enforce this duty: the adjuster who handled the claim may not approve it. Outside all selected triggers only this duty stops binding.",
+              "target": "G1"
+            },
+            "id": "V6",
+            "meaning": "the line-item count crosses a threshold",
+            "reads": "Claim.lineItemCount"
+          }
+        },
+        "V7": {
+          "allowed_forms": [
+            "applicability"
+          ],
+          "allowed_targets": [
+            "G1"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "applicability",
+            "rationale": "Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional.",
+            "statement": "Whenever the net payable (claim amount minus deductible) crosses a threshold, enforce this duty: the adjuster who handled the claim may not approve it. Outside all selected triggers only this duty stops binding.",
+            "target": "G1"
+          },
+          "parameter_schema": {
+            "threshold": {
+              "type": "Long",
+              "values": [
+                50000,
+                500000,
+                5000000
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "threshold": 50000
+            },
+            {
+              "threshold": 500000
+            },
+            {
+              "threshold": 5000000
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.claimAmount"
+                  },
+                  {
+                    "op": "field",
+                    "path": "resource.deductible"
+                  }
+                ],
+                "op": "sub"
+              },
+              {
+                "name": "threshold",
+                "op": "parameter"
+              }
+            ],
+            "op": "gt"
+          },
+          "revision_notes": [
+            "USD-cent thresholds for gross claims versus net payments after deductibles: $500, $5000, $50000. These are synthetic organization policy choices.",
+            "Whenever the net payable (claim amount minus deductible) crosses a threshold, enforce this duty: the adjuster who handled the claim may not approve it. Outside all selected triggers only this duty stops binding.",
+            "Composition rationale: Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "applicability",
+              "rationale": "Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional.",
+              "statement": "Whenever the net payable (claim amount minus deductible) crosses a threshold, enforce this duty: the adjuster who handled the claim may not approve it. Outside all selected triggers only this duty stops binding.",
+              "target": "G1"
+            },
+            "id": "V7",
+            "meaning": "the net payable (claim amount minus deductible) crosses a threshold",
+            "reads": "Claim.claimAmount - Claim.deductible"
+          }
+        },
+        "V8": {
+          "allowed_forms": [
+            "applicability"
+          ],
+          "allowed_targets": [
+            "G1"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "applicability",
+            "rationale": "Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional.",
+            "statement": "Whenever the claim amount crosses a money threshold, enforce this duty: the adjuster who handled the claim may not approve it. Outside all selected triggers only this duty stops binding.",
+            "target": "G1"
+          },
+          "parameter_schema": {
+            "threshold": {
+              "type": "Long",
+              "values": [
+                100000,
+                1000000,
+                10000000
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "threshold": 100000
+            },
+            {
+              "threshold": 1000000
+            },
+            {
+              "threshold": 10000000
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.claimAmount"
+              },
+              {
+                "name": "threshold",
+                "op": "parameter"
+              }
+            ],
+            "op": "gt"
+          },
+          "revision_notes": [
+            "USD-cent thresholds for gross claims versus net payments after deductibles: $1000, $10000, $100000. These are synthetic organization policy choices.",
+            "Whenever the claim amount crosses a money threshold, enforce this duty: the adjuster who handled the claim may not approve it. Outside all selected triggers only this duty stops binding.",
+            "Composition rationale: Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "applicability",
+              "rationale": "Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional.",
+              "statement": "Whenever the claim amount crosses a money threshold, enforce this duty: the adjuster who handled the claim may not approve it. Outside all selected triggers only this duty stops binding.",
+              "target": "G1"
+            },
+            "id": "V8",
+            "meaning": "the claim amount crosses a money threshold",
+            "reads": "Claim.claimAmount"
+          }
+        },
+        "V9": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the request is on the corporate network. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "op": "field",
+            "path": "context.onCorporateNetwork"
+          },
+          "revision_notes": [
+            "Authorization requires that the request is on the corporate network. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the request is on the corporate network. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V9",
+            "meaning": "the request is on the corporate network",
+            "reads": "context.onCorporateNetwork"
+          }
+        }
+      },
+      "bases": {
+        "G1": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal"
+              },
+              {
+                "op": "field",
+                "path": "resource.handler"
+              }
+            ],
+            "op": "ne"
+          },
+          "signature": "V1",
+          "source": {
+            "id": "G1",
+            "meaning": "the adjuster who handled the claim may not approve it",
+            "reads": "principal vs Claim.handler",
+            "signature": "V1"
+          }
+        },
+        "G5": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.status"
+              },
+              {
+                "id": "reviewed",
+                "op": "entity",
+                "type": "ClaimStatusValue"
+              }
+            ],
+            "op": "eq"
+          },
+          "signature": "V11",
+          "source": {
+            "id": "G5",
+            "meaning": "a claim may be approved only after it has been reviewed",
+            "reads": "Claim.status",
+            "signature": "V11"
+          }
+        }
+      },
+      "domain_gate": {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.claimAmount"
+              },
+              {
+                "op": "literal",
+                "value": 0
+              }
+            ],
+            "op": "ge"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.deductible"
+              },
+              {
+                "op": "literal",
+                "value": 0
+              }
+            ],
+            "op": "ge"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.lineItemCount"
+              },
+              {
+                "op": "literal",
+                "value": 0
+              }
+            ],
+            "op": "ge"
+          }
+        ],
+        "op": "all"
+      },
+      "eligibility": {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "Reviewer",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "ClaimsManager",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          }
+        ],
+        "op": "any"
+      },
+      "field_bindings": {
+        "Claim.claimAmount": "resource.claimAmount",
+        "Claim.claimCode": "resource.claimCode",
+        "Claim.deductible": "resource.deductible",
+        "Claim.fraudHold": "resource.fraudHold",
+        "Claim.handler": "resource.handler",
+        "Claim.lineItemCount": "resource.lineItemCount",
+        "Claim.status": "resource.status",
+        "context.approveClaimScheduledEnd": "context.approveClaimScheduledEnd",
+        "context.approveClaimScheduledStart": "context.approveClaimScheduledStart",
+        "context.catastropheDeclared": "context.catastropheDeclared",
+        "context.currentTime": "context.currentTime",
+        "context.onCorporateNetwork": "context.onCorporateNetwork"
+      },
+      "overrides": {
+        "G3": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "context.catastropheDeclared"
+              },
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "principal.roles"
+                      },
+                      {
+                        "id": "ClaimsManager",
+                        "op": "entity",
+                        "type": "Role"
+                      }
+                    ],
+                    "op": "contains"
+                  }
+                ],
+                "op": "any"
+              }
+            ],
+            "op": "all"
+          },
+          "source": {
+            "id": "G3",
+            "meaning": "a declared catastrophe event lets a claims manager approve a claim they handled, overriding the two-person rule",
+            "overrides": [
+              "G1"
+            ],
+            "reads": "context.catastropheDeclared",
+            "requires_adjudication": true
+          },
+          "targets": [
+            "G1"
+          ]
+        }
+      },
+      "resource_type": "Claim"
+    },
+    "issuePayout": {
+      "atoms": {
+        "V10": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the request falls within the payment-cutoff window. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.issuePayoutScheduledStart"
+                  },
+                  {
+                    "op": "field",
+                    "path": "context.currentTime"
+                  }
+                ],
+                "op": "time_le"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.currentTime"
+                  },
+                  {
+                    "op": "field",
+                    "path": "context.issuePayoutScheduledEnd"
+                  }
+                ],
+                "op": "time_lt"
+              }
+            ],
+            "op": "all"
+          },
+          "revision_notes": [
+            "Authorization requires that the request falls within the payment-cutoff window. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the request falls within the payment-cutoff window. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V10",
+            "meaning": "the request falls within the payment-cutoff window",
+            "reads": "context.currentTime"
+          }
+        },
+        "V12": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the claim is not flagged with a fraud hold. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.claim.fraudHold"
+              },
+              {
+                "op": "literal",
+                "value": false
+              }
+            ],
+            "op": "eq"
+          },
+          "revision_notes": [
+            "Authorization requires that the claim is not flagged with a fraud hold. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the claim is not flagged with a fraud hold. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V12",
+            "meaning": "the claim is not flagged with a fraud hold",
+            "reads": "Payout.claim.fraudHold"
+          }
+        },
+        "V5": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the claim code matches or has a prefix. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "pattern": {
+              "type": "String",
+              "values": [
+                "AUTO-*",
+                "LIABILITY-*",
+                "PROPERTY-*"
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "pattern": "AUTO-*"
+            },
+            {
+              "pattern": "PROPERTY-*"
+            },
+            {
+              "pattern": "LIABILITY-*"
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.claim.claimCode"
+              },
+              {
+                "name": "pattern",
+                "op": "parameter"
+              }
+            ],
+            "op": "like"
+          },
+          "revision_notes": [
+            "Authorization requires that the claim code matches or has a prefix. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the claim code matches or has a prefix. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V5",
+            "meaning": "the claim code matches or has a prefix",
+            "reads": "Payout.claim.claimCode"
+          }
+        },
+        "V6": {
+          "allowed_forms": [
+            "applicability"
+          ],
+          "allowed_targets": [
+            "G1"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "applicability",
+            "rationale": "Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional.",
+            "statement": "Whenever the claim line-item count crosses a threshold, enforce this duty: the person who approved the claim may not also issue its payout. Outside all selected triggers only this duty stops binding.",
+            "target": "G1"
+          },
+          "parameter_schema": {
+            "threshold": {
+              "type": "Long",
+              "values": [
+                100,
+                20,
+                5
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "threshold": 5
+            },
+            {
+              "threshold": 20
+            },
+            {
+              "threshold": 100
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.claim.lineItemCount"
+              },
+              {
+                "name": "threshold",
+                "op": "parameter"
+              }
+            ],
+            "op": "gt"
+          },
+          "revision_notes": [
+            "Declared synthetic review/acceptance bands measured in line items per claim. Source-explicit refill > 0 and production-release defect == 0 remain unchanged.",
+            "Whenever the claim line-item count crosses a threshold, enforce this duty: the person who approved the claim may not also issue its payout. Outside all selected triggers only this duty stops binding.",
+            "Composition rationale: Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "applicability",
+              "rationale": "Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional.",
+              "statement": "Whenever the claim line-item count crosses a threshold, enforce this duty: the person who approved the claim may not also issue its payout. Outside all selected triggers only this duty stops binding.",
+              "target": "G1"
+            },
+            "id": "V6",
+            "meaning": "the claim line-item count crosses a threshold",
+            "reads": "Payout.claim.lineItemCount"
+          }
+        },
+        "V7": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the payout must equal the net payable (claim amount minus deductible). Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.amount"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.claim.claimAmount"
+                  },
+                  {
+                    "op": "field",
+                    "path": "resource.claim.deductible"
+                  }
+                ],
+                "op": "sub"
+              }
+            ],
+            "op": "eq"
+          },
+          "revision_notes": [
+            "Authorization requires that the payout must equal the net payable (claim amount minus deductible). Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the payout must equal the net payable (claim amount minus deductible). Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V7",
+            "meaning": "the payout must equal the net payable (claim amount minus deductible)",
+            "reads": "Payout.claim.claimAmount - Payout.claim.deductible"
+          }
+        },
+        "V8": {
+          "allowed_forms": [
+            "applicability"
+          ],
+          "allowed_targets": [
+            "G1"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "applicability",
+            "rationale": "Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional.",
+            "statement": "Whenever the payout amount crosses a money threshold, enforce this duty: the person who approved the claim may not also issue its payout. Outside all selected triggers only this duty stops binding.",
+            "target": "G1"
+          },
+          "parameter_schema": {
+            "threshold": {
+              "type": "Long",
+              "values": [
+                100000,
+                1000000,
+                10000000
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "threshold": 100000
+            },
+            {
+              "threshold": 1000000
+            },
+            {
+              "threshold": 10000000
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.amount"
+              },
+              {
+                "name": "threshold",
+                "op": "parameter"
+              }
+            ],
+            "op": "gt"
+          },
+          "revision_notes": [
+            "USD-cent thresholds for gross claims versus net payments after deductibles: $1000, $10000, $100000. These are synthetic organization policy choices.",
+            "Whenever the payout amount crosses a money threshold, enforce this duty: the person who approved the claim may not also issue its payout. Outside all selected triggers only this duty stops binding.",
+            "Composition rationale: Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "applicability",
+              "rationale": "Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional.",
+              "statement": "Whenever the payout amount crosses a money threshold, enforce this duty: the person who approved the claim may not also issue its payout. Outside all selected triggers only this duty stops binding.",
+              "target": "G1"
+            },
+            "id": "V8",
+            "meaning": "the payout amount crosses a money threshold",
+            "reads": "Payout.amount"
+          }
+        },
+        "V9": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the request is on the corporate network. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "op": "field",
+            "path": "context.onCorporateNetwork"
+          },
+          "revision_notes": [
+            "Authorization requires that the request is on the corporate network. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the request is on the corporate network. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V9",
+            "meaning": "the request is on the corporate network",
+            "reads": "context.onCorporateNetwork"
+          }
+        }
+      },
+      "bases": {
+        "G1": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal"
+              },
+              {
+                "op": "field",
+                "path": "resource.claim.approver"
+              }
+            ],
+            "op": "ne"
+          },
+          "signature": "V1",
+          "source": {
+            "id": "G1",
+            "meaning": "the person who approved the claim may not also issue its payout",
+            "reads": "principal vs Payout.claim.approver",
+            "signature": "V1"
+          }
+        },
+        "G5": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.claim.status"
+              },
+              {
+                "id": "approved",
+                "op": "entity",
+                "type": "ClaimStatusValue"
+              }
+            ],
+            "op": "eq"
+          },
+          "signature": "V11",
+          "source": {
+            "id": "G5",
+            "meaning": "a payout may be issued only after the claim has been approved",
+            "reads": "Payout.claim.status",
+            "signature": "V11"
+          }
+        }
+      },
+      "domain_gate": {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.amount"
+              },
+              {
+                "op": "literal",
+                "value": 0
+              }
+            ],
+            "op": "ge"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.claim.claimAmount"
+              },
+              {
+                "op": "literal",
+                "value": 0
+              }
+            ],
+            "op": "ge"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.claim.deductible"
+              },
+              {
+                "op": "literal",
+                "value": 0
+              }
+            ],
+            "op": "ge"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.claim.lineItemCount"
+              },
+              {
+                "op": "literal",
+                "value": 0
+              }
+            ],
+            "op": "ge"
+          }
+        ],
+        "op": "all"
+      },
+      "eligibility": {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "PayoutOfficer",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "ClaimsManager",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          }
+        ],
+        "op": "any"
+      },
+      "field_bindings": {
+        "Payout.amount": "resource.amount",
+        "Payout.claim.approver": "resource.claim.approver",
+        "Payout.claim.claimAmount": "resource.claim.claimAmount",
+        "Payout.claim.claimCode": "resource.claim.claimCode",
+        "Payout.claim.deductible": "resource.claim.deductible",
+        "Payout.claim.fraudHold": "resource.claim.fraudHold",
+        "Payout.claim.lineItemCount": "resource.claim.lineItemCount",
+        "Payout.claim.status": "resource.claim.status",
+        "context.catastropheDeclared": "context.catastropheDeclared",
+        "context.currentTime": "context.currentTime",
+        "context.issuePayoutScheduledEnd": "context.issuePayoutScheduledEnd",
+        "context.issuePayoutScheduledStart": "context.issuePayoutScheduledStart",
+        "context.onCorporateNetwork": "context.onCorporateNetwork"
+      },
+      "overrides": {
+        "G3": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "context.catastropheDeclared"
+              },
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "principal.roles"
+                      },
+                      {
+                        "id": "ClaimsManager",
+                        "op": "entity",
+                        "type": "Role"
+                      }
+                    ],
+                    "op": "contains"
+                  }
+                ],
+                "op": "any"
+              }
+            ],
+            "op": "all"
+          },
+          "source": {
+            "id": "G3",
+            "meaning": "a declared catastrophe event lets a claims manager issue a payout on a claim they approved, overriding the separation-of-duty rule",
+            "overrides": [
+              "G1"
+            ],
+            "reads": "context.catastropheDeclared",
+            "requires_adjudication": true
+          },
+          "targets": [
+            "G1"
+          ]
+        }
+      },
+      "resource_type": "Payout"
+    }
+  },
+  "business_review_revision": "2026-10-23-r1",
+  "context": {
+    "approveClaimScheduledEnd": {
+      "description": "exclusive end of the declared Scheduled window",
+      "type": "datetime"
+    },
+    "approveClaimScheduledStart": {
+      "description": "inclusive start of the declared Scheduled window",
+      "type": "datetime"
+    },
+    "catastropheDeclared": {
+      "type": "Bool"
+    },
+    "currentTime": {
+      "type": "datetime"
+    },
+    "issuePayoutScheduledEnd": {
+      "description": "exclusive end of the declared Scheduled window",
+      "type": "datetime"
+    },
+    "issuePayoutScheduledStart": {
+      "description": "inclusive start of the declared Scheduled window",
+      "type": "datetime"
+    },
+    "onCorporateNetwork": {
+      "type": "Bool"
+    }
+  },
+  "contract": "complete-spec-v4",
+  "decisions": [
+    "Added context.approveClaimScheduledEnd: exclusive end of the declared Scheduled window",
+    "Added context.approveClaimScheduledStart: inclusive start of the declared Scheduled window",
+    "Added context.issuePayoutScheduledEnd: exclusive end of the declared Scheduled window",
+    "Added context.issuePayoutScheduledStart: inclusive start of the declared Scheduled window",
+    "All source identities denote User entities; role sets may overlap without implicit exclusivity.",
+    "All timestamps read by predicates are bounded inclusively to 2000-01-01 through 2100-01-01 UTC; requests outside the explicit domain gate deny.",
+    "AuditLog.note is source documentation, not an attribute.",
+    "Business revision v2: catalogs are declared synthetic organizational policies, not empirical norms. Selected-atom obligations are mandatory in both forms and cannot be waived by a base exception or override.",
+    "Money is nonnegative integer USD cents, at most 1,000,000,000. Counts are nonnegative integers at most 1,000,000 unless a narrower dictionary is declared.",
+    "Request context is treated as trusted input from the host; authorization does not attest network, emergency, signature, or scheduling facts.",
+    "Retained source repairs: exact lifecycle states, linked course roster, explicit promotion/filing facts, independent calibration expiry, comp expiry, and guarded override eligibility are intentional experiment definitions. Their typed ASTs and field descriptions, not the ambiguous source shorthand, are authoritative.",
+    "Rules operate on snapshots. A selected lifecycle base requires the exact named state unless its predicate explicitly lists alternatives.",
+    "Source business descriptions are retained for audit; the authored typed predicates and dictionaries define the experiment. No statutory compliance claim is made.",
+    "Source tag kinds are represented by Set<String>. Group membership is reflexive and transitive Cedar entity ancestry.",
+    "approveClaim/V6: Declared synthetic review/acceptance bands measured in line items per claim. Source-explicit refill > 0 and production-release defect == 0 remain unchanged.",
+    "approveClaim/V7: USD-cent thresholds for gross claims versus net payments after deductibles: $500, $5000, $50000. These are synthetic organization policy choices.",
+    "approveClaim/V8: USD-cent thresholds for gross claims versus net payments after deductibles: $1000, $10000, $100000. These are synthetic organization policy choices.",
+    "issuePayout/V6: Declared synthetic review/acceptance bands measured in line items per claim. Source-explicit refill > 0 and production-release defect == 0 remain unchanged.",
+    "issuePayout/V8: USD-cent thresholds for gross claims versus net payments after deductibles: $1000, $10000, $100000. These are synthetic organization policy choices."
+  ],
+  "domain": "claim_adjudication",
+  "entities": {
+    "AuditLog": {
+      "attributes": {}
+    },
+    "Claim": {
+      "attributes": {
+        "approver": {
+          "type": "User"
+        },
+        "claimAmount": {
+          "bounds": [
+            0,
+            1000000000
+          ],
+          "type": "Long",
+          "unit": "USD cents"
+        },
+        "claimCode": {
+          "type": "String"
+        },
+        "deductible": {
+          "bounds": [
+            0,
+            1000000000
+          ],
+          "type": "Long",
+          "unit": "USD cents"
+        },
+        "filedAt": {
+          "type": "datetime"
+        },
+        "fraudHold": {
+          "type": "Bool"
+        },
+        "handler": {
+          "type": "User"
+        },
+        "lineItemCount": {
+          "bounds": [
+            0,
+            1000000
+          ],
+          "type": "Long",
+          "unit": "line items per claim"
+        },
+        "status": {
+          "type": "ClaimStatusValue"
+        }
+      }
+    },
+    "ClaimStatusValue": {
+      "enum": [
+        "filed",
+        "reviewed",
+        "approved",
+        "paid"
+      ]
+    },
+    "Group": {
+      "attributes": {},
+      "member_of": [
+        "Group"
+      ]
+    },
+    "Payout": {
+      "attributes": {
+        "amount": {
+          "bounds": [
+            0,
+            1000000000
+          ],
+          "type": "Long",
+          "unit": "USD cents"
+        },
+        "claim": {
+          "type": "Claim"
+        },
+        "issuer": {
+          "type": "User"
+        }
+      }
+    },
+    "Role": {
+      "enum": [
+        "Adjuster",
+        "Reviewer",
+        "ClaimsManager",
+        "PayoutOfficer",
+        "FraudAnalyst",
+        "Auditor"
+      ]
+    },
+    "User": {
+      "attributes": {
+        "roles": {
+          "type": "Set<Role>"
+        }
+      }
+    }
+  },
+  "revision_contract": "business-composition-v4",
+  "source_action_chains": [
+    {
+      "chain": [
+        "approveClaim",
+        "issuePayout"
+      ],
+      "linked_by": [
+        "status",
+        "handler",
+        "approver"
+      ],
+      "shared_resource": "Claim"
+    }
+  ],
+  "source_sha256": "2907de8ce880b86d975423e46cde808f78a30bb93dc0a767cb3b4f0643c07c22",
+  "status": "authored experimental assumptions; not human semantic approval",
+  "version": "business-registry-v4"
+}

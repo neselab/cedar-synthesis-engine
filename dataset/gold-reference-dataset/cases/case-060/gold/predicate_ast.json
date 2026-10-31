@@ -1,0 +1,173 @@
+{
+  "adjudicateCase": {
+    "args": [
+      {
+        "op": "literal",
+        "value": true
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.roles"
+                  },
+                  {
+                    "id": "AdjudicationOfficer",
+                    "op": "entity",
+                    "type": "Role"
+                  }
+                ],
+                "op": "contains"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.roles"
+                  },
+                  {
+                    "id": "SupervisoryOfficer",
+                    "op": "entity",
+                    "type": "Role"
+                  }
+                ],
+                "op": "contains"
+              }
+            ],
+            "op": "any"
+          }
+        ],
+        "op": "any"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "literal",
+                "value": true
+              }
+            ],
+            "op": "not"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.recusedCases"
+                  },
+                  {
+                    "op": "field",
+                    "path": "resource"
+                  }
+                ],
+                "op": "contains"
+              }
+            ],
+            "op": "not"
+          }
+        ],
+        "op": "any"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal"
+                  },
+                  {
+                    "op": "field",
+                    "path": "resource.applicant"
+                  }
+                ],
+                "op": "eq"
+              }
+            ],
+            "op": "not"
+          }
+        ],
+        "op": "any"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.adjudicateCaseScheduledStart"
+                  },
+                  {
+                    "op": "field",
+                    "path": "context.currentTime"
+                  }
+                ],
+                "op": "time_le"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.currentTime"
+                  },
+                  {
+                    "op": "field",
+                    "path": "context.adjudicateCaseScheduledEnd"
+                  }
+                ],
+                "op": "time_lt"
+              }
+            ],
+            "op": "all"
+          }
+        ],
+        "op": "any"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.roles"
+                  },
+                  {
+                    "id": "SupervisoryOfficer",
+                    "op": "entity",
+                    "type": "Role"
+                  }
+                ],
+                "op": "contains"
+              }
+            ],
+            "op": "any"
+          }
+        ],
+        "op": "any"
+      },
+      {
+        "args": [
+          {
+            "op": "field",
+            "path": "context.onGovNetwork"
+          }
+        ],
+        "op": "any"
+      }
+    ],
+    "op": "all"
+  }
+}

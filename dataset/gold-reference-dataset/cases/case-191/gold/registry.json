@@ -1,0 +1,1005 @@
+{
+  "anchors": {
+    "deleteResource": {
+      "atoms": {
+        "V1": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the requester is the resource owner. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal"
+              },
+              {
+                "op": "field",
+                "path": "resource.owner"
+              }
+            ],
+            "op": "eq"
+          },
+          "revision_notes": [
+            "Authorization requires that the requester is the resource owner. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the requester is the resource owner. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V1",
+            "meaning": "the requester is the resource owner",
+            "reads": "CloudResource.owner"
+          }
+        },
+        "V14": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that MFA was used. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "op": "field",
+            "path": "context.mfaUsed"
+          },
+          "revision_notes": [
+            "Authorization requires that MFA was used. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that MFA was used. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V14",
+            "meaning": "MFA was used",
+            "reads": "context.mfaUsed"
+          }
+        },
+        "V3": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the requester belongs under the resource's org unit. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.memberOf"
+              },
+              {
+                "op": "field",
+                "path": "resource.orgUnit"
+              }
+            ],
+            "op": "in"
+          },
+          "revision_notes": [
+            "Authorization requires that the requester belongs under the resource's org unit. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the requester belongs under the resource's org unit. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V3",
+            "meaning": "the requester belongs under the resource's org unit",
+            "reads": "user.memberOf under CloudResource.orgUnit"
+          }
+        },
+        "V9": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the request comes from an allowed network range. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "cidr": {
+              "type": "String",
+              "values": [
+                "10.0.0.0/8",
+                "172.16.0.0/12",
+                "192.168.0.0/16"
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "cidr": "10.0.0.0/8"
+            },
+            {
+              "cidr": "172.16.0.0/12"
+            },
+            {
+              "cidr": "192.168.0.0/16"
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "context.sourceIp"
+              },
+              {
+                "args": [
+                  {
+                    "name": "cidr",
+                    "op": "parameter"
+                  }
+                ],
+                "op": "ip"
+              }
+            ],
+            "op": "ip_in"
+          },
+          "revision_notes": [
+            "Authorization requires that the request comes from an allowed network range. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the request comes from an allowed network range. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V9",
+            "meaning": "the request comes from an allowed network range",
+            "reads": "context.sourceIp in a CIDR range"
+          }
+        }
+      },
+      "bases": {
+        "G5": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.environment"
+              },
+              {
+                "id": "prod",
+                "op": "entity",
+                "type": "CloudResourceEnvironmentValue"
+              }
+            ],
+            "op": "ne"
+          },
+          "signature": "V11",
+          "source": {
+            "id": "G5",
+            "meaning": "a production resource may not be deleted",
+            "reads": "CloudResource.environment",
+            "signature": "V11"
+          }
+        }
+      },
+      "domain_gate": {
+        "op": "literal",
+        "value": true
+      },
+      "eligibility": {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "Owner",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "OrgAdmin",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          }
+        ],
+        "op": "any"
+      },
+      "field_bindings": {
+        "CloudResource.environment": "resource.environment",
+        "CloudResource.orgUnit": "resource.orgUnit",
+        "CloudResource.owner": "resource.owner",
+        "CloudResource.temporaryGrant": "resource.temporaryGrant",
+        "context.mfaUsed": "context.mfaUsed",
+        "context.sourceIp": "context.sourceIp",
+        "user.memberOf": "principal.memberOf"
+      },
+      "overrides": {
+        "G3": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.temporaryGrant"
+              },
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "principal.roles"
+                      },
+                      {
+                        "id": "Owner",
+                        "op": "entity",
+                        "type": "Role"
+                      }
+                    ],
+                    "op": "contains"
+                  },
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "principal.roles"
+                      },
+                      {
+                        "id": "OrgAdmin",
+                        "op": "entity",
+                        "type": "Role"
+                      }
+                    ],
+                    "op": "contains"
+                  }
+                ],
+                "op": "any"
+              }
+            ],
+            "op": "all"
+          },
+          "source": {
+            "id": "G3",
+            "meaning": "a break-glass temporary grant overrides the production delete ban",
+            "overrides": [
+              "G5"
+            ],
+            "reads": "CloudResource.temporaryGrant",
+            "requires_adjudication": true
+          },
+          "targets": [
+            "G5"
+          ]
+        }
+      },
+      "resource_type": "CloudResource"
+    },
+    "modifyResource": {
+      "atoms": {
+        "V1": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the requester is the resource owner. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal"
+              },
+              {
+                "op": "field",
+                "path": "resource.owner"
+              }
+            ],
+            "op": "eq"
+          },
+          "revision_notes": [
+            "Authorization requires that the requester is the resource owner. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the requester is the resource owner. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V1",
+            "meaning": "the requester is the resource owner",
+            "reads": "CloudResource.owner"
+          }
+        },
+        "V10": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the session is not older than a limit. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "max_age_seconds": {
+              "type": "Long",
+              "values": [
+                1800,
+                3600,
+                900
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "max_age_seconds": 900
+            },
+            {
+              "max_age_seconds": 1800
+            },
+            {
+              "max_age_seconds": 3600
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "context.sessionAge"
+              },
+              {
+                "name": "max_age_seconds",
+                "op": "parameter"
+              }
+            ],
+            "op": "le"
+          },
+          "revision_notes": [
+            "Authorization requires that the session is not older than a limit. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the session is not older than a limit. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V10",
+            "meaning": "the session is not older than a limit",
+            "reads": "context.sessionAge"
+          }
+        },
+        "V13": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the resource carries a particular tag. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "label": {
+              "type": "String",
+              "values": [
+                "managed",
+                "production",
+                "sensitive"
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "label": "production"
+            },
+            {
+              "label": "sensitive"
+            },
+            {
+              "label": "managed"
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.tags"
+              },
+              {
+                "name": "label",
+                "op": "parameter"
+              }
+            ],
+            "op": "contains"
+          },
+          "revision_notes": [
+            "Authorization requires that the resource carries a particular tag. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the resource carries a particular tag. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V13",
+            "meaning": "the resource carries a particular tag",
+            "reads": "CloudResource.tags"
+          }
+        },
+        "V14": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that MFA was used. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "op": "field",
+            "path": "context.mfaUsed"
+          },
+          "revision_notes": [
+            "Authorization requires that MFA was used. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that MFA was used. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V14",
+            "meaning": "MFA was used",
+            "reads": "context.mfaUsed"
+          }
+        },
+        "V3": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the requester belongs under the resource's org unit. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.memberOf"
+              },
+              {
+                "op": "field",
+                "path": "resource.orgUnit"
+              }
+            ],
+            "op": "in"
+          },
+          "revision_notes": [
+            "Authorization requires that the requester belongs under the resource's org unit. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the requester belongs under the resource's org unit. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V3",
+            "meaning": "the requester belongs under the resource's org unit",
+            "reads": "user.memberOf under CloudResource.orgUnit"
+          }
+        },
+        "V9": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the request comes from an allowed network range. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "cidr": {
+              "type": "String",
+              "values": [
+                "10.0.0.0/8",
+                "172.16.0.0/12",
+                "192.168.0.0/16"
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "cidr": "10.0.0.0/8"
+            },
+            {
+              "cidr": "172.16.0.0/12"
+            },
+            {
+              "cidr": "192.168.0.0/16"
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "context.sourceIp"
+              },
+              {
+                "args": [
+                  {
+                    "name": "cidr",
+                    "op": "parameter"
+                  }
+                ],
+                "op": "ip"
+              }
+            ],
+            "op": "ip_in"
+          },
+          "revision_notes": [
+            "Authorization requires that the request comes from an allowed network range. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the request comes from an allowed network range. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V9",
+            "meaning": "the request comes from an allowed network range",
+            "reads": "context.sourceIp in a CIDR range"
+          }
+        }
+      },
+      "bases": {
+        "G5": {
+          "predicate": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.environment"
+                  },
+                  {
+                    "id": "prod",
+                    "op": "entity",
+                    "type": "CloudResourceEnvironmentValue"
+                  }
+                ],
+                "op": "ne"
+              },
+              {
+                "op": "field",
+                "path": "resource.promoted"
+              }
+            ],
+            "op": "any"
+          },
+          "signature": "V11",
+          "source": {
+            "id": "G5",
+            "meaning": "a resource may be modified only outside production unless promoted",
+            "reads": "CloudResource.environment",
+            "signature": "V11"
+          }
+        }
+      },
+      "domain_gate": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.sessionAge"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "ge"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.sessionAge"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 604800
+                  }
+                ],
+                "op": "le"
+              }
+            ],
+            "op": "all"
+          }
+        ],
+        "op": "all"
+      },
+      "eligibility": {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "Owner",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "Developer",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "Operator",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          }
+        ],
+        "op": "any"
+      },
+      "field_bindings": {
+        "CloudResource.environment": "resource.environment",
+        "CloudResource.orgUnit": "resource.orgUnit",
+        "CloudResource.owner": "resource.owner",
+        "CloudResource.promoted": "resource.promoted",
+        "CloudResource.tags": "resource.tags",
+        "CloudResource.temporaryGrant": "resource.temporaryGrant",
+        "context.mfaUsed": "context.mfaUsed",
+        "context.sessionAge": "context.sessionAge",
+        "context.sourceIp": "context.sourceIp",
+        "user.memberOf": "principal.memberOf"
+      },
+      "overrides": {
+        "G3": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.temporaryGrant"
+              },
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "principal.roles"
+                      },
+                      {
+                        "id": "Owner",
+                        "op": "entity",
+                        "type": "Role"
+                      }
+                    ],
+                    "op": "contains"
+                  },
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "principal.roles"
+                      },
+                      {
+                        "id": "Developer",
+                        "op": "entity",
+                        "type": "Role"
+                      }
+                    ],
+                    "op": "contains"
+                  },
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "principal.roles"
+                      },
+                      {
+                        "id": "Operator",
+                        "op": "entity",
+                        "type": "Role"
+                      }
+                    ],
+                    "op": "contains"
+                  }
+                ],
+                "op": "any"
+              }
+            ],
+            "op": "all"
+          },
+          "source": {
+            "id": "G3",
+            "meaning": "a break-glass temporary grant overrides the production deny",
+            "overrides": [
+              "G5"
+            ],
+            "reads": "CloudResource.temporaryGrant",
+            "requires_adjudication": true
+          },
+          "targets": [
+            "G5"
+          ]
+        }
+      },
+      "resource_type": "CloudResource"
+    }
+  },
+  "business_review_revision": "2026-10-23-r1",
+  "context": {
+    "mfaUsed": {
+      "type": "Bool"
+    },
+    "sessionAge": {
+      "bounds": [
+        0,
+        604800
+      ],
+      "type": "Long",
+      "unit": "elapsed seconds"
+    },
+    "sourceIp": {
+      "type": "ipaddr"
+    }
+  },
+  "contract": "complete-spec-v4",
+  "decisions": [
+    "Added CloudResource.promoted: explicit promotion fact completing the source unless-promoted clause",
+    "All source identities denote User entities; role sets may overlap without implicit exclusivity.",
+    "All timestamps read by predicates are bounded inclusively to 2000-01-01 through 2100-01-01 UTC; requests outside the explicit domain gate deny.",
+    "Business revision v2: catalogs are declared synthetic organizational policies, not empirical norms. Selected-atom obligations are mandatory in both forms and cannot be waived by a base exception or override.",
+    "Money is nonnegative integer USD cents, at most 1,000,000,000. Counts are nonnegative integers at most 1,000,000 unless a narrower dictionary is declared.",
+    "Request context is treated as trusted input from the host; authorization does not attest network, emergency, signature, or scheduling facts.",
+    "Retained source repairs: exact lifecycle states, linked course roster, explicit promotion/filing facts, independent calibration expiry, comp expiry, and guarded override eligibility are intentional experiment definitions. Their typed ASTs and field descriptions, not the ambiguous source shorthand, are authoritative.",
+    "Rules operate on snapshots. A selected lifecycle base requires the exact named state unless its predicate explicitly lists alternatives.",
+    "Source business descriptions are retained for audit; the authored typed predicates and dictionaries define the experiment. No statutory compliance claim is made.",
+    "Source tag kinds are represented by Set<String>. Group membership is reflexive and transitive Cedar entity ancestry.",
+    "sessionAge is an elapsed duration in seconds, correcting the source timestamp kind."
+  ],
+  "domain": "iam_access",
+  "entities": {
+    "CloudResource": {
+      "attributes": {
+        "environment": {
+          "type": "CloudResourceEnvironmentValue"
+        },
+        "orgUnit": {
+          "type": "Group"
+        },
+        "owner": {
+          "type": "User"
+        },
+        "promoted": {
+          "description": "explicit promotion fact completing the source unless-promoted clause",
+          "type": "Bool"
+        },
+        "tags": {
+          "representation": "zero or more label strings",
+          "type": "Set<String>"
+        },
+        "temporaryGrant": {
+          "type": "Bool"
+        }
+      }
+    },
+    "CloudResourceEnvironmentValue": {
+      "enum": [
+        "dev",
+        "staging",
+        "prod"
+      ]
+    },
+    "Group": {
+      "attributes": {},
+      "member_of": [
+        "Group"
+      ]
+    },
+    "OrgUnit": {
+      "attributes": {
+        "parent": {
+          "type": "Group"
+        }
+      }
+    },
+    "Role": {
+      "enum": [
+        "Owner",
+        "Developer",
+        "Operator",
+        "OrgAdmin"
+      ]
+    },
+    "Secret": {
+      "attributes": {
+        "resource": {
+          "type": "CloudResource"
+        },
+        "rotatedAt": {
+          "type": "datetime"
+        }
+      }
+    },
+    "User": {
+      "attributes": {
+        "memberOf": {
+          "type": "Group"
+        },
+        "roles": {
+          "type": "Set<Role>"
+        }
+      }
+    }
+  },
+  "revision_contract": "business-composition-v4",
+  "source_action_chains": [],
+  "source_sha256": "2907de8ce880b86d975423e46cde808f78a30bb93dc0a767cb3b4f0643c07c22",
+  "status": "authored experimental assumptions; not human semantic approval",
+  "version": "business-registry-v4"
+}

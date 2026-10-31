@@ -1,0 +1,25 @@
+entity Application { assignedUnderwriter: User, coverageLines: Set<String>, effectiveDate: datetime, exposureCount: Long, premium: Long, productCode: String, riskTier: Long, segment: Set<String>, status: ApplicationStatusValue };
+entity ApplicationStatusValue enum ["intake", "assessed", "referred", "quoted", "bound"];
+entity AuditLog {  };
+entity Group in [Group] {  };
+entity Policy { application: Application, boundBy: User, effectiveDate: datetime, premium: Long };
+entity Role enum ["Underwriter", "SeniorUnderwriter", "UnderwritingManager", "ChiefUnderwriter", "Auditor"];
+entity User { authorityLevel: Long, roles: Set<Role> };
+action approveException appliesTo { principal: [User], resource: [Application], context: {
+    bindPolicyV8ReviewCompleted: Bool,
+    catastropheSurgeDeclared: Bool,
+    coverageExceptionReviewCompleted: Bool,
+    currentTime: datetime,
+    onCorporateNetwork: Bool,
+    staffingEmergencyDeclared: Bool,
+  },
+};
+action bindPolicy appliesTo { principal: [User], resource: [Application], context: {
+    bindPolicyV8ReviewCompleted: Bool,
+    catastropheSurgeDeclared: Bool,
+    coverageExceptionReviewCompleted: Bool,
+    currentTime: datetime,
+    onCorporateNetwork: Bool,
+    staffingEmergencyDeclared: Bool,
+  },
+};

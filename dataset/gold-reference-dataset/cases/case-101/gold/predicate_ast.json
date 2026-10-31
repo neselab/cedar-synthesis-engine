@@ -1,0 +1,181 @@
+{
+  "approveClearToClose": {
+    "args": [
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.heldAmount"
+              },
+              {
+                "op": "literal",
+                "value": 0
+              }
+            ],
+            "op": "ge"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.payeeCount"
+              },
+              {
+                "op": "literal",
+                "value": 0
+              }
+            ],
+            "op": "ge"
+          }
+        ],
+        "op": "all"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.roles"
+                  },
+                  {
+                    "id": "TitleOfficer",
+                    "op": "entity",
+                    "type": "Role"
+                  }
+                ],
+                "op": "contains"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.roles"
+                  },
+                  {
+                    "id": "EscrowManager",
+                    "op": "entity",
+                    "type": "Role"
+                  }
+                ],
+                "op": "contains"
+              }
+            ],
+            "op": "any"
+          }
+        ],
+        "op": "any"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "literal",
+                "value": true
+              }
+            ],
+            "op": "not"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.status"
+              },
+              {
+                "id": "funded",
+                "op": "entity",
+                "type": "EscrowFileStatusValue"
+              }
+            ],
+            "op": "eq"
+          }
+        ],
+        "op": "any"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "context.currentTime"
+              },
+              {
+                "op": "field",
+                "path": "resource.closingDate"
+              }
+            ],
+            "op": "time_le"
+          }
+        ],
+        "op": "any"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.titleCleared"
+              },
+              {
+                "op": "literal",
+                "value": true
+              }
+            ],
+            "op": "eq"
+          }
+        ],
+        "op": "any"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.lienStatus"
+                  },
+                  {
+                    "op": "literal",
+                    "value": "tax_lien"
+                  }
+                ],
+                "op": "contains"
+              }
+            ],
+            "op": "not"
+          }
+        ],
+        "op": "any"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.region"
+              },
+              {
+                "op": "field",
+                "path": "principal.assignedGroup"
+              }
+            ],
+            "op": "in"
+          }
+        ],
+        "op": "any"
+      }
+    ],
+    "op": "all"
+  }
+}

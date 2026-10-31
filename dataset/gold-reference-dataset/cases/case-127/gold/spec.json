@@ -1,0 +1,49 @@
+{
+  "domain": "document_management",
+  "format_version": "complete-spec-v4",
+  "grouping": {
+    "applicability_triggers": "any",
+    "exception": "any",
+    "requirements": "all"
+  },
+  "parts": [
+    {
+      "anchor": "viewDocument",
+      "bases": [
+        "G4"
+      ],
+      "conditions": [
+        {
+          "atom": "V13",
+          "form": "require",
+          "parameters": {
+            "label": "external"
+          },
+          "target": "@action"
+        },
+        {
+          "atom": "V4",
+          "form": "require",
+          "parameters": {},
+          "target": "@action"
+        },
+        {
+          "atom": "V9",
+          "form": "require",
+          "parameters": {},
+          "target": "@action"
+        }
+      ],
+      "overrides": []
+    }
+  ],
+  "provenance": {
+    "arithmetic_safety_patches": [],
+    "kind": "less-specific-200 revised intent",
+    "source_case": "case-127",
+    "source_spec_sha256": "f89335040610f2392665f075be2436f731566ead89e7b4568ade7e2c60023512",
+    "transformation": "Drop only artificial 2000-2100 timestamp windows and catalog maxima 1000000/1000000000; retain all other gates."
+  },
+  "registry_sha256": "93f98e39715d70da04849cc3be83a32ca2fa893d567d343554c11ffe17573c98",
+  "source_sha256": "2907de8ce880b86d975423e46cde808f78a30bb93dc0a767cb3b4f0643c07c22"
+}

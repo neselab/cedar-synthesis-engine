@@ -1,0 +1,176 @@
+{
+  "viewDocument": {
+    "args": [
+      {
+        "op": "literal",
+        "value": true
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.roles"
+                  },
+                  {
+                    "id": "Attorney",
+                    "op": "entity",
+                    "type": "Role"
+                  }
+                ],
+                "op": "contains"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.roles"
+                  },
+                  {
+                    "id": "Paralegal",
+                    "op": "entity",
+                    "type": "Role"
+                  }
+                ],
+                "op": "contains"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.roles"
+                  },
+                  {
+                    "id": "RecordsManager",
+                    "op": "entity",
+                    "type": "Role"
+                  }
+                ],
+                "op": "contains"
+              }
+            ],
+            "op": "any"
+          }
+        ],
+        "op": "any"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "literal",
+                "value": true
+              }
+            ],
+            "op": "not"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.conflictedMatters"
+                  },
+                  {
+                    "op": "field",
+                    "path": "resource.matter"
+                  }
+                ],
+                "op": "contains"
+              }
+            ],
+            "op": "not"
+          }
+        ],
+        "op": "any"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal"
+              },
+              {
+                "op": "field",
+                "path": "resource.author"
+              }
+            ],
+            "op": "eq"
+          }
+        ],
+        "op": "any"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.viewDocumentScheduledStart"
+                  },
+                  {
+                    "op": "field",
+                    "path": "context.currentDate"
+                  }
+                ],
+                "op": "time_le"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.currentDate"
+                  },
+                  {
+                    "op": "field",
+                    "path": "context.viewDocumentScheduledEnd"
+                  }
+                ],
+                "op": "time_lt"
+              }
+            ],
+            "op": "all"
+          }
+        ],
+        "op": "any"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.privileged"
+                  },
+                  {
+                    "op": "literal",
+                    "value": true
+                  }
+                ],
+                "op": "eq"
+              }
+            ],
+            "op": "not"
+          },
+          {
+            "op": "field",
+            "path": "context.privilegedAccessAuthorized"
+          }
+        ],
+        "op": "any"
+      }
+    ],
+    "op": "all"
+  }
+}

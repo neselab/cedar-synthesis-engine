@@ -1,0 +1,1924 @@
+{
+  "anchors": {
+    "approvePayout": {
+      "atoms": {
+        "V10": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the request falls within the settlement window. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.approvePayoutScheduledStart"
+                  },
+                  {
+                    "op": "field",
+                    "path": "context.currentTime"
+                  }
+                ],
+                "op": "time_le"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.currentTime"
+                  },
+                  {
+                    "op": "field",
+                    "path": "context.approvePayoutScheduledEnd"
+                  }
+                ],
+                "op": "time_lt"
+              }
+            ],
+            "op": "all"
+          },
+          "revision_notes": [
+            "Authorization requires that the request falls within the settlement window. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the request falls within the settlement window. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V10",
+            "meaning": "the request falls within the settlement window",
+            "reads": "context.currentTime"
+          }
+        },
+        "V14": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that MFA was used for the request. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "op": "field",
+            "path": "context.mfaUsed"
+          },
+          "revision_notes": [
+            "Authorization requires that MFA was used for the request. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that MFA was used for the request. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V14",
+            "meaning": "MFA was used for the request",
+            "reads": "context.mfaUsed"
+          }
+        },
+        "V2": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": false,
+            "kind": "require",
+            "rationale": "The original role predicate is already guaranteed by ordinary eligibility. Preserve it in the registry but exclude it from random condition selection; do not invent a supplemental role.",
+            "statement": "The original role remains an access requirement already implied by eligibility.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.roles"
+                  },
+                  {
+                    "id": "FinanceApprover",
+                    "op": "entity",
+                    "type": "Role"
+                  }
+                ],
+                "op": "contains"
+              }
+            ],
+            "op": "any"
+          },
+          "revision_notes": [
+            "The original role remains an access requirement already implied by eligibility.",
+            "Composition rationale: The original role predicate is already guaranteed by ordinary eligibility. Preserve it in the registry but exclude it from random condition selection; do not invent a supplemental role."
+          ],
+          "sampling_enabled": false,
+          "source": {
+            "business_semantics": {
+              "enabled": false,
+              "kind": "require",
+              "rationale": "The original role predicate is already guaranteed by ordinary eligibility. Preserve it in the registry but exclude it from random condition selection; do not invent a supplemental role.",
+              "statement": "The original role remains an access requirement already implied by eligibility.",
+              "target": "@action"
+            },
+            "id": "V2",
+            "meaning": "the requester holds a particular role",
+            "reads": "principal is FinanceApprover"
+          }
+        },
+        "V6": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the seller account's KYC tier is at least a level. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "threshold": {
+              "type": "Long",
+              "values": [
+                1,
+                2,
+                3
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "threshold": 1
+            },
+            {
+              "threshold": 2
+            },
+            {
+              "threshold": 3
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.account.kycTier"
+              },
+              {
+                "name": "threshold",
+                "op": "parameter"
+              }
+            ],
+            "op": "ge"
+          },
+          "revision_notes": [
+            "Only interior effective cut points are offered on the named ordinal scale; exclude universally satisfied endpoints.",
+            "Authorization requires that the seller account's KYC tier is at least a level. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the seller account's KYC tier is at least a level. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V6",
+            "meaning": "the seller account's KYC tier is at least a level",
+            "reads": "Payout.account.kycTier"
+          }
+        },
+        "V8": {
+          "allowed_forms": [
+            "applicability"
+          ],
+          "allowed_targets": [
+            "G1"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "applicability",
+            "rationale": "Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional.",
+            "statement": "Whenever the payout amount crosses a money threshold, enforce this duty: the payout agent who initiated a payout may not approve it. Outside all selected triggers only this duty stops binding.",
+            "target": "G1"
+          },
+          "parameter_schema": {
+            "threshold": {
+              "type": "Long",
+              "values": [
+                2500000,
+                50000,
+                500000
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "threshold": 50000
+            },
+            {
+              "threshold": 500000
+            },
+            {
+              "threshold": 2500000
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.amount"
+              },
+              {
+                "name": "threshold",
+                "op": "parameter"
+              }
+            ],
+            "op": "gt"
+          },
+          "revision_notes": [
+            "USD-cent thresholds for seller settlement batches; individual listing prices use separate bands: $500, $5000, $25000. These are synthetic organization policy choices.",
+            "Whenever the payout amount crosses a money threshold, enforce this duty: the payout agent who initiated a payout may not approve it. Outside all selected triggers only this duty stops binding.",
+            "Composition rationale: Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "applicability",
+              "rationale": "Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional.",
+              "statement": "Whenever the payout amount crosses a money threshold, enforce this duty: the payout agent who initiated a payout may not approve it. Outside all selected triggers only this duty stops binding.",
+              "target": "G1"
+            },
+            "id": "V8",
+            "meaning": "the payout amount crosses a money threshold",
+            "reads": "Payout.amount"
+          }
+        },
+        "V9": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the request originates from a trusted network. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "op": "field",
+            "path": "context.onTrustedNetwork"
+          },
+          "revision_notes": [
+            "Authorization requires that the request originates from a trusted network. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the request originates from a trusted network. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V9",
+            "meaning": "the request originates from a trusted network",
+            "reads": "context.onTrustedNetwork"
+          }
+        }
+      },
+      "bases": {
+        "G1": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal"
+              },
+              {
+                "op": "field",
+                "path": "resource.initiatedBy"
+              }
+            ],
+            "op": "ne"
+          },
+          "signature": "V1",
+          "source": {
+            "id": "G1",
+            "meaning": "the payout agent who initiated a payout may not approve it",
+            "reads": "principal vs Payout.initiatedBy",
+            "signature": "V1"
+          }
+        },
+        "G5": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.status"
+              },
+              {
+                "id": "requested",
+                "op": "entity",
+                "type": "PayoutStatusValue"
+              }
+            ],
+            "op": "eq"
+          },
+          "signature": "V11",
+          "source": {
+            "id": "G5",
+            "meaning": "a payout may be approved only while it is still in the requested stage",
+            "reads": "Payout.status",
+            "signature": "V11"
+          }
+        }
+      },
+      "domain_gate": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2000-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  },
+                  {
+                    "op": "field",
+                    "path": "context.approvePayoutScheduledEnd"
+                  }
+                ],
+                "op": "time_le"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.approvePayoutScheduledEnd"
+                  },
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2100-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  }
+                ],
+                "op": "time_le"
+              }
+            ],
+            "op": "all"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2000-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  },
+                  {
+                    "op": "field",
+                    "path": "context.approvePayoutScheduledStart"
+                  }
+                ],
+                "op": "time_le"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.approvePayoutScheduledStart"
+                  },
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2100-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  }
+                ],
+                "op": "time_le"
+              }
+            ],
+            "op": "all"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2000-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  },
+                  {
+                    "op": "field",
+                    "path": "context.currentTime"
+                  }
+                ],
+                "op": "time_le"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.currentTime"
+                  },
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2100-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  }
+                ],
+                "op": "time_le"
+              }
+            ],
+            "op": "all"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.account.kycTier"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.account.kycTier"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.account.kycTier"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 2
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.account.kycTier"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 3
+                  }
+                ],
+                "op": "eq"
+              }
+            ],
+            "op": "any"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.amount"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "ge"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.amount"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1000000000
+                  }
+                ],
+                "op": "le"
+              }
+            ],
+            "op": "all"
+          }
+        ],
+        "op": "all"
+      },
+      "eligibility": {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "FinanceApprover",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          }
+        ],
+        "op": "any"
+      },
+      "field_bindings": {
+        "Payout.account.kycTier": "resource.account.kycTier",
+        "Payout.amount": "resource.amount",
+        "Payout.initiatedBy": "resource.initiatedBy",
+        "Payout.status": "resource.status",
+        "context.approvePayoutScheduledEnd": "context.approvePayoutScheduledEnd",
+        "context.approvePayoutScheduledStart": "context.approvePayoutScheduledStart",
+        "context.currentTime": "context.currentTime",
+        "context.emergencyDeclared": "context.emergencyDeclared",
+        "context.mfaUsed": "context.mfaUsed",
+        "context.onTrustedNetwork": "context.onTrustedNetwork"
+      },
+      "overrides": {
+        "G3": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "context.emergencyDeclared"
+              },
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "principal.roles"
+                      },
+                      {
+                        "id": "FinanceApprover",
+                        "op": "entity",
+                        "type": "Role"
+                      }
+                    ],
+                    "op": "contains"
+                  }
+                ],
+                "op": "any"
+              }
+            ],
+            "op": "all"
+          },
+          "source": {
+            "id": "G3",
+            "meaning": "a declared payout emergency lets a finance approver clear a payout they initiated, overriding the separation-of-duty split",
+            "overrides": [
+              "G1"
+            ],
+            "reads": "context.emergencyDeclared",
+            "requires_adjudication": true
+          },
+          "targets": [
+            "G1"
+          ]
+        }
+      },
+      "resource_type": "Payout"
+    },
+    "disbursePayout": {
+      "atoms": {
+        "V12": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the payout carries a recorded approver. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "attribute": "approvedBy",
+            "op": "has",
+            "path": "resource"
+          },
+          "revision_notes": [
+            "Authorization requires that the payout carries a recorded approver. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the payout carries a recorded approver. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V12",
+            "meaning": "the payout carries a recorded approver",
+            "reads": "Payout.approvedBy"
+          }
+        },
+        "V14": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that MFA was used for the request. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "op": "field",
+            "path": "context.mfaUsed"
+          },
+          "revision_notes": [
+            "Authorization requires that MFA was used for the request. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that MFA was used for the request. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V14",
+            "meaning": "MFA was used for the request",
+            "reads": "context.mfaUsed"
+          }
+        },
+        "V6": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the seller account's KYC tier is at least a level. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "threshold": {
+              "type": "Long",
+              "values": [
+                1,
+                2,
+                3
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "threshold": 1
+            },
+            {
+              "threshold": 2
+            },
+            {
+              "threshold": 3
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.account.kycTier"
+              },
+              {
+                "name": "threshold",
+                "op": "parameter"
+              }
+            ],
+            "op": "ge"
+          },
+          "revision_notes": [
+            "Only interior effective cut points are offered on the named ordinal scale; exclude universally satisfied endpoints.",
+            "Authorization requires that the seller account's KYC tier is at least a level. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the seller account's KYC tier is at least a level. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V6",
+            "meaning": "the seller account's KYC tier is at least a level",
+            "reads": "Payout.account.kycTier"
+          }
+        },
+        "V8": {
+          "allowed_forms": [
+            "obligation"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "obligation",
+            "rationale": "A descriptive quantity threshold without a suitable duty target is completed as an explicitly authored additional review, not as a minimum transaction size or lifecycle waiver.",
+            "required_fact": "disbursePayoutV8ReviewCompleted",
+            "statement": "When the payout amount crosses a money threshold, the additional review recorded by disbursePayoutV8ReviewCompleted must be complete; smaller requests do not need this additional review.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "threshold": {
+              "type": "Long",
+              "values": [
+                2500000,
+                50000,
+                500000
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "threshold": 50000
+            },
+            {
+              "threshold": 500000
+            },
+            {
+              "threshold": 2500000
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.amount"
+              },
+              {
+                "name": "threshold",
+                "op": "parameter"
+              }
+            ],
+            "op": "gt"
+          },
+          "requirement": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.amount"
+                      },
+                      {
+                        "name": "threshold",
+                        "op": "parameter"
+                      }
+                    ],
+                    "op": "gt"
+                  }
+                ],
+                "op": "not"
+              },
+              {
+                "op": "field",
+                "path": "context.disbursePayoutV8ReviewCompleted"
+              }
+            ],
+            "op": "any"
+          },
+          "revision_notes": [
+            "USD-cent thresholds for seller settlement batches; individual listing prices use separate bands: $500, $5000, $25000. These are synthetic organization policy choices.",
+            "When the payout amount crosses a money threshold, the additional review recorded by disbursePayoutV8ReviewCompleted must be complete; smaller requests do not need this additional review.",
+            "Composition rationale: A descriptive quantity threshold without a suitable duty target is completed as an explicitly authored additional review, not as a minimum transaction size or lifecycle waiver."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "obligation",
+              "rationale": "A descriptive quantity threshold without a suitable duty target is completed as an explicitly authored additional review, not as a minimum transaction size or lifecycle waiver.",
+              "required_fact": "disbursePayoutV8ReviewCompleted",
+              "statement": "When the payout amount crosses a money threshold, the additional review recorded by disbursePayoutV8ReviewCompleted must be complete; smaller requests do not need this additional review.",
+              "target": "@action"
+            },
+            "id": "V8",
+            "meaning": "the payout amount crosses a money threshold",
+            "reads": "Payout.amount"
+          }
+        },
+        "V9": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the request originates from a trusted network. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "op": "field",
+            "path": "context.onTrustedNetwork"
+          },
+          "revision_notes": [
+            "Authorization requires that the request originates from a trusted network. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the request originates from a trusted network. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V9",
+            "meaning": "the request originates from a trusted network",
+            "reads": "context.onTrustedNetwork"
+          }
+        }
+      },
+      "bases": {
+        "G2": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal"
+              },
+              {
+                "op": "field",
+                "path": "resource.initiatedBy"
+              }
+            ],
+            "op": "eq"
+          },
+          "signature": "V1",
+          "source": {
+            "id": "G2",
+            "meaning": "the payout agent who initiated a payout must be the one who disburses it",
+            "reads": "principal vs Payout.initiatedBy",
+            "signature": "V1"
+          }
+        },
+        "G5": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.account.fraudStatus"
+              },
+              {
+                "id": "clear",
+                "op": "entity",
+                "type": "SellerAccountFraudStatusValue"
+              }
+            ],
+            "op": "eq"
+          },
+          "signature": "V11",
+          "source": {
+            "id": "G5",
+            "meaning": "a payout may be disbursed only if the seller account is clear and not on fraud hold",
+            "reads": "Payout.account.fraudStatus",
+            "signature": "V11"
+          }
+        }
+      },
+      "domain_gate": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.account.kycTier"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.account.kycTier"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.account.kycTier"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 2
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.account.kycTier"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 3
+                  }
+                ],
+                "op": "eq"
+              }
+            ],
+            "op": "any"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.amount"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "ge"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.amount"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1000000000
+                  }
+                ],
+                "op": "le"
+              }
+            ],
+            "op": "all"
+          }
+        ],
+        "op": "all"
+      },
+      "eligibility": {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "PayoutAgent",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          }
+        ],
+        "op": "any"
+      },
+      "field_bindings": {
+        "Payout.account.fraudStatus": "resource.account.fraudStatus",
+        "Payout.account.kycTier": "resource.account.kycTier",
+        "Payout.amount": "resource.amount",
+        "Payout.approvedBy": "resource.approvedBy",
+        "Payout.initiatedBy": "resource.initiatedBy",
+        "context.emergencyDeclared": "context.emergencyDeclared",
+        "context.mfaUsed": "context.mfaUsed",
+        "context.onTrustedNetwork": "context.onTrustedNetwork"
+      },
+      "overrides": {
+        "G3": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "context.emergencyDeclared"
+              },
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "principal.roles"
+                      },
+                      {
+                        "id": "PayoutAgent",
+                        "op": "entity",
+                        "type": "Role"
+                      }
+                    ],
+                    "op": "contains"
+                  }
+                ],
+                "op": "any"
+              }
+            ],
+            "op": "all"
+          },
+          "source": {
+            "id": "G3",
+            "meaning": "a declared emergency lets a different payout agent disburse a payout, overriding the binding-of-duty to the initiator",
+            "overrides": [
+              "G2"
+            ],
+            "reads": "context.emergencyDeclared",
+            "requires_adjudication": true
+          },
+          "targets": [
+            "G2"
+          ]
+        }
+      },
+      "resource_type": "Payout"
+    },
+    "publishListing": {
+      "atoms": {
+        "V1": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the seller must be the owner of the listing. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal"
+              },
+              {
+                "op": "field",
+                "path": "resource.owner"
+              }
+            ],
+            "op": "eq"
+          },
+          "revision_notes": [
+            "Authorization requires that the seller must be the owner of the listing. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the seller must be the owner of the listing. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V1",
+            "meaning": "the seller must be the owner of the listing",
+            "reads": "principal vs Listing.owner"
+          }
+        },
+        "V13": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the listing carries a particular risk label tag. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "label": {
+              "type": "String",
+              "values": [
+                "high_risk",
+                "restricted",
+                "review_required"
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "label": "high_risk"
+            },
+            {
+              "label": "restricted"
+            },
+            {
+              "label": "review_required"
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.riskLabels"
+              },
+              {
+                "name": "label",
+                "op": "parameter"
+              }
+            ],
+            "op": "contains"
+          },
+          "revision_notes": [
+            "Authorization requires that the listing carries a particular risk label tag. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the listing carries a particular risk label tag. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V13",
+            "meaning": "the listing carries a particular risk label tag",
+            "reads": "Listing.riskLabels"
+          }
+        },
+        "V14": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that MFA was used for the request. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "op": "field",
+            "path": "context.mfaUsed"
+          },
+          "revision_notes": [
+            "Authorization requires that MFA was used for the request. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that MFA was used for the request. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V14",
+            "meaning": "MFA was used for the request",
+            "reads": "context.mfaUsed"
+          }
+        },
+        "V5": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the listing's category code matches or has a permitted prefix. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "pattern": {
+              "type": "String",
+              "values": [
+                "REGULATED-*",
+                "RESTRICTED-*",
+                "STANDARD-*"
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "pattern": "STANDARD-*"
+            },
+            {
+              "pattern": "RESTRICTED-*"
+            },
+            {
+              "pattern": "REGULATED-*"
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.category"
+              },
+              {
+                "name": "pattern",
+                "op": "parameter"
+              }
+            ],
+            "op": "like"
+          },
+          "revision_notes": [
+            "Authorization requires that the listing's category code matches or has a permitted prefix. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the listing's category code matches or has a permitted prefix. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V5",
+            "meaning": "the listing's category code matches or has a permitted prefix",
+            "reads": "Listing.category"
+          }
+        },
+        "V8": {
+          "allowed_forms": [
+            "obligation"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "obligation",
+            "rationale": "A descriptive quantity threshold without a suitable duty target is completed as an explicitly authored additional review, not as a minimum transaction size or lifecycle waiver.",
+            "required_fact": "publishListingV8ReviewCompleted",
+            "statement": "When the listing price crosses a money threshold, the additional review recorded by publishListingV8ReviewCompleted must be complete; smaller requests do not need this additional review.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "threshold": {
+              "type": "Long",
+              "values": [
+                10000,
+                200000,
+                50000
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "threshold": 10000
+            },
+            {
+              "threshold": 50000
+            },
+            {
+              "threshold": 200000
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.price"
+              },
+              {
+                "name": "threshold",
+                "op": "parameter"
+              }
+            ],
+            "op": "gt"
+          },
+          "requirement": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.price"
+                      },
+                      {
+                        "name": "threshold",
+                        "op": "parameter"
+                      }
+                    ],
+                    "op": "gt"
+                  }
+                ],
+                "op": "not"
+              },
+              {
+                "op": "field",
+                "path": "context.publishListingV8ReviewCompleted"
+              }
+            ],
+            "op": "any"
+          },
+          "revision_notes": [
+            "USD-cent thresholds for individual marketplace listing prices: $100, $500, $2000. These are synthetic organization policy choices.",
+            "When the listing price crosses a money threshold, the additional review recorded by publishListingV8ReviewCompleted must be complete; smaller requests do not need this additional review.",
+            "Composition rationale: A descriptive quantity threshold without a suitable duty target is completed as an explicitly authored additional review, not as a minimum transaction size or lifecycle waiver."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "obligation",
+              "rationale": "A descriptive quantity threshold without a suitable duty target is completed as an explicitly authored additional review, not as a minimum transaction size or lifecycle waiver.",
+              "required_fact": "publishListingV8ReviewCompleted",
+              "statement": "When the listing price crosses a money threshold, the additional review recorded by publishListingV8ReviewCompleted must be complete; smaller requests do not need this additional review.",
+              "target": "@action"
+            },
+            "id": "V8",
+            "meaning": "the listing price crosses a money threshold",
+            "reads": "Listing.price"
+          }
+        }
+      },
+      "bases": {
+        "G4": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.verifiedTier"
+              },
+              {
+                "op": "field",
+                "path": "resource.categoryTier"
+              }
+            ],
+            "op": "ge"
+          },
+          "signature": "V6",
+          "source": {
+            "id": "G4",
+            "meaning": "the seller's verified KYC tier must dominate the tier required by the listing's category",
+            "reads": "user.verifiedTier vs Listing.categoryTier",
+            "signature": "V6"
+          }
+        },
+        "G5": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.status"
+              },
+              {
+                "id": "draft",
+                "op": "entity",
+                "type": "ListingStatusValue"
+              }
+            ],
+            "op": "eq"
+          },
+          "signature": "V11",
+          "source": {
+            "id": "G5",
+            "meaning": "a listing may be published only from the draft stage",
+            "reads": "Listing.status",
+            "signature": "V11"
+          }
+        }
+      },
+      "domain_gate": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.verifiedTier"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.verifiedTier"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.verifiedTier"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 2
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.verifiedTier"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 3
+                  }
+                ],
+                "op": "eq"
+              }
+            ],
+            "op": "any"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.categoryTier"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.categoryTier"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 2
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.categoryTier"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 3
+                  }
+                ],
+                "op": "eq"
+              }
+            ],
+            "op": "any"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.price"
+              },
+              {
+                "op": "literal",
+                "value": 0
+              }
+            ],
+            "op": "ge"
+          }
+        ],
+        "op": "all"
+      },
+      "eligibility": {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "Seller",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          }
+        ],
+        "op": "any"
+      },
+      "field_bindings": {
+        "Listing.category": "resource.category",
+        "Listing.categoryTier": "resource.categoryTier",
+        "Listing.owner": "resource.owner",
+        "Listing.price": "resource.price",
+        "Listing.riskLabels": "resource.riskLabels",
+        "Listing.status": "resource.status",
+        "context.mfaUsed": "context.mfaUsed",
+        "user.verifiedTier": "principal.verifiedTier"
+      },
+      "overrides": {},
+      "resource_type": "Listing"
+    }
+  },
+  "business_review_revision": "2026-10-23-r1",
+  "context": {
+    "approvePayoutScheduledEnd": {
+      "description": "exclusive end of the declared Scheduled window",
+      "type": "datetime"
+    },
+    "approvePayoutScheduledStart": {
+      "description": "inclusive start of the declared Scheduled window",
+      "type": "datetime"
+    },
+    "currentTime": {
+      "type": "datetime"
+    },
+    "disbursePayoutV8ReviewCompleted": {
+      "type": "Bool"
+    },
+    "emergencyDeclared": {
+      "type": "Bool"
+    },
+    "mfaUsed": {
+      "type": "Bool"
+    },
+    "onTrustedNetwork": {
+      "type": "Bool"
+    },
+    "publishListingV8ReviewCompleted": {
+      "type": "Bool"
+    }
+  },
+  "contract": "complete-spec-v4",
+  "decisions": [
+    "Added context.approvePayoutScheduledEnd: exclusive end of the declared Scheduled window",
+    "Added context.approvePayoutScheduledStart: inclusive start of the declared Scheduled window",
+    "All source identities denote User entities; role sets may overlap without implicit exclusivity.",
+    "All timestamps read by predicates are bounded inclusively to 2000-01-01 through 2100-01-01 UTC; requests outside the explicit domain gate deny.",
+    "Business revision v2: catalogs are declared synthetic organizational policies, not empirical norms. Selected-atom obligations are mandatory in both forms and cannot be waived by a base exception or override.",
+    "Money is nonnegative integer USD cents, at most 1,000,000,000. Counts are nonnegative integers at most 1,000,000 unless a narrower dictionary is declared.",
+    "Request context is treated as trusted input from the host; authorization does not attest network, emergency, signature, or scheduling facts.",
+    "Retained source repairs: exact lifecycle states, linked course roster, explicit promotion/filing facts, independent calibration expiry, comp expiry, and guarded override eligibility are intentional experiment definitions. Their typed ASTs and field descriptions, not the ambiguous source shorthand, are authoritative.",
+    "Rules operate on snapshots. A selected lifecycle base requires the exact named state unless its predicate explicitly lists alternatives.",
+    "Source business descriptions are retained for audit; the authored typed predicates and dictionaries define the experiment. No statutory compliance claim is made.",
+    "Source tag kinds are represented by Set<String>. Group membership is reflexive and transitive Cedar entity ancestry.",
+    "approvePayout/V2: Refines the original role test with the supplemental SeniorPayoutApprover role. Eligibility stays unchanged; this qualification can be present or absent for an eligible requester.",
+    "approvePayout/V6: Only interior effective cut points are offered on the named ordinal scale; exclude universally satisfied endpoints.",
+    "approvePayout/V8: USD-cent thresholds for seller settlement batches; individual listing prices use separate bands: $500, $5000, $25000. These are synthetic organization policy choices.",
+    "disbursePayout/V6: Only interior effective cut points are offered on the named ordinal scale; exclude universally satisfied endpoints.",
+    "disbursePayout/V8: USD-cent thresholds for seller settlement batches; individual listing prices use separate bands: $500, $5000, $25000. These are synthetic organization policy choices.",
+    "publishListing/V8: USD-cent thresholds for individual marketplace listing prices: $100, $500, $2000. These are synthetic organization policy choices."
+  ],
+  "domain": "marketplace_seller",
+  "entities": {
+    "Group": {
+      "attributes": {},
+      "member_of": [
+        "Group"
+      ]
+    },
+    "Listing": {
+      "attributes": {
+        "category": {
+          "type": "String"
+        },
+        "categoryTier": {
+          "bounds": [
+            1,
+            3
+          ],
+          "levels": {
+            "regulated": 3,
+            "restricted": 2,
+            "standard": 1
+          },
+          "type": "Long"
+        },
+        "owner": {
+          "type": "User"
+        },
+        "price": {
+          "bounds": [
+            0,
+            1000000000
+          ],
+          "type": "Long",
+          "unit": "USD cents"
+        },
+        "riskLabels": {
+          "representation": "zero or more label strings",
+          "type": "Set<String>"
+        },
+        "status": {
+          "type": "ListingStatusValue"
+        }
+      }
+    },
+    "ListingStatusValue": {
+      "enum": [
+        "draft",
+        "active",
+        "suspended",
+        "delisted"
+      ]
+    },
+    "Payout": {
+      "attributes": {
+        "account": {
+          "type": "SellerAccount"
+        },
+        "amount": {
+          "bounds": [
+            0,
+            1000000000
+          ],
+          "type": "Long",
+          "unit": "USD cents"
+        },
+        "approvedBy": {
+          "optional": true,
+          "type": "User"
+        },
+        "initiatedBy": {
+          "type": "User"
+        },
+        "status": {
+          "type": "PayoutStatusValue"
+        }
+      }
+    },
+    "PayoutStatusValue": {
+      "enum": [
+        "requested",
+        "approved",
+        "disbursed"
+      ]
+    },
+    "Role": {
+      "enum": [
+        "Seller",
+        "PayoutAgent",
+        "FinanceApprover",
+        "RiskAnalyst"
+      ]
+    },
+    "SellerAccount": {
+      "attributes": {
+        "fraudStatus": {
+          "type": "SellerAccountFraudStatusValue"
+        },
+        "holder": {
+          "type": "User"
+        },
+        "kycTier": {
+          "bounds": [
+            0,
+            3
+          ],
+          "levels": {
+            "basic": 1,
+            "enhanced": 3,
+            "unverified": 0,
+            "verified": 2
+          },
+          "type": "Long"
+        },
+        "region": {
+          "type": "String"
+        },
+        "watchlistCodes": {
+          "type": "Set<String>"
+        }
+      }
+    },
+    "SellerAccountFraudStatusValue": {
+      "enum": [
+        "clear",
+        "review",
+        "hold",
+        "frozen"
+      ]
+    },
+    "User": {
+      "attributes": {
+        "homeRegion": {
+          "type": "String"
+        },
+        "roles": {
+          "type": "Set<Role>"
+        },
+        "verifiedTier": {
+          "bounds": [
+            0,
+            3
+          ],
+          "levels": {
+            "basic": 1,
+            "enhanced": 3,
+            "unverified": 0,
+            "verified": 2
+          },
+          "type": "Long"
+        }
+      }
+    }
+  },
+  "revision_contract": "business-composition-v4",
+  "source_action_chains": [
+    {
+      "chain": [
+        "approvePayout",
+        "disbursePayout"
+      ],
+      "linked_by": [
+        "status",
+        "initiatedBy",
+        "approvedBy"
+      ],
+      "shared_resource": "Payout"
+    }
+  ],
+  "source_sha256": "2907de8ce880b86d975423e46cde808f78a30bb93dc0a767cb3b4f0643c07c22",
+  "status": "authored experimental assumptions; not human semantic approval",
+  "version": "business-registry-v4"
+}

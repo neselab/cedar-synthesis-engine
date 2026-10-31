@@ -1,0 +1,2 @@
+permit (principal is User, action == Action::"signArtifact", resource is Artifact)
+when { (true && ((principal.roles.contains(Role::"Committer"))) && (!(true) || (principal == resource.builtBy)) && (((context.signArtifactScheduledStart <= context.currentTime) && (context.currentTime < context.signArtifactScheduledEnd))) && (resource.buildTags.contains("release")) && (context.sourceIp.isInRange(ip("172.16.0.0/12")))) };

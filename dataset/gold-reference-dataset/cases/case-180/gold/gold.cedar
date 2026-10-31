@@ -1,0 +1,2 @@
+permit (principal is User, action == Action::"executeLease", resource is ExecutedLease)
+when { (((resource.lease.monthlyRent >= 0)) && ((principal.roles.contains(Role::"Broker") || principal.roles.contains(Role::"ComplianceOfficer"))) && (!(true) || (principal == resource.lease.reviewer) || (context.courtOrderDeclared && (principal.roles.contains(Role::"ComplianceOfficer")))) && (resource.lease.segment.contains("regulated")) && (!((resource.lease.monthlyRent > 1000000)) || (principal.roles.contains(Role::"ComplianceOfficer"))) && (context.onBrokerageNetwork)) };

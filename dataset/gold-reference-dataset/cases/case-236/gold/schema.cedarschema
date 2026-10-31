@@ -1,0 +1,16 @@
+entity AuditLog {  };
+entity Disbursement { amount: Long, authorizedBy: User, escrowFile: EscrowFile, wiredAt: datetime };
+entity EscrowFile { closingDate: datetime, disbursementTier: Long, escrowOfficer: User, fileCode: String, heldAmount: Long, lienStatus: Set<String>, parties: Set<User>, payeeCount: Long, region: Group, status: EscrowFileStatusValue, titleCleared: Bool };
+entity EscrowFileStatusValue enum ["opened", "funded", "cleared_to_close", "disbursed", "reconciled"];
+entity Group in [Group] {  };
+entity Role enum ["EscrowOfficer", "SeniorEscrowOfficer", "EscrowManager", "TitleOfficer", "Auditor"];
+entity User { assignedGroup: Group, authorityLevel: Long, roles: Set<Role> };
+action approveClearToClose appliesTo { principal: [User], resource: [EscrowFile], context: {
+    currentTime: datetime,
+    dualControlVerified: Bool,
+    emergencyDeclared: Bool,
+    enhancedDueDiligenceCompleted: Bool,
+    enhancedDueDiligenceParties: Set<User>,
+    onCorporateNetwork: Bool,
+  },
+};

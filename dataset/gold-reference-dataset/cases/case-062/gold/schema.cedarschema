@@ -1,0 +1,13 @@
+entity CloudResource { environment: CloudResourceEnvironmentValue, orgUnit: Group, owner: User, promoted: Bool, tags: Set<String>, temporaryGrant: Bool };
+entity CloudResourceEnvironmentValue enum ["dev", "staging", "prod"];
+entity Group in [Group] {  };
+entity OrgUnit { parent: Group };
+entity Role enum ["Owner", "Developer", "Operator", "OrgAdmin"];
+entity Secret { resource: CloudResource, rotatedAt: datetime };
+entity User { memberOf: Group, roles: Set<Role> };
+action deleteResource appliesTo { principal: [User], resource: [CloudResource], context: {
+    mfaUsed: Bool,
+    sessionAge: Long,
+    sourceIp: ipaddr,
+  },
+};

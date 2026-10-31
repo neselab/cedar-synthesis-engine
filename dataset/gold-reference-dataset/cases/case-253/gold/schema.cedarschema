@@ -1,0 +1,16 @@
+entity Asset { assetTag: String, calibratedAt: datetime, calibrationDueAt: datetime, calibrationValidUntil: datetime, equipmentClass: Long, hazardClass: Set<String>, measurementPointCount: Long, outOfService: Bool, status: AssetStatusValue, technician: User };
+entity AssetStatusValue enum ["due", "inprogress", "calibrated", "returned"];
+entity CalibrationLog {  };
+entity CalibrationRecord { asset: Asset, calibratedAt: datetime, result: String, technician: User };
+entity Group in [Group] {  };
+entity Role enum ["CalibrationTechnician", "SeniorTechnician", "MetrologyManager", "QualityInspector", "MaintenanceSupervisor"];
+entity User { certLevel: Long, roles: Set<Role> };
+action performCalibration appliesTo { principal: [User], resource: [Asset], context: {
+    cleanRoomCertified: Bool,
+    currentTime: datetime,
+    emergencyDeclared: Bool,
+    hazardSignoffRecorded: Bool,
+    onPlantNetwork: Bool,
+    performCalibrationV7ReviewCompleted: Bool,
+  },
+};

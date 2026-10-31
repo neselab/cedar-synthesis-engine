@@ -1,0 +1,25 @@
+entity Artifact { buildTags: Set<String>, builtBy: User, signed: Bool, status: ArtifactStatusValue };
+entity ArtifactStatusValue enum ["building", "built", "signed"];
+entity Deployment { approver: User, artifact: Artifact, changeRisk: Long, committer: User, status: DeploymentStatusValue, targetEnv: Long };
+entity DeploymentStatusValue enum ["built", "submitted", "approved", "deployed"];
+entity Group in [Group] {  };
+entity Role enum ["Committer", "Approver", "ReleaseManager", "SRE"];
+entity User { deployTier: Long, roles: Set<Role> };
+action approveDeployment appliesTo { principal: [User], resource: [Deployment], context: {
+    changeRiskReviewCompleted: Bool,
+    currentTime: datetime,
+    emergencyChange: Bool,
+    signArtifactScheduledEnd: datetime,
+    signArtifactScheduledStart: datetime,
+    sourceIp: ipaddr,
+  },
+};
+action promoteDeployment appliesTo { principal: [User], resource: [Deployment], context: {
+    changeRiskReviewCompleted: Bool,
+    currentTime: datetime,
+    emergencyChange: Bool,
+    signArtifactScheduledEnd: datetime,
+    signArtifactScheduledStart: datetime,
+    sourceIp: ipaddr,
+  },
+};

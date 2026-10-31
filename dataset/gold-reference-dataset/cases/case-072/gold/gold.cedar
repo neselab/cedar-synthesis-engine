@@ -1,0 +1,2 @@
+permit (principal is User, action == Action::"examineApplication", resource is PatentApplication)
+when { (true && ((principal.roles.contains(Role::"Examiner"))) && (!(true) || (principal != resource.inventor)) && (!(true) || (resource.status == PatentApplicationStatusValue::"underExamination")) && ((context.currentDate < resource.barDate)) && (context.mfaUsed) && (resource.team.contains(principal))) };

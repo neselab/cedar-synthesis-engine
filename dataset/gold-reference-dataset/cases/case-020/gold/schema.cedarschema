@@ -1,0 +1,27 @@
+entity DispenseRecord { copayAmount: Long, dispensedBy: User, prescription: Prescription, quantity: Long };
+entity Group in [Group] {  };
+entity PdmpQuery {  };
+entity Prescription { enteredBy: User, patient: User, prescriber: User, prescriberDEA: String, refillsRemaining: Long, scheduleLevel: Long, status: PrescriptionStatusValue, verifiedBy: User };
+entity PrescriptionStatusValue enum ["received", "verified", "dispensed", "voided"];
+entity Role enum ["PharmacyTechnician", "StaffPharmacist", "PharmacistInCharge", "Prescriber"];
+entity User { dispenseAuthority: Long, roles: Set<Role>, stateLicense: String };
+action authorizeRefill appliesTo { principal: [User], resource: [Prescription], context: {
+    currentTime: datetime,
+    dispenseMedicationV8ReviewCompleted: Bool,
+    emergencyOverride: Bool,
+    mfaUsed: Bool,
+    onPharmacyNetwork: Bool,
+    pdmpChecked: Bool,
+    verifyPrescriptionV6ReviewCompleted: Bool,
+  },
+};
+action verifyPrescription appliesTo { principal: [User], resource: [Prescription], context: {
+    currentTime: datetime,
+    dispenseMedicationV8ReviewCompleted: Bool,
+    emergencyOverride: Bool,
+    mfaUsed: Bool,
+    onPharmacyNetwork: Bool,
+    pdmpChecked: Bool,
+    verifyPrescriptionV6ReviewCompleted: Bool,
+  },
+};

@@ -1,0 +1,23 @@
+entity ChangeLog {  };
+entity ChangeRequest { affectedNodeCount: Long, approver: User, changeCategory: Set<String>, changeCode: String, changeRisk: Long, emergencyChange: Bool, estimatedCost: Long, implementer: User, maintenanceWindowStart: datetime, requester: User, rollbackStepCount: Long, status: ChangeRequestStatusValue };
+entity ChangeRequestStatusValue enum ["draft", "assessed", "approved", "scheduled", "implemented", "closed"];
+entity Group in [Group] {  };
+entity Implementation { change: ChangeRequest, implementedAt: datetime, implementedBy: User };
+entity Role enum ["NetworkEngineer", "SeniorEngineer", "ChangeManager", "CABApprover", "Auditor"];
+entity User { assignedCodePattern: String, authorityLevel: Long, roles: Set<Role> };
+action approveChange appliesTo { principal: [User], resource: [ChangeRequest], context: {
+    approveChangeV7ReviewCompleted: Bool,
+    currentTime: datetime,
+    freezeWaiverGranted: Bool,
+    majorIncidentDeclared: Bool,
+    onManagementNetwork: Bool,
+  },
+};
+action implementChange appliesTo { principal: [User], resource: [ChangeRequest], context: {
+    approveChangeV7ReviewCompleted: Bool,
+    currentTime: datetime,
+    freezeWaiverGranted: Bool,
+    majorIncidentDeclared: Bool,
+    onManagementNetwork: Bool,
+  },
+};

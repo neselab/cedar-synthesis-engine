@@ -1,0 +1,328 @@
+{
+  "approveDeployment": {
+    "args": [
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.changeRisk"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "ge"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.changeRisk"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 100
+                  }
+                ],
+                "op": "le"
+              }
+            ],
+            "op": "all"
+          }
+        ],
+        "op": "all"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.roles"
+                  },
+                  {
+                    "id": "Approver",
+                    "op": "entity",
+                    "type": "Role"
+                  }
+                ],
+                "op": "contains"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.roles"
+                  },
+                  {
+                    "id": "ReleaseManager",
+                    "op": "entity",
+                    "type": "Role"
+                  }
+                ],
+                "op": "contains"
+              }
+            ],
+            "op": "any"
+          }
+        ],
+        "op": "any"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "literal",
+                "value": true
+              }
+            ],
+            "op": "not"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal"
+              },
+              {
+                "op": "field",
+                "path": "resource.committer"
+              }
+            ],
+            "op": "ne"
+          }
+        ],
+        "op": "any"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.roles"
+                  },
+                  {
+                    "id": "ReleaseManager",
+                    "op": "entity",
+                    "type": "Role"
+                  }
+                ],
+                "op": "contains"
+              }
+            ],
+            "op": "any"
+          }
+        ],
+        "op": "any"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "context.sourceIp"
+              },
+              {
+                "args": [
+                  {
+                    "op": "literal",
+                    "value": "172.16.0.0/12"
+                  }
+                ],
+                "op": "ip"
+              }
+            ],
+            "op": "ip_in"
+          }
+        ],
+        "op": "any"
+      }
+    ],
+    "op": "all"
+  },
+  "promoteDeployment": {
+    "args": [
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.deployTier"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.deployTier"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.deployTier"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 2
+                  }
+                ],
+                "op": "eq"
+              }
+            ],
+            "op": "any"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.targetEnv"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.targetEnv"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.targetEnv"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 2
+                  }
+                ],
+                "op": "eq"
+              }
+            ],
+            "op": "any"
+          }
+        ],
+        "op": "all"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.roles"
+                  },
+                  {
+                    "id": "ReleaseManager",
+                    "op": "entity",
+                    "type": "Role"
+                  }
+                ],
+                "op": "contains"
+              }
+            ],
+            "op": "any"
+          }
+        ],
+        "op": "any"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "literal",
+                "value": true
+              }
+            ],
+            "op": "not"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.status"
+              },
+              {
+                "id": "approved",
+                "op": "entity",
+                "type": "DeploymentStatusValue"
+              }
+            ],
+            "op": "eq"
+          }
+        ],
+        "op": "any"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "context.sourceIp"
+              },
+              {
+                "args": [
+                  {
+                    "op": "literal",
+                    "value": "10.0.0.0/8"
+                  }
+                ],
+                "op": "ip"
+              }
+            ],
+            "op": "ip_in"
+          }
+        ],
+        "op": "any"
+      }
+    ],
+    "op": "all"
+  }
+}

@@ -1,0 +1,1336 @@
+{
+  "anchors": {
+    "declassify": {
+      "atoms": {
+        "V10": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the requester's badge is still valid. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.badge.holder"
+                  },
+                  {
+                    "op": "field",
+                    "path": "principal"
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.currentTime"
+                  },
+                  {
+                    "op": "field",
+                    "path": "principal.badge.expiresAt"
+                  }
+                ],
+                "op": "time_lt"
+              }
+            ],
+            "op": "all"
+          },
+          "revision_notes": [
+            "Authorization requires that the requester's badge is still valid. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the requester's badge is still valid. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V10",
+            "meaning": "the requester's badge is still valid",
+            "reads": "AccessBadge.expiresAt / context.currentTime"
+          }
+        },
+        "V11": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the document is in a particular lifecycle stage. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "state": {
+              "type": "String",
+              "values": [
+                "archived",
+                "draft",
+                "released"
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "state": "draft"
+            },
+            {
+              "state": "released"
+            },
+            {
+              "state": "archived"
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "name": "state",
+                        "op": "parameter"
+                      },
+                      {
+                        "op": "literal",
+                        "value": "draft"
+                      }
+                    ],
+                    "op": "eq"
+                  },
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.status"
+                      },
+                      {
+                        "id": "draft",
+                        "op": "entity",
+                        "type": "DocumentStatusValue"
+                      }
+                    ],
+                    "op": "eq"
+                  }
+                ],
+                "op": "all"
+              },
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "name": "state",
+                        "op": "parameter"
+                      },
+                      {
+                        "op": "literal",
+                        "value": "released"
+                      }
+                    ],
+                    "op": "eq"
+                  },
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.status"
+                      },
+                      {
+                        "id": "released",
+                        "op": "entity",
+                        "type": "DocumentStatusValue"
+                      }
+                    ],
+                    "op": "eq"
+                  }
+                ],
+                "op": "all"
+              },
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "name": "state",
+                        "op": "parameter"
+                      },
+                      {
+                        "op": "literal",
+                        "value": "archived"
+                      }
+                    ],
+                    "op": "eq"
+                  },
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.status"
+                      },
+                      {
+                        "id": "archived",
+                        "op": "entity",
+                        "type": "DocumentStatusValue"
+                      }
+                    ],
+                    "op": "eq"
+                  }
+                ],
+                "op": "all"
+              }
+            ],
+            "op": "any"
+          },
+          "revision_notes": [
+            "Authorization requires that the document is in a particular lifecycle stage. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the document is in a particular lifecycle stage. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V11",
+            "meaning": "the document is in a particular lifecycle stage",
+            "reads": "Document.status"
+          }
+        }
+      },
+      "bases": {
+        "G1": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal"
+              },
+              {
+                "op": "field",
+                "path": "resource.owner"
+              }
+            ],
+            "op": "ne"
+          },
+          "signature": "V1",
+          "source": {
+            "id": "G1",
+            "meaning": "the officer who wrote a document may not be the one who declassifies it",
+            "reads": "principal vs Document.owner",
+            "signature": "V1"
+          }
+        }
+      },
+      "domain_gate": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2000-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  },
+                  {
+                    "op": "field",
+                    "path": "context.currentTime"
+                  }
+                ],
+                "op": "time_le"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.currentTime"
+                  },
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2100-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  }
+                ],
+                "op": "time_le"
+              }
+            ],
+            "op": "all"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2000-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  },
+                  {
+                    "op": "field",
+                    "path": "principal.badge.expiresAt"
+                  }
+                ],
+                "op": "time_le"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.badge.expiresAt"
+                  },
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2100-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  }
+                ],
+                "op": "time_le"
+              }
+            ],
+            "op": "all"
+          }
+        ],
+        "op": "all"
+      },
+      "eligibility": {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "SecurityAdmin",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          }
+        ],
+        "op": "any"
+      },
+      "field_bindings": {
+        "AccessBadge.expiresAt": "principal.badge.expiresAt",
+        "AccessBadge.holder": "principal.badge.holder",
+        "Document.owner": "resource.owner",
+        "Document.status": "resource.status",
+        "context.currentTime": "context.currentTime"
+      },
+      "overrides": {},
+      "resource_type": "Document"
+    },
+    "exportDocument": {
+      "atoms": {
+        "V4": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the requester holds every compartment the document requires. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.compartments"
+              },
+              {
+                "op": "field",
+                "path": "resource.compartments"
+              }
+            ],
+            "op": "contains_all"
+          },
+          "revision_notes": [
+            "Authorization requires that the requester holds every compartment the document requires. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the requester holds every compartment the document requires. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V4",
+            "meaning": "the requester holds every compartment the document requires",
+            "reads": "user.compartments must contain Document.compartments"
+          }
+        },
+        "V5": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the requester is a national of an allowed country (e.g. US persons only). Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "pattern": {
+              "type": "String",
+              "values": [
+                "CA",
+                "GB",
+                "US"
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "pattern": "US"
+            },
+            {
+              "pattern": "CA"
+            },
+            {
+              "pattern": "GB"
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.nationality"
+              },
+              {
+                "name": "pattern",
+                "op": "parameter"
+              }
+            ],
+            "op": "like"
+          },
+          "revision_notes": [
+            "Authorization requires that the requester is a national of an allowed country (e.g. US persons only). Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the requester is a national of an allowed country (e.g. US persons only). Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V5",
+            "meaning": "the requester is a national of an allowed country (e.g. US persons only)",
+            "reads": "user.nationality"
+          }
+        },
+        "V9": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the request comes from the intranet. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "op": "field",
+            "path": "context.onIntranet"
+          },
+          "revision_notes": [
+            "Authorization requires that the request comes from the intranet. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the request comes from the intranet. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V9",
+            "meaning": "the request comes from the intranet",
+            "reads": "context.onIntranet"
+          }
+        }
+      },
+      "bases": {
+        "G4": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.clearance"
+              },
+              {
+                "op": "field",
+                "path": "resource.classification"
+              }
+            ],
+            "op": "ge"
+          },
+          "signature": "V6",
+          "source": {
+            "id": "G4",
+            "meaning": "clearance must dominate the classification before export",
+            "reads": "user.clearance vs Document.classification",
+            "signature": "V6"
+          }
+        }
+      },
+      "domain_gate": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.clearance"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.clearance"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.clearance"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 2
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.clearance"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 3
+                  }
+                ],
+                "op": "eq"
+              }
+            ],
+            "op": "any"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.classification"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.classification"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.classification"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 2
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.classification"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 3
+                  }
+                ],
+                "op": "eq"
+              }
+            ],
+            "op": "any"
+          }
+        ],
+        "op": "all"
+      },
+      "eligibility": {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "Officer",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          }
+        ],
+        "op": "any"
+      },
+      "field_bindings": {
+        "Document.classification": "resource.classification",
+        "Document.compartments": "resource.compartments",
+        "context.onIntranet": "context.onIntranet",
+        "user.clearance": "principal.clearance",
+        "user.compartments": "principal.compartments",
+        "user.nationality": "principal.nationality"
+      },
+      "overrides": {},
+      "resource_type": "Document"
+    },
+    "readDocument": {
+      "atoms": {
+        "V11": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the document is in a particular lifecycle stage (e.g. released). Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "state": {
+              "type": "String",
+              "values": [
+                "archived",
+                "draft",
+                "released"
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "state": "draft"
+            },
+            {
+              "state": "released"
+            },
+            {
+              "state": "archived"
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "name": "state",
+                        "op": "parameter"
+                      },
+                      {
+                        "op": "literal",
+                        "value": "draft"
+                      }
+                    ],
+                    "op": "eq"
+                  },
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.status"
+                      },
+                      {
+                        "id": "draft",
+                        "op": "entity",
+                        "type": "DocumentStatusValue"
+                      }
+                    ],
+                    "op": "eq"
+                  }
+                ],
+                "op": "all"
+              },
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "name": "state",
+                        "op": "parameter"
+                      },
+                      {
+                        "op": "literal",
+                        "value": "released"
+                      }
+                    ],
+                    "op": "eq"
+                  },
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.status"
+                      },
+                      {
+                        "id": "released",
+                        "op": "entity",
+                        "type": "DocumentStatusValue"
+                      }
+                    ],
+                    "op": "eq"
+                  }
+                ],
+                "op": "all"
+              },
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "name": "state",
+                        "op": "parameter"
+                      },
+                      {
+                        "op": "literal",
+                        "value": "archived"
+                      }
+                    ],
+                    "op": "eq"
+                  },
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.status"
+                      },
+                      {
+                        "id": "archived",
+                        "op": "entity",
+                        "type": "DocumentStatusValue"
+                      }
+                    ],
+                    "op": "eq"
+                  }
+                ],
+                "op": "all"
+              }
+            ],
+            "op": "any"
+          },
+          "revision_notes": [
+            "Authorization requires that the document is in a particular lifecycle stage (e.g. released). Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the document is in a particular lifecycle stage (e.g. released). Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V11",
+            "meaning": "the document is in a particular lifecycle stage (e.g. released)",
+            "reads": "Document.status"
+          }
+        },
+        "V13": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the document carries a particular compartment label. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "label": {
+              "type": "String",
+              "values": [
+                "ALPHA",
+                "BRAVO",
+                "CHARLIE"
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "label": "ALPHA"
+            },
+            {
+              "label": "BRAVO"
+            },
+            {
+              "label": "CHARLIE"
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.compartments"
+              },
+              {
+                "name": "label",
+                "op": "parameter"
+              }
+            ],
+            "op": "contains"
+          },
+          "revision_notes": [
+            "Authorization requires that the document carries a particular compartment label. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the document carries a particular compartment label. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V13",
+            "meaning": "the document carries a particular compartment label",
+            "reads": "Document.compartments"
+          }
+        },
+        "V4": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the requester holds every compartment the document requires (need-to-know). Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.compartments"
+              },
+              {
+                "op": "field",
+                "path": "resource.compartments"
+              }
+            ],
+            "op": "contains_all"
+          },
+          "revision_notes": [
+            "Authorization requires that the requester holds every compartment the document requires (need-to-know). Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the requester holds every compartment the document requires (need-to-know). Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V4",
+            "meaning": "the requester holds every compartment the document requires (need-to-know)",
+            "reads": "user.compartments must contain Document.compartments"
+          }
+        },
+        "V9": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the request comes from the intranet. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "op": "field",
+            "path": "context.onIntranet"
+          },
+          "revision_notes": [
+            "Authorization requires that the request comes from the intranet. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the request comes from the intranet. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V9",
+            "meaning": "the request comes from the intranet",
+            "reads": "context.onIntranet"
+          }
+        }
+      },
+      "bases": {
+        "G4": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.clearance"
+              },
+              {
+                "op": "field",
+                "path": "resource.classification"
+              }
+            ],
+            "op": "ge"
+          },
+          "signature": "V6",
+          "source": {
+            "id": "G4",
+            "meaning": "clearance must dominate the document classification (canonical MLS)",
+            "reads": "user.clearance vs Document.classification",
+            "signature": "V6"
+          }
+        }
+      },
+      "domain_gate": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.clearance"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.clearance"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.clearance"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 2
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.clearance"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 3
+                  }
+                ],
+                "op": "eq"
+              }
+            ],
+            "op": "any"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.classification"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.classification"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.classification"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 2
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.classification"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 3
+                  }
+                ],
+                "op": "eq"
+              }
+            ],
+            "op": "any"
+          }
+        ],
+        "op": "all"
+      },
+      "eligibility": {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "Analyst",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "Officer",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          }
+        ],
+        "op": "any"
+      },
+      "field_bindings": {
+        "Document.classification": "resource.classification",
+        "Document.compartments": "resource.compartments",
+        "Document.status": "resource.status",
+        "context.onIntranet": "context.onIntranet",
+        "user.clearance": "principal.clearance",
+        "user.compartments": "principal.compartments"
+      },
+      "overrides": {},
+      "resource_type": "Document"
+    }
+  },
+  "business_review_revision": "2026-10-23-r1",
+  "context": {
+    "currentTime": {
+      "type": "datetime"
+    },
+    "onIntranet": {
+      "type": "Bool"
+    }
+  },
+  "contract": "complete-spec-v4",
+  "decisions": [
+    "Added User.badge: the requester presents this badge; holder equality is checked by V10",
+    "All source identities denote User entities; role sets may overlap without implicit exclusivity.",
+    "All timestamps read by predicates are bounded inclusively to 2000-01-01 through 2100-01-01 UTC; requests outside the explicit domain gate deny.",
+    "Business revision v2: catalogs are declared synthetic organizational policies, not empirical norms. Selected-atom obligations are mandatory in both forms and cannot be waived by a base exception or override.",
+    "Money is nonnegative integer USD cents, at most 1,000,000,000. Counts are nonnegative integers at most 1,000,000 unless a narrower dictionary is declared.",
+    "Request context is treated as trusted input from the host; authorization does not attest network, emergency, signature, or scheduling facts.",
+    "Retained source repairs: exact lifecycle states, linked course roster, explicit promotion/filing facts, independent calibration expiry, comp expiry, and guarded override eligibility are intentional experiment definitions. Their typed ASTs and field descriptions, not the ambiguous source shorthand, are authoritative.",
+    "Rules operate on snapshots. A selected lifecycle base requires the exact named state unless its predicate explicitly lists alternatives.",
+    "Source business descriptions are retained for audit; the authored typed predicates and dictionaries define the experiment. No statutory compliance claim is made.",
+    "Source tag kinds are represented by Set<String>. Group membership is reflexive and transitive Cedar entity ancestry."
+  ],
+  "domain": "classified_documents",
+  "entities": {
+    "AccessBadge": {
+      "attributes": {
+        "expiresAt": {
+          "type": "datetime"
+        },
+        "holder": {
+          "type": "User"
+        }
+      }
+    },
+    "Document": {
+      "attributes": {
+        "classification": {
+          "bounds": [
+            0,
+            3
+          ],
+          "levels": {
+            "confidential": 1,
+            "public": 0,
+            "secret": 2,
+            "topsecret": 3
+          },
+          "type": "Long"
+        },
+        "compartments": {
+          "type": "Set<String>"
+        },
+        "owner": {
+          "type": "User"
+        },
+        "status": {
+          "type": "DocumentStatusValue"
+        }
+      }
+    },
+    "DocumentStatusValue": {
+      "enum": [
+        "draft",
+        "released",
+        "archived"
+      ]
+    },
+    "Dossier": {
+      "attributes": {
+        "classification": {
+          "bounds": [
+            0,
+            3
+          ],
+          "description": "Synthetic ordinal scale; the same integer rank denotes the required authority tier when used by G4. No physical magnitude or external standard is implied.",
+          "levels": {
+            "confidential": 2,
+            "internal": 1,
+            "public": 0,
+            "restricted": 3
+          },
+          "type": "Long"
+        },
+        "documents": {
+          "type": "Set<Document>"
+        }
+      }
+    },
+    "Group": {
+      "attributes": {},
+      "member_of": [
+        "Group"
+      ]
+    },
+    "Role": {
+      "enum": [
+        "Analyst",
+        "Officer",
+        "SecurityAdmin",
+        "Contractor"
+      ]
+    },
+    "User": {
+      "attributes": {
+        "badge": {
+          "description": "the requester presents this badge; holder equality is checked by V10",
+          "type": "AccessBadge"
+        },
+        "clearance": {
+          "bounds": [
+            0,
+            3
+          ],
+          "levels": {
+            "confidential": 1,
+            "public": 0,
+            "secret": 2,
+            "topsecret": 3
+          },
+          "type": "Long"
+        },
+        "compartments": {
+          "type": "Set<String>"
+        },
+        "nationality": {
+          "type": "String"
+        },
+        "roles": {
+          "type": "Set<Role>"
+        }
+      }
+    }
+  },
+  "revision_contract": "business-composition-v4",
+  "source_action_chains": [],
+  "source_sha256": "2907de8ce880b86d975423e46cde808f78a30bb93dc0a767cb3b4f0643c07c22",
+  "status": "authored experimental assumptions; not human semantic approval",
+  "version": "business-registry-v4"
+}

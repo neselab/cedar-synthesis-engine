@@ -1,0 +1,2 @@
+permit (principal is User, action == Action::"revokeToken", resource is ServiceAccountToken)
+when { (true && ((principal.roles.contains(Role::"ClusterOperator"))) && (!(true) || (principal == resource.issuedBy)) && ((context.currentTime < resource.expiresAt)) && (context.mfaUsed) && ((principal.memberOf in resource.boundNamespace.teamGroup)) && (context.sourceIp.isInRange(ip("172.16.0.0/12")))) };

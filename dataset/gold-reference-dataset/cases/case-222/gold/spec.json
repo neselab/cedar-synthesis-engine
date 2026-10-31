@@ -1,0 +1,70 @@
+{
+  "domain": "policy_underwriting",
+  "format_version": "complete-spec-v4",
+  "grouping": {
+    "applicability_triggers": "any",
+    "exception": "any",
+    "requirements": "all"
+  },
+  "parts": [
+    {
+      "anchor": "approveException",
+      "bases": [
+        "G2"
+      ],
+      "conditions": [
+        {
+          "atom": "V4",
+          "form": "obligation",
+          "parameters": {
+            "member": "controlled_liability"
+          },
+          "target": "@action"
+        },
+        {
+          "atom": "V8",
+          "form": "obligation",
+          "parameters": {
+            "threshold": 100000
+          },
+          "target": "@action"
+        }
+      ],
+      "overrides": []
+    },
+    {
+      "anchor": "bindPolicy",
+      "bases": [
+        "G4"
+      ],
+      "conditions": [
+        {
+          "atom": "V4",
+          "form": "require",
+          "parameters": {
+            "member": "excess_surplus"
+          },
+          "target": "@action"
+        },
+        {
+          "atom": "V5",
+          "form": "require",
+          "parameters": {
+            "pattern": "CONTROLLED-*"
+          },
+          "target": "@action"
+        }
+      ],
+      "overrides": []
+    }
+  ],
+  "provenance": {
+    "arithmetic_safety_patches": [],
+    "kind": "less-specific-200 revised intent",
+    "source_case": "case-222",
+    "source_spec_sha256": "69017b018de00a89a8002568b2df85ba5a3edf2bf9ce9592497e7cd9455f9784",
+    "transformation": "Drop only artificial 2000-2100 timestamp windows and catalog maxima 1000000/1000000000; retain all other gates."
+  },
+  "registry_sha256": "92cb43145cda42632622ab2a6ee93082da08d9b2a8e0974f1cc8128e816a479e",
+  "source_sha256": "2907de8ce880b86d975423e46cde808f78a30bb93dc0a767cb3b4f0643c07c22"
+}

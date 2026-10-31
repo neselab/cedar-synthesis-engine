@@ -1,0 +1,5 @@
+permit (principal is User, action == Action::"approveReport", resource is ExpenseReport)
+when { ((((principal.approvalTier == 0) || (principal.approvalTier == 1) || (principal.approvalTier == 2)) && ((resource.amountTier == 0) || (resource.amountTier == 1) || (resource.amountTier == 2)) && (resource.lodgingTotal >= 0) && (resource.mealTotal >= 0) && (resource.totalAmount >= 0)) && ((principal.roles.contains(Role::"LineManager") || principal.roles.contains(Role::"FinanceReviewer"))) && (!(true) || (principal != resource.submitter) || (context.emergencyApproval && (principal.roles.contains(Role::"FinanceReviewer")))) && (!(true) || (principal.approvalTier >= resource.amountTier))) };
+
+permit (principal is User, action == Action::"disburseReimbursement", resource is Reimbursement)
+when { (((resource.amount >= 0)) && ((principal.roles.contains(Role::"Controller"))) && (!(((resource.amount > 500000))) || ((resource.report has approver) && (principal != resource.report.approver))) && ((resource.report has approver))) };

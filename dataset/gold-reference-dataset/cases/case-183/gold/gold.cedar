@@ -1,0 +1,2 @@
+permit (principal is User, action == Action::"applyManifest", resource is Workload)
+when { (((resource.replicaCount >= 0)) && ((principal.roles.contains(Role::"Deployer") || principal.roles.contains(Role::"Maintainer") || principal.roles.contains(Role::"ClusterOperator"))) && (!(((resource.replicaCount > 3))) || (principal != resource.creator)) && (resource.labels.contains("restricted")) && (resource.namespace.members.contains(principal)) && (context.sourceIp.isInRange(ip("172.16.0.0/12")))) };

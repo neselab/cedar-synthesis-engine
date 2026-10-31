@@ -1,0 +1,22 @@
+entity Actuator { deviceTags: Set<String>, maintenanceFlag: Bool, owner: User, status: ActuatorStatusValue, zoneGroup: Group };
+entity ActuatorStatusValue enum ["commissioned", "online", "maintenance", "decommissioned"];
+entity CommissionRequest { device: Actuator, requestedBy: User, status: CommissionRequestStatusValue };
+entity CommissionRequestStatusValue enum ["requested", "approved", "installed"];
+entity Group in [Group] {  };
+entity Role enum ["FacilityManager", "ZoneController", "MaintenanceTech", "Tenant"];
+entity User { controlTier: Long, memberOf: Group, roles: Set<Role> };
+entity Zone { controller: User, criticality: Long, status: ZoneStatusValue };
+entity ZoneStatusValue enum ["scheduled", "active", "overridden", "locked"];
+action overrideSchedule appliesTo { principal: [User], resource: [Zone], context: {
+    adjustSetpointScheduledEnd: datetime,
+    adjustSetpointScheduledStart: datetime,
+    approveCommissionScheduledEnd: datetime,
+    approveCommissionScheduledStart: datetime,
+    currentTime: datetime,
+    maintenanceOverride: Bool,
+    occupancyDetected: Bool,
+    onSiteNetwork: Bool,
+    overrideScheduleScheduledEnd: datetime,
+    overrideScheduleScheduledStart: datetime,
+  },
+};

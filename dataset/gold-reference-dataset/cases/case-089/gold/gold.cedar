@@ -1,0 +1,2 @@
+permit (principal is User, action == Action::"approveInvoice", resource is Invoice)
+when { (((resource.amount >= 0) && (resource.lineItemCount >= 0) && (resource.surcharge >= 0)) && ((principal.roles.contains(Role::"Approver") || principal.roles.contains(Role::"FinanceManager"))) && (!(((resource.lineItemCount > 5) || (resource.amount > 2500000))) || (principal != resource.creator)) && (((context.currentTime.toTime().toMilliseconds() >= 28800000) && (context.currentTime.toTime().toMilliseconds() < 64800000))) && ((resource.costCenter like "OPS-*"))) };

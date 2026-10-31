@@ -1,0 +1,72 @@
+{
+  "domain": "network_change_approval",
+  "format_version": "complete-spec-v4",
+  "grouping": {
+    "applicability_triggers": "any",
+    "exception": "any",
+    "requirements": "all"
+  },
+  "parts": [
+    {
+      "anchor": "approveChange",
+      "bases": [
+        "G4"
+      ],
+      "conditions": [
+        {
+          "atom": "V7",
+          "form": "obligation",
+          "parameters": {
+            "threshold": 10
+          },
+          "target": "@action"
+        },
+        {
+          "atom": "V8",
+          "form": "obligation",
+          "parameters": {
+            "threshold": 1000000
+          },
+          "target": "@action"
+        }
+      ],
+      "overrides": []
+    },
+    {
+      "anchor": "implementChange",
+      "bases": [
+        "G5"
+      ],
+      "conditions": [
+        {
+          "atom": "V10",
+          "form": "require",
+          "parameters": {
+            "window_ms": 14400000
+          },
+          "target": "@action"
+        },
+        {
+          "atom": "V12",
+          "form": "exception",
+          "parameters": {},
+          "target": "V10"
+        }
+      ],
+      "overrides": []
+    }
+  ],
+  "provenance": {
+    "arithmetic_safety_patches": [],
+    "arithmetic_safety_revision": [
+      "approveChange.V7:nonnegative_sum_threshold",
+      "implementChange.V10:bounded_elapsed_time"
+    ],
+    "kind": "less-specific-200 revised intent",
+    "source_case": "case-286",
+    "source_spec_sha256": "2ac413ec264be9a5e6adbc18f656657ce83e276746d465ab79c80a3e0a66e8f8",
+    "transformation": "Drop only artificial 2000-2100 timestamp windows and catalog maxima 1000000/1000000000; retain all other gates."
+  },
+  "registry_sha256": "e4565734a270a7cd3a88d3af0e1f16a6a755d218b2cd8822c63babc3bfb364e0",
+  "source_sha256": "2907de8ce880b86d975423e46cde808f78a30bb93dc0a767cb3b4f0643c07c22"
+}

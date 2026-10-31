@@ -1,0 +1,49 @@
+{
+  "domain": "payroll",
+  "format_version": "complete-spec-v4",
+  "grouping": {
+    "applicability_triggers": "any",
+    "exception": "any",
+    "requirements": "all"
+  },
+  "parts": [
+    {
+      "anchor": "approvePayroll",
+      "bases": [
+        "G1"
+      ],
+      "conditions": [
+        {
+          "atom": "V10",
+          "form": "require",
+          "parameters": {},
+          "target": "@action"
+        },
+        {
+          "atom": "V2",
+          "form": "require",
+          "parameters": {},
+          "target": "@action"
+        },
+        {
+          "atom": "V8",
+          "form": "applicability",
+          "parameters": {
+            "threshold": 2500000
+          },
+          "target": "G1"
+        }
+      ],
+      "overrides": []
+    }
+  ],
+  "provenance": {
+    "arithmetic_safety_patches": [],
+    "kind": "less-specific-200 revised intent",
+    "source_case": "case-091",
+    "source_spec_sha256": "03e0d93989206bcd2aceb8ca1e1524a94f80a555fbf1bdbec2b4e1b1f2613c3f",
+    "transformation": "Drop only artificial 2000-2100 timestamp windows and catalog maxima 1000000/1000000000; retain all other gates."
+  },
+  "registry_sha256": "967e5fa028689b6d6e5edb5e012f53b0061dd784ce1f133e84535c990abcf2de",
+  "source_sha256": "2907de8ce880b86d975423e46cde808f78a30bb93dc0a767cb3b4f0643c07c22"
+}

@@ -1,0 +1,440 @@
+{
+  "adjustReading": {
+    "args": [
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.adjustmentCount"
+              },
+              {
+                "op": "literal",
+                "value": 0
+              }
+            ],
+            "op": "ge"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.lastBillAmount"
+              },
+              {
+                "op": "literal",
+                "value": 0
+              }
+            ],
+            "op": "ge"
+          }
+        ],
+        "op": "all"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.roles"
+                  },
+                  {
+                    "id": "MeterReader",
+                    "op": "entity",
+                    "type": "Role"
+                  }
+                ],
+                "op": "contains"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.roles"
+                  },
+                  {
+                    "id": "DataSteward",
+                    "op": "entity",
+                    "type": "Role"
+                  }
+                ],
+                "op": "contains"
+              }
+            ],
+            "op": "any"
+          }
+        ],
+        "op": "any"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.lastBillAmount"
+                      },
+                      {
+                        "op": "literal",
+                        "value": 50000
+                      }
+                    ],
+                    "op": "gt"
+                  }
+                ],
+                "op": "any"
+              }
+            ],
+            "op": "not"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal"
+              },
+              {
+                "op": "field",
+                "path": "resource.lastReadBy"
+              }
+            ],
+            "op": "ne"
+          }
+        ],
+        "op": "any"
+      }
+    ],
+    "op": "all"
+  },
+  "approveBillingRun": {
+    "args": [
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.authorityLevel"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.authorityLevel"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.authorityLevel"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 2
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.authorityLevel"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 3
+                  }
+                ],
+                "op": "eq"
+              }
+            ],
+            "op": "any"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.accountTier"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.accountTier"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.accountTier"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 2
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.accountTier"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 3
+                  }
+                ],
+                "op": "eq"
+              }
+            ],
+            "op": "any"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.billAmount"
+              },
+              {
+                "op": "literal",
+                "value": 0
+              }
+            ],
+            "op": "ge"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.rate"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "ge"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.rate"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 100000
+                  }
+                ],
+                "op": "le"
+              }
+            ],
+            "op": "all"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.usage"
+              },
+              {
+                "op": "literal",
+                "value": 0
+              }
+            ],
+            "op": "ge"
+          }
+        ],
+        "op": "all"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.roles"
+                  },
+                  {
+                    "id": "BillingAnalyst",
+                    "op": "entity",
+                    "type": "Role"
+                  }
+                ],
+                "op": "contains"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.roles"
+                  },
+                  {
+                    "id": "BillingManager",
+                    "op": "entity",
+                    "type": "Role"
+                  }
+                ],
+                "op": "contains"
+              }
+            ],
+            "op": "any"
+          }
+        ],
+        "op": "any"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "op": "field",
+                            "path": "resource.rate"
+                          },
+                          {
+                            "op": "literal",
+                            "value": 0
+                          }
+                        ],
+                        "op": "gt"
+                      },
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "op": "field",
+                                "path": "resource.usage"
+                              },
+                              {
+                                "op": "literal",
+                                "value": 92233720368547
+                              }
+                            ],
+                            "op": "gt"
+                          },
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "op": "field",
+                                    "path": "resource.usage"
+                                  },
+                                  {
+                                    "op": "field",
+                                    "path": "resource.rate"
+                                  }
+                                ],
+                                "op": "mul"
+                              },
+                              {
+                                "op": "literal",
+                                "value": 15000
+                              }
+                            ],
+                            "op": "gt"
+                          }
+                        ],
+                        "op": "any"
+                      }
+                    ],
+                    "op": "all"
+                  }
+                ],
+                "op": "any"
+              }
+            ],
+            "op": "not"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.authorityLevel"
+              },
+              {
+                "op": "field",
+                "path": "resource.accountTier"
+              }
+            ],
+            "op": "ge"
+          }
+        ],
+        "op": "any"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.region"
+              },
+              {
+                "op": "field",
+                "path": "principal.assignedGroup"
+              }
+            ],
+            "op": "in"
+          }
+        ],
+        "op": "any"
+      }
+    ],
+    "op": "all"
+  }
+}

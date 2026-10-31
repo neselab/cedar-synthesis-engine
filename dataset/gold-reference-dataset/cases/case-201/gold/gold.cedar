@@ -1,0 +1,2 @@
+permit (principal is User, action == Action::"screenBeneficiary", resource is WireTransfer)
+when { (true && ((principal.roles.contains(Role::"ComplianceReviewer") || principal.roles.contains(Role::"TreasuryOfficer"))) && (!(true) || (principal == resource.screenedBy)) && (!(true) || (resource.status == WireTransferStatusValue::"drafted")) && ((context.currentTime < context.dailyCutoff)) && (!((resource.currencyCode like "EUR")) || context.currencyReviewCompleted)) };

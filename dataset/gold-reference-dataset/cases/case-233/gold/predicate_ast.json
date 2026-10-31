@@ -1,0 +1,411 @@
+{
+  "viewPage": {
+    "args": [
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.clearance"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.clearance"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.clearance"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 2
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.clearance"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 3
+                  }
+                ],
+                "op": "eq"
+              }
+            ],
+            "op": "any"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.classification"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.classification"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.classification"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 2
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.classification"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 3
+                  }
+                ],
+                "op": "eq"
+              }
+            ],
+            "op": "any"
+          }
+        ],
+        "op": "all"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.roles"
+                  },
+                  {
+                    "id": "Reader",
+                    "op": "entity",
+                    "type": "Role"
+                  }
+                ],
+                "op": "contains"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.roles"
+                  },
+                  {
+                    "id": "Contributor",
+                    "op": "entity",
+                    "type": "Role"
+                  }
+                ],
+                "op": "contains"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.roles"
+                  },
+                  {
+                    "id": "Reviewer",
+                    "op": "entity",
+                    "type": "Role"
+                  }
+                ],
+                "op": "contains"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.roles"
+                  },
+                  {
+                    "id": "SpaceAdmin",
+                    "op": "entity",
+                    "type": "Role"
+                  }
+                ],
+                "op": "contains"
+              }
+            ],
+            "op": "any"
+          }
+        ],
+        "op": "any"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "literal",
+                "value": true
+              }
+            ],
+            "op": "not"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.clearance"
+              },
+              {
+                "op": "field",
+                "path": "resource.classification"
+              }
+            ],
+            "op": "ge"
+          }
+        ],
+        "op": "any"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal"
+              },
+              {
+                "op": "field",
+                "path": "resource.author"
+              }
+            ],
+            "op": "eq"
+          }
+        ],
+        "op": "any"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "draft"
+                      },
+                      {
+                        "op": "literal",
+                        "value": "draft"
+                      }
+                    ],
+                    "op": "eq"
+                  },
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.status"
+                      },
+                      {
+                        "id": "draft",
+                        "op": "entity",
+                        "type": "PageStatusValue"
+                      }
+                    ],
+                    "op": "eq"
+                  }
+                ],
+                "op": "all"
+              },
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "draft"
+                      },
+                      {
+                        "op": "literal",
+                        "value": "in_review"
+                      }
+                    ],
+                    "op": "eq"
+                  },
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.status"
+                      },
+                      {
+                        "id": "in_review",
+                        "op": "entity",
+                        "type": "PageStatusValue"
+                      }
+                    ],
+                    "op": "eq"
+                  }
+                ],
+                "op": "all"
+              },
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "draft"
+                      },
+                      {
+                        "op": "literal",
+                        "value": "published"
+                      }
+                    ],
+                    "op": "eq"
+                  },
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.status"
+                      },
+                      {
+                        "id": "published",
+                        "op": "entity",
+                        "type": "PageStatusValue"
+                      }
+                    ],
+                    "op": "eq"
+                  }
+                ],
+                "op": "all"
+              },
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "draft"
+                      },
+                      {
+                        "op": "literal",
+                        "value": "archived"
+                      }
+                    ],
+                    "op": "eq"
+                  },
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.status"
+                      },
+                      {
+                        "id": "archived",
+                        "op": "entity",
+                        "type": "PageStatusValue"
+                      }
+                    ],
+                    "op": "eq"
+                  }
+                ],
+                "op": "all"
+              }
+            ],
+            "op": "any"
+          }
+        ],
+        "op": "any"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.externalShareEnabled"
+              },
+              {
+                "op": "literal",
+                "value": true
+              }
+            ],
+            "op": "eq"
+          }
+        ],
+        "op": "any"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.labels"
+              },
+              {
+                "op": "literal",
+                "value": "restricted"
+              }
+            ],
+            "op": "contains"
+          }
+        ],
+        "op": "any"
+      }
+    ],
+    "op": "all"
+  }
+}

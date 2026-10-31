@@ -1,0 +1,5 @@
+permit (principal is User, action == Action::"applyComp", resource is CompAuthorization)
+when { ((((principal.compAuthorityLevel == 0) || (principal.compAuthorityLevel == 1) || (principal.compAuthorityLevel == 2) || (principal.compAuthorityLevel == 3)) && (resource.compValue >= 0) && ((resource.guestTier == 0) || (resource.guestTier == 1) || (resource.guestTier == 2) || (resource.guestTier == 3))) && ((principal.roles.contains(Role::"FrontDeskAgent") || principal.roles.contains(Role::"GuestServicesHost"))) && (!(true) || (principal.compAuthorityLevel >= resource.guestTier)) && ((resource.blackoutFlag == false)) && (context.onPropertyNetwork)) };
+
+permit (principal is User, action == Action::"authorizeComp", resource is CompAuthorization)
+when { (((resource.compValue >= 0) && (resource.itemCount >= 0)) && ((principal.roles.contains(Role::"ShiftManager") || principal.roles.contains(Role::"FrontOfficeManager"))) && (!(true) || (resource.status == CompAuthorizationStatusValue::"requested")) && (resource.compType.contains("casino")) && (resource.perks.contains("beverage_credit"))) };

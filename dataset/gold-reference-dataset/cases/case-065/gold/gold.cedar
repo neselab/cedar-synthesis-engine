@@ -1,0 +1,2 @@
+permit (principal is User, action == Action::"moderate", resource is Content)
+when { (true && ((principal.roles.contains(Role::"Moderator"))) && (!(true) || (principal != resource.publisher)) && (!(true) || (resource.status == ContentStatusValue::"flagged")) && (((context.moderateScheduledStart <= context.currentTime) && (context.currentTime < context.moderateScheduledEnd))) && (resource.labels.contains("restricted")) && (context.deviceTrusted)) };

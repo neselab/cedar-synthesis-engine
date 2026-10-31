@@ -1,0 +1,2 @@
+permit (principal is User, action == Action::"authorizePort", resource is PortRequest)
+when { (((resource.numberBlockSize >= 0)) && ((principal.roles.contains(Role::"PortingSpecialist") || principal.roles.contains(Role::"PortingSupervisor"))) && (!(true) || (principal != resource.initiator) || (context.portFreezeOverrideDeclared && (principal.roles.contains(Role::"PortingSupervisor")))) && (resource.portType.contains("wholesale")) && ((resource.carrierCode like "INTERCARRIER-*")) && (!((resource.numberBlockSize > 100)) || context.authorizePortV6ReviewCompleted)) };

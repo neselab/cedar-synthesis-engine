@@ -1,0 +1,57 @@
+{
+  "domain": "network_change_approval",
+  "format_version": "complete-spec-v4",
+  "grouping": {
+    "applicability_triggers": "any",
+    "exception": "any",
+    "requirements": "all"
+  },
+  "parts": [
+    {
+      "anchor": "approveChange",
+      "bases": [
+        "G4"
+      ],
+      "conditions": [
+        {
+          "atom": "V12",
+          "form": "require",
+          "parameters": {},
+          "target": "@action"
+        },
+        {
+          "atom": "V13",
+          "form": "require",
+          "parameters": {
+            "label": "transport"
+          },
+          "target": "@action"
+        },
+        {
+          "atom": "V2",
+          "form": "require",
+          "parameters": {},
+          "target": "@action"
+        },
+        {
+          "atom": "V5",
+          "form": "require",
+          "parameters": {
+            "pattern": "CORE-*"
+          },
+          "target": "@action"
+        }
+      ],
+      "overrides": []
+    }
+  ],
+  "provenance": {
+    "inherited_arithmetic_safety_patches": [],
+    "kind": "non-time-33 revised intent",
+    "source_case": "case-110",
+    "source_spec_sha256": "d5ee6d40fbe0fa908f6eef9f4aea675a1598b6b09ef54f08ec8871e494130bb6",
+    "transformation": "Remove only artificial 2000-2100 datetime bounds and catalog maxima; retain all business rules."
+  },
+  "registry_sha256": "bb95db64cbd480316e21e1a892be42db925c3ea2f59b3bb4b511450cbe29d605",
+  "source_sha256": "2907de8ce880b86d975423e46cde808f78a30bb93dc0a767cb3b4f0643c07c22"
+}

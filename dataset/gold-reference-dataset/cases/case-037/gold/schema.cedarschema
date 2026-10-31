@@ -1,0 +1,16 @@
+entity Command { device: Device, issuedBy: User };
+entity Device { firmwareTags: Set<String>, maintenanceMode: Bool, owner: User, siteGroup: Group, status: DeviceStatusValue };
+entity DeviceStatusValue enum ["provisioned", "active", "maintenance", "decommissioned"];
+entity Group in [Group] {  };
+entity Role enum ["Operator", "Technician", "FleetAdmin", "ServiceAccount"];
+entity Telemetry { device: Device, sensitivity: Long };
+entity User { clearance: Long, memberOf: Group, roles: Set<Role> };
+action readTelemetry appliesTo { principal: [User], resource: [Telemetry], context: {
+    currentTime: datetime,
+    maintenanceCommandAuthorized: Bool,
+    maintenanceWindow: Bool,
+    sendCommandScheduledEnd: datetime,
+    sendCommandScheduledStart: datetime,
+    sourceIp: ipaddr,
+  },
+};

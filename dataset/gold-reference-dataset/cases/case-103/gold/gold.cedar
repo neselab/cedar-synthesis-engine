@@ -1,0 +1,5 @@
+permit (principal is User, action == Action::"approveWire", resource is WireTransfer)
+when { ((((principal.approvalTier == 0) || (principal.approvalTier == 1) || (principal.approvalTier == 2)) && (resource.amount >= 0) && ((resource.amountTier == 0) || (resource.amountTier == 1) || (resource.amountTier == 2)) && (resource.fee >= 0)) && ((principal.roles.contains(Role::"Verifier") || principal.roles.contains(Role::"TreasuryOfficer"))) && (!(true) || (principal != resource.initiatedBy) || (context.emergencyDeclared && (principal.roles.contains(Role::"TreasuryOfficer")))) && (!(true) || (principal.approvalTier >= resource.amountTier))) };
+
+permit (principal is User, action == Action::"releaseWire", resource is WireTransfer)
+when { (((resource.amount >= 0)) && ((principal.roles.contains(Role::"TreasuryOfficer"))) && (!(true) || (resource.status == WireTransferStatusValue::"verified") || (context.emergencyDeclared && (principal.roles.contains(Role::"TreasuryOfficer")))) && (context.onSecureNetwork)) };

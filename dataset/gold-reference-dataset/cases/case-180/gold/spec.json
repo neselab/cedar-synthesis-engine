@@ -1,0 +1,58 @@
+{
+  "domain": "lease_execution",
+  "format_version": "complete-spec-v4",
+  "grouping": {
+    "applicability_triggers": "any",
+    "exception": "any",
+    "requirements": "all"
+  },
+  "parts": [
+    {
+      "anchor": "executeLease",
+      "bases": [
+        "G2"
+      ],
+      "conditions": [
+        {
+          "atom": "V13",
+          "form": "require",
+          "parameters": {
+            "label": "regulated"
+          },
+          "target": "@action"
+        },
+        {
+          "atom": "V8",
+          "form": "obligation",
+          "parameters": {
+            "threshold": 1000000
+          },
+          "target": "@action"
+        },
+        {
+          "atom": "V9",
+          "form": "require",
+          "parameters": {},
+          "target": "@action"
+        }
+      ],
+      "overrides": [
+        {
+          "id": "G3",
+          "targets": [
+            "G2"
+          ]
+        }
+      ]
+    }
+  ],
+  "provenance": {
+    "inherited_arithmetic_safety_patches": [],
+    "kind": "non-time-33 revised intent",
+    "source_case": "case-180",
+    "source_spec_sha256": "8201946cc3441e803fa787c1ab4a8c0142f431adb7698d1ecd6b3af1409f8dbd",
+    "transformation": "Remove only artificial 2000-2100 datetime bounds and catalog maxima; retain all business rules."
+  },
+  "registry_sha256": "c85c7772de2eebeeb6f80d866987cea77c6c0ba9c473f23d620ce38a6141c75d",
+  "source_sha256": "2907de8ce880b86d975423e46cde808f78a30bb93dc0a767cb3b4f0643c07c22"
+}

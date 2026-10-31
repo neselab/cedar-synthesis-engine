@@ -1,0 +1,1379 @@
+{
+  "anchors": {
+    "adjustReading": {
+      "atoms": {
+        "V10": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the request falls within business hours. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "end_ms": {
+              "type": "Long",
+              "values": [
+                57600000,
+                61200000,
+                64800000
+              ]
+            },
+            "start_ms": {
+              "type": "Long",
+              "values": [
+                28800000,
+                32400000,
+                36000000
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "end_ms": 61200000,
+              "start_ms": 32400000
+            },
+            {
+              "end_ms": 64800000,
+              "start_ms": 28800000
+            },
+            {
+              "end_ms": 57600000,
+              "start_ms": 36000000
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "context.currentTime"
+                      }
+                    ],
+                    "op": "utc_time_ms"
+                  },
+                  {
+                    "name": "start_ms",
+                    "op": "parameter"
+                  }
+                ],
+                "op": "ge"
+              },
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "context.currentTime"
+                      }
+                    ],
+                    "op": "utc_time_ms"
+                  },
+                  {
+                    "name": "end_ms",
+                    "op": "parameter"
+                  }
+                ],
+                "op": "lt"
+              }
+            ],
+            "op": "all"
+          },
+          "revision_notes": [
+            "Authorization requires that the request falls within business hours. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the request falls within business hours. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V10",
+            "meaning": "the request falls within business hours",
+            "reads": "context.currentTime"
+          }
+        },
+        "V13": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the rate-class tag matches a regulated class. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "label": {
+              "type": "String",
+              "values": [
+                "regulated_industrial",
+                "regulated_residential"
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "label": "regulated_residential"
+            },
+            {
+              "label": "regulated_industrial"
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.rateClass"
+              },
+              {
+                "name": "label",
+                "op": "parameter"
+              }
+            ],
+            "op": "contains"
+          },
+          "revision_notes": [
+            "Authorization requires that the rate-class tag matches a regulated class. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the rate-class tag matches a regulated class. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V13",
+            "meaning": "the rate-class tag matches a regulated class",
+            "reads": "MeterAccount.rateClass"
+          }
+        },
+        "V3": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the account falls within the adjuster's region hierarchy. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.region"
+              },
+              {
+                "op": "field",
+                "path": "principal.assignedGroup"
+              }
+            ],
+            "op": "in"
+          },
+          "revision_notes": [
+            "Authorization requires that the account falls within the adjuster's region hierarchy. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the account falls within the adjuster's region hierarchy. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V3",
+            "meaning": "the account falls within the adjuster's region hierarchy",
+            "reads": "MeterAccount.region"
+          }
+        },
+        "V6": {
+          "allowed_forms": [
+            "applicability"
+          ],
+          "allowed_targets": [
+            "G1"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "applicability",
+            "rationale": "Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional.",
+            "statement": "Whenever the number of prior adjustments crosses a threshold, enforce this duty: the technician who recorded the reading may not adjust it. Outside all selected triggers only this duty stops binding.",
+            "target": "G1"
+          },
+          "parameter_schema": {
+            "threshold": {
+              "type": "Long",
+              "values": [
+                1,
+                10,
+                3
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "threshold": 1
+            },
+            {
+              "threshold": 3
+            },
+            {
+              "threshold": 10
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.adjustmentCount"
+              },
+              {
+                "name": "threshold",
+                "op": "parameter"
+              }
+            ],
+            "op": "gt"
+          },
+          "revision_notes": [
+            "Declared synthetic review/acceptance bands measured in prior adjustments in the current billing period. Source-explicit refill > 0 and production-release defect == 0 remain unchanged.",
+            "Whenever the number of prior adjustments crosses a threshold, enforce this duty: the technician who recorded the reading may not adjust it. Outside all selected triggers only this duty stops binding.",
+            "Composition rationale: Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "applicability",
+              "rationale": "Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional.",
+              "statement": "Whenever the number of prior adjustments crosses a threshold, enforce this duty: the technician who recorded the reading may not adjust it. Outside all selected triggers only this duty stops binding.",
+              "target": "G1"
+            },
+            "id": "V6",
+            "meaning": "the number of prior adjustments crosses a threshold",
+            "reads": "MeterAccount.adjustmentCount"
+          }
+        },
+        "V8": {
+          "allowed_forms": [
+            "applicability"
+          ],
+          "allowed_targets": [
+            "G1"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "applicability",
+            "rationale": "Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional.",
+            "statement": "Whenever the most recent bill amount crosses a money threshold, enforce this duty: the technician who recorded the reading may not adjust it. Outside all selected triggers only this duty stops binding.",
+            "target": "G1"
+          },
+          "parameter_schema": {
+            "threshold": {
+              "type": "Long",
+              "values": [
+                10000,
+                250000,
+                50000
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "threshold": 10000
+            },
+            {
+              "threshold": 50000
+            },
+            {
+              "threshold": 250000
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.lastBillAmount"
+              },
+              {
+                "name": "threshold",
+                "op": "parameter"
+              }
+            ],
+            "op": "gt"
+          },
+          "revision_notes": [
+            "USD-cent thresholds for individual-account bills and usage-derived charges: $100, $500, $2500. These are synthetic organization policy choices.",
+            "Whenever the most recent bill amount crosses a money threshold, enforce this duty: the technician who recorded the reading may not adjust it. Outside all selected triggers only this duty stops binding.",
+            "Composition rationale: Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "applicability",
+              "rationale": "Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional.",
+              "statement": "Whenever the most recent bill amount crosses a money threshold, enforce this duty: the technician who recorded the reading may not adjust it. Outside all selected triggers only this duty stops binding.",
+              "target": "G1"
+            },
+            "id": "V8",
+            "meaning": "the most recent bill amount crosses a money threshold",
+            "reads": "MeterAccount.lastBillAmount"
+          }
+        },
+        "V9": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the request is made from the corporate network. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "op": "field",
+            "path": "context.onCorporateNetwork"
+          },
+          "revision_notes": [
+            "Authorization requires that the request is made from the corporate network. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the request is made from the corporate network. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V9",
+            "meaning": "the request is made from the corporate network",
+            "reads": "context.onCorporateNetwork"
+          }
+        }
+      },
+      "bases": {
+        "G1": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal"
+              },
+              {
+                "op": "field",
+                "path": "resource.lastReadBy"
+              }
+            ],
+            "op": "ne"
+          },
+          "signature": "V1",
+          "source": {
+            "id": "G1",
+            "meaning": "the technician who recorded the reading may not adjust it",
+            "reads": "principal vs MeterAccount.lastReadBy",
+            "signature": "V1"
+          }
+        },
+        "G5": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.status"
+              },
+              {
+                "id": "under_review",
+                "op": "entity",
+                "type": "MeterAccountStatusValue"
+              }
+            ],
+            "op": "eq"
+          },
+          "signature": "V11",
+          "source": {
+            "id": "G5",
+            "meaning": "a reading may be adjusted only while the account is under review",
+            "reads": "MeterAccount.status",
+            "signature": "V11"
+          }
+        }
+      },
+      "domain_gate": {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.adjustmentCount"
+              },
+              {
+                "op": "literal",
+                "value": 0
+              }
+            ],
+            "op": "ge"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.lastBillAmount"
+              },
+              {
+                "op": "literal",
+                "value": 0
+              }
+            ],
+            "op": "ge"
+          }
+        ],
+        "op": "all"
+      },
+      "eligibility": {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "MeterReader",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "DataSteward",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          }
+        ],
+        "op": "any"
+      },
+      "field_bindings": {
+        "MeterAccount.adjustmentCount": "resource.adjustmentCount",
+        "MeterAccount.lastBillAmount": "resource.lastBillAmount",
+        "MeterAccount.lastReadBy": "resource.lastReadBy",
+        "MeterAccount.rateClass": "resource.rateClass",
+        "MeterAccount.region": "resource.region",
+        "MeterAccount.status": "resource.status",
+        "context.currentTime": "context.currentTime",
+        "context.onCorporateNetwork": "context.onCorporateNetwork",
+        "user.assignedGroup": "principal.assignedGroup"
+      },
+      "overrides": {},
+      "resource_type": "MeterAccount"
+    },
+    "approveBillingRun": {
+      "atoms": {
+        "V13": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the rate-class tag matches a regulated class. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "label": {
+              "type": "String",
+              "values": [
+                "regulated_industrial",
+                "regulated_residential"
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "label": "regulated_residential"
+            },
+            {
+              "label": "regulated_industrial"
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.rateClass"
+              },
+              {
+                "name": "label",
+                "op": "parameter"
+              }
+            ],
+            "op": "contains"
+          },
+          "revision_notes": [
+            "Authorization requires that the rate-class tag matches a regulated class. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the rate-class tag matches a regulated class. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V13",
+            "meaning": "the rate-class tag matches a regulated class",
+            "reads": "BillingRun.rateClass"
+          }
+        },
+        "V2": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the approver holds the billing-manager role. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.roles"
+                  },
+                  {
+                    "id": "BillingManager",
+                    "op": "entity",
+                    "type": "Role"
+                  }
+                ],
+                "op": "contains"
+              }
+            ],
+            "op": "any"
+          },
+          "revision_notes": [
+            "Authorization requires that the approver holds the billing-manager role. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the approver holds the billing-manager role. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V2",
+            "meaning": "the approver holds the billing-manager role",
+            "reads": "principal.role"
+          }
+        },
+        "V3": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the billing run falls within the approver's region hierarchy. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.region"
+              },
+              {
+                "op": "field",
+                "path": "principal.assignedGroup"
+              }
+            ],
+            "op": "in"
+          },
+          "revision_notes": [
+            "Authorization requires that the billing run falls within the approver's region hierarchy. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the billing run falls within the approver's region hierarchy. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V3",
+            "meaning": "the billing run falls within the approver's region hierarchy",
+            "reads": "BillingRun.region"
+          }
+        },
+        "V7": {
+          "allowed_forms": [
+            "applicability"
+          ],
+          "allowed_targets": [
+            "G4"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "applicability",
+            "rationale": "Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional.",
+            "statement": "Whenever metered usage times the rate crosses a charge threshold, enforce this duty: the approving analyst's authority level must dominate the account tier of the billing run. Outside all selected triggers only this duty stops binding.",
+            "target": "G4"
+          },
+          "parameter_schema": {
+            "threshold": {
+              "type": "Long",
+              "values": [
+                15000,
+                300000,
+                75000
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "threshold": 15000
+            },
+            {
+              "threshold": 75000
+            },
+            {
+              "threshold": 300000
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.usage"
+                  },
+                  {
+                    "op": "field",
+                    "path": "resource.rate"
+                  }
+                ],
+                "op": "mul"
+              },
+              {
+                "name": "threshold",
+                "op": "parameter"
+              }
+            ],
+            "op": "gt"
+          },
+          "revision_notes": [
+            "USD-cent thresholds for individual-account bills and usage-derived charges: $150, $750, $3000. These are synthetic organization policy choices.",
+            "Whenever metered usage times the rate crosses a charge threshold, enforce this duty: the approving analyst's authority level must dominate the account tier of the billing run. Outside all selected triggers only this duty stops binding.",
+            "Composition rationale: Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "applicability",
+              "rationale": "Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional.",
+              "statement": "Whenever metered usage times the rate crosses a charge threshold, enforce this duty: the approving analyst's authority level must dominate the account tier of the billing run. Outside all selected triggers only this duty stops binding.",
+              "target": "G4"
+            },
+            "id": "V7",
+            "meaning": "metered usage times the rate crosses a charge threshold",
+            "reads": "BillingRun.usage * BillingRun.rate"
+          }
+        },
+        "V8": {
+          "allowed_forms": [
+            "applicability"
+          ],
+          "allowed_targets": [
+            "G4"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "applicability",
+            "rationale": "Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional.",
+            "statement": "Whenever the total bill amount crosses a money threshold, enforce this duty: the approving analyst's authority level must dominate the account tier of the billing run. Outside all selected triggers only this duty stops binding.",
+            "target": "G4"
+          },
+          "parameter_schema": {
+            "threshold": {
+              "type": "Long",
+              "values": [
+                10000,
+                250000,
+                50000
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "threshold": 10000
+            },
+            {
+              "threshold": 50000
+            },
+            {
+              "threshold": 250000
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.billAmount"
+              },
+              {
+                "name": "threshold",
+                "op": "parameter"
+              }
+            ],
+            "op": "gt"
+          },
+          "revision_notes": [
+            "USD-cent thresholds for individual-account bills and usage-derived charges: $100, $500, $2500. These are synthetic organization policy choices.",
+            "Whenever the total bill amount crosses a money threshold, enforce this duty: the approving analyst's authority level must dominate the account tier of the billing run. Outside all selected triggers only this duty stops binding.",
+            "Composition rationale: Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "applicability",
+              "rationale": "Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional.",
+              "statement": "Whenever the total bill amount crosses a money threshold, enforce this duty: the approving analyst's authority level must dominate the account tier of the billing run. Outside all selected triggers only this duty stops binding.",
+              "target": "G4"
+            },
+            "id": "V8",
+            "meaning": "the total bill amount crosses a money threshold",
+            "reads": "BillingRun.billAmount"
+          }
+        }
+      },
+      "bases": {
+        "G4": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.authorityLevel"
+              },
+              {
+                "op": "field",
+                "path": "resource.accountTier"
+              }
+            ],
+            "op": "ge"
+          },
+          "signature": "V6",
+          "source": {
+            "id": "G4",
+            "meaning": "the approving analyst's authority level must dominate the account tier of the billing run",
+            "reads": "principal.authorityLevel vs BillingRun.accountTier",
+            "signature": "V6"
+          }
+        },
+        "G5": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.status"
+              },
+              {
+                "id": "submitted",
+                "op": "entity",
+                "type": "BillingRunStatusValue"
+              }
+            ],
+            "op": "eq"
+          },
+          "signature": "V11",
+          "source": {
+            "id": "G5",
+            "meaning": "a billing run may be approved only after it has reached the submitted stage",
+            "reads": "BillingRun.status",
+            "signature": "V11"
+          }
+        }
+      },
+      "domain_gate": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.authorityLevel"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.authorityLevel"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.authorityLevel"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 2
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.authorityLevel"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 3
+                  }
+                ],
+                "op": "eq"
+              }
+            ],
+            "op": "any"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.accountTier"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.accountTier"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.accountTier"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 2
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.accountTier"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 3
+                  }
+                ],
+                "op": "eq"
+              }
+            ],
+            "op": "any"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.billAmount"
+              },
+              {
+                "op": "literal",
+                "value": 0
+              }
+            ],
+            "op": "ge"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.rate"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "ge"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.rate"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 100000
+                  }
+                ],
+                "op": "le"
+              }
+            ],
+            "op": "all"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.usage"
+              },
+              {
+                "op": "literal",
+                "value": 0
+              }
+            ],
+            "op": "ge"
+          }
+        ],
+        "op": "all"
+      },
+      "eligibility": {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "BillingAnalyst",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "BillingManager",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          }
+        ],
+        "op": "any"
+      },
+      "field_bindings": {
+        "BillingRun.accountTier": "resource.accountTier",
+        "BillingRun.billAmount": "resource.billAmount",
+        "BillingRun.rate": "resource.rate",
+        "BillingRun.rateClass": "resource.rateClass",
+        "BillingRun.region": "resource.region",
+        "BillingRun.status": "resource.status",
+        "BillingRun.usage": "resource.usage",
+        "context.emergencyDeclared": "context.emergencyDeclared",
+        "principal.authorityLevel": "principal.authorityLevel",
+        "user.assignedGroup": "principal.assignedGroup"
+      },
+      "overrides": {
+        "G3": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "context.emergencyDeclared"
+              },
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "principal.roles"
+                      },
+                      {
+                        "id": "BillingManager",
+                        "op": "entity",
+                        "type": "Role"
+                      }
+                    ],
+                    "op": "contains"
+                  }
+                ],
+                "op": "any"
+              }
+            ],
+            "op": "all"
+          },
+          "source": {
+            "id": "G3",
+            "meaning": "a declared metering emergency lets a billing manager approve a run for an account tier above their normal authority, subject to audit adjudication",
+            "overrides": [
+              "G4"
+            ],
+            "reads": "context.emergencyDeclared",
+            "requires_adjudication": true
+          },
+          "targets": [
+            "G4"
+          ]
+        }
+      },
+      "resource_type": "BillingRun"
+    }
+  },
+  "business_review_revision": "2026-10-23-r1",
+  "context": {
+    "currentTime": {
+      "type": "datetime"
+    },
+    "emergencyDeclared": {
+      "type": "Bool"
+    },
+    "onCorporateNetwork": {
+      "type": "Bool"
+    }
+  },
+  "contract": "complete-spec-v4",
+  "decisions": [
+    "Added User.assignedGroup: assigned hierarchy scope for resource group conditions",
+    "Added User.authorityLevel: source G4 principal attribute; uses the resource dominance scale",
+    "All source identities denote User entities; role sets may overlap without implicit exclusivity.",
+    "All timestamps read by predicates are bounded inclusively to 2000-01-01 through 2100-01-01 UTC; requests outside the explicit domain gate deny.",
+    "AuditLog.note is source documentation, not an attribute.",
+    "Business revision v2: catalogs are declared synthetic organizational policies, not empirical norms. Selected-atom obligations are mandatory in both forms and cannot be waived by a base exception or override.",
+    "Money is nonnegative integer USD cents, at most 1,000,000,000. Counts are nonnegative integers at most 1,000,000 unless a narrower dictionary is declared.",
+    "Request context is treated as trusted input from the host; authorization does not attest network, emergency, signature, or scheduling facts.",
+    "Retained source repairs: exact lifecycle states, linked course roster, explicit promotion/filing facts, independent calibration expiry, comp expiry, and guarded override eligibility are intentional experiment definitions. Their typed ASTs and field descriptions, not the ambiguous source shorthand, are authoritative.",
+    "Rules operate on snapshots. A selected lifecycle base requires the exact named state unless its predicate explicitly lists alternatives.",
+    "Source business descriptions are retained for audit; the authored typed predicates and dictionaries define the experiment. No statutory compliance claim is made.",
+    "Source tag kinds are represented by Set<String>. Group membership is reflexive and transitive Cedar entity ancestry.",
+    "adjustReading/V6: Declared synthetic review/acceptance bands measured in prior adjustments in the current billing period. Source-explicit refill > 0 and production-release defect == 0 remain unchanged.",
+    "adjustReading/V8: USD-cent thresholds for individual-account bills and usage-derived charges: $100, $500, $2500. These are synthetic organization policy choices.",
+    "approveBillingRun/V7: USD-cent thresholds for individual-account bills and usage-derived charges: $150, $750, $3000. These are synthetic organization policy choices.",
+    "approveBillingRun/V8: USD-cent thresholds for individual-account bills and usage-derived charges: $100, $500, $2500. These are synthetic organization policy choices."
+  ],
+  "domain": "meter_data_management",
+  "entities": {
+    "AuditLog": {
+      "attributes": {}
+    },
+    "BillingRun": {
+      "attributes": {
+        "account": {
+          "type": "MeterAccount"
+        },
+        "accountTier": {
+          "bounds": [
+            0,
+            3
+          ],
+          "description": "Synthetic ordinal scale; the same integer rank denotes the required authority tier when used by G4. No physical magnitude or external standard is implied.",
+          "levels": {
+            "commercial": 2,
+            "industrial": 3,
+            "residential": 0,
+            "small_business": 1
+          },
+          "type": "Long"
+        },
+        "approver": {
+          "type": "User"
+        },
+        "billAmount": {
+          "bounds": [
+            0,
+            1000000000
+          ],
+          "type": "Long",
+          "unit": "USD cents"
+        },
+        "preparedAt": {
+          "type": "datetime"
+        },
+        "preparer": {
+          "type": "User"
+        },
+        "rate": {
+          "bounds": [
+            0,
+            100000
+          ],
+          "type": "Long",
+          "unit": "USD cents per metered usage unit"
+        },
+        "rateClass": {
+          "representation": "zero or more label strings",
+          "type": "Set<String>"
+        },
+        "region": {
+          "type": "Group"
+        },
+        "status": {
+          "type": "BillingRunStatusValue"
+        },
+        "usage": {
+          "bounds": [
+            0,
+            1000000
+          ],
+          "type": "Long",
+          "unit": "metered usage units"
+        }
+      }
+    },
+    "BillingRunStatusValue": {
+      "enum": [
+        "open",
+        "calculated",
+        "submitted",
+        "approved",
+        "invoiced"
+      ]
+    },
+    "Group": {
+      "attributes": {},
+      "member_of": [
+        "Group"
+      ]
+    },
+    "MeterAccount": {
+      "attributes": {
+        "accountHolder": {
+          "type": "User"
+        },
+        "adjustmentCount": {
+          "bounds": [
+            0,
+            1000000
+          ],
+          "type": "Long",
+          "unit": "prior adjustments in the current billing period"
+        },
+        "lastBillAmount": {
+          "bounds": [
+            0,
+            1000000000
+          ],
+          "type": "Long",
+          "unit": "USD cents"
+        },
+        "lastReadAt": {
+          "type": "datetime"
+        },
+        "lastReadBy": {
+          "type": "User"
+        },
+        "rateClass": {
+          "representation": "zero or more label strings",
+          "type": "Set<String>"
+        },
+        "region": {
+          "type": "Group"
+        },
+        "status": {
+          "type": "MeterAccountStatusValue"
+        },
+        "tier": {
+          "bounds": [
+            0,
+            3
+          ],
+          "description": "Synthetic ordinal scale; the same integer rank denotes the required authority tier when used by G4. No physical magnitude or external standard is implied.",
+          "levels": {
+            "commercial": 2,
+            "industrial": 3,
+            "residential": 0,
+            "small_business": 1
+          },
+          "type": "Long"
+        }
+      }
+    },
+    "MeterAccountStatusValue": {
+      "enum": [
+        "active",
+        "under_review",
+        "estimated",
+        "adjusted",
+        "closed"
+      ]
+    },
+    "Role": {
+      "enum": [
+        "MeterReader",
+        "BillingAnalyst",
+        "BillingManager",
+        "DataSteward",
+        "Auditor"
+      ]
+    },
+    "User": {
+      "attributes": {
+        "assignedGroup": {
+          "description": "assigned hierarchy scope for resource group conditions",
+          "type": "Group"
+        },
+        "authorityLevel": {
+          "bounds": [
+            0,
+            3
+          ],
+          "description": "Synthetic ordinal scale; the same integer rank denotes the required authority tier when used by G4. No physical magnitude or external standard is implied.",
+          "levels": {
+            "commercial": 2,
+            "industrial": 3,
+            "residential": 0,
+            "small_business": 1
+          },
+          "type": "Long"
+        },
+        "roles": {
+          "type": "Set<Role>"
+        }
+      }
+    }
+  },
+  "revision_contract": "business-composition-v4",
+  "source_action_chains": [
+    {
+      "chain": [
+        "approveBillingRun",
+        "adjustReading"
+      ],
+      "linked_by": [
+        "account",
+        "rateClass",
+        "region",
+        "status"
+      ],
+      "shared_resource": "MeterAccount"
+    }
+  ],
+  "source_sha256": "2907de8ce880b86d975423e46cde808f78a30bb93dc0a767cb3b4f0643c07c22",
+  "status": "authored experimental assumptions; not human semantic approval",
+  "version": "business-registry-v4"
+}

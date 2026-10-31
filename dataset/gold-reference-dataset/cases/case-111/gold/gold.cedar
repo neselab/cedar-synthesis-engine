@@ -1,0 +1,2 @@
+permit (principal is User, action == Action::"completePort", resource is PortRequest)
+when { (((resource.numberBlockSize >= 0)) && ((principal.roles.contains(Role::"LineTechnician") || principal.roles.contains(Role::"PortingSupervisor"))) && (!(true) || (resource.status == PortRequestStatusValue::"authorized")) && (resource.portType.contains("wholesale")) && (context.regulatorEscalation) && (!((resource.numberBlockSize > 100)) || (principal.roles.contains(Role::"PortingSupervisor"))) && (context.onCarrierNetwork)) };

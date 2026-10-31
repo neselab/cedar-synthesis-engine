@@ -1,0 +1,58 @@
+{
+  "domain": "inpatient_records",
+  "format_version": "complete-spec-v4",
+  "grouping": {
+    "applicability_triggers": "any",
+    "exception": "any",
+    "requirements": "all"
+  },
+  "parts": [
+    {
+      "anchor": "countersign",
+      "bases": [
+        "G2"
+      ],
+      "conditions": [],
+      "overrides": []
+    },
+    {
+      "anchor": "dispense",
+      "bases": [
+        "G5"
+      ],
+      "conditions": [
+        {
+          "atom": "V14",
+          "form": "require",
+          "parameters": {},
+          "target": "@action"
+        }
+      ],
+      "overrides": []
+    },
+    {
+      "anchor": "writePrescription",
+      "bases": [
+        "G1"
+      ],
+      "conditions": [
+        {
+          "atom": "V14",
+          "form": "require",
+          "parameters": {},
+          "target": "@action"
+        }
+      ],
+      "overrides": []
+    }
+  ],
+  "provenance": {
+    "arithmetic_safety_patches": [],
+    "kind": "less-specific-200 revised intent",
+    "source_case": "case-283",
+    "source_spec_sha256": "52d8f523abc221b5cfe7ccfdb0370573187e6c396a9c5f10d84252cac3f0894e",
+    "transformation": "Drop only artificial 2000-2100 timestamp windows and catalog maxima 1000000/1000000000; retain all other gates."
+  },
+  "registry_sha256": "4b847d8ef365016cee74c30541ce51bbe4e5c7217cb2cf6eb9f7d17101296f03",
+  "source_sha256": "2907de8ce880b86d975423e46cde808f78a30bb93dc0a767cb3b4f0643c07c22"
+}

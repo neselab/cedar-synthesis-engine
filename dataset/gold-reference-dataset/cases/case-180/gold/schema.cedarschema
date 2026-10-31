@@ -1,0 +1,15 @@
+entity AuditLog {  };
+entity ExecutedLease { executedBy: User, lease: Lease, recordedAt: datetime };
+entity Group in [Group] {  };
+entity Lease { contingencies: Set<String>, fairHousingHold: Bool, leaseCode: String, listingAgent: User, monthlyRent: Long, premisesClass: Long, region: Group, reviewer: User, segment: Set<String>, signWindowEnd: datetime, squareFootage: Long, status: LeaseStatusValue, termMonths: Long };
+entity LeaseStatusValue enum ["drafted", "reviewed", "signed", "executed"];
+entity Role enum ["LeasingAgent", "TransactionCoordinator", "Broker", "ComplianceOfficer", "Auditor"];
+entity User { assignedGroup: Group, roles: Set<Role> };
+action executeLease appliesTo { principal: [User], resource: [ExecutedLease], context: {
+    contingencyReviewCompleted: Bool,
+    courtOrderDeclared: Bool,
+    currentTime: datetime,
+    identityVerified: Bool,
+    onBrokerageNetwork: Bool,
+  },
+};

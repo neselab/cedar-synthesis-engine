@@ -1,0 +1,18 @@
+entity ExpenseReport { amountTier: Long, approver?: User, category: String, lodgingTotal: Long, mealTotal: Long, receiptAttached: Bool, status: ExpenseReportStatusValue, submittedAt: datetime, submitter: User, totalAmount: Long };
+entity ExpenseReportStatusValue enum ["draft", "submitted", "approved", "reimbursed"];
+entity Group in [Group] {  };
+entity Reimbursement { amount: Long, disbursedBy: User, report: ExpenseReport };
+entity Role enum ["Employee", "LineManager", "FinanceReviewer", "Controller"];
+entity User { approvalTier: Long, roles: Set<Role> };
+action approveReport appliesTo { principal: [User], resource: [ExpenseReport], context: {
+    currentTime: datetime,
+    emergencyApproval: Bool,
+    onCorporateNetwork: Bool,
+  },
+};
+action disburseReimbursement appliesTo { principal: [User], resource: [Reimbursement], context: {
+    currentTime: datetime,
+    emergencyApproval: Bool,
+    onCorporateNetwork: Bool,
+  },
+};

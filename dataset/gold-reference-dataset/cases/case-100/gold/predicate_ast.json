@@ -1,0 +1,110 @@
+{
+  "disburseReimbursement": {
+    "args": [
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.amount"
+              },
+              {
+                "op": "literal",
+                "value": 0
+              }
+            ],
+            "op": "ge"
+          }
+        ],
+        "op": "all"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.roles"
+                  },
+                  {
+                    "id": "Controller",
+                    "op": "entity",
+                    "type": "Role"
+                  }
+                ],
+                "op": "contains"
+              }
+            ],
+            "op": "any"
+          }
+        ],
+        "op": "any"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.amount"
+                      },
+                      {
+                        "op": "literal",
+                        "value": 25000
+                      }
+                    ],
+                    "op": "gt"
+                  }
+                ],
+                "op": "any"
+              }
+            ],
+            "op": "not"
+          },
+          {
+            "args": [
+              {
+                "attribute": "approver",
+                "op": "has",
+                "path": "resource.report"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal"
+                  },
+                  {
+                    "op": "field",
+                    "path": "resource.report.approver"
+                  }
+                ],
+                "op": "ne"
+              }
+            ],
+            "op": "all"
+          }
+        ],
+        "op": "any"
+      },
+      {
+        "args": [
+          {
+            "attribute": "approver",
+            "op": "has",
+            "path": "resource.report"
+          }
+        ],
+        "op": "any"
+      }
+    ],
+    "op": "all"
+  }
+}

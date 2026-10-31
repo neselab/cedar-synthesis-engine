@@ -1,0 +1,1462 @@
+{
+  "anchors": {
+    "approveReturnToService": {
+      "atoms": {
+        "V10": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that approval occurs while the fresh calibration is still within its validity window. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.calibratedAt"
+                  },
+                  {
+                    "op": "field",
+                    "path": "context.currentTime"
+                  }
+                ],
+                "op": "time_le"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.currentTime"
+                  },
+                  {
+                    "op": "field",
+                    "path": "resource.calibrationValidUntil"
+                  }
+                ],
+                "op": "time_lt"
+              }
+            ],
+            "op": "all"
+          },
+          "revision_notes": [
+            "Authorization requires that approval occurs while the fresh calibration is still within its validity window. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that approval occurs while the fresh calibration is still within its validity window. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V10",
+            "meaning": "approval occurs while the fresh calibration is still within its validity window",
+            "reads": "context.currentTime vs Asset.calibrationDueAt"
+          }
+        },
+        "V12": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the out-of-service flag has been cleared before return. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.outOfService"
+              },
+              {
+                "op": "literal",
+                "value": false
+              }
+            ],
+            "op": "eq"
+          },
+          "revision_notes": [
+            "Authorization requires that the out-of-service flag has been cleared before return. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the out-of-service flag has been cleared before return. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V12",
+            "meaning": "the out-of-service flag has been cleared before return",
+            "reads": "Asset.outOfService"
+          }
+        },
+        "V13": {
+          "allowed_forms": [
+            "obligation"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "obligation",
+            "rationale": "The source describes a trigger and an additional required consequence; encode that implication independently of bases.",
+            "statement": "When the asset's hazardous-material tag triggers an additional sign-off, its explicit additional requirement must hold. This does not waive or scope any base.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "label": {
+              "type": "String",
+              "values": [
+                "biological",
+                "chemical",
+                "radiological"
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "label": "chemical"
+            },
+            {
+              "label": "biological"
+            },
+            {
+              "label": "radiological"
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.hazardClass"
+              },
+              {
+                "name": "label",
+                "op": "parameter"
+              }
+            ],
+            "op": "contains"
+          },
+          "requirement": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.hazardClass"
+                      },
+                      {
+                        "name": "label",
+                        "op": "parameter"
+                      }
+                    ],
+                    "op": "contains"
+                  }
+                ],
+                "op": "not"
+              },
+              {
+                "op": "field",
+                "path": "context.hazardSignoffRecorded"
+              }
+            ],
+            "op": "any"
+          },
+          "revision_notes": [
+            "Hazard membership is the trigger. Missing sign-off violates a separate mandatory obligation instead of disabling applicability.",
+            "When this trigger holds, the additional sign-off for the selected hazard is recorded. This is a trusted request-specific host attestation.",
+            "When the asset's hazardous-material tag triggers an additional sign-off, its explicit additional requirement must hold. This does not waive or scope any base.",
+            "Composition rationale: The source describes a trigger and an additional required consequence; encode that implication independently of bases."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "obligation",
+              "rationale": "The source describes a trigger and an additional required consequence; encode that implication independently of bases.",
+              "statement": "When the asset's hazardous-material tag triggers an additional sign-off, its explicit additional requirement must hold. This does not waive or scope any base.",
+              "target": "@action"
+            },
+            "id": "V13",
+            "meaning": "the asset's hazardous-material tag triggers an additional sign-off",
+            "reads": "Asset.hazardClass"
+          }
+        },
+        "V14": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that clean-room re-entry certification is present. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "op": "field",
+            "path": "context.cleanRoomCertified"
+          },
+          "revision_notes": [
+            "Authorization requires that clean-room re-entry certification is present. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that clean-room re-entry certification is present. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V14",
+            "meaning": "clean-room re-entry certification is present",
+            "reads": "context.cleanRoomCertified"
+          }
+        },
+        "V9": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the approval is submitted on the plant network. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "op": "field",
+            "path": "context.onPlantNetwork"
+          },
+          "revision_notes": [
+            "Authorization requires that the approval is submitted on the plant network. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the approval is submitted on the plant network. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V9",
+            "meaning": "the approval is submitted on the plant network",
+            "reads": "context.onPlantNetwork"
+          }
+        }
+      },
+      "bases": {
+        "G1": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal"
+              },
+              {
+                "op": "field",
+                "path": "resource.technician"
+              }
+            ],
+            "op": "ne"
+          },
+          "signature": "V1",
+          "source": {
+            "id": "G1",
+            "meaning": "the technician who performed the calibration may not approve its own return to service",
+            "reads": "principal vs Asset.technician",
+            "signature": "V1"
+          }
+        },
+        "G5": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.status"
+              },
+              {
+                "id": "calibrated",
+                "op": "entity",
+                "type": "AssetStatusValue"
+              }
+            ],
+            "op": "eq"
+          },
+          "signature": "V11",
+          "source": {
+            "id": "G5",
+            "meaning": "return to service may be approved only after the asset reaches the 'calibrated' state",
+            "reads": "Asset.status",
+            "signature": "V11"
+          }
+        }
+      },
+      "domain_gate": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2000-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  },
+                  {
+                    "op": "field",
+                    "path": "context.currentTime"
+                  }
+                ],
+                "op": "time_le"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.currentTime"
+                  },
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2100-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  }
+                ],
+                "op": "time_le"
+              }
+            ],
+            "op": "all"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2000-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  },
+                  {
+                    "op": "field",
+                    "path": "resource.calibratedAt"
+                  }
+                ],
+                "op": "time_le"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.calibratedAt"
+                  },
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2100-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  }
+                ],
+                "op": "time_le"
+              }
+            ],
+            "op": "all"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2000-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  },
+                  {
+                    "op": "field",
+                    "path": "resource.calibrationValidUntil"
+                  }
+                ],
+                "op": "time_le"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.calibrationValidUntil"
+                  },
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2100-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  }
+                ],
+                "op": "time_le"
+              }
+            ],
+            "op": "all"
+          }
+        ],
+        "op": "all"
+      },
+      "eligibility": {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "QualityInspector",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "MetrologyManager",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          }
+        ],
+        "op": "any"
+      },
+      "field_bindings": {
+        "Asset.calibratedAt": "resource.calibratedAt",
+        "Asset.calibrationValidUntil": "resource.calibrationValidUntil",
+        "Asset.hazardClass": "resource.hazardClass",
+        "Asset.outOfService": "resource.outOfService",
+        "Asset.status": "resource.status",
+        "Asset.technician": "resource.technician",
+        "context.cleanRoomCertified": "context.cleanRoomCertified",
+        "context.currentTime": "context.currentTime",
+        "context.emergencyDeclared": "context.emergencyDeclared",
+        "context.hazardSignoffRecorded": "context.hazardSignoffRecorded",
+        "context.onPlantNetwork": "context.onPlantNetwork"
+      },
+      "overrides": {
+        "G3": {
+          "eligibility_extension": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.emergencyDeclared"
+                  },
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "op": "field",
+                            "path": "principal.roles"
+                          },
+                          {
+                            "id": "CalibrationTechnician",
+                            "op": "entity",
+                            "type": "Role"
+                          }
+                        ],
+                        "op": "contains"
+                      },
+                      {
+                        "args": [
+                          {
+                            "op": "field",
+                            "path": "principal.roles"
+                          },
+                          {
+                            "id": "SeniorTechnician",
+                            "op": "entity",
+                            "type": "Role"
+                          }
+                        ],
+                        "op": "contains"
+                      }
+                    ],
+                    "op": "any"
+                  }
+                ],
+                "op": "all"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal"
+                  },
+                  {
+                    "op": "field",
+                    "path": "resource.technician"
+                  }
+                ],
+                "op": "eq"
+              }
+            ],
+            "op": "all"
+          },
+          "predicate": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.emergencyDeclared"
+                  },
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "op": "field",
+                            "path": "principal.roles"
+                          },
+                          {
+                            "id": "CalibrationTechnician",
+                            "op": "entity",
+                            "type": "Role"
+                          }
+                        ],
+                        "op": "contains"
+                      },
+                      {
+                        "args": [
+                          {
+                            "op": "field",
+                            "path": "principal.roles"
+                          },
+                          {
+                            "id": "SeniorTechnician",
+                            "op": "entity",
+                            "type": "Role"
+                          }
+                        ],
+                        "op": "contains"
+                      }
+                    ],
+                    "op": "any"
+                  }
+                ],
+                "op": "all"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal"
+                  },
+                  {
+                    "op": "field",
+                    "path": "resource.technician"
+                  }
+                ],
+                "op": "eq"
+              }
+            ],
+            "op": "all"
+          },
+          "source": {
+            "id": "G3",
+            "meaning": "a declared emergency lets the calibrating technician also approve return to service, overriding separation of duty",
+            "overrides": [
+              "G1"
+            ],
+            "reads": "context.emergencyDeclared",
+            "requires_adjudication": true
+          },
+          "targets": [
+            "G1"
+          ]
+        }
+      },
+      "resource_type": "Asset"
+    },
+    "performCalibration": {
+      "atoms": {
+        "V10": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the asset has reached its scheduled calibration due date. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.calibrationDueAt"
+              },
+              {
+                "op": "field",
+                "path": "context.currentTime"
+              }
+            ],
+            "op": "time_le"
+          },
+          "revision_notes": [
+            "Authorization requires that the asset has reached its scheduled calibration due date. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the asset has reached its scheduled calibration due date. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V10",
+            "meaning": "the asset has reached its scheduled calibration due date",
+            "reads": "context.currentTime vs Asset.calibrationDueAt"
+          }
+        },
+        "V12": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the asset is flagged out of service for maintenance. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.outOfService"
+              },
+              {
+                "op": "literal",
+                "value": true
+              }
+            ],
+            "op": "eq"
+          },
+          "revision_notes": [
+            "Authorization requires that the asset is flagged out of service for maintenance. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the asset is flagged out of service for maintenance. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V12",
+            "meaning": "the asset is flagged out of service for maintenance",
+            "reads": "Asset.outOfService"
+          }
+        },
+        "V14": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the calibration is performed from a certified clean-room station. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "op": "field",
+            "path": "context.cleanRoomCertified"
+          },
+          "revision_notes": [
+            "Authorization requires that the calibration is performed from a certified clean-room station. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the calibration is performed from a certified clean-room station. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V14",
+            "meaning": "the calibration is performed from a certified clean-room station",
+            "reads": "context.cleanRoomCertified"
+          }
+        },
+        "V5": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the asset tag matches a calibration-program code prefix. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "pattern": {
+              "type": "String",
+              "values": [
+                "CAL-*",
+                "MET-*"
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "pattern": "CAL-*"
+            },
+            {
+              "pattern": "MET-*"
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.assetTag"
+              },
+              {
+                "name": "pattern",
+                "op": "parameter"
+              }
+            ],
+            "op": "like"
+          },
+          "revision_notes": [
+            "Authorization requires that the asset tag matches a calibration-program code prefix. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the asset tag matches a calibration-program code prefix. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V5",
+            "meaning": "the asset tag matches a calibration-program code prefix",
+            "reads": "Asset.assetTag"
+          }
+        },
+        "V7": {
+          "allowed_forms": [
+            "obligation"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "obligation",
+            "rationale": "A descriptive quantity threshold without a suitable duty target is completed as an explicitly authored additional review, not as a minimum transaction size or lifecycle waiver.",
+            "required_fact": "performCalibrationV7ReviewCompleted",
+            "statement": "When the measurement-point count crosses the extended-procedure threshold, the additional review recorded by performCalibrationV7ReviewCompleted must be complete; smaller requests do not need this additional review.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "threshold": {
+              "type": "Long",
+              "values": [
+                10,
+                200,
+                50
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "threshold": 10
+            },
+            {
+              "threshold": 50
+            },
+            {
+              "threshold": 200
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.measurementPointCount"
+              },
+              {
+                "name": "threshold",
+                "op": "parameter"
+              }
+            ],
+            "op": "gt"
+          },
+          "requirement": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.measurementPointCount"
+                      },
+                      {
+                        "name": "threshold",
+                        "op": "parameter"
+                      }
+                    ],
+                    "op": "gt"
+                  }
+                ],
+                "op": "not"
+              },
+              {
+                "op": "field",
+                "path": "context.performCalibrationV7ReviewCompleted"
+              }
+            ],
+            "op": "any"
+          },
+          "revision_notes": [
+            "Calibration measurement points per procedure",
+            "When the measurement-point count crosses the extended-procedure threshold, the additional review recorded by performCalibrationV7ReviewCompleted must be complete; smaller requests do not need this additional review.",
+            "Composition rationale: A descriptive quantity threshold without a suitable duty target is completed as an explicitly authored additional review, not as a minimum transaction size or lifecycle waiver."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "obligation",
+              "rationale": "A descriptive quantity threshold without a suitable duty target is completed as an explicitly authored additional review, not as a minimum transaction size or lifecycle waiver.",
+              "required_fact": "performCalibrationV7ReviewCompleted",
+              "statement": "When the measurement-point count crosses the extended-procedure threshold, the additional review recorded by performCalibrationV7ReviewCompleted must be complete; smaller requests do not need this additional review.",
+              "target": "@action"
+            },
+            "id": "V7",
+            "meaning": "the measurement-point count crosses the extended-procedure threshold",
+            "reads": "Asset.measurementPointCount"
+          }
+        },
+        "V9": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the request originates on the plant network. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "op": "field",
+            "path": "context.onPlantNetwork"
+          },
+          "revision_notes": [
+            "Authorization requires that the request originates on the plant network. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the request originates on the plant network. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V9",
+            "meaning": "the request originates on the plant network",
+            "reads": "context.onPlantNetwork"
+          }
+        }
+      },
+      "bases": {
+        "G4": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.certLevel"
+              },
+              {
+                "op": "field",
+                "path": "resource.equipmentClass"
+              }
+            ],
+            "op": "ge"
+          },
+          "signature": "V6",
+          "source": {
+            "id": "G4",
+            "meaning": "the technician's certification level must dominate the asset's equipment class",
+            "reads": "principal.certLevel vs Asset.equipmentClass",
+            "signature": "V6"
+          }
+        },
+        "G5": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.status"
+              },
+              {
+                "id": "due",
+                "op": "entity",
+                "type": "AssetStatusValue"
+              }
+            ],
+            "op": "eq"
+          },
+          "signature": "V11",
+          "source": {
+            "id": "G5",
+            "meaning": "calibration may begin only while the asset is in the 'due' state",
+            "reads": "Asset.status",
+            "signature": "V11"
+          }
+        }
+      },
+      "domain_gate": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.certLevel"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.certLevel"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.certLevel"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 2
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.certLevel"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 3
+                  }
+                ],
+                "op": "eq"
+              }
+            ],
+            "op": "any"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.equipmentClass"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.equipmentClass"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.equipmentClass"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 2
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.equipmentClass"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 3
+                  }
+                ],
+                "op": "eq"
+              }
+            ],
+            "op": "any"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.measurementPointCount"
+              },
+              {
+                "op": "literal",
+                "value": 0
+              }
+            ],
+            "op": "ge"
+          }
+        ],
+        "op": "all"
+      },
+      "eligibility": {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "CalibrationTechnician",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "SeniorTechnician",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          }
+        ],
+        "op": "any"
+      },
+      "field_bindings": {
+        "Asset.assetTag": "resource.assetTag",
+        "Asset.calibrationDueAt": "resource.calibrationDueAt",
+        "Asset.equipmentClass": "resource.equipmentClass",
+        "Asset.measurementPointCount": "resource.measurementPointCount",
+        "Asset.outOfService": "resource.outOfService",
+        "Asset.status": "resource.status",
+        "context.cleanRoomCertified": "context.cleanRoomCertified",
+        "context.currentTime": "context.currentTime",
+        "context.emergencyDeclared": "context.emergencyDeclared",
+        "context.onPlantNetwork": "context.onPlantNetwork",
+        "principal.certLevel": "principal.certLevel"
+      },
+      "overrides": {
+        "G3": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "context.emergencyDeclared"
+              },
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "principal.roles"
+                      },
+                      {
+                        "id": "CalibrationTechnician",
+                        "op": "entity",
+                        "type": "Role"
+                      }
+                    ],
+                    "op": "contains"
+                  },
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "principal.roles"
+                      },
+                      {
+                        "id": "SeniorTechnician",
+                        "op": "entity",
+                        "type": "Role"
+                      }
+                    ],
+                    "op": "contains"
+                  }
+                ],
+                "op": "any"
+              }
+            ],
+            "op": "all"
+          },
+          "source": {
+            "id": "G3",
+            "meaning": "a declared emergency lets an available technician calibrate even without a dominating certification level",
+            "overrides": [
+              "G4"
+            ],
+            "reads": "context.emergencyDeclared",
+            "requires_adjudication": true
+          },
+          "targets": [
+            "G4"
+          ]
+        }
+      },
+      "resource_type": "Asset"
+    }
+  },
+  "business_review_revision": "2026-10-23-r1",
+  "context": {
+    "cleanRoomCertified": {
+      "type": "Bool"
+    },
+    "currentTime": {
+      "type": "datetime"
+    },
+    "emergencyDeclared": {
+      "type": "Bool"
+    },
+    "hazardSignoffRecorded": {
+      "description": "explicit additional sign-off for the selected hazard label",
+      "type": "Bool"
+    },
+    "onPlantNetwork": {
+      "type": "Bool"
+    },
+    "performCalibrationV7ReviewCompleted": {
+      "type": "Bool"
+    }
+  },
+  "contract": "complete-spec-v4",
+  "decisions": [
+    "Added Asset.calibratedAt: completion timestamp for the current calibration",
+    "Added Asset.calibrationValidUntil: exclusive validity deadline for the current calibration; due date is not used as expiry",
+    "Added User.certLevel: source G4 principal attribute; uses the resource dominance scale",
+    "Added context.hazardSignoffRecorded: explicit additional sign-off for the selected hazard label",
+    "All source identities denote User entities; role sets may overlap without implicit exclusivity.",
+    "All timestamps read by predicates are bounded inclusively to 2000-01-01 through 2100-01-01 UTC; requests outside the explicit domain gate deny.",
+    "Business revision v2: catalogs are declared synthetic organizational policies, not empirical norms. Selected-atom obligations are mandatory in both forms and cannot be waived by a base exception or override.",
+    "CalibrationLog.note is source documentation, not an attribute.",
+    "Money is nonnegative integer USD cents, at most 1,000,000,000. Counts are nonnegative integers at most 1,000,000 unless a narrower dictionary is declared.",
+    "Request context is treated as trusted input from the host; authorization does not attest network, emergency, signature, or scheduling facts.",
+    "Retained source repairs: exact lifecycle states, linked course roster, explicit promotion/filing facts, independent calibration expiry, comp expiry, and guarded override eligibility are intentional experiment definitions. Their typed ASTs and field descriptions, not the ambiguous source shorthand, are authoritative.",
+    "Rules operate on snapshots. A selected lifecycle base requires the exact named state unless its predicate explicitly lists alternatives.",
+    "Source business descriptions are retained for audit; the authored typed predicates and dictionaries define the experiment. No statutory compliance claim is made.",
+    "Source tag kinds are represented by Set<String>. Group membership is reflexive and transitive Cedar entity ancestry.",
+    "approveReturnToService/G3 explicitly extends eligibility to ['CalibrationTechnician', 'SeniorTechnician'] only while the override guard holds; these roles were absent from the source anchor role list.",
+    "approveReturnToService/V13: Hazard membership is the trigger. Missing sign-off violates a separate mandatory obligation instead of disabling applicability.",
+    "approveReturnToService/V13: This implication is mandatory whenever the atom is selected, in either form; it survives all base exceptions and overrides.",
+    "approveReturnToService/V13: When this trigger holds, the additional sign-off for the selected hazard is recorded. This is a trusted request-specific host attestation.",
+    "performCalibration/V7: Calibration measurement points per procedure"
+  ],
+  "domain": "equipment_calibration",
+  "entities": {
+    "Asset": {
+      "attributes": {
+        "assetTag": {
+          "type": "String"
+        },
+        "calibratedAt": {
+          "description": "completion timestamp for the current calibration",
+          "type": "datetime"
+        },
+        "calibrationDueAt": {
+          "type": "datetime"
+        },
+        "calibrationValidUntil": {
+          "description": "exclusive validity deadline for the current calibration; due date is not used as expiry",
+          "type": "datetime"
+        },
+        "equipmentClass": {
+          "bounds": [
+            0,
+            3
+          ],
+          "description": "Synthetic ordinal scale; the same integer rank denotes the required authority tier when used by G4. No physical magnitude or external standard is implied.",
+          "levels": {
+            "basic": 0,
+            "critical": 2,
+            "precision": 1,
+            "reference_standard": 3
+          },
+          "type": "Long"
+        },
+        "hazardClass": {
+          "representation": "zero or more label strings",
+          "type": "Set<String>"
+        },
+        "measurementPointCount": {
+          "bounds": [
+            0,
+            1000000
+          ],
+          "type": "Long",
+          "unit": "integer units"
+        },
+        "outOfService": {
+          "type": "Bool"
+        },
+        "status": {
+          "type": "AssetStatusValue"
+        },
+        "technician": {
+          "type": "User"
+        }
+      }
+    },
+    "AssetStatusValue": {
+      "enum": [
+        "due",
+        "inprogress",
+        "calibrated",
+        "returned"
+      ]
+    },
+    "CalibrationLog": {
+      "attributes": {}
+    },
+    "CalibrationRecord": {
+      "attributes": {
+        "asset": {
+          "type": "Asset"
+        },
+        "calibratedAt": {
+          "type": "datetime"
+        },
+        "result": {
+          "type": "String"
+        },
+        "technician": {
+          "type": "User"
+        }
+      }
+    },
+    "Group": {
+      "attributes": {},
+      "member_of": [
+        "Group"
+      ]
+    },
+    "Role": {
+      "enum": [
+        "CalibrationTechnician",
+        "SeniorTechnician",
+        "MetrologyManager",
+        "QualityInspector",
+        "MaintenanceSupervisor"
+      ]
+    },
+    "User": {
+      "attributes": {
+        "certLevel": {
+          "bounds": [
+            0,
+            3
+          ],
+          "description": "Synthetic ordinal scale; the same integer rank denotes the required authority tier when used by G4. No physical magnitude or external standard is implied.",
+          "levels": {
+            "basic": 0,
+            "critical": 2,
+            "precision": 1,
+            "reference_standard": 3
+          },
+          "type": "Long"
+        },
+        "roles": {
+          "type": "Set<Role>"
+        }
+      }
+    }
+  },
+  "revision_contract": "business-composition-v4",
+  "source_action_chains": [
+    {
+      "chain": [
+        "performCalibration",
+        "approveReturnToService"
+      ],
+      "linked_by": [
+        "status",
+        "technician",
+        "equipmentClass"
+      ],
+      "shared_resource": "Asset"
+    }
+  ],
+  "source_sha256": "2907de8ce880b86d975423e46cde808f78a30bb93dc0a767cb3b4f0643c07c22",
+  "status": "authored experimental assumptions; not human semantic approval",
+  "version": "business-registry-v4"
+}

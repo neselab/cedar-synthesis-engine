@@ -1,0 +1,68 @@
+{
+  "domain": "policy_underwriting",
+  "format_version": "complete-spec-v4",
+  "grouping": {
+    "applicability_triggers": "any",
+    "exception": "any",
+    "requirements": "all"
+  },
+  "parts": [
+    {
+      "anchor": "approveException",
+      "bases": [
+        "G2"
+      ],
+      "conditions": [
+        {
+          "atom": "V13",
+          "form": "require",
+          "parameters": {
+            "label": "high_value"
+          },
+          "target": "@action"
+        }
+      ],
+      "overrides": [
+        {
+          "id": "G3",
+          "targets": [
+            "G2"
+          ]
+        }
+      ]
+    },
+    {
+      "anchor": "bindPolicy",
+      "bases": [
+        "G4"
+      ],
+      "conditions": [
+        {
+          "atom": "V5",
+          "form": "require",
+          "parameters": {
+            "pattern": "EXCESS-*"
+          },
+          "target": "@action"
+        }
+      ],
+      "overrides": [
+        {
+          "id": "G3",
+          "targets": [
+            "G4"
+          ]
+        }
+      ]
+    }
+  ],
+  "provenance": {
+    "arithmetic_safety_patches": [],
+    "kind": "less-specific-200 revised intent",
+    "source_case": "case-189",
+    "source_spec_sha256": "8c50e2959399c8e9f058c1e17fcb969c81230b2a1f5221a599826db8a69595bf",
+    "transformation": "Drop only artificial 2000-2100 timestamp windows and catalog maxima 1000000/1000000000; retain all other gates."
+  },
+  "registry_sha256": "92cb43145cda42632622ab2a6ee93082da08d9b2a8e0974f1cc8128e816a479e",
+  "source_sha256": "2907de8ce880b86d975423e46cde808f78a30bb93dc0a767cb3b4f0643c07c22"
+}

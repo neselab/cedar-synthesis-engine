@@ -1,0 +1,5 @@
+permit (principal is User, action == Action::"adjustReading", resource is MeterAccount)
+when { (((resource.adjustmentCount >= 0) && (resource.lastBillAmount >= 0)) && ((principal.roles.contains(Role::"MeterReader") || principal.roles.contains(Role::"DataSteward"))) && (!(((resource.lastBillAmount > 50000))) || (principal != resource.lastReadBy)) && (context.onCorporateNetwork)) };
+
+permit (principal is User, action == Action::"approveBillingRun", resource is BillingRun)
+when { ((((principal.authorityLevel == 0) || (principal.authorityLevel == 1) || (principal.authorityLevel == 2) || (principal.authorityLevel == 3)) && ((resource.accountTier == 0) || (resource.accountTier == 1) || (resource.accountTier == 2) || (resource.accountTier == 3)) && (resource.billAmount >= 0) && ((resource.rate >= 0) && (resource.rate <= 100000)) && (resource.usage >= 0)) && ((principal.roles.contains(Role::"BillingAnalyst") || principal.roles.contains(Role::"BillingManager"))) && (!(true) || (resource.status == BillingRunStatusValue::"submitted")) && ((principal.roles.contains(Role::"BillingManager"))) && ((resource.region in principal.assignedGroup))) };

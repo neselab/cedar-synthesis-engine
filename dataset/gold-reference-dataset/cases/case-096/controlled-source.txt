@@ -1,0 +1,35 @@
+# Matter files authorization requirements
+
+Case: case-096
+Domain: matter_files
+Selected actions: viewDocument
+
+## Purpose
+
+Determine whether a user may perform each of these operations: view a document.
+Each request names one user, one action, one resource, and trusted context supplied by the host application. Decide whether to allow that request using the current recorded facts.
+The permissions do not perform state changes or assert an execution order between actions.
+
+## How permissions apply
+
+For each action, allow access if and only if the stated requester and resource types match and ALL requirements in that action section hold. Otherwise deny access. Deny requests for actions not listed here.
+Each unless clause waives only the requirement in its own sentence. It never grants access or waives other requirements.
+If a condition in an If sentence is false, only that sentence imposes no additional duty; every other requirement still applies.
+Users may hold multiple roles. Role membership and ownership are distinct facts. Money is expressed in integer USD cents. Times are UTC. Daily time windows recur every day of the week.
+Brackets identify exact fields or entity types. Role and status values identify entities of their declared types. True and false are Boolean values. Every listed interval includes only the endpoints explicitly stated.
+Optional-field presence is explicit in the rules. A guarded predicate is false if a field it needs is missing; preserve the enclosing negation, condition, or waiver. Requirements about presence remain binding.
+The separately supplied Cedar schema defines entity types, fields, optionality, action types, and valid enum vocabulary. Use that schema unchanged. Its declarations alone add no authorization requirements; declaring schedule fields does not impose a time window.
+
+## Permission to view a document
+Action: viewDocument
+Requester type: User.
+Resource type: Document.
+
+Allow this action if and only if all the following requirements hold:
+
+- Access requires that at least one of [the user has the "Attorney" role; the user has the "Paralegal" role; the user has the "RecordsManager" role].
+- Access requires that it is false that [the user's conflicted matters [principal.conflictedMatters] contains the document's matter [resource.matter]].
+- Access requires that the user [principal] equals the document's author [resource.author].
+- Access requires that all of [the request's scheduled start time [context.viewDocumentScheduledStart] is no later than the request's current date [context.currentDate]; the request's current date [context.currentDate] is earlier than the request's scheduled end time [context.viewDocumentScheduledEnd]].
+- If the document's privileged flag [resource.privileged] is true, access requires that the privileged access is authorized [context.privilegedAccessAuthorized].
+

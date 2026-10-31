@@ -1,0 +1,2 @@
+permit (principal is User, action == Action::"approveClearToClose", resource is EscrowFile)
+when { (((resource.heldAmount >= 0) && (resource.payeeCount >= 0)) && ((principal.roles.contains(Role::"TitleOfficer") || principal.roles.contains(Role::"EscrowManager"))) && (!(((resource.heldAmount > 100000000))) || (principal != resource.escrowOfficer)) && ((resource.titleCleared == true)) && (!(resource.lienStatus.contains("outstanding_lien"))) && (!((resource.payeeCount > 5)) || (principal.roles.contains(Role::"EscrowManager")))) };

@@ -1,0 +1,64 @@
+{
+  "domain": "equipment_calibration",
+  "format_version": "complete-spec-v4",
+  "grouping": {
+    "applicability_triggers": "any",
+    "exception": "any",
+    "requirements": "all"
+  },
+  "parts": [
+    {
+      "anchor": "approveReturnToService",
+      "bases": [
+        "G5"
+      ],
+      "conditions": [
+        {
+          "atom": "V13",
+          "form": "obligation",
+          "parameters": {
+            "label": "biological"
+          },
+          "target": "@action"
+        },
+        {
+          "atom": "V9",
+          "form": "require",
+          "parameters": {},
+          "target": "@action"
+        }
+      ],
+      "overrides": []
+    },
+    {
+      "anchor": "performCalibration",
+      "bases": [
+        "G5"
+      ],
+      "conditions": [
+        {
+          "atom": "V14",
+          "form": "require",
+          "parameters": {},
+          "target": "@action"
+        },
+        {
+          "atom": "V9",
+          "form": "require",
+          "parameters": {},
+          "target": "@action"
+        }
+      ],
+      "overrides": []
+    }
+  ],
+  "provenance": {
+    "arithmetic_safety_patches": [],
+    "kind": "less-specific-200 revised intent",
+    "source_case": "case-113",
+    "source_spec_sha256": "d635e775029e434f681aff5558c24f9a87f18af3342c188f2f9dbc8a6089ff86",
+    "transformation": "Drop only artificial 2000-2100 timestamp windows and catalog maxima 1000000/1000000000; retain all other gates."
+  },
+  "registry_sha256": "99d82441f03f83d107b86326d9d79f0aaa9de84fe79b326f565ecc186019b157",
+  "source_sha256": "2907de8ce880b86d975423e46cde808f78a30bb93dc0a767cb3b4f0643c07c22"
+}

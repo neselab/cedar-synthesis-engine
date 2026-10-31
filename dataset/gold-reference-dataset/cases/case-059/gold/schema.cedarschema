@@ -1,0 +1,12 @@
+entity AccessBadge { expiresAt: datetime, holder: User };
+entity Document { classification: Long, compartments: Set<String>, owner: User, status: DocumentStatusValue };
+entity DocumentStatusValue enum ["draft", "released", "archived"];
+entity Dossier { classification: Long, documents: Set<Document> };
+entity Group in [Group] {  };
+entity Role enum ["Analyst", "Officer", "SecurityAdmin", "Contractor"];
+entity User { badge: AccessBadge, clearance: Long, compartments: Set<String>, nationality: String, roles: Set<Role> };
+action readDocument appliesTo { principal: [User], resource: [Document], context: {
+    currentTime: datetime,
+    onIntranet: Bool,
+  },
+};

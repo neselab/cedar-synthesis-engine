@@ -1,0 +1,1333 @@
+{
+  "anchors": {
+    "approveReport": {
+      "atoms": {
+        "V10": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the request falls within business hours. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "end_ms": {
+              "type": "Long",
+              "values": [
+                57600000,
+                61200000,
+                64800000
+              ]
+            },
+            "start_ms": {
+              "type": "Long",
+              "values": [
+                28800000,
+                32400000,
+                36000000
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "end_ms": 61200000,
+              "start_ms": 32400000
+            },
+            {
+              "end_ms": 64800000,
+              "start_ms": 28800000
+            },
+            {
+              "end_ms": 57600000,
+              "start_ms": 36000000
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "context.currentTime"
+                      }
+                    ],
+                    "op": "utc_time_ms"
+                  },
+                  {
+                    "name": "start_ms",
+                    "op": "parameter"
+                  }
+                ],
+                "op": "ge"
+              },
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "context.currentTime"
+                      }
+                    ],
+                    "op": "utc_time_ms"
+                  },
+                  {
+                    "name": "end_ms",
+                    "op": "parameter"
+                  }
+                ],
+                "op": "lt"
+              }
+            ],
+            "op": "all"
+          },
+          "revision_notes": [
+            "Authorization requires that the request falls within business hours. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the request falls within business hours. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V10",
+            "meaning": "the request falls within business hours",
+            "reads": "context.currentTime"
+          }
+        },
+        "V12": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that a receipt is attached to the report. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.receiptAttached"
+              },
+              {
+                "op": "literal",
+                "value": true
+              }
+            ],
+            "op": "eq"
+          },
+          "revision_notes": [
+            "Authorization requires that a receipt is attached to the report. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that a receipt is attached to the report. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V12",
+            "meaning": "a receipt is attached to the report",
+            "reads": "ExpenseReport.receiptAttached"
+          }
+        },
+        "V5": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the expense category matches or has a prefix (e.g. TRAVEL). Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "pattern": {
+              "type": "String",
+              "values": [
+                "LODGING*",
+                "MEALS*",
+                "TRAVEL*"
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "pattern": "TRAVEL*"
+            },
+            {
+              "pattern": "MEALS*"
+            },
+            {
+              "pattern": "LODGING*"
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.category"
+              },
+              {
+                "name": "pattern",
+                "op": "parameter"
+              }
+            ],
+            "op": "like"
+          },
+          "revision_notes": [
+            "Authorization requires that the expense category matches or has a prefix (e.g. TRAVEL). Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the expense category matches or has a prefix (e.g. TRAVEL). Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V5",
+            "meaning": "the expense category matches or has a prefix (e.g. TRAVEL)",
+            "reads": "ExpenseReport.category"
+          }
+        },
+        "V7": {
+          "allowed_forms": [
+            "applicability"
+          ],
+          "allowed_targets": [
+            "G1"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "applicability",
+            "rationale": "Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional.",
+            "statement": "Whenever meal plus lodging spend crosses the per-diem threshold, enforce this duty: the employee who submitted an expense report may not approve it. Outside all selected triggers only this duty stops binding.",
+            "target": "G1"
+          },
+          "parameter_schema": {
+            "threshold": {
+              "type": "Long",
+              "values": [
+                10000,
+                25000,
+                50000
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "threshold": 10000
+            },
+            {
+              "threshold": 25000
+            },
+            {
+              "threshold": 50000
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.mealTotal"
+                  },
+                  {
+                    "name": "threshold",
+                    "op": "parameter"
+                  }
+                ],
+                "op": "gt"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.lodgingTotal"
+                  },
+                  {
+                    "args": [
+                      {
+                        "name": "threshold",
+                        "op": "parameter"
+                      },
+                      {
+                        "op": "field",
+                        "path": "resource.mealTotal"
+                      }
+                    ],
+                    "op": "sub"
+                  }
+                ],
+                "op": "gt"
+              }
+            ],
+            "op": "any"
+          },
+          "revision_notes": [
+            "USD-cent thresholds for employee expense totals; V7 is meal plus lodging for one expense day: $100, $250, $500. These are synthetic organization policy choices.",
+            "Whenever meal plus lodging spend crosses the per-diem threshold, enforce this duty: the employee who submitted an expense report may not approve it. Outside all selected triggers only this duty stops binding.",
+            "Composition rationale: Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "applicability",
+              "rationale": "Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional.",
+              "statement": "Whenever meal plus lodging spend crosses the per-diem threshold, enforce this duty: the employee who submitted an expense report may not approve it. Outside all selected triggers only this duty stops binding.",
+              "target": "G1"
+            },
+            "id": "V7",
+            "meaning": "meal plus lodging spend crosses the per-diem threshold",
+            "reads": "ExpenseReport.mealTotal + ExpenseReport.lodgingTotal"
+          }
+        },
+        "V8": {
+          "allowed_forms": [
+            "applicability"
+          ],
+          "allowed_targets": [
+            "G1"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "applicability",
+            "rationale": "Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional.",
+            "statement": "Whenever the total amount crosses a money threshold, enforce this duty: the employee who submitted an expense report may not approve it. Outside all selected triggers only this duty stops binding.",
+            "target": "G1"
+          },
+          "parameter_schema": {
+            "threshold": {
+              "type": "Long",
+              "values": [
+                100000,
+                25000,
+                500000
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "threshold": 25000
+            },
+            {
+              "threshold": 100000
+            },
+            {
+              "threshold": 500000
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.totalAmount"
+              },
+              {
+                "name": "threshold",
+                "op": "parameter"
+              }
+            ],
+            "op": "gt"
+          },
+          "revision_notes": [
+            "USD-cent thresholds for employee expense totals; V7 is meal plus lodging for one expense day: $250, $1000, $5000. These are synthetic organization policy choices.",
+            "Whenever the total amount crosses a money threshold, enforce this duty: the employee who submitted an expense report may not approve it. Outside all selected triggers only this duty stops binding.",
+            "Composition rationale: Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "applicability",
+              "rationale": "Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional.",
+              "statement": "Whenever the total amount crosses a money threshold, enforce this duty: the employee who submitted an expense report may not approve it. Outside all selected triggers only this duty stops binding.",
+              "target": "G1"
+            },
+            "id": "V8",
+            "meaning": "the total amount crosses a money threshold",
+            "reads": "ExpenseReport.totalAmount"
+          }
+        },
+        "V9": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the request is on the corporate network. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "op": "field",
+            "path": "context.onCorporateNetwork"
+          },
+          "revision_notes": [
+            "Authorization requires that the request is on the corporate network. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the request is on the corporate network. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V9",
+            "meaning": "the request is on the corporate network",
+            "reads": "context.onCorporateNetwork"
+          }
+        }
+      },
+      "bases": {
+        "G1": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal"
+              },
+              {
+                "op": "field",
+                "path": "resource.submitter"
+              }
+            ],
+            "op": "ne"
+          },
+          "signature": "V1",
+          "source": {
+            "id": "G1",
+            "meaning": "the employee who submitted an expense report may not approve it",
+            "reads": "principal vs ExpenseReport.submitter",
+            "signature": "V1"
+          }
+        },
+        "G4": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.approvalTier"
+              },
+              {
+                "op": "field",
+                "path": "resource.amountTier"
+              }
+            ],
+            "op": "ge"
+          },
+          "signature": "V6",
+          "source": {
+            "id": "G4",
+            "meaning": "the approver's authority tier must dominate the report's amount tier",
+            "reads": "user.approvalTier vs ExpenseReport.amountTier",
+            "signature": "V6"
+          }
+        },
+        "G5": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.status"
+              },
+              {
+                "id": "submitted",
+                "op": "entity",
+                "type": "ExpenseReportStatusValue"
+              }
+            ],
+            "op": "eq"
+          },
+          "signature": "V11",
+          "source": {
+            "id": "G5",
+            "meaning": "a report may be approved only after it has been submitted",
+            "reads": "ExpenseReport.status",
+            "signature": "V11"
+          }
+        }
+      },
+      "domain_gate": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2000-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  },
+                  {
+                    "op": "field",
+                    "path": "context.currentTime"
+                  }
+                ],
+                "op": "time_le"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.currentTime"
+                  },
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2100-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  }
+                ],
+                "op": "time_le"
+              }
+            ],
+            "op": "all"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.approvalTier"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.approvalTier"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.approvalTier"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 2
+                  }
+                ],
+                "op": "eq"
+              }
+            ],
+            "op": "any"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.amountTier"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.amountTier"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.amountTier"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 2
+                  }
+                ],
+                "op": "eq"
+              }
+            ],
+            "op": "any"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.lodgingTotal"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "ge"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.lodgingTotal"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1000000000
+                  }
+                ],
+                "op": "le"
+              }
+            ],
+            "op": "all"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.mealTotal"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "ge"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.mealTotal"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1000000000
+                  }
+                ],
+                "op": "le"
+              }
+            ],
+            "op": "all"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.totalAmount"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "ge"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.totalAmount"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1000000000
+                  }
+                ],
+                "op": "le"
+              }
+            ],
+            "op": "all"
+          }
+        ],
+        "op": "all"
+      },
+      "eligibility": {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "LineManager",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "FinanceReviewer",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          }
+        ],
+        "op": "any"
+      },
+      "field_bindings": {
+        "ExpenseReport.amountTier": "resource.amountTier",
+        "ExpenseReport.category": "resource.category",
+        "ExpenseReport.lodgingTotal": "resource.lodgingTotal",
+        "ExpenseReport.mealTotal": "resource.mealTotal",
+        "ExpenseReport.receiptAttached": "resource.receiptAttached",
+        "ExpenseReport.status": "resource.status",
+        "ExpenseReport.submitter": "resource.submitter",
+        "ExpenseReport.totalAmount": "resource.totalAmount",
+        "context.currentTime": "context.currentTime",
+        "context.emergencyApproval": "context.emergencyApproval",
+        "context.onCorporateNetwork": "context.onCorporateNetwork",
+        "user.approvalTier": "principal.approvalTier"
+      },
+      "overrides": {
+        "G3": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "context.emergencyApproval"
+              },
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "principal.roles"
+                      },
+                      {
+                        "id": "FinanceReviewer",
+                        "op": "entity",
+                        "type": "Role"
+                      }
+                    ],
+                    "op": "contains"
+                  }
+                ],
+                "op": "any"
+              }
+            ],
+            "op": "all"
+          },
+          "source": {
+            "id": "G3",
+            "meaning": "a declared emergency lets a finance reviewer approve their own report, overriding the submitter/approver split",
+            "overrides": [
+              "G1"
+            ],
+            "reads": "context.emergencyApproval",
+            "requires_adjudication": true
+          },
+          "targets": [
+            "G1"
+          ]
+        }
+      },
+      "resource_type": "ExpenseReport"
+    },
+    "disburseReimbursement": {
+      "atoms": {
+        "V10": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the request falls within business hours. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "end_ms": {
+              "type": "Long",
+              "values": [
+                57600000,
+                61200000,
+                64800000
+              ]
+            },
+            "start_ms": {
+              "type": "Long",
+              "values": [
+                28800000,
+                32400000,
+                36000000
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "end_ms": 61200000,
+              "start_ms": 32400000
+            },
+            {
+              "end_ms": 64800000,
+              "start_ms": 28800000
+            },
+            {
+              "end_ms": 57600000,
+              "start_ms": 36000000
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "context.currentTime"
+                      }
+                    ],
+                    "op": "utc_time_ms"
+                  },
+                  {
+                    "name": "start_ms",
+                    "op": "parameter"
+                  }
+                ],
+                "op": "ge"
+              },
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "context.currentTime"
+                      }
+                    ],
+                    "op": "utc_time_ms"
+                  },
+                  {
+                    "name": "end_ms",
+                    "op": "parameter"
+                  }
+                ],
+                "op": "lt"
+              }
+            ],
+            "op": "all"
+          },
+          "revision_notes": [
+            "Authorization requires that the request falls within business hours. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the request falls within business hours. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V10",
+            "meaning": "the request falls within business hours",
+            "reads": "context.currentTime"
+          }
+        },
+        "V12": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the report carries a recorded approver. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "attribute": "approver",
+            "op": "has",
+            "path": "resource.report"
+          },
+          "revision_notes": [
+            "Authorization requires that the report carries a recorded approver. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the report carries a recorded approver. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V12",
+            "meaning": "the report carries a recorded approver",
+            "reads": "Reimbursement.report.approver"
+          }
+        },
+        "V8": {
+          "allowed_forms": [
+            "applicability"
+          ],
+          "allowed_targets": [
+            "G1"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "applicability",
+            "rationale": "Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional.",
+            "statement": "Whenever the reimbursement amount crosses a money threshold, enforce this duty: the person who approved a report may not disburse its reimbursement. Outside all selected triggers only this duty stops binding.",
+            "target": "G1"
+          },
+          "parameter_schema": {
+            "threshold": {
+              "type": "Long",
+              "values": [
+                100000,
+                25000,
+                500000
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "threshold": 25000
+            },
+            {
+              "threshold": 100000
+            },
+            {
+              "threshold": 500000
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.amount"
+              },
+              {
+                "name": "threshold",
+                "op": "parameter"
+              }
+            ],
+            "op": "gt"
+          },
+          "revision_notes": [
+            "USD-cent thresholds for employee expense totals; V7 is meal plus lodging for one expense day: $250, $1000, $5000. These are synthetic organization policy choices.",
+            "Whenever the reimbursement amount crosses a money threshold, enforce this duty: the person who approved a report may not disburse its reimbursement. Outside all selected triggers only this duty stops binding.",
+            "Composition rationale: Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "applicability",
+              "rationale": "Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional.",
+              "statement": "Whenever the reimbursement amount crosses a money threshold, enforce this duty: the person who approved a report may not disburse its reimbursement. Outside all selected triggers only this duty stops binding.",
+              "target": "G1"
+            },
+            "id": "V8",
+            "meaning": "the reimbursement amount crosses a money threshold",
+            "reads": "Reimbursement.amount"
+          }
+        },
+        "V9": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the request is on the corporate network. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "op": "field",
+            "path": "context.onCorporateNetwork"
+          },
+          "revision_notes": [
+            "Authorization requires that the request is on the corporate network. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the request is on the corporate network. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V9",
+            "meaning": "the request is on the corporate network",
+            "reads": "context.onCorporateNetwork"
+          }
+        }
+      },
+      "bases": {
+        "G1": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal"
+              },
+              {
+                "op": "field",
+                "path": "resource.report.approver"
+              }
+            ],
+            "op": "ne"
+          },
+          "signature": "V1",
+          "source": {
+            "id": "G1",
+            "meaning": "the person who approved a report may not disburse its reimbursement",
+            "reads": "principal vs Reimbursement.report.approver",
+            "signature": "V1"
+          }
+        },
+        "G5": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.report.status"
+              },
+              {
+                "id": "approved",
+                "op": "entity",
+                "type": "ExpenseReportStatusValue"
+              }
+            ],
+            "op": "eq"
+          },
+          "signature": "V11",
+          "source": {
+            "id": "G5",
+            "meaning": "a reimbursement may be disbursed only for an approved report",
+            "reads": "Reimbursement.report.status",
+            "signature": "V11"
+          }
+        }
+      },
+      "domain_gate": {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.amount"
+              },
+              {
+                "op": "literal",
+                "value": 0
+              }
+            ],
+            "op": "ge"
+          }
+        ],
+        "op": "all"
+      },
+      "eligibility": {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "Controller",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          }
+        ],
+        "op": "any"
+      },
+      "field_bindings": {
+        "Reimbursement.amount": "resource.amount",
+        "Reimbursement.report.approver": "resource.report.approver",
+        "Reimbursement.report.status": "resource.report.status",
+        "context.currentTime": "context.currentTime",
+        "context.onCorporateNetwork": "context.onCorporateNetwork"
+      },
+      "overrides": {},
+      "resource_type": "Reimbursement"
+    }
+  },
+  "business_review_revision": "2026-10-23-r1",
+  "context": {
+    "currentTime": {
+      "type": "datetime"
+    },
+    "emergencyApproval": {
+      "type": "Bool"
+    },
+    "onCorporateNetwork": {
+      "type": "Bool"
+    }
+  },
+  "contract": "complete-spec-v4",
+  "decisions": [
+    "All source identities denote User entities; role sets may overlap without implicit exclusivity.",
+    "All timestamps read by predicates are bounded inclusively to 2000-01-01 through 2100-01-01 UTC; requests outside the explicit domain gate deny.",
+    "Business revision v2: catalogs are declared synthetic organizational policies, not empirical norms. Selected-atom obligations are mandatory in both forms and cannot be waived by a base exception or override.",
+    "Money is nonnegative integer USD cents, at most 1,000,000,000. Counts are nonnegative integers at most 1,000,000 unless a narrower dictionary is declared.",
+    "Request context is treated as trusted input from the host; authorization does not attest network, emergency, signature, or scheduling facts.",
+    "Retained source repairs: exact lifecycle states, linked course roster, explicit promotion/filing facts, independent calibration expiry, comp expiry, and guarded override eligibility are intentional experiment definitions. Their typed ASTs and field descriptions, not the ambiguous source shorthand, are authoritative.",
+    "Rules operate on snapshots. A selected lifecycle base requires the exact named state unless its predicate explicitly lists alternatives.",
+    "Source business descriptions are retained for audit; the authored typed predicates and dictionaries define the experiment. No statutory compliance claim is made.",
+    "Source tag kinds are represented by Set<String>. Group membership is reflexive and transitive Cedar entity ancestry.",
+    "approveReport/V7: USD-cent thresholds for employee expense totals; V7 is meal plus lodging for one expense day: $100, $250, $500. These are synthetic organization policy choices.",
+    "approveReport/V8: USD-cent thresholds for employee expense totals; V7 is meal plus lodging for one expense day: $250, $1000, $5000. These are synthetic organization policy choices.",
+    "disburseReimbursement/V8: USD-cent thresholds for employee expense totals; V7 is meal plus lodging for one expense day: $250, $1000, $5000. These are synthetic organization policy choices."
+  ],
+  "domain": "expense_reimbursement",
+  "entities": {
+    "ExpenseReport": {
+      "attributes": {
+        "amountTier": {
+          "bounds": [
+            0,
+            2
+          ],
+          "levels": {
+            "elevated": 1,
+            "executive": 2,
+            "standard": 0
+          },
+          "type": "Long"
+        },
+        "approver": {
+          "optional": true,
+          "type": "User"
+        },
+        "category": {
+          "type": "String"
+        },
+        "lodgingTotal": {
+          "bounds": [
+            0,
+            1000000000
+          ],
+          "type": "Long",
+          "unit": "USD cents"
+        },
+        "mealTotal": {
+          "bounds": [
+            0,
+            1000000000
+          ],
+          "type": "Long",
+          "unit": "USD cents"
+        },
+        "receiptAttached": {
+          "type": "Bool"
+        },
+        "status": {
+          "type": "ExpenseReportStatusValue"
+        },
+        "submittedAt": {
+          "type": "datetime"
+        },
+        "submitter": {
+          "type": "User"
+        },
+        "totalAmount": {
+          "bounds": [
+            0,
+            1000000000
+          ],
+          "type": "Long",
+          "unit": "USD cents"
+        }
+      }
+    },
+    "ExpenseReportStatusValue": {
+      "enum": [
+        "draft",
+        "submitted",
+        "approved",
+        "reimbursed"
+      ]
+    },
+    "Group": {
+      "attributes": {},
+      "member_of": [
+        "Group"
+      ]
+    },
+    "Reimbursement": {
+      "attributes": {
+        "amount": {
+          "bounds": [
+            0,
+            1000000000
+          ],
+          "type": "Long",
+          "unit": "USD cents"
+        },
+        "disbursedBy": {
+          "type": "User"
+        },
+        "report": {
+          "type": "ExpenseReport"
+        }
+      }
+    },
+    "Role": {
+      "enum": [
+        "Employee",
+        "LineManager",
+        "FinanceReviewer",
+        "Controller"
+      ]
+    },
+    "User": {
+      "attributes": {
+        "approvalTier": {
+          "bounds": [
+            0,
+            2
+          ],
+          "levels": {
+            "tier1": 0,
+            "tier2": 1,
+            "tier3": 2
+          },
+          "type": "Long"
+        },
+        "roles": {
+          "type": "Set<Role>"
+        }
+      }
+    }
+  },
+  "revision_contract": "business-composition-v4",
+  "source_action_chains": [
+    {
+      "chain": [
+        "approveReport",
+        "disburseReimbursement"
+      ],
+      "linked_by": [
+        "status",
+        "submitter",
+        "approver"
+      ],
+      "shared_resource": "ExpenseReport"
+    }
+  ],
+  "source_sha256": "2907de8ce880b86d975423e46cde808f78a30bb93dc0a767cb3b4f0643c07c22",
+  "status": "authored experimental assumptions; not human semantic approval",
+  "version": "business-registry-v4"
+}

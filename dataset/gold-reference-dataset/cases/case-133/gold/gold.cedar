@@ -1,0 +1,2 @@
+permit (principal is User, action == Action::"viewDocument", resource is Document)
+when { (true && ((principal.roles.contains(Role::"Attorney") || principal.roles.contains(Role::"Paralegal") || principal.roles.contains(Role::"RecordsManager"))) && (!(true) || !(principal.conflictedMatters.contains(resource.matter))) && (!(true) || ((resource.status != DocumentStatusValue::"sealed") || resource.filed)) && ((principal == resource.author)) && (!((resource.privileged == true)) || context.privilegedAccessAuthorized) && ((principal.roles.contains(Role::"Attorney")))) };

@@ -1,0 +1,2 @@
+permit (principal is User, action == Action::"authorizeComp", resource is CompAuthorization)
+when { (((resource.compValue >= 0) && (resource.itemCount >= 0)) && ((principal.roles.contains(Role::"ShiftManager") || principal.roles.contains(Role::"FrontOfficeManager"))) && (!(true) || (principal != resource.requestedBy)) && (!(true) || (resource.status == CompAuthorizationStatusValue::"requested")) && (((context.authorizeCompScheduledStart <= context.currentTime) && (context.currentTime < context.authorizeCompScheduledEnd))) && ((resource.blackoutFlag == false))) };

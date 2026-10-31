@@ -1,0 +1,53 @@
+{
+  "domain": "lms_course_content",
+  "format_version": "complete-spec-v4",
+  "grouping": {
+    "applicability_triggers": "any",
+    "exception": "any",
+    "requirements": "all"
+  },
+  "parts": [
+    {
+      "anchor": "viewModule",
+      "bases": [
+        "G4"
+      ],
+      "conditions": [
+        {
+          "atom": "V12",
+          "form": "prohibit",
+          "parameters": {},
+          "target": "@action"
+        },
+        {
+          "atom": "V2",
+          "form": "require",
+          "parameters": {},
+          "target": "@action"
+        },
+        {
+          "atom": "V4",
+          "form": "require",
+          "parameters": {},
+          "target": "@action"
+        },
+        {
+          "atom": "V9",
+          "form": "require",
+          "parameters": {},
+          "target": "@action"
+        }
+      ],
+      "overrides": []
+    }
+  ],
+  "provenance": {
+    "inherited_arithmetic_safety_patches": [],
+    "kind": "non-time-33 revised intent",
+    "source_case": "case-058",
+    "source_spec_sha256": "201e2c677819730ebeffeb7be2da0b1227aa205eb85af03d4e2a2efee0509b34",
+    "transformation": "Remove only artificial 2000-2100 datetime bounds and catalog maxima; retain all business rules."
+  },
+  "registry_sha256": "bdbe612de6ac5feaf5e683caaf45029c9b31519bebc6bb970f5af6a750b6a983",
+  "source_sha256": "2907de8ce880b86d975423e46cde808f78a30bb93dc0a767cb3b4f0643c07c22"
+}

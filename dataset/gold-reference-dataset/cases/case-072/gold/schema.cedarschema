@@ -1,0 +1,18 @@
+entity Filing { application: PatentApplication, filedBy: User, status: FilingStatusValue };
+entity FilingStatusValue enum ["draft", "filed", "entered"];
+entity Group in [Group] {  };
+entity OfficeAction { application: PatentApplication, author: User, status: OfficeActionStatusValue };
+entity OfficeActionStatusValue enum ["draft", "mailed", "responded"];
+entity PatentApplication { assignedExaminer: User, barDate: datetime, confidentiality: Long, inventor: User, prosecutingAttorney: User, status: PatentApplicationStatusValue, team: Set<User> };
+entity PatentApplicationStatusValue enum ["filed", "underExamination", "allowed", "abandoned"];
+entity Role enum ["PatentAttorney", "DocketClerk", "Examiner", "Inventor"];
+entity User { clearance: Long, roles: Set<Role> };
+action examineApplication appliesTo { principal: [User], resource: [PatentApplication], context: {
+    accessApplicationScheduledEnd: datetime,
+    accessApplicationScheduledStart: datetime,
+    courtOrder: Bool,
+    currentDate: datetime,
+    mfaUsed: Bool,
+    onFirmNetwork: Bool,
+  },
+};

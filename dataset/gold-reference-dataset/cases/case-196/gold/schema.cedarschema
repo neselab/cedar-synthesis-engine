@@ -1,0 +1,16 @@
+entity CustodyLog {  };
+entity DeliveryReceipt { recipient: User, shipment: Shipment, signedAt: datetime };
+entity Group in [Group] {  };
+entity Role enum ["Planner", "Driver", "DispatchManager", "DepotSupervisor", "Auditor"];
+entity Shipment { deliveryWindowEnd: datetime, driverOfRecord: User, grossWeightKg: Long, hazmatClass: Set<String>, originDepot: String, pieceCount: Long, planner: User, status: ShipmentStatusValue, trackingCode: String };
+entity ShipmentStatusValue enum ["created", "dispatched", "intransit", "delivered"];
+entity User { roles: Set<Role> };
+action dispatchShipment appliesTo { principal: [User], resource: [Shipment], context: {
+    confirmDeliveryV6ReviewCompleted: Bool,
+    currentTime: datetime,
+    custodySignatureCaptured: Bool,
+    expediteDeclared: Bool,
+    onDepotNetwork: Bool,
+    proofOfDelivery: Bool,
+  },
+};

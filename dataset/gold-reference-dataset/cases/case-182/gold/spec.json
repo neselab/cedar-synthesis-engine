@@ -1,0 +1,36 @@
+{
+  "domain": "recruiting",
+  "format_version": "complete-spec-v4",
+  "grouping": {
+    "applicability_triggers": "any",
+    "exception": "any",
+    "requirements": "all"
+  },
+  "parts": [
+    {
+      "anchor": "approveOffer",
+      "bases": [
+        "G1",
+        "G5"
+      ],
+      "conditions": [],
+      "overrides": [
+        {
+          "id": "G3",
+          "targets": [
+            "G1"
+          ]
+        }
+      ]
+    }
+  ],
+  "provenance": {
+    "inherited_arithmetic_safety_patches": [],
+    "kind": "non-time-33 revised intent",
+    "source_case": "case-182",
+    "source_spec_sha256": "75fcb95cc284de1e0f1dbcdbe8b44c0db21faa10e391efc24330f5944b53841d",
+    "transformation": "Remove only artificial 2000-2100 datetime bounds and catalog maxima; retain all business rules."
+  },
+  "registry_sha256": "16a83161961d709cfb62204651d126874926e7fc4eebf3ad463edd24bc401c6f",
+  "source_sha256": "2907de8ce880b86d975423e46cde808f78a30bb93dc0a767cb3b4f0643c07c22"
+}

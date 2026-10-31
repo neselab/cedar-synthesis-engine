@@ -1,0 +1,1759 @@
+{
+  "anchors": {
+    "approveWire": {
+      "atoms": {
+        "V10": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the request is before the daily wire cutoff. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "context.currentTime"
+              },
+              {
+                "op": "field",
+                "path": "context.dailyCutoff"
+              }
+            ],
+            "op": "time_lt"
+          },
+          "revision_notes": [
+            "Authorization requires that the request is before the daily wire cutoff. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the request is before the daily wire cutoff. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V10",
+            "meaning": "the request is before the daily wire cutoff",
+            "reads": "context.currentTime vs context.dailyCutoff"
+          }
+        },
+        "V4": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the beneficiary is on the account's screened allowlist. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.account.allowedBeneficiaries"
+              },
+              {
+                "op": "field",
+                "path": "resource.beneficiary"
+              }
+            ],
+            "op": "contains"
+          },
+          "revision_notes": [
+            "Authorization requires that the beneficiary is on the account's screened allowlist. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the beneficiary is on the account's screened allowlist. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V4",
+            "meaning": "the beneficiary is on the account's screened allowlist",
+            "reads": "WireTransfer.account.allowedBeneficiaries contains WireTransfer.beneficiary"
+          }
+        },
+        "V7": {
+          "allowed_forms": [
+            "applicability"
+          ],
+          "allowed_targets": [
+            "G1"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "applicability",
+            "rationale": "Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional.",
+            "statement": "Whenever amount plus fee crosses a threshold, enforce this duty: the officer who initiated a wire may not approve it (dual control / maker-checker). Outside all selected triggers only this duty stops binding.",
+            "target": "G1"
+          },
+          "parameter_schema": {
+            "threshold": {
+              "type": "Long",
+              "values": [
+                1500000,
+                30000000,
+                7500000
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "threshold": 1500000
+            },
+            {
+              "threshold": 7500000
+            },
+            {
+              "threshold": 30000000
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.amount"
+                  },
+                  {
+                    "name": "threshold",
+                    "op": "parameter"
+                  }
+                ],
+                "op": "gt"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.fee"
+                  },
+                  {
+                    "args": [
+                      {
+                        "name": "threshold",
+                        "op": "parameter"
+                      },
+                      {
+                        "op": "field",
+                        "path": "resource.amount"
+                      }
+                    ],
+                    "op": "sub"
+                  }
+                ],
+                "op": "gt"
+              }
+            ],
+            "op": "any"
+          },
+          "revision_notes": [
+            "USD-cent thresholds for treasury transfer review bands: $15000, $75000, $300000. These are synthetic organization policy choices.",
+            "Whenever amount plus fee crosses a threshold, enforce this duty: the officer who initiated a wire may not approve it (dual control / maker-checker). Outside all selected triggers only this duty stops binding.",
+            "Composition rationale: Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "applicability",
+              "rationale": "Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional.",
+              "statement": "Whenever amount plus fee crosses a threshold, enforce this duty: the officer who initiated a wire may not approve it (dual control / maker-checker). Outside all selected triggers only this duty stops binding.",
+              "target": "G1"
+            },
+            "id": "V7",
+            "meaning": "amount plus fee crosses a threshold",
+            "reads": "WireTransfer.amount + WireTransfer.fee"
+          }
+        },
+        "V8": {
+          "allowed_forms": [
+            "applicability"
+          ],
+          "allowed_targets": [
+            "G1"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "applicability",
+            "rationale": "Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional.",
+            "statement": "Whenever the wire amount crosses a money threshold, enforce this duty: the officer who initiated a wire may not approve it (dual control / maker-checker). Outside all selected triggers only this duty stops binding.",
+            "target": "G1"
+          },
+          "parameter_schema": {
+            "threshold": {
+              "type": "Long",
+              "values": [
+                1000000,
+                25000000,
+                5000000
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "threshold": 1000000
+            },
+            {
+              "threshold": 5000000
+            },
+            {
+              "threshold": 25000000
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.amount"
+              },
+              {
+                "name": "threshold",
+                "op": "parameter"
+              }
+            ],
+            "op": "gt"
+          },
+          "revision_notes": [
+            "USD-cent thresholds for treasury transfer review bands: $10000, $50000, $250000. These are synthetic organization policy choices.",
+            "Whenever the wire amount crosses a money threshold, enforce this duty: the officer who initiated a wire may not approve it (dual control / maker-checker). Outside all selected triggers only this duty stops binding.",
+            "Composition rationale: Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "applicability",
+              "rationale": "Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional.",
+              "statement": "Whenever the wire amount crosses a money threshold, enforce this duty: the officer who initiated a wire may not approve it (dual control / maker-checker). Outside all selected triggers only this duty stops binding.",
+              "target": "G1"
+            },
+            "id": "V8",
+            "meaning": "the wire amount crosses a money threshold",
+            "reads": "WireTransfer.amount"
+          }
+        },
+        "V9": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the request is on the secure banking network. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "op": "field",
+            "path": "context.onSecureNetwork"
+          },
+          "revision_notes": [
+            "Authorization requires that the request is on the secure banking network. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the request is on the secure banking network. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V9",
+            "meaning": "the request is on the secure banking network",
+            "reads": "context.onSecureNetwork"
+          }
+        }
+      },
+      "bases": {
+        "G1": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal"
+              },
+              {
+                "op": "field",
+                "path": "resource.initiatedBy"
+              }
+            ],
+            "op": "ne"
+          },
+          "signature": "V1",
+          "source": {
+            "id": "G1",
+            "meaning": "the officer who initiated a wire may not approve it (dual control / maker-checker)",
+            "reads": "principal vs WireTransfer.initiatedBy",
+            "signature": "V1"
+          }
+        },
+        "G4": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.approvalTier"
+              },
+              {
+                "op": "field",
+                "path": "resource.amountTier"
+              }
+            ],
+            "op": "ge"
+          },
+          "signature": "V6",
+          "source": {
+            "id": "G4",
+            "meaning": "the approver's authority tier must dominate the wire's amount tier",
+            "reads": "user.approvalTier vs WireTransfer.amountTier",
+            "signature": "V6"
+          }
+        }
+      },
+      "domain_gate": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.approvalTier"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.approvalTier"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.approvalTier"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 2
+                  }
+                ],
+                "op": "eq"
+              }
+            ],
+            "op": "any"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.amount"
+              },
+              {
+                "op": "literal",
+                "value": 0
+              }
+            ],
+            "op": "ge"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.amountTier"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.amountTier"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.amountTier"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 2
+                  }
+                ],
+                "op": "eq"
+              }
+            ],
+            "op": "any"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.fee"
+              },
+              {
+                "op": "literal",
+                "value": 0
+              }
+            ],
+            "op": "ge"
+          }
+        ],
+        "op": "all"
+      },
+      "eligibility": {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "Verifier",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "TreasuryOfficer",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          }
+        ],
+        "op": "any"
+      },
+      "field_bindings": {
+        "WireTransfer.account.allowedBeneficiaries": "resource.account.allowedBeneficiaries",
+        "WireTransfer.amount": "resource.amount",
+        "WireTransfer.amountTier": "resource.amountTier",
+        "WireTransfer.beneficiary": "resource.beneficiary",
+        "WireTransfer.fee": "resource.fee",
+        "WireTransfer.initiatedBy": "resource.initiatedBy",
+        "context.currentTime": "context.currentTime",
+        "context.dailyCutoff": "context.dailyCutoff",
+        "context.emergencyDeclared": "context.emergencyDeclared",
+        "context.onSecureNetwork": "context.onSecureNetwork",
+        "user.approvalTier": "principal.approvalTier"
+      },
+      "overrides": {
+        "G3": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "context.emergencyDeclared"
+              },
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "principal.roles"
+                      },
+                      {
+                        "id": "TreasuryOfficer",
+                        "op": "entity",
+                        "type": "Role"
+                      }
+                    ],
+                    "op": "contains"
+                  }
+                ],
+                "op": "any"
+              }
+            ],
+            "op": "all"
+          },
+          "source": {
+            "id": "G3",
+            "meaning": "a declared liquidity emergency lets a treasury officer approve a wire they initiated, overriding dual control",
+            "overrides": [
+              "G1"
+            ],
+            "reads": "context.emergencyDeclared",
+            "requires_adjudication": true
+          },
+          "targets": [
+            "G1"
+          ]
+        }
+      },
+      "resource_type": "WireTransfer"
+    },
+    "releaseWire": {
+      "atoms": {
+        "V10": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that release occurs before the daily wire cutoff. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "context.currentTime"
+              },
+              {
+                "op": "field",
+                "path": "context.dailyCutoff"
+              }
+            ],
+            "op": "time_lt"
+          },
+          "revision_notes": [
+            "Authorization requires that release occurs before the daily wire cutoff. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that release occurs before the daily wire cutoff. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V10",
+            "meaning": "release occurs before the daily wire cutoff",
+            "reads": "context.currentTime vs context.dailyCutoff"
+          }
+        },
+        "V12": {
+          "allowed_forms": [
+            "obligation"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "obligation",
+            "rationale": "Explicit synthetic completion of the trigger consequence using a trusted request-specific fact; no unconditional grant or base waiver.",
+            "required_fact": "highRiskReviewCompleted",
+            "statement": "When the wire carries a high-risk flag, the high-risk transfer review is complete.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.highRisk"
+              },
+              {
+                "op": "literal",
+                "value": true
+              }
+            ],
+            "op": "eq"
+          },
+          "requirement": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.highRisk"
+                      },
+                      {
+                        "op": "literal",
+                        "value": true
+                      }
+                    ],
+                    "op": "eq"
+                  }
+                ],
+                "op": "not"
+              },
+              {
+                "op": "field",
+                "path": "context.highRiskReviewCompleted"
+              }
+            ],
+            "op": "any"
+          },
+          "revision_notes": [
+            "When the wire carries a high-risk flag, the high-risk transfer review is complete.",
+            "Composition rationale: Explicit synthetic completion of the trigger consequence using a trusted request-specific fact; no unconditional grant or base waiver."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "obligation",
+              "rationale": "Explicit synthetic completion of the trigger consequence using a trusted request-specific fact; no unconditional grant or base waiver.",
+              "required_fact": "highRiskReviewCompleted",
+              "statement": "When the wire carries a high-risk flag, the high-risk transfer review is complete.",
+              "target": "@action"
+            },
+            "id": "V12",
+            "meaning": "the wire carries a high-risk flag",
+            "reads": "WireTransfer.highRisk"
+          }
+        },
+        "V14": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that MFA was used for the release. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "op": "field",
+            "path": "context.mfaUsed"
+          },
+          "revision_notes": [
+            "Authorization requires that MFA was used for the release. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that MFA was used for the release. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V14",
+            "meaning": "MFA was used for the release",
+            "reads": "context.mfaUsed"
+          }
+        },
+        "V4": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the beneficiary is on the account's screened allowlist. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.account.allowedBeneficiaries"
+              },
+              {
+                "op": "field",
+                "path": "resource.beneficiary"
+              }
+            ],
+            "op": "contains"
+          },
+          "revision_notes": [
+            "Authorization requires that the beneficiary is on the account's screened allowlist. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the beneficiary is on the account's screened allowlist. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V4",
+            "meaning": "the beneficiary is on the account's screened allowlist",
+            "reads": "WireTransfer.account.allowedBeneficiaries contains WireTransfer.beneficiary"
+          }
+        },
+        "V8": {
+          "allowed_forms": [
+            "applicability"
+          ],
+          "allowed_targets": [
+            "G1"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "applicability",
+            "rationale": "Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional.",
+            "statement": "Whenever the wire amount crosses a money threshold, enforce this duty: the officer who approved a wire may not release it (release is a separate pair of eyes). Outside all selected triggers only this duty stops binding.",
+            "target": "G1"
+          },
+          "parameter_schema": {
+            "threshold": {
+              "type": "Long",
+              "values": [
+                1000000,
+                25000000,
+                5000000
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "threshold": 1000000
+            },
+            {
+              "threshold": 5000000
+            },
+            {
+              "threshold": 25000000
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.amount"
+              },
+              {
+                "name": "threshold",
+                "op": "parameter"
+              }
+            ],
+            "op": "gt"
+          },
+          "revision_notes": [
+            "USD-cent thresholds for treasury transfer review bands: $10000, $50000, $250000. These are synthetic organization policy choices.",
+            "Whenever the wire amount crosses a money threshold, enforce this duty: the officer who approved a wire may not release it (release is a separate pair of eyes). Outside all selected triggers only this duty stops binding.",
+            "Composition rationale: Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "applicability",
+              "rationale": "Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional.",
+              "statement": "Whenever the wire amount crosses a money threshold, enforce this duty: the officer who approved a wire may not release it (release is a separate pair of eyes). Outside all selected triggers only this duty stops binding.",
+              "target": "G1"
+            },
+            "id": "V8",
+            "meaning": "the wire amount crosses a money threshold",
+            "reads": "WireTransfer.amount"
+          }
+        },
+        "V9": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the request is on the secure banking network. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "op": "field",
+            "path": "context.onSecureNetwork"
+          },
+          "revision_notes": [
+            "Authorization requires that the request is on the secure banking network. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the request is on the secure banking network. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V9",
+            "meaning": "the request is on the secure banking network",
+            "reads": "context.onSecureNetwork"
+          }
+        }
+      },
+      "bases": {
+        "G1": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal"
+              },
+              {
+                "op": "field",
+                "path": "resource.verifiedBy"
+              }
+            ],
+            "op": "ne"
+          },
+          "signature": "V1",
+          "source": {
+            "id": "G1",
+            "meaning": "the officer who approved a wire may not release it (release is a separate pair of eyes)",
+            "reads": "principal vs WireTransfer.verifiedBy",
+            "signature": "V1"
+          }
+        },
+        "G5": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.status"
+              },
+              {
+                "id": "verified",
+                "op": "entity",
+                "type": "WireTransferStatusValue"
+              }
+            ],
+            "op": "eq"
+          },
+          "signature": "V11",
+          "source": {
+            "id": "G5",
+            "meaning": "a wire may be released only after it has been verified",
+            "reads": "WireTransfer.status",
+            "signature": "V11"
+          }
+        }
+      },
+      "domain_gate": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2000-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  },
+                  {
+                    "op": "field",
+                    "path": "context.currentTime"
+                  }
+                ],
+                "op": "time_le"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.currentTime"
+                  },
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2100-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  }
+                ],
+                "op": "time_le"
+              }
+            ],
+            "op": "all"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2000-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  },
+                  {
+                    "op": "field",
+                    "path": "context.dailyCutoff"
+                  }
+                ],
+                "op": "time_le"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.dailyCutoff"
+                  },
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2100-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  }
+                ],
+                "op": "time_le"
+              }
+            ],
+            "op": "all"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.amount"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "ge"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.amount"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1000000000
+                  }
+                ],
+                "op": "le"
+              }
+            ],
+            "op": "all"
+          }
+        ],
+        "op": "all"
+      },
+      "eligibility": {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "TreasuryOfficer",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          }
+        ],
+        "op": "any"
+      },
+      "field_bindings": {
+        "WireTransfer.account.allowedBeneficiaries": "resource.account.allowedBeneficiaries",
+        "WireTransfer.amount": "resource.amount",
+        "WireTransfer.beneficiary": "resource.beneficiary",
+        "WireTransfer.highRisk": "resource.highRisk",
+        "WireTransfer.status": "resource.status",
+        "WireTransfer.verifiedBy": "resource.verifiedBy",
+        "context.currentTime": "context.currentTime",
+        "context.dailyCutoff": "context.dailyCutoff",
+        "context.emergencyDeclared": "context.emergencyDeclared",
+        "context.mfaUsed": "context.mfaUsed",
+        "context.onSecureNetwork": "context.onSecureNetwork"
+      },
+      "overrides": {
+        "G3": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "context.emergencyDeclared"
+              },
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "principal.roles"
+                      },
+                      {
+                        "id": "TreasuryOfficer",
+                        "op": "entity",
+                        "type": "Role"
+                      }
+                    ],
+                    "op": "contains"
+                  }
+                ],
+                "op": "any"
+              }
+            ],
+            "op": "all"
+          },
+          "source": {
+            "id": "G3",
+            "meaning": "a declared emergency lets a treasury officer release a wire that has not completed verification",
+            "overrides": [
+              "G5"
+            ],
+            "reads": "context.emergencyDeclared",
+            "requires_adjudication": true
+          },
+          "targets": [
+            "G5"
+          ]
+        }
+      },
+      "resource_type": "WireTransfer"
+    },
+    "screenBeneficiary": {
+      "atoms": {
+        "V10": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the screening is logged before the daily cutoff. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "context.currentTime"
+              },
+              {
+                "op": "field",
+                "path": "context.dailyCutoff"
+              }
+            ],
+            "op": "time_lt"
+          },
+          "revision_notes": [
+            "Authorization requires that the screening is logged before the daily cutoff. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the screening is logged before the daily cutoff. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V10",
+            "meaning": "the screening is logged before the daily cutoff",
+            "reads": "context.currentTime vs context.dailyCutoff"
+          }
+        },
+        "V12": {
+          "allowed_forms": [
+            "obligation"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "obligation",
+            "rationale": "Explicit synthetic completion of the trigger consequence using a trusted request-specific fact; no unconditional grant or base waiver.",
+            "required_fact": "highRiskReviewCompleted",
+            "statement": "When the wire carries a high-risk flag, the high-risk beneficiary review is complete.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.highRisk"
+              },
+              {
+                "op": "literal",
+                "value": true
+              }
+            ],
+            "op": "eq"
+          },
+          "requirement": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.highRisk"
+                      },
+                      {
+                        "op": "literal",
+                        "value": true
+                      }
+                    ],
+                    "op": "eq"
+                  }
+                ],
+                "op": "not"
+              },
+              {
+                "op": "field",
+                "path": "context.highRiskReviewCompleted"
+              }
+            ],
+            "op": "any"
+          },
+          "revision_notes": [
+            "When the wire carries a high-risk flag, the high-risk beneficiary review is complete.",
+            "Composition rationale: Explicit synthetic completion of the trigger consequence using a trusted request-specific fact; no unconditional grant or base waiver."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "obligation",
+              "rationale": "Explicit synthetic completion of the trigger consequence using a trusted request-specific fact; no unconditional grant or base waiver.",
+              "required_fact": "highRiskReviewCompleted",
+              "statement": "When the wire carries a high-risk flag, the high-risk beneficiary review is complete.",
+              "target": "@action"
+            },
+            "id": "V12",
+            "meaning": "the wire carries a high-risk flag",
+            "reads": "WireTransfer.highRisk"
+          }
+        },
+        "V4": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the beneficiary is already on the account's allowlist. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.account.allowedBeneficiaries"
+              },
+              {
+                "op": "field",
+                "path": "resource.beneficiary"
+              }
+            ],
+            "op": "contains"
+          },
+          "revision_notes": [
+            "Authorization requires that the beneficiary is already on the account's allowlist. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the beneficiary is already on the account's allowlist. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V4",
+            "meaning": "the beneficiary is already on the account's allowlist",
+            "reads": "WireTransfer.account.allowedBeneficiaries contains WireTransfer.beneficiary"
+          }
+        },
+        "V5": {
+          "allowed_forms": [
+            "obligation"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "obligation",
+            "rationale": "Explicit synthetic completion of the trigger consequence using a trusted request-specific fact; no unconditional grant or base waiver.",
+            "required_fact": "currencyReviewCompleted",
+            "statement": "When the original transfer currency equals a configured review-currency code, the configured currency review is complete; this is not a sanctions determination.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "pattern": {
+              "type": "String",
+              "values": [
+                "EUR",
+                "GBP",
+                "USD"
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "pattern": "USD"
+            },
+            {
+              "pattern": "EUR"
+            },
+            {
+              "pattern": "GBP"
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.currencyCode"
+              },
+              {
+                "name": "pattern",
+                "op": "parameter"
+              }
+            ],
+            "op": "like"
+          },
+          "requirement": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.currencyCode"
+                      },
+                      {
+                        "name": "pattern",
+                        "op": "parameter"
+                      }
+                    ],
+                    "op": "like"
+                  }
+                ],
+                "op": "not"
+              },
+              {
+                "op": "field",
+                "path": "context.currencyReviewCompleted"
+              }
+            ],
+            "op": "any"
+          },
+          "revision_notes": [
+            "Exact configured review-currency alternatives, with no wildcard or sanctions claim. Amounts are normalized USD cents supplied by the host; currencyCode records the original transfer currency.",
+            "When the original transfer currency equals a configured review-currency code, the configured currency review is complete; this is not a sanctions determination.",
+            "Composition rationale: Explicit synthetic completion of the trigger consequence using a trusted request-specific fact; no unconditional grant or base waiver."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "obligation",
+              "rationale": "Explicit synthetic completion of the trigger consequence using a trusted request-specific fact; no unconditional grant or base waiver.",
+              "required_fact": "currencyReviewCompleted",
+              "statement": "When the original transfer currency equals a configured review-currency code, the configured currency review is complete; this is not a sanctions determination.",
+              "target": "@action"
+            },
+            "id": "V5",
+            "meaning": "the original transfer currency equals a configured review-currency code",
+            "reads": "WireTransfer.currencyCode"
+          }
+        }
+      },
+      "bases": {
+        "G2": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal"
+              },
+              {
+                "op": "field",
+                "path": "resource.screenedBy"
+              }
+            ],
+            "op": "eq"
+          },
+          "signature": "V1",
+          "source": {
+            "id": "G2",
+            "meaning": "the compliance reviewer who opened the beneficiary screening must be the one who clears it (binding of duty)",
+            "reads": "principal vs WireTransfer.screenedBy",
+            "signature": "V1"
+          }
+        },
+        "G5": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.status"
+              },
+              {
+                "id": "drafted",
+                "op": "entity",
+                "type": "WireTransferStatusValue"
+              }
+            ],
+            "op": "eq"
+          },
+          "signature": "V11",
+          "source": {
+            "id": "G5",
+            "meaning": "a beneficiary may be screened only while the wire is still drafted",
+            "reads": "WireTransfer.status",
+            "signature": "V11"
+          }
+        }
+      },
+      "domain_gate": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2000-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  },
+                  {
+                    "op": "field",
+                    "path": "context.currentTime"
+                  }
+                ],
+                "op": "time_le"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.currentTime"
+                  },
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2100-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  }
+                ],
+                "op": "time_le"
+              }
+            ],
+            "op": "all"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2000-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  },
+                  {
+                    "op": "field",
+                    "path": "context.dailyCutoff"
+                  }
+                ],
+                "op": "time_le"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.dailyCutoff"
+                  },
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2100-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  }
+                ],
+                "op": "time_le"
+              }
+            ],
+            "op": "all"
+          }
+        ],
+        "op": "all"
+      },
+      "eligibility": {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "ComplianceReviewer",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "TreasuryOfficer",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          }
+        ],
+        "op": "any"
+      },
+      "field_bindings": {
+        "WireTransfer.account.allowedBeneficiaries": "resource.account.allowedBeneficiaries",
+        "WireTransfer.beneficiary": "resource.beneficiary",
+        "WireTransfer.currencyCode": "resource.currencyCode",
+        "WireTransfer.highRisk": "resource.highRisk",
+        "WireTransfer.screenedBy": "resource.screenedBy",
+        "WireTransfer.status": "resource.status",
+        "context.currentTime": "context.currentTime",
+        "context.dailyCutoff": "context.dailyCutoff"
+      },
+      "overrides": {},
+      "resource_type": "WireTransfer"
+    }
+  },
+  "business_review_revision": "2026-10-23-r1",
+  "context": {
+    "currencyReviewCompleted": {
+      "type": "Bool"
+    },
+    "currentTime": {
+      "type": "datetime"
+    },
+    "dailyCutoff": {
+      "type": "datetime"
+    },
+    "emergencyDeclared": {
+      "type": "Bool"
+    },
+    "highRiskReviewCompleted": {
+      "type": "Bool"
+    },
+    "mfaUsed": {
+      "type": "Bool"
+    },
+    "onSecureNetwork": {
+      "type": "Bool"
+    }
+  },
+  "contract": "complete-spec-v4",
+  "decisions": [
+    "All source identities denote User entities; role sets may overlap without implicit exclusivity.",
+    "All timestamps read by predicates are bounded inclusively to 2000-01-01 through 2100-01-01 UTC; requests outside the explicit domain gate deny.",
+    "Business revision v2: catalogs are declared synthetic organizational policies, not empirical norms. Selected-atom obligations are mandatory in both forms and cannot be waived by a base exception or override.",
+    "Money is nonnegative integer USD cents, at most 1,000,000,000. Counts are nonnegative integers at most 1,000,000 unless a narrower dictionary is declared.",
+    "Request context is treated as trusted input from the host; authorization does not attest network, emergency, signature, or scheduling facts.",
+    "Retained source repairs: exact lifecycle states, linked course roster, explicit promotion/filing facts, independent calibration expiry, comp expiry, and guarded override eligibility are intentional experiment definitions. Their typed ASTs and field descriptions, not the ambiguous source shorthand, are authoritative.",
+    "Rules operate on snapshots. A selected lifecycle base requires the exact named state unless its predicate explicitly lists alternatives.",
+    "Source business descriptions are retained for audit; the authored typed predicates and dictionaries define the experiment. No statutory compliance claim is made.",
+    "Source tag kinds are represented by Set<String>. Group membership is reflexive and transitive Cedar entity ancestry.",
+    "approveWire/V7: USD-cent thresholds for treasury transfer review bands: $15000, $75000, $300000. These are synthetic organization policy choices.",
+    "approveWire/V8: USD-cent thresholds for treasury transfer review bands: $10000, $50000, $250000. These are synthetic organization policy choices.",
+    "releaseWire/V8: USD-cent thresholds for treasury transfer review bands: $10000, $50000, $250000. These are synthetic organization policy choices.",
+    "screenBeneficiary/V5: Exact configured review-currency alternatives, with no wildcard or sanctions claim. Amounts are normalized USD cents supplied by the host; currencyCode records the original transfer currency."
+  ],
+  "domain": "wire_transfer",
+  "entities": {
+    "Account": {
+      "attributes": {
+        "allowedBeneficiaries": {
+          "type": "Set<User>"
+        },
+        "holder": {
+          "type": "User"
+        }
+      }
+    },
+    "Group": {
+      "attributes": {},
+      "member_of": [
+        "Group"
+      ]
+    },
+    "Role": {
+      "enum": [
+        "Originator",
+        "Verifier",
+        "TreasuryOfficer",
+        "ComplianceReviewer"
+      ]
+    },
+    "User": {
+      "attributes": {
+        "approvalTier": {
+          "bounds": [
+            0,
+            2
+          ],
+          "levels": {
+            "corporate": 1,
+            "institutional": 2,
+            "retail": 0
+          },
+          "type": "Long"
+        },
+        "roles": {
+          "type": "Set<Role>"
+        }
+      }
+    },
+    "WireTransfer": {
+      "attributes": {
+        "account": {
+          "type": "Account"
+        },
+        "amount": {
+          "bounds": [
+            0,
+            1000000000
+          ],
+          "description": "Host-normalized USD cents; currencyCode records the original transfer currency. Conversion happens before this authorization snapshot and is not computed by the policy.",
+          "type": "Long",
+          "unit": "USD cents"
+        },
+        "amountTier": {
+          "bounds": [
+            0,
+            2
+          ],
+          "levels": {
+            "corporate": 1,
+            "institutional": 2,
+            "retail": 0
+          },
+          "type": "Long"
+        },
+        "beneficiary": {
+          "type": "User"
+        },
+        "currencyCode": {
+          "description": "Original transfer currency; selected exact review codes are a synthetic configuration, not a sanctions classification.",
+          "type": "String"
+        },
+        "fee": {
+          "bounds": [
+            0,
+            1000000000
+          ],
+          "description": "Host-normalized USD cents; currencyCode records the original transfer currency. Conversion happens before this authorization snapshot and is not computed by the policy.",
+          "type": "Long",
+          "unit": "USD cents"
+        },
+        "highRisk": {
+          "type": "Bool"
+        },
+        "initiatedBy": {
+          "type": "User"
+        },
+        "screenedBy": {
+          "type": "User"
+        },
+        "status": {
+          "type": "WireTransferStatusValue"
+        },
+        "verifiedBy": {
+          "type": "User"
+        }
+      }
+    },
+    "WireTransferStatusValue": {
+      "enum": [
+        "drafted",
+        "verified",
+        "released",
+        "settled"
+      ]
+    }
+  },
+  "revision_contract": "business-composition-v4",
+  "source_action_chains": [
+    {
+      "chain": [
+        "approveWire",
+        "releaseWire"
+      ],
+      "linked_by": [
+        "status",
+        "initiatedBy",
+        "verifiedBy",
+        "screenedBy"
+      ],
+      "shared_resource": "WireTransfer"
+    }
+  ],
+  "source_sha256": "2907de8ce880b86d975423e46cde808f78a30bb93dc0a767cb3b4f0643c07c22",
+  "status": "authored experimental assumptions; not human semantic approval",
+  "version": "business-registry-v4"
+}

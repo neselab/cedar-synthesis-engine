@@ -1,0 +1,19 @@
+entity AuditLog {  };
+entity Group in [Group] {  };
+entity PortCompletion { completedBy: User, portedAt: datetime, request: PortRequest };
+entity PortRequest { accountNumbers: Set<String>, assignedTechnician: User, authorizer: User, carrierCode: String, initiator: User, numberBlockSize: Long, portType: Set<String>, requestedAt: datetime, status: PortRequestStatusValue, subscriberRegion: Group };
+entity PortRequestStatusValue enum ["submitted", "validated", "authorized", "ported", "rejected"];
+entity Role enum ["PortingSpecialist", "PortingSupervisor", "FraudReviewer", "LineTechnician", "Auditor"];
+entity User { assignedCodePattern: String, assignedGroup: Group, roles: Set<Role> };
+action authorizePort appliesTo { principal: [User], resource: [PortRequest], context: {
+    authorizePortScheduledEnd: datetime,
+    authorizePortScheduledStart: datetime,
+    authorizePortV6ReviewCompleted: Bool,
+    completePortScheduledEnd: datetime,
+    completePortScheduledStart: datetime,
+    currentTime: datetime,
+    onCarrierNetwork: Bool,
+    portFreezeOverrideDeclared: Bool,
+    regulatorEscalation: Bool,
+  },
+};

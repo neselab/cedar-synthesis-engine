@@ -1,0 +1,14 @@
+entity Group in [Group] {  };
+entity LockoutTag { appliedBy: User, feeder: String, order: SwitchingOrder };
+entity Role enum ["Planner", "ShiftSupervisor", "Operator", "ControlRoomOperator", "Auditor"];
+entity SwitchingLog {  };
+entity SwitchingOrder { circuitCount: Long, executor: User, feeder: String, planner: User, scheduledEnd: datetime, scheduledStart: datetime, status: SwitchingOrderStatusValue, voltageLevel: Long };
+entity SwitchingOrderStatusValue enum ["planned", "authorized", "executed", "cancelled"];
+entity User { assignedCodePattern: String, roles: Set<Role> };
+action authorizeSwitching appliesTo { principal: [User], resource: [SwitchingOrder], context: {
+    currentTime: datetime,
+    lockoutTagoutVerified: Bool,
+    onScadaNetwork: Bool,
+    outageEmergencyDeclared: Bool,
+  },
+};

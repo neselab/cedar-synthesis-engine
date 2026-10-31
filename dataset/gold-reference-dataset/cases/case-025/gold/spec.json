@@ -1,0 +1,66 @@
+{
+  "domain": "code_repository",
+  "format_version": "complete-spec-v4",
+  "grouping": {
+    "applicability_triggers": "any",
+    "exception": "any",
+    "requirements": "all"
+  },
+  "parts": [
+    {
+      "anchor": "mergePullRequest",
+      "bases": [
+        "G1"
+      ],
+      "conditions": [
+        {
+          "atom": "V5",
+          "form": "require",
+          "parameters": {
+            "pattern": "main"
+          },
+          "target": "@action"
+        },
+        {
+          "atom": "V6",
+          "form": "require",
+          "parameters": {
+            "threshold": 1
+          },
+          "target": "@action"
+        }
+      ],
+      "overrides": []
+    },
+    {
+      "anchor": "reviewPullRequest",
+      "bases": [
+        "G1"
+      ],
+      "conditions": [
+        {
+          "atom": "V10",
+          "form": "require",
+          "parameters": {},
+          "target": "@action"
+        },
+        {
+          "atom": "V2",
+          "form": "require",
+          "parameters": {},
+          "target": "@action"
+        }
+      ],
+      "overrides": []
+    }
+  ],
+  "provenance": {
+    "arithmetic_safety_patches": [],
+    "kind": "less-specific-200 revised intent",
+    "source_case": "case-025",
+    "source_spec_sha256": "c68df89576c09f9d1874e64ead652f533677b1089dad8c008feec86f02430e33",
+    "transformation": "Drop only artificial 2000-2100 timestamp windows and catalog maxima 1000000/1000000000; retain all other gates."
+  },
+  "registry_sha256": "06f4bade9ff6c23a653a597d12ca80ae36fba9dfca21520627f0d872840eb690",
+  "source_sha256": "2907de8ce880b86d975423e46cde808f78a30bb93dc0a767cb3b4f0643c07c22"
+}

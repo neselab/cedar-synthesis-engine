@@ -1,0 +1,16 @@
+entity GradeEntry { learner: User, module: Module, postedBy: User, status: GradeEntryStatusValue };
+entity GradeEntryStatusValue enum ["draft", "posted", "released"];
+entity Group in [Group] {  };
+entity Module { course: String, instructorOfRecord: User, locked: Bool, prereqLevel: Long, releaseAt: datetime, roster: Set<User>, status: ModuleStatusValue };
+entity ModuleStatusValue enum ["draft", "scheduled", "released", "archived"];
+entity Role enum ["InstructorOfRecord", "TeachingAssistant", "Learner", "Coordinator"];
+entity User { completedLevel: Long, roles: Set<Role> };
+action viewModule appliesTo { principal: [User], resource: [Module], context: {
+    currentTime: datetime,
+    gradingDeadline: datetime,
+    onInstitutionNetwork: Bool,
+    previewWindow: Bool,
+    releaseGradeScheduledEnd: datetime,
+    releaseGradeScheduledStart: datetime,
+  },
+};

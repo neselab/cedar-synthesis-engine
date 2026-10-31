@@ -1,0 +1,1537 @@
+{
+  "anchors": {
+    "approveException": {
+      "atoms": {
+        "V10": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the requested effective date has not yet passed relative to the current time. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.effectiveDate"
+                  },
+                  {
+                    "op": "field",
+                    "path": "context.currentTime"
+                  }
+                ],
+                "op": "time_diff"
+              },
+              {
+                "op": "literal",
+                "value": 0
+              }
+            ],
+            "op": "ge"
+          },
+          "revision_notes": [
+            "Authorization requires that the requested effective date has not yet passed relative to the current time. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the requested effective date has not yet passed relative to the current time. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V10",
+            "meaning": "the requested effective date has not yet passed relative to the current time",
+            "reads": "Application.effectiveDate"
+          }
+        },
+        "V13": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the application's segment tag matches a segment under heightened scrutiny. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "label": {
+              "type": "String",
+              "values": [
+                "commercial",
+                "high_value",
+                "regulated"
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "label": "commercial"
+            },
+            {
+              "label": "high_value"
+            },
+            {
+              "label": "regulated"
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.segment"
+              },
+              {
+                "name": "label",
+                "op": "parameter"
+              }
+            ],
+            "op": "contains"
+          },
+          "revision_notes": [
+            "Authorization requires that the application's segment tag matches a segment under heightened scrutiny. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the application's segment tag matches a segment under heightened scrutiny. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V13",
+            "meaning": "the application's segment tag matches a segment under heightened scrutiny",
+            "reads": "Application.segment"
+          }
+        },
+        "V2": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the principal holds at least the UnderwritingManager role. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.roles"
+                  },
+                  {
+                    "id": "UnderwritingManager",
+                    "op": "entity",
+                    "type": "Role"
+                  }
+                ],
+                "op": "contains"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.roles"
+                  },
+                  {
+                    "id": "ChiefUnderwriter",
+                    "op": "entity",
+                    "type": "Role"
+                  }
+                ],
+                "op": "contains"
+              }
+            ],
+            "op": "any"
+          },
+          "revision_notes": [
+            "Authorization requires that the principal holds at least the UnderwritingManager role. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the principal holds at least the UnderwritingManager role. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V2",
+            "meaning": "the principal holds at least the UnderwritingManager role",
+            "reads": "principal's role"
+          }
+        },
+        "V4": {
+          "allowed_forms": [
+            "obligation"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "obligation",
+            "rationale": "The source describes a trigger and an additional required consequence; encode that implication independently of bases.",
+            "statement": "When the coverage lines include a line that requires escalated exception review, its explicit additional requirement must hold. This does not waive or scope any base.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "member": {
+              "type": "String",
+              "values": [
+                "commercial_property",
+                "controlled_liability",
+                "excess_surplus"
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "member": "excess_surplus"
+            },
+            {
+              "member": "controlled_liability"
+            },
+            {
+              "member": "commercial_property"
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.coverageLines"
+              },
+              {
+                "name": "member",
+                "op": "parameter"
+              }
+            ],
+            "op": "contains"
+          },
+          "requirement": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.coverageLines"
+                      },
+                      {
+                        "name": "member",
+                        "op": "parameter"
+                      }
+                    ],
+                    "op": "contains"
+                  }
+                ],
+                "op": "not"
+              },
+              {
+                "op": "field",
+                "path": "context.coverageExceptionReviewCompleted"
+              }
+            ],
+            "op": "any"
+          },
+          "revision_notes": [
+            "When this trigger holds, escalated exception review of the selected coverage line is complete. This is a trusted request-specific host attestation.",
+            "When the coverage lines include a line that requires escalated exception review, its explicit additional requirement must hold. This does not waive or scope any base.",
+            "Composition rationale: The source describes a trigger and an additional required consequence; encode that implication independently of bases."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "obligation",
+              "rationale": "The source describes a trigger and an additional required consequence; encode that implication independently of bases.",
+              "statement": "When the coverage lines include a line that requires escalated exception review, its explicit additional requirement must hold. This does not waive or scope any base.",
+              "target": "@action"
+            },
+            "id": "V4",
+            "meaning": "the coverage lines include a line that requires escalated exception review",
+            "reads": "Application.coverageLines"
+          }
+        },
+        "V8": {
+          "allowed_forms": [
+            "obligation"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "obligation",
+            "rationale": "The source describes a trigger and an additional required consequence; encode that implication independently of bases.",
+            "statement": "When the annual premium crosses a money threshold that mandates senior sign-off, its explicit additional requirement must hold. This does not waive or scope any base.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "threshold": {
+              "type": "Long",
+              "values": [
+                100000,
+                1000000,
+                10000000
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "threshold": 100000
+            },
+            {
+              "threshold": 1000000
+            },
+            {
+              "threshold": 10000000
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.premium"
+              },
+              {
+                "name": "threshold",
+                "op": "parameter"
+              }
+            ],
+            "op": "gt"
+          },
+          "requirement": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.premium"
+                      },
+                      {
+                        "name": "threshold",
+                        "op": "parameter"
+                      }
+                    ],
+                    "op": "gt"
+                  }
+                ],
+                "op": "not"
+              },
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "principal.roles"
+                      },
+                      {
+                        "id": "UnderwritingManager",
+                        "op": "entity",
+                        "type": "Role"
+                      }
+                    ],
+                    "op": "contains"
+                  },
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "principal.roles"
+                      },
+                      {
+                        "id": "ChiefUnderwriter",
+                        "op": "entity",
+                        "type": "Role"
+                      }
+                    ],
+                    "op": "contains"
+                  }
+                ],
+                "op": "any"
+              }
+            ],
+            "op": "any"
+          },
+          "revision_notes": [
+            "USD-cent thresholds for annual policy premiums: $1000, $10000, $100000. These are synthetic organization policy choices.",
+            "When the annual premium crosses a money threshold that mandates senior sign-off, its explicit additional requirement must hold. This does not waive or scope any base.",
+            "Composition rationale: The source describes a trigger and an additional required consequence; encode that implication independently of bases."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "obligation",
+              "rationale": "The source describes a trigger and an additional required consequence; encode that implication independently of bases.",
+              "statement": "When the annual premium crosses a money threshold that mandates senior sign-off, its explicit additional requirement must hold. This does not waive or scope any base.",
+              "target": "@action"
+            },
+            "id": "V8",
+            "meaning": "the annual premium crosses a money threshold that mandates senior sign-off",
+            "reads": "Application.premium"
+          }
+        }
+      },
+      "bases": {
+        "G2": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal"
+              },
+              {
+                "op": "field",
+                "path": "resource.assignedUnderwriter"
+              }
+            ],
+            "op": "eq"
+          },
+          "signature": "V1",
+          "source": {
+            "id": "G2",
+            "meaning": "the authority exception must be adjudicated by the same underwriter assigned to handle the application, keeping one accountable owner across the file",
+            "reads": "principal vs Application.assignedUnderwriter",
+            "signature": "V1"
+          }
+        },
+        "G5": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.status"
+              },
+              {
+                "id": "referred",
+                "op": "entity",
+                "type": "ApplicationStatusValue"
+              }
+            ],
+            "op": "eq"
+          },
+          "signature": "V11",
+          "source": {
+            "id": "G5",
+            "meaning": "an authority exception may be approved only while the application is in the referred state",
+            "reads": "Application.status",
+            "signature": "V11"
+          }
+        }
+      },
+      "domain_gate": {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.premium"
+              },
+              {
+                "op": "literal",
+                "value": 0
+              }
+            ],
+            "op": "ge"
+          }
+        ],
+        "op": "all"
+      },
+      "eligibility": {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "SeniorUnderwriter",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "UnderwritingManager",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "ChiefUnderwriter",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          }
+        ],
+        "op": "any"
+      },
+      "field_bindings": {
+        "Application.assignedUnderwriter": "resource.assignedUnderwriter",
+        "Application.coverageLines": "resource.coverageLines",
+        "Application.effectiveDate": "resource.effectiveDate",
+        "Application.premium": "resource.premium",
+        "Application.segment": "resource.segment",
+        "Application.status": "resource.status",
+        "context.currentTime": "context.currentTime",
+        "context.staffingEmergencyDeclared": "context.staffingEmergencyDeclared"
+      },
+      "overrides": {
+        "G3": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "context.staffingEmergencyDeclared"
+              },
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "principal.roles"
+                      },
+                      {
+                        "id": "UnderwritingManager",
+                        "op": "entity",
+                        "type": "Role"
+                      }
+                    ],
+                    "op": "contains"
+                  }
+                ],
+                "op": "any"
+              }
+            ],
+            "op": "all"
+          },
+          "source": {
+            "id": "G3",
+            "meaning": "a declared staffing emergency lets an underwriting manager approve the exception in place of the assigned underwriter, overriding the binding-of-duty rule",
+            "overrides": [
+              "G2"
+            ],
+            "reads": "context.staffingEmergencyDeclared",
+            "requires_adjudication": true
+          },
+          "targets": [
+            "G2"
+          ]
+        }
+      },
+      "resource_type": "Application"
+    },
+    "bindPolicy": {
+      "atoms": {
+        "V10": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the requested effective date falls within the allowed binding window relative to the current time. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "horizon_ms": {
+              "type": "Long",
+              "values": [
+                1209600000,
+                2592000000,
+                604800000
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "horizon_ms": 604800000
+            },
+            {
+              "horizon_ms": 1209600000
+            },
+            {
+              "horizon_ms": 2592000000
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.effectiveDate"
+                      },
+                      {
+                        "op": "field",
+                        "path": "context.currentTime"
+                      }
+                    ],
+                    "op": "time_diff"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "ge"
+              },
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.effectiveDate"
+                      },
+                      {
+                        "op": "field",
+                        "path": "context.currentTime"
+                      }
+                    ],
+                    "op": "time_diff"
+                  },
+                  {
+                    "name": "horizon_ms",
+                    "op": "parameter"
+                  }
+                ],
+                "op": "le"
+              }
+            ],
+            "op": "all"
+          },
+          "revision_notes": [
+            "Authorization requires that the requested effective date falls within the allowed binding window relative to the current time. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the requested effective date falls within the allowed binding window relative to the current time. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V10",
+            "meaning": "the requested effective date falls within the allowed binding window relative to the current time",
+            "reads": "Application.effectiveDate"
+          }
+        },
+        "V13": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the application's segment tag matches a monitored market segment. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "label": {
+              "type": "String",
+              "values": [
+                "commercial",
+                "high_value",
+                "regulated"
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "label": "commercial"
+            },
+            {
+              "label": "high_value"
+            },
+            {
+              "label": "regulated"
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.segment"
+              },
+              {
+                "name": "label",
+                "op": "parameter"
+              }
+            ],
+            "op": "contains"
+          },
+          "revision_notes": [
+            "Authorization requires that the application's segment tag matches a monitored market segment. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the application's segment tag matches a monitored market segment. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V13",
+            "meaning": "the application's segment tag matches a monitored market segment",
+            "reads": "Application.segment"
+          }
+        },
+        "V2": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the principal holds at least the SeniorUnderwriter role. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.roles"
+                  },
+                  {
+                    "id": "SeniorUnderwriter",
+                    "op": "entity",
+                    "type": "Role"
+                  }
+                ],
+                "op": "contains"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.roles"
+                  },
+                  {
+                    "id": "UnderwritingManager",
+                    "op": "entity",
+                    "type": "Role"
+                  }
+                ],
+                "op": "contains"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.roles"
+                  },
+                  {
+                    "id": "ChiefUnderwriter",
+                    "op": "entity",
+                    "type": "Role"
+                  }
+                ],
+                "op": "contains"
+              }
+            ],
+            "op": "any"
+          },
+          "revision_notes": [
+            "Authorization requires that the principal holds at least the SeniorUnderwriter role. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the principal holds at least the SeniorUnderwriter role. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V2",
+            "meaning": "the principal holds at least the SeniorUnderwriter role",
+            "reads": "principal's role"
+          }
+        },
+        "V4": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the coverage lines include a controlled or excess/surplus line. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "member": {
+              "type": "String",
+              "values": [
+                "commercial_property",
+                "controlled_liability",
+                "excess_surplus"
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "member": "excess_surplus"
+            },
+            {
+              "member": "controlled_liability"
+            },
+            {
+              "member": "commercial_property"
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.coverageLines"
+              },
+              {
+                "name": "member",
+                "op": "parameter"
+              }
+            ],
+            "op": "contains"
+          },
+          "revision_notes": [
+            "Authorization requires that the coverage lines include a controlled or excess/surplus line. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the coverage lines include a controlled or excess/surplus line. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V4",
+            "meaning": "the coverage lines include a controlled or excess/surplus line",
+            "reads": "Application.coverageLines"
+          }
+        },
+        "V5": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the product code matches or carries a restricted prefix. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "pattern": {
+              "type": "String",
+              "values": [
+                "CONTROLLED-*",
+                "EXCESS-*",
+                "RESTRICTED-*"
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "pattern": "RESTRICTED-*"
+            },
+            {
+              "pattern": "EXCESS-*"
+            },
+            {
+              "pattern": "CONTROLLED-*"
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.productCode"
+              },
+              {
+                "name": "pattern",
+                "op": "parameter"
+              }
+            ],
+            "op": "like"
+          },
+          "revision_notes": [
+            "Authorization requires that the product code matches or carries a restricted prefix. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the product code matches or carries a restricted prefix. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V5",
+            "meaning": "the product code matches or carries a restricted prefix",
+            "reads": "Application.productCode"
+          }
+        },
+        "V8": {
+          "allowed_forms": [
+            "obligation"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "obligation",
+            "rationale": "A descriptive quantity threshold without a suitable duty target is completed as an explicitly authored additional review, not as a minimum transaction size or lifecycle waiver.",
+            "required_fact": "bindPolicyV8ReviewCompleted",
+            "statement": "When the annual premium crosses a money threshold, the additional review recorded by bindPolicyV8ReviewCompleted must be complete; smaller requests do not need this additional review.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "threshold": {
+              "type": "Long",
+              "values": [
+                100000,
+                1000000,
+                10000000
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "threshold": 100000
+            },
+            {
+              "threshold": 1000000
+            },
+            {
+              "threshold": 10000000
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.premium"
+              },
+              {
+                "name": "threshold",
+                "op": "parameter"
+              }
+            ],
+            "op": "gt"
+          },
+          "requirement": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.premium"
+                      },
+                      {
+                        "name": "threshold",
+                        "op": "parameter"
+                      }
+                    ],
+                    "op": "gt"
+                  }
+                ],
+                "op": "not"
+              },
+              {
+                "op": "field",
+                "path": "context.bindPolicyV8ReviewCompleted"
+              }
+            ],
+            "op": "any"
+          },
+          "revision_notes": [
+            "USD-cent thresholds for annual policy premiums: $1000, $10000, $100000. These are synthetic organization policy choices.",
+            "When the annual premium crosses a money threshold, the additional review recorded by bindPolicyV8ReviewCompleted must be complete; smaller requests do not need this additional review.",
+            "Composition rationale: A descriptive quantity threshold without a suitable duty target is completed as an explicitly authored additional review, not as a minimum transaction size or lifecycle waiver."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "obligation",
+              "rationale": "A descriptive quantity threshold without a suitable duty target is completed as an explicitly authored additional review, not as a minimum transaction size or lifecycle waiver.",
+              "required_fact": "bindPolicyV8ReviewCompleted",
+              "statement": "When the annual premium crosses a money threshold, the additional review recorded by bindPolicyV8ReviewCompleted must be complete; smaller requests do not need this additional review.",
+              "target": "@action"
+            },
+            "id": "V8",
+            "meaning": "the annual premium crosses a money threshold",
+            "reads": "Application.premium"
+          }
+        }
+      },
+      "bases": {
+        "G4": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.authorityLevel"
+              },
+              {
+                "op": "field",
+                "path": "resource.riskTier"
+              }
+            ],
+            "op": "ge"
+          },
+          "signature": "V6",
+          "source": {
+            "id": "G4",
+            "meaning": "the underwriter's granted authority level must dominate the application's assessed risk tier",
+            "reads": "principal.authorityLevel vs Application.riskTier",
+            "signature": "V6"
+          }
+        },
+        "G5": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.status"
+              },
+              {
+                "id": "quoted",
+                "op": "entity",
+                "type": "ApplicationStatusValue"
+              }
+            ],
+            "op": "eq"
+          },
+          "signature": "V11",
+          "source": {
+            "id": "G5",
+            "meaning": "a policy may be bound only after the application has reached the quoted state",
+            "reads": "Application.status",
+            "signature": "V11"
+          }
+        }
+      },
+      "domain_gate": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.authorityLevel"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.authorityLevel"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.authorityLevel"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 2
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.authorityLevel"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 3
+                  }
+                ],
+                "op": "eq"
+              }
+            ],
+            "op": "any"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.premium"
+              },
+              {
+                "op": "literal",
+                "value": 0
+              }
+            ],
+            "op": "ge"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.riskTier"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.riskTier"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.riskTier"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 2
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.riskTier"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 3
+                  }
+                ],
+                "op": "eq"
+              }
+            ],
+            "op": "any"
+          }
+        ],
+        "op": "all"
+      },
+      "eligibility": {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "Underwriter",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "SeniorUnderwriter",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "UnderwritingManager",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          }
+        ],
+        "op": "any"
+      },
+      "field_bindings": {
+        "Application.coverageLines": "resource.coverageLines",
+        "Application.effectiveDate": "resource.effectiveDate",
+        "Application.premium": "resource.premium",
+        "Application.productCode": "resource.productCode",
+        "Application.riskTier": "resource.riskTier",
+        "Application.segment": "resource.segment",
+        "Application.status": "resource.status",
+        "context.catastropheSurgeDeclared": "context.catastropheSurgeDeclared",
+        "context.currentTime": "context.currentTime",
+        "principal.authorityLevel": "principal.authorityLevel"
+      },
+      "overrides": {
+        "G3": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "context.catastropheSurgeDeclared"
+              },
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "principal.roles"
+                      },
+                      {
+                        "id": "Underwriter",
+                        "op": "entity",
+                        "type": "Role"
+                      }
+                    ],
+                    "op": "contains"
+                  }
+                ],
+                "op": "any"
+              }
+            ],
+            "op": "all"
+          },
+          "source": {
+            "id": "G3",
+            "meaning": "a declared catastrophe surge authorization lets an underwriter bind a policy above their granted authority tier, overriding the authority-dominance rule",
+            "overrides": [
+              "G4"
+            ],
+            "reads": "context.catastropheSurgeDeclared",
+            "requires_adjudication": true
+          },
+          "targets": [
+            "G4"
+          ]
+        }
+      },
+      "resource_type": "Application"
+    }
+  },
+  "business_review_revision": "2026-10-23-r1",
+  "context": {
+    "bindPolicyV8ReviewCompleted": {
+      "type": "Bool"
+    },
+    "catastropheSurgeDeclared": {
+      "type": "Bool"
+    },
+    "coverageExceptionReviewCompleted": {
+      "description": "escalated exception review of the selected coverage line is complete",
+      "type": "Bool"
+    },
+    "currentTime": {
+      "type": "datetime"
+    },
+    "onCorporateNetwork": {
+      "type": "Bool"
+    },
+    "staffingEmergencyDeclared": {
+      "type": "Bool"
+    }
+  },
+  "contract": "complete-spec-v4",
+  "decisions": [
+    "Added User.authorityLevel: source G4 principal attribute; uses the resource dominance scale",
+    "Added context.coverageExceptionReviewCompleted: escalated exception review of the selected coverage line is complete",
+    "All source identities denote User entities; role sets may overlap without implicit exclusivity.",
+    "All timestamps read by predicates are bounded inclusively to 2000-01-01 through 2100-01-01 UTC; requests outside the explicit domain gate deny.",
+    "AuditLog.note is source documentation, not an attribute.",
+    "Business revision v2: catalogs are declared synthetic organizational policies, not empirical norms. Selected-atom obligations are mandatory in both forms and cannot be waived by a base exception or override.",
+    "Money is nonnegative integer USD cents, at most 1,000,000,000. Counts are nonnegative integers at most 1,000,000 unless a narrower dictionary is declared.",
+    "Request context is treated as trusted input from the host; authorization does not attest network, emergency, signature, or scheduling facts.",
+    "Retained source repairs: exact lifecycle states, linked course roster, explicit promotion/filing facts, independent calibration expiry, comp expiry, and guarded override eligibility are intentional experiment definitions. Their typed ASTs and field descriptions, not the ambiguous source shorthand, are authoritative.",
+    "Rules operate on snapshots. A selected lifecycle base requires the exact named state unless its predicate explicitly lists alternatives.",
+    "Source business descriptions are retained for audit; the authored typed predicates and dictionaries define the experiment. No statutory compliance claim is made.",
+    "Source tag kinds are represented by Set<String>. Group membership is reflexive and transitive Cedar entity ancestry.",
+    "approveException/V4: This implication is mandatory whenever the atom is selected, in either form; it survives all base exceptions and overrides.",
+    "approveException/V4: When this trigger holds, escalated exception review of the selected coverage line is complete. This is a trusted request-specific host attestation.",
+    "approveException/V8: This implication is mandatory whenever the atom is selected, in either form; it survives all base exceptions and overrides.",
+    "approveException/V8: USD-cent thresholds for annual policy premiums: $1000, $10000, $100000. These are synthetic organization policy choices.",
+    "approveException/V8: When this trigger holds, the requester must hold one of: UnderwritingManager, ChiefUnderwriter.",
+    "bindPolicy/V8: USD-cent thresholds for annual policy premiums: $1000, $10000, $100000. These are synthetic organization policy choices."
+  ],
+  "domain": "policy_underwriting",
+  "entities": {
+    "Application": {
+      "attributes": {
+        "assignedUnderwriter": {
+          "type": "User"
+        },
+        "coverageLines": {
+          "type": "Set<String>"
+        },
+        "effectiveDate": {
+          "type": "datetime"
+        },
+        "exposureCount": {
+          "bounds": [
+            0,
+            1000000
+          ],
+          "type": "Long",
+          "unit": "integer units"
+        },
+        "premium": {
+          "bounds": [
+            0,
+            1000000000
+          ],
+          "type": "Long",
+          "unit": "USD cents"
+        },
+        "productCode": {
+          "type": "String"
+        },
+        "riskTier": {
+          "bounds": [
+            0,
+            3
+          ],
+          "description": "Synthetic ordinal scale; the same integer rank denotes the required authority tier when used by G4. No physical magnitude or external standard is implied.",
+          "levels": {
+            "elevated": 1,
+            "exceptional": 3,
+            "high": 2,
+            "standard": 0
+          },
+          "type": "Long"
+        },
+        "segment": {
+          "representation": "zero or more label strings",
+          "type": "Set<String>"
+        },
+        "status": {
+          "type": "ApplicationStatusValue"
+        }
+      }
+    },
+    "ApplicationStatusValue": {
+      "enum": [
+        "intake",
+        "assessed",
+        "referred",
+        "quoted",
+        "bound"
+      ]
+    },
+    "AuditLog": {
+      "attributes": {}
+    },
+    "Group": {
+      "attributes": {},
+      "member_of": [
+        "Group"
+      ]
+    },
+    "Policy": {
+      "attributes": {
+        "application": {
+          "type": "Application"
+        },
+        "boundBy": {
+          "type": "User"
+        },
+        "effectiveDate": {
+          "type": "datetime"
+        },
+        "premium": {
+          "bounds": [
+            0,
+            1000000000
+          ],
+          "type": "Long",
+          "unit": "USD cents"
+        }
+      }
+    },
+    "Role": {
+      "enum": [
+        "Underwriter",
+        "SeniorUnderwriter",
+        "UnderwritingManager",
+        "ChiefUnderwriter",
+        "Auditor"
+      ]
+    },
+    "User": {
+      "attributes": {
+        "authorityLevel": {
+          "bounds": [
+            0,
+            3
+          ],
+          "description": "Synthetic ordinal scale; the same integer rank denotes the required authority tier when used by G4. No physical magnitude or external standard is implied.",
+          "levels": {
+            "elevated": 1,
+            "exceptional": 3,
+            "high": 2,
+            "standard": 0
+          },
+          "type": "Long"
+        },
+        "roles": {
+          "type": "Set<Role>"
+        }
+      }
+    }
+  },
+  "revision_contract": "business-composition-v4",
+  "source_action_chains": [
+    {
+      "chain": [
+        "bindPolicy",
+        "approveException"
+      ],
+      "linked_by": [
+        "status",
+        "assignedUnderwriter",
+        "riskTier"
+      ],
+      "shared_resource": "Application"
+    }
+  ],
+  "source_sha256": "2907de8ce880b86d975423e46cde808f78a30bb93dc0a767cb3b4f0643c07c22",
+  "status": "authored experimental assumptions; not human semantic approval",
+  "version": "business-registry-v4"
+}

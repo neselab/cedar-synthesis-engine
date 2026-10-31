@@ -1,0 +1,67 @@
+{
+  "domain": "cicd_pipeline",
+  "format_version": "complete-spec-v4",
+  "grouping": {
+    "applicability_triggers": "any",
+    "exception": "any",
+    "requirements": "all"
+  },
+  "parts": [
+    {
+      "anchor": "approveDeployment",
+      "bases": [
+        "G1"
+      ],
+      "conditions": [
+        {
+          "atom": "V9",
+          "form": "require",
+          "parameters": {
+            "cidr": "192.168.0.0/16"
+          },
+          "target": "@action"
+        }
+      ],
+      "overrides": [
+        {
+          "id": "G3",
+          "targets": [
+            "G1"
+          ]
+        }
+      ]
+    },
+    {
+      "anchor": "promoteDeployment",
+      "bases": [
+        "G5"
+      ],
+      "conditions": [
+        {
+          "atom": "V1",
+          "form": "require",
+          "parameters": {},
+          "target": "@action"
+        },
+        {
+          "atom": "V9",
+          "form": "require",
+          "parameters": {
+            "cidr": "172.16.0.0/12"
+          },
+          "target": "@action"
+        }
+      ],
+      "overrides": []
+    }
+  ],
+  "provenance": {
+    "inherited_arithmetic_safety_patches": [],
+    "kind": "non-time-33 revised intent",
+    "source_case": "case-019",
+    "source_spec_sha256": "4b8f992da6702e1c7c2a720662d489530d22d7ac0e8c501ec69636ff929440f4",
+    "transformation": "Remove only artificial 2000-2100 datetime bounds and catalog maxima; retain all business rules."
+  },
+  "registry_sha256": "932abd834d23c4303e7444dadb1595363f5594713376567aa1af74ca2b6da87d",
+  "source_sha256": "2907de8ce880b86d975423e46cde808f78a30bb93dc0a767cb3b4f0643c07c22"
+}

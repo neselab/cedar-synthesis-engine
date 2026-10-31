@@ -1,0 +1,19 @@
+entity ApplicantRecord { applicant: User, assignedOfficer: User, dataSensitivity: Long, needToKnowTeam: Set<User>, status: ApplicantRecordStatusValue };
+entity ApplicantRecordStatusValue enum ["sealed", "active", "purged"];
+entity Case { applicant: User, assignedOfficer: User, caseTeam: Set<User>, fieldOffice: String, status: CaseStatusValue };
+entity CaseStatusValue enum ["received", "checkCleared", "adjudicated", "closed"];
+entity Group in [Group] {  };
+entity Role enum ["AdjudicationOfficer", "SupervisoryOfficer", "BackgroundInvestigator", "RecordsClerk"];
+entity SecurityCheck { case: Case, investigator: User, status: SecurityCheckStatusValue };
+entity SecurityCheckStatusValue enum ["pending", "cleared", "flagged"];
+entity User { clearance: Long, recusedCases: Set<Case>, roles: Set<Role> };
+action viewApplicantData appliesTo { principal: [User], resource: [ApplicantRecord], context: {
+    adjudicateCaseScheduledEnd: datetime,
+    adjudicateCaseScheduledStart: datetime,
+    clearSecurityCheckScheduledEnd: datetime,
+    clearSecurityCheckScheduledStart: datetime,
+    currentTime: datetime,
+    onGovNetwork: Bool,
+    supervisorApproval: Bool,
+  },
+};

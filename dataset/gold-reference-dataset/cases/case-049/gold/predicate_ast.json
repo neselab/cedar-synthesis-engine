@@ -1,0 +1,354 @@
+{
+  "overrideSchedule": {
+    "args": [
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.controlTier"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.controlTier"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.controlTier"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 2
+                  }
+                ],
+                "op": "eq"
+              }
+            ],
+            "op": "any"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.criticality"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.criticality"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.criticality"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 2
+                  }
+                ],
+                "op": "eq"
+              }
+            ],
+            "op": "any"
+          }
+        ],
+        "op": "all"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.roles"
+                  },
+                  {
+                    "id": "ZoneController",
+                    "op": "entity",
+                    "type": "Role"
+                  }
+                ],
+                "op": "contains"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.roles"
+                  },
+                  {
+                    "id": "FacilityManager",
+                    "op": "entity",
+                    "type": "Role"
+                  }
+                ],
+                "op": "contains"
+              }
+            ],
+            "op": "any"
+          }
+        ],
+        "op": "any"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "literal",
+                "value": true
+              }
+            ],
+            "op": "not"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.controlTier"
+              },
+              {
+                "op": "field",
+                "path": "resource.criticality"
+              }
+            ],
+            "op": "ge"
+          }
+        ],
+        "op": "any"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal"
+              },
+              {
+                "op": "field",
+                "path": "resource.controller"
+              }
+            ],
+            "op": "eq"
+          }
+        ],
+        "op": "any"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "active"
+                      },
+                      {
+                        "op": "literal",
+                        "value": "scheduled"
+                      }
+                    ],
+                    "op": "eq"
+                  },
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.status"
+                      },
+                      {
+                        "id": "scheduled",
+                        "op": "entity",
+                        "type": "ZoneStatusValue"
+                      }
+                    ],
+                    "op": "eq"
+                  }
+                ],
+                "op": "all"
+              },
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "active"
+                      },
+                      {
+                        "op": "literal",
+                        "value": "active"
+                      }
+                    ],
+                    "op": "eq"
+                  },
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.status"
+                      },
+                      {
+                        "id": "active",
+                        "op": "entity",
+                        "type": "ZoneStatusValue"
+                      }
+                    ],
+                    "op": "eq"
+                  }
+                ],
+                "op": "all"
+              },
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "active"
+                      },
+                      {
+                        "op": "literal",
+                        "value": "overridden"
+                      }
+                    ],
+                    "op": "eq"
+                  },
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.status"
+                      },
+                      {
+                        "id": "overridden",
+                        "op": "entity",
+                        "type": "ZoneStatusValue"
+                      }
+                    ],
+                    "op": "eq"
+                  }
+                ],
+                "op": "all"
+              },
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "active"
+                      },
+                      {
+                        "op": "literal",
+                        "value": "locked"
+                      }
+                    ],
+                    "op": "eq"
+                  },
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.status"
+                      },
+                      {
+                        "id": "locked",
+                        "op": "entity",
+                        "type": "ZoneStatusValue"
+                      }
+                    ],
+                    "op": "eq"
+                  }
+                ],
+                "op": "all"
+              }
+            ],
+            "op": "any"
+          }
+        ],
+        "op": "any"
+      },
+      {
+        "args": [
+          {
+            "op": "field",
+            "path": "context.occupancyDetected"
+          }
+        ],
+        "op": "any"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.roles"
+                  },
+                  {
+                    "id": "FacilityManager",
+                    "op": "entity",
+                    "type": "Role"
+                  }
+                ],
+                "op": "contains"
+              }
+            ],
+            "op": "any"
+          }
+        ],
+        "op": "any"
+      }
+    ],
+    "op": "all"
+  }
+}

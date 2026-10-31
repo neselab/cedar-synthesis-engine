@@ -1,0 +1,1146 @@
+{
+  "anchors": {
+    "releaseToProduction": {
+      "atoms": {
+        "V10": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the request falls within the inspector's scheduled shift window. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.releaseToProductionScheduledStart"
+                  },
+                  {
+                    "op": "field",
+                    "path": "context.currentTime"
+                  }
+                ],
+                "op": "time_le"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.currentTime"
+                  },
+                  {
+                    "op": "field",
+                    "path": "context.releaseToProductionScheduledEnd"
+                  }
+                ],
+                "op": "time_lt"
+              }
+            ],
+            "op": "all"
+          },
+          "revision_notes": [
+            "Authorization requires that the request falls within the inspector's scheduled shift window. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the request falls within the inspector's scheduled shift window. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V10",
+            "meaning": "the request falls within the inspector's scheduled shift window",
+            "reads": "context.currentTime"
+          }
+        },
+        "V12": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the work order is not under a quality hold. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.holdFlag"
+              },
+              {
+                "op": "literal",
+                "value": false
+              }
+            ],
+            "op": "eq"
+          },
+          "revision_notes": [
+            "Authorization requires that the work order is not under a quality hold. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the work order is not under a quality hold. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V12",
+            "meaning": "the work order is not under a quality hold",
+            "reads": "WorkOrder.holdFlag"
+          }
+        },
+        "V5": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the part code matches or has a controlled-part prefix. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "pattern": {
+              "type": "String",
+              "values": [
+                "CONTROLLED-*",
+                "SAFETY-*"
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "pattern": "CONTROLLED-*"
+            },
+            {
+              "pattern": "SAFETY-*"
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.partCode"
+              },
+              {
+                "name": "pattern",
+                "op": "parameter"
+              }
+            ],
+            "op": "like"
+          },
+          "revision_notes": [
+            "Authorization requires that the part code matches or has a controlled-part prefix. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the part code matches or has a controlled-part prefix. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V5",
+            "meaning": "the part code matches or has a controlled-part prefix",
+            "reads": "WorkOrder.partCode"
+          }
+        },
+        "V6": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the defect count is zero before release. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "threshold": {
+              "type": "Long",
+              "values": [
+                0
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "threshold": 0
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.defectCount"
+              },
+              {
+                "name": "threshold",
+                "op": "parameter"
+              }
+            ],
+            "op": "eq"
+          },
+          "revision_notes": [
+            "Declared synthetic review/acceptance bands measured in recorded defects in a fixed inspection lot of 100 items. Source-explicit refill > 0 and production-release defect == 0 remain unchanged.",
+            "Authorization requires that the defect count is zero before release. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the defect count is zero before release. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V6",
+            "meaning": "the defect count is zero before release",
+            "reads": "WorkOrder.defectCount"
+          }
+        },
+        "V9": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the request originates from the plant floor network. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "op": "field",
+            "path": "context.onPlantNetwork"
+          },
+          "revision_notes": [
+            "Authorization requires that the request originates from the plant floor network. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the request originates from the plant floor network. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V9",
+            "meaning": "the request originates from the plant floor network",
+            "reads": "context.onPlantNetwork"
+          }
+        }
+      },
+      "bases": {
+        "G2": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal"
+              },
+              {
+                "op": "field",
+                "path": "resource.inspector"
+              }
+            ],
+            "op": "eq"
+          },
+          "signature": "V1",
+          "source": {
+            "id": "G2",
+            "meaning": "the same inspector who signed off the work order must perform its release to production",
+            "reads": "principal vs WorkOrder.inspector",
+            "signature": "V1"
+          }
+        },
+        "G5": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.status"
+              },
+              {
+                "id": "inspected",
+                "op": "entity",
+                "type": "WorkOrderStatusValue"
+              }
+            ],
+            "op": "eq"
+          },
+          "signature": "V11",
+          "source": {
+            "id": "G5",
+            "meaning": "a work order may be released only after it has been inspected (status must be inspected)",
+            "reads": "WorkOrder.status",
+            "signature": "V11"
+          }
+        }
+      },
+      "domain_gate": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2000-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  },
+                  {
+                    "op": "field",
+                    "path": "context.currentTime"
+                  }
+                ],
+                "op": "time_le"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.currentTime"
+                  },
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2100-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  }
+                ],
+                "op": "time_le"
+              }
+            ],
+            "op": "all"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2000-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  },
+                  {
+                    "op": "field",
+                    "path": "context.releaseToProductionScheduledEnd"
+                  }
+                ],
+                "op": "time_le"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.releaseToProductionScheduledEnd"
+                  },
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2100-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  }
+                ],
+                "op": "time_le"
+              }
+            ],
+            "op": "all"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2000-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  },
+                  {
+                    "op": "field",
+                    "path": "context.releaseToProductionScheduledStart"
+                  }
+                ],
+                "op": "time_le"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.releaseToProductionScheduledStart"
+                  },
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2100-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  }
+                ],
+                "op": "time_le"
+              }
+            ],
+            "op": "all"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.defectCount"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "ge"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.defectCount"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 100
+                  }
+                ],
+                "op": "le"
+              }
+            ],
+            "op": "all"
+          }
+        ],
+        "op": "all"
+      },
+      "eligibility": {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "Inspector",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "QualityManager",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          }
+        ],
+        "op": "any"
+      },
+      "field_bindings": {
+        "WorkOrder.defectCount": "resource.defectCount",
+        "WorkOrder.holdFlag": "resource.holdFlag",
+        "WorkOrder.inspector": "resource.inspector",
+        "WorkOrder.partCode": "resource.partCode",
+        "WorkOrder.status": "resource.status",
+        "context.currentTime": "context.currentTime",
+        "context.onPlantNetwork": "context.onPlantNetwork",
+        "context.releaseToProductionScheduledEnd": "context.releaseToProductionScheduledEnd",
+        "context.releaseToProductionScheduledStart": "context.releaseToProductionScheduledStart"
+      },
+      "overrides": {},
+      "resource_type": "WorkOrder"
+    },
+    "signoffWorkOrder": {
+      "atoms": {
+        "V10": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the request falls within the inspector's scheduled shift window. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.signoffWorkOrderScheduledStart"
+                  },
+                  {
+                    "op": "field",
+                    "path": "context.currentTime"
+                  }
+                ],
+                "op": "time_le"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.currentTime"
+                  },
+                  {
+                    "op": "field",
+                    "path": "context.signoffWorkOrderScheduledEnd"
+                  }
+                ],
+                "op": "time_lt"
+              }
+            ],
+            "op": "all"
+          },
+          "revision_notes": [
+            "Authorization requires that the request falls within the inspector's scheduled shift window. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the request falls within the inspector's scheduled shift window. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V10",
+            "meaning": "the request falls within the inspector's scheduled shift window",
+            "reads": "context.currentTime"
+          }
+        },
+        "V12": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the work order is not under a quality hold. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.holdFlag"
+              },
+              {
+                "op": "literal",
+                "value": false
+              }
+            ],
+            "op": "eq"
+          },
+          "revision_notes": [
+            "Authorization requires that the work order is not under a quality hold. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the work order is not under a quality hold. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V12",
+            "meaning": "the work order is not under a quality hold",
+            "reads": "WorkOrder.holdFlag"
+          }
+        },
+        "V5": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the part code matches or has a controlled-part prefix. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "pattern": {
+              "type": "String",
+              "values": [
+                "CONTROLLED-*",
+                "SAFETY-*"
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "pattern": "CONTROLLED-*"
+            },
+            {
+              "pattern": "SAFETY-*"
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.partCode"
+              },
+              {
+                "name": "pattern",
+                "op": "parameter"
+              }
+            ],
+            "op": "like"
+          },
+          "revision_notes": [
+            "Authorization requires that the part code matches or has a controlled-part prefix. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the part code matches or has a controlled-part prefix. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V5",
+            "meaning": "the part code matches or has a controlled-part prefix",
+            "reads": "WorkOrder.partCode"
+          }
+        },
+        "V6": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the recorded defect count is at or below the acceptance threshold. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "threshold": {
+              "type": "Long",
+              "values": [
+                0,
+                1,
+                2
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "threshold": 0
+            },
+            {
+              "threshold": 1
+            },
+            {
+              "threshold": 2
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.defectCount"
+              },
+              {
+                "name": "threshold",
+                "op": "parameter"
+              }
+            ],
+            "op": "le"
+          },
+          "revision_notes": [
+            "Declared synthetic review/acceptance bands measured in recorded defects in a fixed inspection lot of 100 items. Source-explicit refill > 0 and production-release defect == 0 remain unchanged.",
+            "Authorization requires that the recorded defect count is at or below the acceptance threshold. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the recorded defect count is at or below the acceptance threshold. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V6",
+            "meaning": "the recorded defect count is at or below the acceptance threshold",
+            "reads": "WorkOrder.defectCount"
+          }
+        },
+        "V9": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the request originates from the plant floor network. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "op": "field",
+            "path": "context.onPlantNetwork"
+          },
+          "revision_notes": [
+            "Authorization requires that the request originates from the plant floor network. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the request originates from the plant floor network. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V9",
+            "meaning": "the request originates from the plant floor network",
+            "reads": "context.onPlantNetwork"
+          }
+        }
+      },
+      "bases": {
+        "G1": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal"
+              },
+              {
+                "op": "field",
+                "path": "resource.operator"
+              }
+            ],
+            "op": "ne"
+          },
+          "signature": "V1",
+          "source": {
+            "id": "G1",
+            "meaning": "the operator who performed the work may not QA-sign it off",
+            "reads": "principal vs WorkOrder.operator",
+            "signature": "V1"
+          }
+        },
+        "G5": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.status"
+              },
+              {
+                "id": "inprogress",
+                "op": "entity",
+                "type": "WorkOrderStatusValue"
+              }
+            ],
+            "op": "eq"
+          },
+          "signature": "V11",
+          "source": {
+            "id": "G5",
+            "meaning": "a work order may be signed off only while it is in progress (status must be inprogress)",
+            "reads": "WorkOrder.status",
+            "signature": "V11"
+          }
+        }
+      },
+      "domain_gate": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.defectCount"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "ge"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.defectCount"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 100
+                  }
+                ],
+                "op": "le"
+              }
+            ],
+            "op": "all"
+          }
+        ],
+        "op": "all"
+      },
+      "eligibility": {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "Inspector",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "QualityManager",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          }
+        ],
+        "op": "any"
+      },
+      "field_bindings": {
+        "WorkOrder.defectCount": "resource.defectCount",
+        "WorkOrder.holdFlag": "resource.holdFlag",
+        "WorkOrder.operator": "resource.operator",
+        "WorkOrder.partCode": "resource.partCode",
+        "WorkOrder.status": "resource.status",
+        "context.currentTime": "context.currentTime",
+        "context.deviationAuthorized": "context.deviationAuthorized",
+        "context.onPlantNetwork": "context.onPlantNetwork",
+        "context.signoffWorkOrderScheduledEnd": "context.signoffWorkOrderScheduledEnd",
+        "context.signoffWorkOrderScheduledStart": "context.signoffWorkOrderScheduledStart"
+      },
+      "overrides": {
+        "G3": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "context.deviationAuthorized"
+              },
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "principal.roles"
+                      },
+                      {
+                        "id": "QualityManager",
+                        "op": "entity",
+                        "type": "Role"
+                      }
+                    ],
+                    "op": "contains"
+                  }
+                ],
+                "op": "any"
+              }
+            ],
+            "op": "all"
+          },
+          "source": {
+            "id": "G3",
+            "meaning": "a Material Review Board-authorized deviation lets a quality manager sign off work they performed, overriding the operator/inspector separation",
+            "overrides": [
+              "G1"
+            ],
+            "reads": "context.deviationAuthorized",
+            "requires_adjudication": true
+          },
+          "targets": [
+            "G1"
+          ]
+        }
+      },
+      "resource_type": "WorkOrder"
+    }
+  },
+  "business_review_revision": "2026-10-23-r1",
+  "context": {
+    "currentTime": {
+      "type": "datetime"
+    },
+    "deviationAuthorized": {
+      "type": "Bool"
+    },
+    "onPlantNetwork": {
+      "type": "Bool"
+    },
+    "releaseToProductionScheduledEnd": {
+      "description": "exclusive end of the declared Scheduled window",
+      "type": "datetime"
+    },
+    "releaseToProductionScheduledStart": {
+      "description": "inclusive start of the declared Scheduled window",
+      "type": "datetime"
+    },
+    "signoffWorkOrderScheduledEnd": {
+      "description": "exclusive end of the declared Scheduled window",
+      "type": "datetime"
+    },
+    "signoffWorkOrderScheduledStart": {
+      "description": "inclusive start of the declared Scheduled window",
+      "type": "datetime"
+    }
+  },
+  "contract": "complete-spec-v4",
+  "decisions": [
+    "Added context.releaseToProductionScheduledEnd: exclusive end of the declared Scheduled window",
+    "Added context.releaseToProductionScheduledStart: inclusive start of the declared Scheduled window",
+    "Added context.signoffWorkOrderScheduledEnd: exclusive end of the declared Scheduled window",
+    "Added context.signoffWorkOrderScheduledStart: inclusive start of the declared Scheduled window",
+    "All source identities denote User entities; role sets may overlap without implicit exclusivity.",
+    "All timestamps read by predicates are bounded inclusively to 2000-01-01 through 2100-01-01 UTC; requests outside the explicit domain gate deny.",
+    "AuditLog.note is source documentation, not an attribute.",
+    "Business revision v2: catalogs are declared synthetic organizational policies, not empirical norms. Selected-atom obligations are mandatory in both forms and cannot be waived by a base exception or override.",
+    "Money is nonnegative integer USD cents, at most 1,000,000,000. Counts are nonnegative integers at most 1,000,000 unless a narrower dictionary is declared.",
+    "Request context is treated as trusted input from the host; authorization does not attest network, emergency, signature, or scheduling facts.",
+    "Retained source repairs: exact lifecycle states, linked course roster, explicit promotion/filing facts, independent calibration expiry, comp expiry, and guarded override eligibility are intentional experiment definitions. Their typed ASTs and field descriptions, not the ambiguous source shorthand, are authoritative.",
+    "Rules operate on snapshots. A selected lifecycle base requires the exact named state unless its predicate explicitly lists alternatives.",
+    "Source business descriptions are retained for audit; the authored typed predicates and dictionaries define the experiment. No statutory compliance claim is made.",
+    "Source tag kinds are represented by Set<String>. Group membership is reflexive and transitive Cedar entity ancestry.",
+    "releaseToProduction/V6: Declared synthetic review/acceptance bands measured in recorded defects in a fixed inspection lot of 100 items. Source-explicit refill > 0 and production-release defect == 0 remain unchanged.",
+    "signoffWorkOrder/V6: Declared synthetic review/acceptance bands measured in recorded defects in a fixed inspection lot of 100 items. Source-explicit refill > 0 and production-release defect == 0 remain unchanged."
+  ],
+  "domain": "work_order_signoff",
+  "entities": {
+    "AuditLog": {
+      "attributes": {}
+    },
+    "Group": {
+      "attributes": {},
+      "member_of": [
+        "Group"
+      ]
+    },
+    "ProductionRelease": {
+      "attributes": {
+        "batchCode": {
+          "type": "String"
+        },
+        "releasedBy": {
+          "type": "User"
+        },
+        "workOrder": {
+          "type": "WorkOrder"
+        }
+      }
+    },
+    "Role": {
+      "enum": [
+        "Operator",
+        "Inspector",
+        "QualityManager",
+        "ProductionSupervisor",
+        "Auditor"
+      ]
+    },
+    "User": {
+      "attributes": {
+        "roles": {
+          "type": "Set<Role>"
+        }
+      }
+    },
+    "WorkOrder": {
+      "attributes": {
+        "createdAt": {
+          "type": "datetime"
+        },
+        "defectCount": {
+          "bounds": [
+            0,
+            100
+          ],
+          "type": "Long",
+          "unit": "recorded defects in a fixed inspection lot of 100 items"
+        },
+        "holdFlag": {
+          "type": "Bool"
+        },
+        "inspector": {
+          "type": "User"
+        },
+        "operator": {
+          "type": "User"
+        },
+        "partCode": {
+          "type": "String"
+        },
+        "station": {
+          "type": "String"
+        },
+        "status": {
+          "type": "WorkOrderStatusValue"
+        }
+      }
+    },
+    "WorkOrderStatusValue": {
+      "enum": [
+        "open",
+        "inprogress",
+        "inspected",
+        "released"
+      ]
+    }
+  },
+  "revision_contract": "business-composition-v4",
+  "source_action_chains": [
+    {
+      "chain": [
+        "signoffWorkOrder",
+        "releaseToProduction"
+      ],
+      "linked_by": [
+        "status",
+        "operator",
+        "inspector"
+      ],
+      "shared_resource": "WorkOrder"
+    }
+  ],
+  "source_sha256": "2907de8ce880b86d975423e46cde808f78a30bb93dc0a767cb3b4f0643c07c22",
+  "status": "authored experimental assumptions; not human semantic approval",
+  "version": "business-registry-v4"
+}

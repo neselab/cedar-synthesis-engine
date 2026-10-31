@@ -1,0 +1,1203 @@
+{
+  "anchors": {
+    "readTelemetry": {
+      "atoms": {
+        "V1": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the requester owns the device. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal"
+              },
+              {
+                "op": "field",
+                "path": "resource.device.owner"
+              }
+            ],
+            "op": "eq"
+          },
+          "revision_notes": [
+            "Authorization requires that the requester owns the device. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the requester owns the device. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V1",
+            "meaning": "the requester owns the device",
+            "reads": "Telemetry.device.owner"
+          }
+        },
+        "V11": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the device is in a particular lifecycle stage. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "state": {
+              "type": "String",
+              "values": [
+                "active",
+                "decommissioned",
+                "maintenance",
+                "provisioned"
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "state": "provisioned"
+            },
+            {
+              "state": "active"
+            },
+            {
+              "state": "maintenance"
+            },
+            {
+              "state": "decommissioned"
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "name": "state",
+                        "op": "parameter"
+                      },
+                      {
+                        "op": "literal",
+                        "value": "provisioned"
+                      }
+                    ],
+                    "op": "eq"
+                  },
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.device.status"
+                      },
+                      {
+                        "id": "provisioned",
+                        "op": "entity",
+                        "type": "DeviceStatusValue"
+                      }
+                    ],
+                    "op": "eq"
+                  }
+                ],
+                "op": "all"
+              },
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "name": "state",
+                        "op": "parameter"
+                      },
+                      {
+                        "op": "literal",
+                        "value": "active"
+                      }
+                    ],
+                    "op": "eq"
+                  },
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.device.status"
+                      },
+                      {
+                        "id": "active",
+                        "op": "entity",
+                        "type": "DeviceStatusValue"
+                      }
+                    ],
+                    "op": "eq"
+                  }
+                ],
+                "op": "all"
+              },
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "name": "state",
+                        "op": "parameter"
+                      },
+                      {
+                        "op": "literal",
+                        "value": "maintenance"
+                      }
+                    ],
+                    "op": "eq"
+                  },
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.device.status"
+                      },
+                      {
+                        "id": "maintenance",
+                        "op": "entity",
+                        "type": "DeviceStatusValue"
+                      }
+                    ],
+                    "op": "eq"
+                  }
+                ],
+                "op": "all"
+              },
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "name": "state",
+                        "op": "parameter"
+                      },
+                      {
+                        "op": "literal",
+                        "value": "decommissioned"
+                      }
+                    ],
+                    "op": "eq"
+                  },
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.device.status"
+                      },
+                      {
+                        "id": "decommissioned",
+                        "op": "entity",
+                        "type": "DeviceStatusValue"
+                      }
+                    ],
+                    "op": "eq"
+                  }
+                ],
+                "op": "all"
+              }
+            ],
+            "op": "any"
+          },
+          "revision_notes": [
+            "Authorization requires that the device is in a particular lifecycle stage. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the device is in a particular lifecycle stage. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V11",
+            "meaning": "the device is in a particular lifecycle stage",
+            "reads": "Telemetry.device.status"
+          }
+        },
+        "V3": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the requester belongs under the device's site group. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.memberOf"
+              },
+              {
+                "op": "field",
+                "path": "resource.device.siteGroup"
+              }
+            ],
+            "op": "in"
+          },
+          "revision_notes": [
+            "Authorization requires that the requester belongs under the device's site group. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the requester belongs under the device's site group. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V3",
+            "meaning": "the requester belongs under the device's site group",
+            "reads": "user.memberOf under the device's site group"
+          }
+        },
+        "V9": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the request comes from an allowed network range. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "cidr": {
+              "type": "String",
+              "values": [
+                "10.0.0.0/8",
+                "172.16.0.0/12",
+                "192.168.0.0/16"
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "cidr": "10.0.0.0/8"
+            },
+            {
+              "cidr": "172.16.0.0/12"
+            },
+            {
+              "cidr": "192.168.0.0/16"
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "context.sourceIp"
+              },
+              {
+                "args": [
+                  {
+                    "name": "cidr",
+                    "op": "parameter"
+                  }
+                ],
+                "op": "ip"
+              }
+            ],
+            "op": "ip_in"
+          },
+          "revision_notes": [
+            "Authorization requires that the request comes from an allowed network range. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the request comes from an allowed network range. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V9",
+            "meaning": "the request comes from an allowed network range",
+            "reads": "context.sourceIp in a CIDR range"
+          }
+        }
+      },
+      "bases": {
+        "G4": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.clearance"
+              },
+              {
+                "op": "field",
+                "path": "resource.sensitivity"
+              }
+            ],
+            "op": "ge"
+          },
+          "signature": "V6",
+          "source": {
+            "id": "G4",
+            "meaning": "the requester's clearance must dominate the telemetry sensitivity",
+            "reads": "user.clearance vs Telemetry.sensitivity",
+            "signature": "V6"
+          }
+        }
+      },
+      "domain_gate": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.clearance"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.clearance"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.clearance"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 2
+                  }
+                ],
+                "op": "eq"
+              }
+            ],
+            "op": "any"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.sensitivity"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.sensitivity"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.sensitivity"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 2
+                  }
+                ],
+                "op": "eq"
+              }
+            ],
+            "op": "any"
+          }
+        ],
+        "op": "all"
+      },
+      "eligibility": {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "Operator",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "FleetAdmin",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          }
+        ],
+        "op": "any"
+      },
+      "field_bindings": {
+        "Telemetry.device.owner": "resource.device.owner",
+        "Telemetry.device.siteGroup": "resource.device.siteGroup",
+        "Telemetry.device.status": "resource.device.status",
+        "Telemetry.sensitivity": "resource.sensitivity",
+        "context.sourceIp": "context.sourceIp",
+        "user.clearance": "principal.clearance",
+        "user.memberOf": "principal.memberOf"
+      },
+      "overrides": {},
+      "resource_type": "Telemetry"
+    },
+    "sendCommand": {
+      "atoms": {
+        "V1": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the requester owns the device. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal"
+              },
+              {
+                "op": "field",
+                "path": "resource.owner"
+              }
+            ],
+            "op": "eq"
+          },
+          "revision_notes": [
+            "Authorization requires that the requester owns the device. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the requester owns the device. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V1",
+            "meaning": "the requester owns the device",
+            "reads": "Device.owner"
+          }
+        },
+        "V10": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the request falls within a permitted window. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.sendCommandScheduledStart"
+                  },
+                  {
+                    "op": "field",
+                    "path": "context.currentTime"
+                  }
+                ],
+                "op": "time_le"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.currentTime"
+                  },
+                  {
+                    "op": "field",
+                    "path": "context.sendCommandScheduledEnd"
+                  }
+                ],
+                "op": "time_lt"
+              }
+            ],
+            "op": "all"
+          },
+          "revision_notes": [
+            "Authorization requires that the request falls within a permitted window. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the request falls within a permitted window. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V10",
+            "meaning": "the request falls within a permitted window",
+            "reads": "context.currentTime"
+          }
+        },
+        "V12": {
+          "allowed_forms": [
+            "obligation"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "obligation",
+            "rationale": "Explicit synthetic completion of the trigger consequence using a trusted request-specific fact; no unconditional grant or base waiver.",
+            "required_fact": "maintenanceCommandAuthorized",
+            "statement": "When the device carries a maintenance flag, this command has explicit maintenance authorization.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.maintenanceMode"
+              },
+              {
+                "op": "literal",
+                "value": true
+              }
+            ],
+            "op": "eq"
+          },
+          "requirement": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.maintenanceMode"
+                      },
+                      {
+                        "op": "literal",
+                        "value": true
+                      }
+                    ],
+                    "op": "eq"
+                  }
+                ],
+                "op": "not"
+              },
+              {
+                "op": "field",
+                "path": "context.maintenanceCommandAuthorized"
+              }
+            ],
+            "op": "any"
+          },
+          "revision_notes": [
+            "When the device carries a maintenance flag, this command has explicit maintenance authorization.",
+            "Composition rationale: Explicit synthetic completion of the trigger consequence using a trusted request-specific fact; no unconditional grant or base waiver."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "obligation",
+              "rationale": "Explicit synthetic completion of the trigger consequence using a trusted request-specific fact; no unconditional grant or base waiver.",
+              "required_fact": "maintenanceCommandAuthorized",
+              "statement": "When the device carries a maintenance flag, this command has explicit maintenance authorization.",
+              "target": "@action"
+            },
+            "id": "V12",
+            "meaning": "the device carries a maintenance flag",
+            "reads": "Device.maintenanceMode"
+          }
+        },
+        "V13": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the device carries a particular firmware tag. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "label": {
+              "type": "String",
+              "values": [
+                "beta",
+                "security_patch",
+                "stable"
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "label": "stable"
+            },
+            {
+              "label": "security_patch"
+            },
+            {
+              "label": "beta"
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.firmwareTags"
+              },
+              {
+                "name": "label",
+                "op": "parameter"
+              }
+            ],
+            "op": "contains"
+          },
+          "revision_notes": [
+            "Authorization requires that the device carries a particular firmware tag. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the device carries a particular firmware tag. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V13",
+            "meaning": "the device carries a particular firmware tag",
+            "reads": "Device.firmwareTags"
+          }
+        },
+        "V3": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the requester belongs under the device's site group. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.memberOf"
+              },
+              {
+                "op": "field",
+                "path": "resource.siteGroup"
+              }
+            ],
+            "op": "in"
+          },
+          "revision_notes": [
+            "Authorization requires that the requester belongs under the device's site group. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the requester belongs under the device's site group. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V3",
+            "meaning": "the requester belongs under the device's site group",
+            "reads": "user.memberOf under Device.siteGroup"
+          }
+        },
+        "V9": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the request comes from an allowed network range. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "cidr": {
+              "type": "String",
+              "values": [
+                "10.0.0.0/8",
+                "172.16.0.0/12",
+                "192.168.0.0/16"
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "cidr": "10.0.0.0/8"
+            },
+            {
+              "cidr": "172.16.0.0/12"
+            },
+            {
+              "cidr": "192.168.0.0/16"
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "context.sourceIp"
+              },
+              {
+                "args": [
+                  {
+                    "name": "cidr",
+                    "op": "parameter"
+                  }
+                ],
+                "op": "ip"
+              }
+            ],
+            "op": "ip_in"
+          },
+          "revision_notes": [
+            "Authorization requires that the request comes from an allowed network range. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the request comes from an allowed network range. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V9",
+            "meaning": "the request comes from an allowed network range",
+            "reads": "context.sourceIp in a CIDR range"
+          }
+        }
+      },
+      "bases": {
+        "G5": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.status"
+              },
+              {
+                "id": "active",
+                "op": "entity",
+                "type": "DeviceStatusValue"
+              }
+            ],
+            "op": "eq"
+          },
+          "signature": "V11",
+          "source": {
+            "id": "G5",
+            "meaning": "a command may be sent only to an active device (not provisioned or decommissioned)",
+            "reads": "Device.status",
+            "signature": "V11"
+          }
+        }
+      },
+      "domain_gate": {
+        "op": "literal",
+        "value": true
+      },
+      "eligibility": {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "Operator",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "Technician",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "FleetAdmin",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          }
+        ],
+        "op": "any"
+      },
+      "field_bindings": {
+        "Device.firmwareTags": "resource.firmwareTags",
+        "Device.maintenanceMode": "resource.maintenanceMode",
+        "Device.owner": "resource.owner",
+        "Device.siteGroup": "resource.siteGroup",
+        "Device.status": "resource.status",
+        "context.currentTime": "context.currentTime",
+        "context.maintenanceWindow": "context.maintenanceWindow",
+        "context.sendCommandScheduledEnd": "context.sendCommandScheduledEnd",
+        "context.sendCommandScheduledStart": "context.sendCommandScheduledStart",
+        "context.sourceIp": "context.sourceIp",
+        "user.memberOf": "principal.memberOf"
+      },
+      "overrides": {
+        "G3": {
+          "predicate": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.maintenanceWindow"
+                  },
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "op": "field",
+                            "path": "principal.roles"
+                          },
+                          {
+                            "id": "Technician",
+                            "op": "entity",
+                            "type": "Role"
+                          }
+                        ],
+                        "op": "contains"
+                      }
+                    ],
+                    "op": "any"
+                  }
+                ],
+                "op": "all"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.status"
+                  },
+                  {
+                    "id": "maintenance",
+                    "op": "entity",
+                    "type": "DeviceStatusValue"
+                  }
+                ],
+                "op": "eq"
+              }
+            ],
+            "op": "all"
+          },
+          "source": {
+            "id": "G3",
+            "meaning": "during a maintenance window a technician may command a device in the maintenance state",
+            "overrides": [
+              "G5"
+            ],
+            "reads": "context.maintenanceWindow",
+            "requires_adjudication": true
+          },
+          "targets": [
+            "G5"
+          ]
+        }
+      },
+      "resource_type": "Device"
+    }
+  },
+  "business_review_revision": "2026-10-23-r1",
+  "context": {
+    "currentTime": {
+      "type": "datetime"
+    },
+    "maintenanceCommandAuthorized": {
+      "type": "Bool"
+    },
+    "maintenanceWindow": {
+      "type": "Bool"
+    },
+    "sendCommandScheduledEnd": {
+      "description": "exclusive end of the declared Scheduled window",
+      "type": "datetime"
+    },
+    "sendCommandScheduledStart": {
+      "description": "inclusive start of the declared Scheduled window",
+      "type": "datetime"
+    },
+    "sourceIp": {
+      "type": "ipaddr"
+    }
+  },
+  "contract": "complete-spec-v4",
+  "decisions": [
+    "Added context.sendCommandScheduledEnd: exclusive end of the declared Scheduled window",
+    "Added context.sendCommandScheduledStart: inclusive start of the declared Scheduled window",
+    "All source identities denote User entities; role sets may overlap without implicit exclusivity.",
+    "All timestamps read by predicates are bounded inclusively to 2000-01-01 through 2100-01-01 UTC; requests outside the explicit domain gate deny.",
+    "Business revision v2: catalogs are declared synthetic organizational policies, not empirical norms. Selected-atom obligations are mandatory in both forms and cannot be waived by a base exception or override.",
+    "Money is nonnegative integer USD cents, at most 1,000,000,000. Counts are nonnegative integers at most 1,000,000 unless a narrower dictionary is declared.",
+    "Request context is treated as trusted input from the host; authorization does not attest network, emergency, signature, or scheduling facts.",
+    "Retained source repairs: exact lifecycle states, linked course roster, explicit promotion/filing facts, independent calibration expiry, comp expiry, and guarded override eligibility are intentional experiment definitions. Their typed ASTs and field descriptions, not the ambiguous source shorthand, are authoritative.",
+    "Rules operate on snapshots. A selected lifecycle base requires the exact named state unless its predicate explicitly lists alternatives.",
+    "Source business descriptions are retained for audit; the authored typed predicates and dictionaries define the experiment. No statutory compliance claim is made.",
+    "Source tag kinds are represented by Set<String>. Group membership is reflexive and transitive Cedar entity ancestry."
+  ],
+  "domain": "iot_fleet",
+  "entities": {
+    "Command": {
+      "attributes": {
+        "device": {
+          "type": "Device"
+        },
+        "issuedBy": {
+          "type": "User"
+        }
+      }
+    },
+    "Device": {
+      "attributes": {
+        "firmwareTags": {
+          "representation": "zero or more label strings",
+          "type": "Set<String>"
+        },
+        "maintenanceMode": {
+          "type": "Bool"
+        },
+        "owner": {
+          "type": "User"
+        },
+        "siteGroup": {
+          "type": "Group"
+        },
+        "status": {
+          "type": "DeviceStatusValue"
+        }
+      }
+    },
+    "DeviceStatusValue": {
+      "enum": [
+        "provisioned",
+        "active",
+        "maintenance",
+        "decommissioned"
+      ]
+    },
+    "Group": {
+      "attributes": {},
+      "member_of": [
+        "Group"
+      ]
+    },
+    "Role": {
+      "enum": [
+        "Operator",
+        "Technician",
+        "FleetAdmin",
+        "ServiceAccount"
+      ]
+    },
+    "Telemetry": {
+      "attributes": {
+        "device": {
+          "type": "Device"
+        },
+        "sensitivity": {
+          "bounds": [
+            0,
+            2
+          ],
+          "levels": {
+            "internal": 1,
+            "public": 0,
+            "restricted": 2
+          },
+          "type": "Long"
+        }
+      }
+    },
+    "User": {
+      "attributes": {
+        "clearance": {
+          "bounds": [
+            0,
+            2
+          ],
+          "levels": {
+            "internal": 1,
+            "public": 0,
+            "restricted": 2
+          },
+          "type": "Long"
+        },
+        "memberOf": {
+          "type": "Group"
+        },
+        "roles": {
+          "type": "Set<Role>"
+        }
+      }
+    }
+  },
+  "revision_contract": "business-composition-v4",
+  "source_action_chains": [],
+  "source_sha256": "2907de8ce880b86d975423e46cde808f78a30bb93dc0a767cb3b4f0643c07c22",
+  "status": "authored experimental assumptions; not human semantic approval",
+  "version": "business-registry-v4"
+}

@@ -1,0 +1,59 @@
+{
+  "domain": "kubernetes_rbac",
+  "format_version": "complete-spec-v4",
+  "grouping": {
+    "applicability_triggers": "any",
+    "exception": "any",
+    "requirements": "all"
+  },
+  "parts": [
+    {
+      "anchor": "applyManifest",
+      "bases": [
+        "G1"
+      ],
+      "conditions": [
+        {
+          "atom": "V13",
+          "form": "require",
+          "parameters": {
+            "label": "restricted"
+          },
+          "target": "@action"
+        },
+        {
+          "atom": "V4",
+          "form": "require",
+          "parameters": {},
+          "target": "@action"
+        },
+        {
+          "atom": "V6",
+          "form": "applicability",
+          "parameters": {
+            "threshold": 3
+          },
+          "target": "G1"
+        },
+        {
+          "atom": "V9",
+          "form": "require",
+          "parameters": {
+            "cidr": "172.16.0.0/12"
+          },
+          "target": "@action"
+        }
+      ],
+      "overrides": []
+    }
+  ],
+  "provenance": {
+    "inherited_arithmetic_safety_patches": [],
+    "kind": "non-time-33 revised intent",
+    "source_case": "case-183",
+    "source_spec_sha256": "303bb0a1cf30a610a8dfefc08a1d09218679c63ecd987b1e8a062585d717350e",
+    "transformation": "Remove only artificial 2000-2100 datetime bounds and catalog maxima; retain all business rules."
+  },
+  "registry_sha256": "9055ed8d359721545cfd1da61b47608f82684c3a12faea104ad2761754c31d37",
+  "source_sha256": "2907de8ce880b86d975423e46cde808f78a30bb93dc0a767cb3b4f0643c07c22"
+}

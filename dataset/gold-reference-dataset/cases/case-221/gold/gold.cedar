@@ -1,0 +1,5 @@
+permit (principal is User, action == Action::"accessZone", resource is Zone)
+when { ((((principal.clearance == 0) || (principal.clearance == 1) || (principal.clearance == 2) || (principal.clearance == 3)) && ((resource.sensitivity == 0) || (resource.sensitivity == 1) || (resource.sensitivity == 2) || (resource.sensitivity == 3))) && ((principal.roles.contains(Role::"Picker") || principal.roles.contains(Role::"ForkliftOperator") || principal.roles.contains(Role::"ZoneSupervisor"))) && (!(true) || (principal.clearance >= resource.sensitivity)) && ((resource.zoneLocked == false)) && ((principal.roles.contains(Role::"ZoneSupervisor")))) };
+
+permit (principal is User, action == Action::"pickOrder", resource is Order)
+when { (((resource.itemCount >= 0)) && ((principal.roles.contains(Role::"Picker") || principal.roles.contains(Role::"ForkliftOperator"))) && (!(true) || (resource.status == OrderStatusValue::"released")) && (resource.items.contains("CONTROLLED-002")) && (!((resource.itemCount > 50)) || context.pickOrderV6ReviewCompleted)) };

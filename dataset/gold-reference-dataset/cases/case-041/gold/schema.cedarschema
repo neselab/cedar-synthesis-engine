@@ -1,0 +1,15 @@
+entity EmployeeRecord { department: String, employee: User, manager: User, piiLevel: Long };
+entity Group in [Group] {  };
+entity LeaveRequest { approver: User, employee: User, status: LeaveRequestStatusValue };
+entity LeaveRequestStatusValue enum ["pending", "approved", "denied"];
+entity PayrollRun { amount: Long, approvedBy: User, preparedBy: User, status: PayrollRunStatusValue };
+entity PayrollRunStatusValue enum ["draft", "submitted", "approved", "disbursed"];
+entity Role enum ["Employee", "Manager", "HRSpecialist", "PayrollAdmin"];
+entity User { clearance: Long, roles: Set<Role> };
+action approvePayroll appliesTo { principal: [User], resource: [PayrollRun], context: {
+    approvePayrollScheduledEnd: datetime,
+    approvePayrollScheduledStart: datetime,
+    currentTime: datetime,
+    onVpn: Bool,
+  },
+};

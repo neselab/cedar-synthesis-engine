@@ -1,0 +1,2 @@
+permit (principal is User, action == Action::"pickOrder", resource is Order)
+when { (((resource.itemCount >= 0)) && ((principal.roles.contains(Role::"Picker") || principal.roles.contains(Role::"ForkliftOperator"))) && (!(true) || (resource.status == OrderStatusValue::"released")) && (((context.pickOrderScheduledStart <= context.currentTime) && (context.currentTime < context.pickOrderScheduledEnd))) && (context.onSiteBadge) && (resource.items.contains("RESTRICTED-003")) && (!((resource.itemCount > 200)) || context.pickOrderV6ReviewCompleted)) };

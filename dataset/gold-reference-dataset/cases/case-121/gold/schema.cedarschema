@@ -1,0 +1,12 @@
+entity Group in [Group] {  };
+entity Order { containsCardData: Bool, customer: User, itemTotal: Long, loyaltyTier: Long, placedBy: User, status: OrderStatusValue, taxAmount: Long };
+entity OrderStatusValue enum ["cart", "placed", "shipped", "refunded"];
+entity Refund { amount: Long, issuedBy: User, order: Order };
+entity Role enum ["Customer", "ServiceRep", "Manager", "Auditor"];
+entity User { roles: Set<Role> };
+action issueRefund appliesTo { principal: [User], resource: [Refund], context: {
+    currentTime: datetime,
+    inCardholderZone: Bool,
+    mfaUsed: Bool,
+  },
+};

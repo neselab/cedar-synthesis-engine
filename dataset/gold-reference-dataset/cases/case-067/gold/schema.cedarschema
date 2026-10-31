@@ -1,0 +1,19 @@
+entity Group in [Group] {  };
+entity Namespace { environment: NamespaceEnvironmentValue, members: Set<User>, promoted: Bool, teamGroup: Group };
+entity NamespaceEnvironmentValue enum ["dev", "staging", "prod"];
+entity NamespaceSecret { namespace: Namespace, owner: User, sensitivity: Long, status: NamespaceSecretStatusValue };
+entity NamespaceSecretStatusValue enum ["active", "rotating", "revoked"];
+entity Role enum ["Deployer", "Maintainer", "ClusterOperator", "ServiceAccount"];
+entity ServiceAccountToken { boundNamespace: Namespace, expiresAt: datetime, issuedBy: User, status: ServiceAccountTokenStatusValue, subject: User };
+entity ServiceAccountTokenStatusValue enum ["issued", "active", "revoked"];
+entity User { clearance: Long, grantedScope: String, memberOf: Group, roles: Set<Role> };
+entity Workload { creator: User, environment: WorkloadEnvironmentValue, labels: Set<String>, namespace: Namespace, replicaCount: Long, requiredVerb: String };
+entity WorkloadEnvironmentValue enum ["dev", "staging", "prod"];
+action revokeToken appliesTo { principal: [User], resource: [ServiceAccountToken], context: {
+    currentTime: datetime,
+    emergencyChange: Bool,
+    mfaUsed: Bool,
+    presentedToken: ServiceAccountToken,
+    sourceIp: ipaddr,
+  },
+};

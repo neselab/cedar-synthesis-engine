@@ -1,0 +1,50 @@
+{
+  "domain": "number_porting",
+  "format_version": "complete-spec-v4",
+  "grouping": {
+    "applicability_triggers": "any",
+    "exception": "any",
+    "requirements": "all"
+  },
+  "parts": [
+    {
+      "anchor": "completePort",
+      "bases": [
+        "G2"
+      ],
+      "conditions": [
+        {
+          "atom": "V13",
+          "form": "require",
+          "parameters": {
+            "label": "inter_carrier"
+          },
+          "target": "@action"
+        },
+        {
+          "atom": "V14",
+          "form": "require",
+          "parameters": {},
+          "target": "@action"
+        }
+      ],
+      "overrides": [
+        {
+          "id": "G3",
+          "targets": [
+            "G2"
+          ]
+        }
+      ]
+    }
+  ],
+  "provenance": {
+    "arithmetic_safety_patches": [],
+    "kind": "less-specific-200 revised intent",
+    "source_case": "case-199",
+    "source_spec_sha256": "e74543e1df350a73c85e8305055eeffd019e4939866908c490ad7a05a09ff393",
+    "transformation": "Drop only artificial 2000-2100 timestamp windows and catalog maxima 1000000/1000000000; retain all other gates."
+  },
+  "registry_sha256": "c986e425539927d95c754309f04cc24472dabf29437edf217a0e6ac90cdc67fd",
+  "source_sha256": "2907de8ce880b86d975423e46cde808f78a30bb93dc0a767cb3b4f0643c07c22"
+}

@@ -1,0 +1,20 @@
+entity Branch { name: String, protected: Bool };
+entity Group in [Group] {  };
+entity PullRequest { approvalCount: Long, approvedBy: User, author: User, linesChanged: Long, repo: Repository, requiresSecurityReview: Bool, status: PullRequestStatusValue, targetBranch: String };
+entity PullRequestStatusValue enum ["open", "approved", "merged", "closed"];
+entity Repository { defaultBranchProtected: Bool, owner: User, sensitivity: Long, status: RepositoryStatusValue, team: Set<User>, topics: Set<String> };
+entity RepositoryStatusValue enum ["incubating", "active", "archived"];
+entity Role enum ["Developer", "Reviewer", "Maintainer", "SecurityLead"];
+entity User { clearance: Long, roles: Set<Role> };
+action mergePullRequest appliesTo { principal: [User], resource: [PullRequest], context: {
+    breakGlass: Bool,
+    currentTime: datetime,
+    extendedReviewCompleted: Bool,
+    mergePullRequestScheduledEnd: datetime,
+    mergePullRequestScheduledStart: datetime,
+    onVpn: Bool,
+    reviewPullRequestScheduledEnd: datetime,
+    reviewPullRequestScheduledStart: datetime,
+    securityReviewCompleted: Bool,
+  },
+};

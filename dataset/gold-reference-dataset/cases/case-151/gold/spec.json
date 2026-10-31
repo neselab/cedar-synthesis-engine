@@ -1,0 +1,49 @@
+{
+  "domain": "ad_campaigns",
+  "format_version": "complete-spec-v4",
+  "grouping": {
+    "applicability_triggers": "any",
+    "exception": "any",
+    "requirements": "all"
+  },
+  "parts": [
+    {
+      "anchor": "launchCampaign",
+      "bases": [
+        "G5"
+      ],
+      "conditions": [
+        {
+          "atom": "V10",
+          "form": "require",
+          "parameters": {},
+          "target": "@action"
+        },
+        {
+          "atom": "V13",
+          "form": "require",
+          "parameters": {
+            "label": "high_risk"
+          },
+          "target": "@action"
+        },
+        {
+          "atom": "V14",
+          "form": "require",
+          "parameters": {},
+          "target": "@action"
+        }
+      ],
+      "overrides": []
+    }
+  ],
+  "provenance": {
+    "arithmetic_safety_patches": [],
+    "kind": "less-specific-200 revised intent",
+    "source_case": "case-151",
+    "source_spec_sha256": "a7b43c7e78127649ef7503ddb660ee8a087ed82e963874c39fd6a3dc637a3bee",
+    "transformation": "Drop only artificial 2000-2100 timestamp windows and catalog maxima 1000000/1000000000; retain all other gates."
+  },
+  "registry_sha256": "550e41af880c287ef941d2208ccff1346d3cd52eebd5f293909e2500b3a6af28",
+  "source_sha256": "2907de8ce880b86d975423e46cde808f78a30bb93dc0a767cb3b4f0643c07c22"
+}

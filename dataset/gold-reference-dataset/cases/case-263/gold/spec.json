@@ -1,0 +1,76 @@
+{
+  "domain": "contract_lifecycle",
+  "format_version": "complete-spec-v4",
+  "grouping": {
+    "applicability_triggers": "any",
+    "exception": "any",
+    "requirements": "all"
+  },
+  "parts": [
+    {
+      "anchor": "executeContract",
+      "bases": [
+        "G5"
+      ],
+      "conditions": [
+        {
+          "atom": "V8",
+          "form": "obligation",
+          "parameters": {
+            "threshold": 100000000
+          },
+          "target": "@action"
+        },
+        {
+          "atom": "V9",
+          "form": "require",
+          "parameters": {},
+          "target": "@action"
+        }
+      ],
+      "overrides": []
+    },
+    {
+      "anchor": "reviewContract",
+      "bases": [
+        "G1"
+      ],
+      "conditions": [
+        {
+          "atom": "V8",
+          "form": "applicability",
+          "parameters": {
+            "threshold": 1000000
+          },
+          "target": "G1"
+        }
+      ],
+      "overrides": []
+    },
+    {
+      "anchor": "signContract",
+      "bases": [
+        "G1",
+        "G4"
+      ],
+      "conditions": [
+        {
+          "atom": "V14",
+          "form": "require",
+          "parameters": {},
+          "target": "@action"
+        }
+      ],
+      "overrides": []
+    }
+  ],
+  "provenance": {
+    "arithmetic_safety_patches": [],
+    "kind": "less-specific-200 revised intent",
+    "source_case": "case-263",
+    "source_spec_sha256": "d1bbb5e00729a0a77970eef1d1791d4b485df188c3ae472d4fcdf4a4960c43ad",
+    "transformation": "Drop only artificial 2000-2100 timestamp windows and catalog maxima 1000000/1000000000; retain all other gates."
+  },
+  "registry_sha256": "82ccdbbc309bd7ef8b54379bb20ad388e5fe602312e32dcc3e896908f04cf811",
+  "source_sha256": "2907de8ce880b86d975423e46cde808f78a30bb93dc0a767cb3b4f0643c07c22"
+}

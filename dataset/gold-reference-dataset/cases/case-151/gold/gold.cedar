@@ -1,0 +1,2 @@
+permit (principal is User, action == Action::"launchCampaign", resource is Campaign)
+when { (true && ((principal.roles.contains(Role::"AccountManager") || principal.roles.contains(Role::"CampaignDirector"))) && (!(true) || (resource.status == CampaignStatusValue::"approved")) && ((resource.scheduledStart <= context.currentTime)) && (resource.riskLabels.contains("high_risk")) && (context.deviceTrusted)) };

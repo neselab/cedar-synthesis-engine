@@ -1,0 +1,46 @@
+{
+  "domain": "wire_transfer",
+  "format_version": "complete-spec-v4",
+  "grouping": {
+    "applicability_triggers": "any",
+    "exception": "any",
+    "requirements": "all"
+  },
+  "parts": [
+    {
+      "anchor": "screenBeneficiary",
+      "bases": [
+        "G2",
+        "G5"
+      ],
+      "conditions": [
+        {
+          "atom": "V10",
+          "form": "require",
+          "parameters": {},
+          "target": "@action"
+        },
+        {
+          "atom": "V5",
+          "form": "obligation",
+          "parameters": {
+            "pattern": "EUR"
+          },
+          "target": "@action"
+        }
+      ],
+      "overrides": []
+    }
+  ],
+  "provenance": {
+    "arithmetic_safety_patches": [
+      "approveWire.V7"
+    ],
+    "kind": "less-specific-200 revised intent",
+    "source_case": "case-201",
+    "source_spec_sha256": "1fbca658aac1af226aac0ee3894ae01d3bcf94bbba1dcd846039b01845c02b26",
+    "transformation": "Drop only artificial 2000-2100 timestamp windows and catalog maxima 1000000/1000000000; retain all other gates."
+  },
+  "registry_sha256": "09b7d1a3f06003c1df265830beec2f0c16adab0c835c2dda656d57146f8631bb",
+  "source_sha256": "2907de8ce880b86d975423e46cde808f78a30bb93dc0a767cb3b4f0643c07c22"
+}
