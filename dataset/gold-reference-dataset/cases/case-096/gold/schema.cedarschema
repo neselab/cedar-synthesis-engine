@@ -1,0 +1,15 @@
+entity Document { author: User, filed: Bool, matter: Matter, privileged: Bool, status: DocumentStatusValue };
+entity DocumentStatusValue enum ["draft", "filed", "sealed"];
+entity Group in [Group] {  };
+entity Matter { client: User, leadAttorney: User, legalHold: Bool, status: MatterStatusValue, team: Set<User> };
+entity MatterStatusValue enum ["open", "closed", "archived"];
+entity Role enum ["Attorney", "Paralegal", "RecordsManager", "Client"];
+entity User { conflictedMatters: Set<Matter>, roles: Set<Role> };
+action viewDocument appliesTo { principal: [User], resource: [Document], context: {
+    currentDate: datetime,
+    privilegedAccessAuthorized: Bool,
+    retentionExpiry: datetime,
+    viewDocumentScheduledEnd: datetime,
+    viewDocumentScheduledStart: datetime,
+  },
+};

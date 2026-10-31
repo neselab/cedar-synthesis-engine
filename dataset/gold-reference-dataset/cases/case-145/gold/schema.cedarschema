@@ -1,0 +1,15 @@
+entity AccessBadge { expiresAt: datetime, holder: User };
+entity Cage { escortRequired: Bool, occupantList: Set<User>, siteZone: Group, status: CageStatusValue, tenant: User, zoneClearance: Long };
+entity CageStatusValue enum ["commissioned", "active", "locked", "decommissioned"];
+entity Group in [Group] {  };
+entity Role enum ["FacilityTech", "TenantEngineer", "SecurityOps", "Escort"];
+entity User { badge: AccessBadge, clearanceLevel: Long, memberOf: Group, roles: Set<Role> };
+entity WorkOrder { approvedBy: User, cage: Cage, raisedBy: User, status: WorkOrderStatusValue };
+entity WorkOrderStatusValue enum ["open", "approved", "completed"];
+action enterCage appliesTo { principal: [User], resource: [Cage], context: {
+    currentTime: datetime,
+    escortPresent: Bool,
+    maintenanceWindow: Bool,
+    onSiteNetwork: Bool,
+  },
+};

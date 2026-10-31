@@ -1,0 +1,2 @@
+permit (principal is User, action == Action::"releaseWire", resource is WireTransfer)
+when { (((resource.amount >= 0)) && ((principal.roles.contains(Role::"TreasuryOfficer"))) && (!(true) || (principal != resource.verifiedBy)) && (!(true) || (resource.status == WireTransferStatusValue::"verified")) && (!((resource.highRisk == true)) || context.highRiskReviewCompleted) && (context.mfaUsed) && (resource.account.allowedBeneficiaries.contains(resource.beneficiary))) };

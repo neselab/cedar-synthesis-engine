@@ -1,0 +1,2 @@
+permit (principal is User, action == Action::"confirmDelivery", resource is Shipment)
+when { (((resource.pieceCount >= 0)) && ((principal.roles.contains(Role::"Driver") || principal.roles.contains(Role::"DepotSupervisor"))) && (!(true) || (resource.status == ShipmentStatusValue::"intransit")) && (!(resource.hazmatClass.contains("corrosive")) || context.custodySignatureCaptured) && (!((resource.pieceCount > 1000)) || context.confirmDeliveryV6ReviewCompleted) && (context.onDepotNetwork)) };

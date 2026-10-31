@@ -1,0 +1,794 @@
+{
+  "anchors": {
+    "purgeDocument": {
+      "atoms": {
+        "V1": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the requester authored the document. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal"
+              },
+              {
+                "op": "field",
+                "path": "resource.author"
+              }
+            ],
+            "op": "eq"
+          },
+          "revision_notes": [
+            "Authorization requires that the requester authored the document. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the requester authored the document. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V1",
+            "meaning": "the requester authored the document",
+            "reads": "Document.author"
+          }
+        },
+        "V10": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the retention period has expired. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "context.retentionExpiry"
+              },
+              {
+                "op": "field",
+                "path": "context.currentDate"
+              }
+            ],
+            "op": "time_le"
+          },
+          "revision_notes": [
+            "Authorization requires that the retention period has expired. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the retention period has expired. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V10",
+            "meaning": "the retention period has expired",
+            "reads": "context.retentionExpiry"
+          }
+        },
+        "V12": {
+          "allowed_forms": [
+            "prohibit"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "prohibit",
+            "rationale": "A conflict, self-dealing condition, hold, lock, or already-enabled flag blocks this operation instead of relaxing its safeguards.",
+            "statement": "Authorization is denied when the matter is under a legal hold.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.matter.legalHold"
+              },
+              {
+                "op": "literal",
+                "value": true
+              }
+            ],
+            "op": "eq"
+          },
+          "revision_notes": [
+            "Authorization is denied when the matter is under a legal hold.",
+            "Composition rationale: A conflict, self-dealing condition, hold, lock, or already-enabled flag blocks this operation instead of relaxing its safeguards."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "prohibit",
+              "rationale": "A conflict, self-dealing condition, hold, lock, or already-enabled flag blocks this operation instead of relaxing its safeguards.",
+              "statement": "Authorization is denied when the matter is under a legal hold.",
+              "target": "@action"
+            },
+            "id": "V12",
+            "meaning": "the matter is under a legal hold",
+            "reads": "Matter.legalHold"
+          }
+        }
+      },
+      "bases": {
+        "G5": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.matter.status"
+              },
+              {
+                "id": "archived",
+                "op": "entity",
+                "type": "MatterStatusValue"
+              }
+            ],
+            "op": "eq"
+          },
+          "signature": "V11",
+          "source": {
+            "id": "G5",
+            "meaning": "a document may be purged only after its matter is archived",
+            "reads": "Document.status",
+            "signature": "V11"
+          }
+        }
+      },
+      "domain_gate": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2000-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  },
+                  {
+                    "op": "field",
+                    "path": "context.currentDate"
+                  }
+                ],
+                "op": "time_le"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.currentDate"
+                  },
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2100-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  }
+                ],
+                "op": "time_le"
+              }
+            ],
+            "op": "all"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2000-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  },
+                  {
+                    "op": "field",
+                    "path": "context.retentionExpiry"
+                  }
+                ],
+                "op": "time_le"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.retentionExpiry"
+                  },
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2100-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  }
+                ],
+                "op": "time_le"
+              }
+            ],
+            "op": "all"
+          }
+        ],
+        "op": "all"
+      },
+      "eligibility": {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "RecordsManager",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          }
+        ],
+        "op": "any"
+      },
+      "field_bindings": {
+        "Document.author": "resource.author",
+        "Document.matter.status": "resource.matter.status",
+        "Matter.legalHold": "resource.matter.legalHold",
+        "context.currentDate": "context.currentDate",
+        "context.retentionExpiry": "context.retentionExpiry"
+      },
+      "overrides": {},
+      "resource_type": "Document"
+    },
+    "viewDocument": {
+      "atoms": {
+        "V1": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the requester authored the document. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal"
+              },
+              {
+                "op": "field",
+                "path": "resource.author"
+              }
+            ],
+            "op": "eq"
+          },
+          "revision_notes": [
+            "Authorization requires that the requester authored the document. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the requester authored the document. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V1",
+            "meaning": "the requester authored the document",
+            "reads": "Document.author"
+          }
+        },
+        "V10": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the request falls within a permitted window. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.viewDocumentScheduledStart"
+                  },
+                  {
+                    "op": "field",
+                    "path": "context.currentDate"
+                  }
+                ],
+                "op": "time_le"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.currentDate"
+                  },
+                  {
+                    "op": "field",
+                    "path": "context.viewDocumentScheduledEnd"
+                  }
+                ],
+                "op": "time_lt"
+              }
+            ],
+            "op": "all"
+          },
+          "revision_notes": [
+            "Authorization requires that the request falls within a permitted window. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the request falls within a permitted window. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V10",
+            "meaning": "the request falls within a permitted window",
+            "reads": "context.currentDate"
+          }
+        },
+        "V12": {
+          "allowed_forms": [
+            "obligation"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "obligation",
+            "rationale": "Explicit synthetic completion of the trigger consequence using a trusted request-specific fact; no unconditional grant or base waiver.",
+            "required_fact": "privilegedAccessAuthorized",
+            "statement": "When the document is marked privileged, access to this privileged document has explicit host-recorded authorization.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.privileged"
+              },
+              {
+                "op": "literal",
+                "value": true
+              }
+            ],
+            "op": "eq"
+          },
+          "requirement": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.privileged"
+                      },
+                      {
+                        "op": "literal",
+                        "value": true
+                      }
+                    ],
+                    "op": "eq"
+                  }
+                ],
+                "op": "not"
+              },
+              {
+                "op": "field",
+                "path": "context.privilegedAccessAuthorized"
+              }
+            ],
+            "op": "any"
+          },
+          "revision_notes": [
+            "When the document is marked privileged, access to this privileged document has explicit host-recorded authorization.",
+            "Composition rationale: Explicit synthetic completion of the trigger consequence using a trusted request-specific fact; no unconditional grant or base waiver."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "obligation",
+              "rationale": "Explicit synthetic completion of the trigger consequence using a trusted request-specific fact; no unconditional grant or base waiver.",
+              "required_fact": "privilegedAccessAuthorized",
+              "statement": "When the document is marked privileged, access to this privileged document has explicit host-recorded authorization.",
+              "target": "@action"
+            },
+            "id": "V12",
+            "meaning": "the document is marked privileged",
+            "reads": "Document.privileged"
+          }
+        },
+        "V2": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the requester holds a particular role. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.roles"
+                  },
+                  {
+                    "id": "Attorney",
+                    "op": "entity",
+                    "type": "Role"
+                  }
+                ],
+                "op": "contains"
+              }
+            ],
+            "op": "any"
+          },
+          "revision_notes": [
+            "Authorization requires that the requester holds a particular role. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the requester holds a particular role. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V2",
+            "meaning": "the requester holds a particular role",
+            "reads": "principal is Attorney"
+          }
+        }
+      },
+      "bases": {
+        "G1": {
+          "predicate": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.conflictedMatters"
+                  },
+                  {
+                    "op": "field",
+                    "path": "resource.matter"
+                  }
+                ],
+                "op": "contains"
+              }
+            ],
+            "op": "not"
+          },
+          "signature": "V4",
+          "source": {
+            "id": "G1",
+            "meaning": "an attorney conflicted out of a matter may not view its documents",
+            "reads": "user.conflictedMatters vs Document.matter",
+            "signature": "V4"
+          }
+        },
+        "G5": {
+          "predicate": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.status"
+                  },
+                  {
+                    "id": "sealed",
+                    "op": "entity",
+                    "type": "DocumentStatusValue"
+                  }
+                ],
+                "op": "ne"
+              },
+              {
+                "op": "field",
+                "path": "resource.filed"
+              }
+            ],
+            "op": "any"
+          },
+          "signature": "V11",
+          "source": {
+            "id": "G5",
+            "meaning": "a sealed document may be viewed only after it has been filed",
+            "reads": "Document.status",
+            "signature": "V11"
+          }
+        }
+      },
+      "domain_gate": {
+        "op": "literal",
+        "value": true
+      },
+      "eligibility": {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "Attorney",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "Paralegal",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "RecordsManager",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          }
+        ],
+        "op": "any"
+      },
+      "field_bindings": {
+        "Document.author": "resource.author",
+        "Document.filed": "resource.filed",
+        "Document.matter": "resource.matter",
+        "Document.privileged": "resource.privileged",
+        "Document.status": "resource.status",
+        "context.currentDate": "context.currentDate",
+        "context.viewDocumentScheduledEnd": "context.viewDocumentScheduledEnd",
+        "context.viewDocumentScheduledStart": "context.viewDocumentScheduledStart",
+        "user.conflictedMatters": "principal.conflictedMatters"
+      },
+      "overrides": {},
+      "resource_type": "Document"
+    }
+  },
+  "business_review_revision": "2026-10-23-r1",
+  "context": {
+    "currentDate": {
+      "type": "datetime"
+    },
+    "privilegedAccessAuthorized": {
+      "type": "Bool"
+    },
+    "retentionExpiry": {
+      "type": "datetime"
+    },
+    "viewDocumentScheduledEnd": {
+      "description": "exclusive end of the declared Scheduled window",
+      "type": "datetime"
+    },
+    "viewDocumentScheduledStart": {
+      "description": "inclusive start of the declared Scheduled window",
+      "type": "datetime"
+    }
+  },
+  "contract": "complete-spec-v4",
+  "decisions": [
+    "Added Document.filed: independent filing fact: sealed documents require filed=true; unsealed documents are unrestricted by this base",
+    "Added context.viewDocumentScheduledEnd: exclusive end of the declared Scheduled window",
+    "Added context.viewDocumentScheduledStart: inclusive start of the declared Scheduled window",
+    "All source identities denote User entities; role sets may overlap without implicit exclusivity.",
+    "All timestamps read by predicates are bounded inclusively to 2000-01-01 through 2100-01-01 UTC; requests outside the explicit domain gate deny.",
+    "Business revision v2: catalogs are declared synthetic organizational policies, not empirical norms. Selected-atom obligations are mandatory in both forms and cannot be waived by a base exception or override.",
+    "Money is nonnegative integer USD cents, at most 1,000,000,000. Counts are nonnegative integers at most 1,000,000 unless a narrower dictionary is declared.",
+    "Request context is treated as trusted input from the host; authorization does not attest network, emergency, signature, or scheduling facts.",
+    "Retained source repairs: exact lifecycle states, linked course roster, explicit promotion/filing facts, independent calibration expiry, comp expiry, and guarded override eligibility are intentional experiment definitions. Their typed ASTs and field descriptions, not the ambiguous source shorthand, are authoritative.",
+    "Rules operate on snapshots. A selected lifecycle base requires the exact named state unless its predicate explicitly lists alternatives.",
+    "Source business descriptions are retained for audit; the authored typed predicates and dictionaries define the experiment. No statutory compliance claim is made.",
+    "Source tag kinds are represented by Set<String>. Group membership is reflexive and transitive Cedar entity ancestry.",
+    "purgeDocument/G5 source read is Document.status but its meaning names the matter state; bind Document.matter.status == archived."
+  ],
+  "domain": "matter_files",
+  "entities": {
+    "Document": {
+      "attributes": {
+        "author": {
+          "type": "User"
+        },
+        "filed": {
+          "description": "independent filing fact: sealed documents require filed=true; unsealed documents are unrestricted by this base",
+          "type": "Bool"
+        },
+        "matter": {
+          "type": "Matter"
+        },
+        "privileged": {
+          "type": "Bool"
+        },
+        "status": {
+          "type": "DocumentStatusValue"
+        }
+      }
+    },
+    "DocumentStatusValue": {
+      "enum": [
+        "draft",
+        "filed",
+        "sealed"
+      ]
+    },
+    "Group": {
+      "attributes": {},
+      "member_of": [
+        "Group"
+      ]
+    },
+    "Matter": {
+      "attributes": {
+        "client": {
+          "type": "User"
+        },
+        "leadAttorney": {
+          "type": "User"
+        },
+        "legalHold": {
+          "type": "Bool"
+        },
+        "status": {
+          "type": "MatterStatusValue"
+        },
+        "team": {
+          "type": "Set<User>"
+        }
+      }
+    },
+    "MatterStatusValue": {
+      "enum": [
+        "open",
+        "closed",
+        "archived"
+      ]
+    },
+    "Role": {
+      "enum": [
+        "Attorney",
+        "Paralegal",
+        "RecordsManager",
+        "Client"
+      ]
+    },
+    "User": {
+      "attributes": {
+        "conflictedMatters": {
+          "type": "Set<Matter>"
+        },
+        "roles": {
+          "type": "Set<Role>"
+        }
+      }
+    }
+  },
+  "revision_contract": "business-composition-v4",
+  "source_action_chains": [],
+  "source_sha256": "2907de8ce880b86d975423e46cde808f78a30bb93dc0a767cb3b4f0643c07c22",
+  "status": "authored experimental assumptions; not human semantic approval",
+  "version": "business-registry-v4"
+}

@@ -1,0 +1,1119 @@
+{
+  "anchors": {
+    "confirmDelivery": {
+      "atoms": {
+        "V10": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that delivery is confirmed within the shipment's delivery window (before deliveryWindowEnd). Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "context.currentTime"
+              },
+              {
+                "op": "field",
+                "path": "resource.deliveryWindowEnd"
+              }
+            ],
+            "op": "time_lt"
+          },
+          "revision_notes": [
+            "Authorization requires that delivery is confirmed within the shipment's delivery window (before deliveryWindowEnd). Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that delivery is confirmed within the shipment's delivery window (before deliveryWindowEnd). Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V10",
+            "meaning": "delivery is confirmed within the shipment's delivery window (before deliveryWindowEnd)",
+            "reads": "context.currentTime"
+          }
+        },
+        "V13": {
+          "allowed_forms": [
+            "obligation"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "obligation",
+            "rationale": "The source describes a trigger and an additional required consequence; encode that implication independently of bases.",
+            "statement": "When a hazmat shipment requires a recorded custody signature at delivery, its explicit additional requirement must hold. This does not waive or scope any base.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "label": {
+              "type": "String",
+              "values": [
+                "corrosive",
+                "flammable",
+                "toxic"
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "label": "flammable"
+            },
+            {
+              "label": "corrosive"
+            },
+            {
+              "label": "toxic"
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.hazmatClass"
+              },
+              {
+                "name": "label",
+                "op": "parameter"
+              }
+            ],
+            "op": "contains"
+          },
+          "requirement": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.hazmatClass"
+                      },
+                      {
+                        "name": "label",
+                        "op": "parameter"
+                      }
+                    ],
+                    "op": "contains"
+                  }
+                ],
+                "op": "not"
+              },
+              {
+                "op": "field",
+                "path": "context.custodySignatureCaptured"
+              }
+            ],
+            "op": "any"
+          },
+          "revision_notes": [
+            "Hazard membership is the trigger. Missing sign-off violates a separate mandatory obligation instead of disabling applicability.",
+            "When this trigger holds, a custody signature for this delivery has been recorded. This is a trusted request-specific host attestation.",
+            "When a hazmat shipment requires a recorded custody signature at delivery, its explicit additional requirement must hold. This does not waive or scope any base.",
+            "Composition rationale: The source describes a trigger and an additional required consequence; encode that implication independently of bases."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "obligation",
+              "rationale": "The source describes a trigger and an additional required consequence; encode that implication independently of bases.",
+              "statement": "When a hazmat shipment requires a recorded custody signature at delivery, its explicit additional requirement must hold. This does not waive or scope any base.",
+              "target": "@action"
+            },
+            "id": "V13",
+            "meaning": "a hazmat shipment requires a recorded custody signature at delivery",
+            "reads": "Shipment.hazmatClass"
+          }
+        },
+        "V14": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that proof of delivery has been captured for the request. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "op": "field",
+            "path": "context.proofOfDelivery"
+          },
+          "revision_notes": [
+            "Authorization requires that proof of delivery has been captured for the request. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that proof of delivery has been captured for the request. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V14",
+            "meaning": "proof of delivery has been captured for the request",
+            "reads": "context.proofOfDelivery"
+          }
+        },
+        "V6": {
+          "allowed_forms": [
+            "obligation"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "obligation",
+            "rationale": "A descriptive quantity threshold without a suitable duty target is completed as an explicitly authored additional review, not as a minimum transaction size or lifecycle waiver.",
+            "required_fact": "confirmDeliveryV6ReviewCompleted",
+            "statement": "When the delivered piece count crosses the reconciliation threshold, the additional review recorded by confirmDeliveryV6ReviewCompleted must be complete; smaller requests do not need this additional review.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "threshold": {
+              "type": "Long",
+              "values": [
+                10,
+                100,
+                1000
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "threshold": 10
+            },
+            {
+              "threshold": 100
+            },
+            {
+              "threshold": 1000
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.pieceCount"
+              },
+              {
+                "name": "threshold",
+                "op": "parameter"
+              }
+            ],
+            "op": "gt"
+          },
+          "requirement": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.pieceCount"
+                      },
+                      {
+                        "name": "threshold",
+                        "op": "parameter"
+                      }
+                    ],
+                    "op": "gt"
+                  }
+                ],
+                "op": "not"
+              },
+              {
+                "op": "field",
+                "path": "context.confirmDeliveryV6ReviewCompleted"
+              }
+            ],
+            "op": "any"
+          },
+          "revision_notes": [
+            "Declared synthetic review/acceptance bands measured in packages per shipment. Source-explicit refill > 0 and production-release defect == 0 remain unchanged.",
+            "When the delivered piece count crosses the reconciliation threshold, the additional review recorded by confirmDeliveryV6ReviewCompleted must be complete; smaller requests do not need this additional review.",
+            "Composition rationale: A descriptive quantity threshold without a suitable duty target is completed as an explicitly authored additional review, not as a minimum transaction size or lifecycle waiver."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "obligation",
+              "rationale": "A descriptive quantity threshold without a suitable duty target is completed as an explicitly authored additional review, not as a minimum transaction size or lifecycle waiver.",
+              "required_fact": "confirmDeliveryV6ReviewCompleted",
+              "statement": "When the delivered piece count crosses the reconciliation threshold, the additional review recorded by confirmDeliveryV6ReviewCompleted must be complete; smaller requests do not need this additional review.",
+              "target": "@action"
+            },
+            "id": "V6",
+            "meaning": "the delivered piece count crosses the reconciliation threshold",
+            "reads": "Shipment.pieceCount"
+          }
+        },
+        "V9": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the confirmation is submitted from a depot network. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "op": "field",
+            "path": "context.onDepotNetwork"
+          },
+          "revision_notes": [
+            "Authorization requires that the confirmation is submitted from a depot network. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the confirmation is submitted from a depot network. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V9",
+            "meaning": "the confirmation is submitted from a depot network",
+            "reads": "context.onDepotNetwork"
+          }
+        }
+      },
+      "bases": {
+        "G2": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal"
+              },
+              {
+                "op": "field",
+                "path": "resource.driverOfRecord"
+              }
+            ],
+            "op": "eq"
+          },
+          "signature": "V1",
+          "source": {
+            "id": "G2",
+            "meaning": "the same driver of record who dispatched the shipment must be the one to confirm its delivery",
+            "reads": "principal vs Shipment.driverOfRecord",
+            "signature": "V1"
+          }
+        },
+        "G5": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.status"
+              },
+              {
+                "id": "intransit",
+                "op": "entity",
+                "type": "ShipmentStatusValue"
+              }
+            ],
+            "op": "eq"
+          },
+          "signature": "V11",
+          "source": {
+            "id": "G5",
+            "meaning": "delivery may be confirmed only after the shipment has reached the intransit state",
+            "reads": "Shipment.status",
+            "signature": "V11"
+          }
+        }
+      },
+      "domain_gate": {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.pieceCount"
+              },
+              {
+                "op": "literal",
+                "value": 0
+              }
+            ],
+            "op": "ge"
+          }
+        ],
+        "op": "all"
+      },
+      "eligibility": {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "Driver",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "DepotSupervisor",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          }
+        ],
+        "op": "any"
+      },
+      "field_bindings": {
+        "Shipment.deliveryWindowEnd": "resource.deliveryWindowEnd",
+        "Shipment.driverOfRecord": "resource.driverOfRecord",
+        "Shipment.hazmatClass": "resource.hazmatClass",
+        "Shipment.pieceCount": "resource.pieceCount",
+        "Shipment.status": "resource.status",
+        "context.currentTime": "context.currentTime",
+        "context.custodySignatureCaptured": "context.custodySignatureCaptured",
+        "context.expediteDeclared": "context.expediteDeclared",
+        "context.onDepotNetwork": "context.onDepotNetwork",
+        "context.proofOfDelivery": "context.proofOfDelivery"
+      },
+      "overrides": {
+        "G3": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "context.expediteDeclared"
+              },
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "principal.roles"
+                      },
+                      {
+                        "id": "DepotSupervisor",
+                        "op": "entity",
+                        "type": "Role"
+                      }
+                    ],
+                    "op": "contains"
+                  }
+                ],
+                "op": "any"
+              }
+            ],
+            "op": "all"
+          },
+          "source": {
+            "id": "G3",
+            "meaning": "a declared expedite lets a depot supervisor confirm delivery in place of the dispatching driver of record, overriding the binding-of-duty rule",
+            "overrides": [
+              "G2"
+            ],
+            "reads": "context.expediteDeclared",
+            "requires_adjudication": true
+          },
+          "targets": [
+            "G2"
+          ]
+        }
+      },
+      "resource_type": "Shipment"
+    },
+    "dispatchShipment": {
+      "atoms": {
+        "V10": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the dispatch falls within the shipment's delivery window (before deliveryWindowEnd). Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "context.currentTime"
+              },
+              {
+                "op": "field",
+                "path": "resource.deliveryWindowEnd"
+              }
+            ],
+            "op": "time_lt"
+          },
+          "revision_notes": [
+            "Authorization requires that the dispatch falls within the shipment's delivery window (before deliveryWindowEnd). Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the dispatch falls within the shipment's delivery window (before deliveryWindowEnd). Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V10",
+            "meaning": "the dispatch falls within the shipment's delivery window (before deliveryWindowEnd)",
+            "reads": "context.currentTime"
+          }
+        },
+        "V13": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the shipment carries a hazmat classification tag. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "label": {
+              "type": "String",
+              "values": [
+                "corrosive",
+                "flammable",
+                "toxic"
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "label": "flammable"
+            },
+            {
+              "label": "corrosive"
+            },
+            {
+              "label": "toxic"
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.hazmatClass"
+              },
+              {
+                "name": "label",
+                "op": "parameter"
+              }
+            ],
+            "op": "contains"
+          },
+          "revision_notes": [
+            "Authorization requires that the shipment carries a hazmat classification tag. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the shipment carries a hazmat classification tag. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V13",
+            "meaning": "the shipment carries a hazmat classification tag",
+            "reads": "Shipment.hazmatClass"
+          }
+        },
+        "V5": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the tracking code carries the assigned carrier prefix. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "pattern": {
+              "type": "String",
+              "values": [
+                "CARRIER-A-*",
+                "CARRIER-B-*"
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "pattern": "CARRIER-A-*"
+            },
+            {
+              "pattern": "CARRIER-B-*"
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.trackingCode"
+              },
+              {
+                "name": "pattern",
+                "op": "parameter"
+              }
+            ],
+            "op": "like"
+          },
+          "revision_notes": [
+            "Authorization requires that the tracking code carries the assigned carrier prefix. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the tracking code carries the assigned carrier prefix. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V5",
+            "meaning": "the tracking code carries the assigned carrier prefix",
+            "reads": "Shipment.trackingCode"
+          }
+        },
+        "V6": {
+          "allowed_forms": [
+            "obligation"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "obligation",
+            "rationale": "The source describes a trigger and an additional required consequence; encode that implication independently of bases.",
+            "statement": "When the piece count crosses a threshold requiring elevated authority, its explicit additional requirement must hold. This does not waive or scope any base.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "threshold": {
+              "type": "Long",
+              "values": [
+                10,
+                100,
+                1000
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "threshold": 10
+            },
+            {
+              "threshold": 100
+            },
+            {
+              "threshold": 1000
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.pieceCount"
+              },
+              {
+                "name": "threshold",
+                "op": "parameter"
+              }
+            ],
+            "op": "gt"
+          },
+          "requirement": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.pieceCount"
+                      },
+                      {
+                        "name": "threshold",
+                        "op": "parameter"
+                      }
+                    ],
+                    "op": "gt"
+                  }
+                ],
+                "op": "not"
+              },
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "principal.roles"
+                      },
+                      {
+                        "id": "DispatchManager",
+                        "op": "entity",
+                        "type": "Role"
+                      }
+                    ],
+                    "op": "contains"
+                  }
+                ],
+                "op": "any"
+              }
+            ],
+            "op": "any"
+          },
+          "revision_notes": [
+            "Declared synthetic review/acceptance bands measured in packages per shipment. Source-explicit refill > 0 and production-release defect == 0 remain unchanged.",
+            "When the piece count crosses a threshold requiring elevated authority, its explicit additional requirement must hold. This does not waive or scope any base.",
+            "Composition rationale: The source describes a trigger and an additional required consequence; encode that implication independently of bases."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "obligation",
+              "rationale": "The source describes a trigger and an additional required consequence; encode that implication independently of bases.",
+              "statement": "When the piece count crosses a threshold requiring elevated authority, its explicit additional requirement must hold. This does not waive or scope any base.",
+              "target": "@action"
+            },
+            "id": "V6",
+            "meaning": "the piece count crosses a threshold requiring elevated authority",
+            "reads": "Shipment.pieceCount"
+          }
+        },
+        "V9": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the request originates on the origin depot network. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "op": "field",
+            "path": "context.onDepotNetwork"
+          },
+          "revision_notes": [
+            "Authorization requires that the request originates on the origin depot network. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the request originates on the origin depot network. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V9",
+            "meaning": "the request originates on the origin depot network",
+            "reads": "context.onDepotNetwork"
+          }
+        }
+      },
+      "bases": {
+        "G1": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal"
+              },
+              {
+                "op": "field",
+                "path": "resource.planner"
+              }
+            ],
+            "op": "ne"
+          },
+          "signature": "V1",
+          "source": {
+            "id": "G1",
+            "meaning": "the person who planned a shipment may not be its driver of record who dispatches it",
+            "reads": "principal vs Shipment.planner",
+            "signature": "V1"
+          }
+        },
+        "G5": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.status"
+              },
+              {
+                "id": "created",
+                "op": "entity",
+                "type": "ShipmentStatusValue"
+              }
+            ],
+            "op": "eq"
+          },
+          "signature": "V11",
+          "source": {
+            "id": "G5",
+            "meaning": "a shipment may be dispatched only after it has reached the created state",
+            "reads": "Shipment.status",
+            "signature": "V11"
+          }
+        }
+      },
+      "domain_gate": {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.pieceCount"
+              },
+              {
+                "op": "literal",
+                "value": 0
+              }
+            ],
+            "op": "ge"
+          }
+        ],
+        "op": "all"
+      },
+      "eligibility": {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "Driver",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "DispatchManager",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          }
+        ],
+        "op": "any"
+      },
+      "field_bindings": {
+        "Shipment.deliveryWindowEnd": "resource.deliveryWindowEnd",
+        "Shipment.hazmatClass": "resource.hazmatClass",
+        "Shipment.pieceCount": "resource.pieceCount",
+        "Shipment.planner": "resource.planner",
+        "Shipment.status": "resource.status",
+        "Shipment.trackingCode": "resource.trackingCode",
+        "context.currentTime": "context.currentTime",
+        "context.expediteDeclared": "context.expediteDeclared",
+        "context.onDepotNetwork": "context.onDepotNetwork"
+      },
+      "overrides": {
+        "G3": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "context.expediteDeclared"
+              },
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "principal.roles"
+                      },
+                      {
+                        "id": "DispatchManager",
+                        "op": "entity",
+                        "type": "Role"
+                      }
+                    ],
+                    "op": "contains"
+                  }
+                ],
+                "op": "any"
+              }
+            ],
+            "op": "all"
+          },
+          "source": {
+            "id": "G3",
+            "meaning": "a declared expedite lets a dispatch manager dispatch a shipment they also planned, overriding the planner/driver separation of duty",
+            "overrides": [
+              "G1"
+            ],
+            "reads": "context.expediteDeclared",
+            "requires_adjudication": true
+          },
+          "targets": [
+            "G1"
+          ]
+        }
+      },
+      "resource_type": "Shipment"
+    }
+  },
+  "business_review_revision": "2026-10-23-r1",
+  "context": {
+    "confirmDeliveryV6ReviewCompleted": {
+      "type": "Bool"
+    },
+    "currentTime": {
+      "type": "datetime"
+    },
+    "custodySignatureCaptured": {
+      "description": "explicit recorded custody signature required by the source V13 delivery clause",
+      "type": "Bool"
+    },
+    "expediteDeclared": {
+      "type": "Bool"
+    },
+    "onDepotNetwork": {
+      "type": "Bool"
+    },
+    "proofOfDelivery": {
+      "type": "Bool"
+    }
+  },
+  "contract": "complete-spec-v4",
+  "decisions": [
+    "Added context.custodySignatureCaptured: explicit recorded custody signature required by the source V13 delivery clause",
+    "All source identities denote User entities; role sets may overlap without implicit exclusivity.",
+    "All timestamps read by predicates are bounded inclusively to 2000-01-01 through 2100-01-01 UTC; requests outside the explicit domain gate deny.",
+    "Business revision v2: catalogs are declared synthetic organizational policies, not empirical norms. Selected-atom obligations are mandatory in both forms and cannot be waived by a base exception or override.",
+    "CustodyLog.note is source documentation, not an attribute.",
+    "Money is nonnegative integer USD cents, at most 1,000,000,000. Counts are nonnegative integers at most 1,000,000 unless a narrower dictionary is declared.",
+    "Request context is treated as trusted input from the host; authorization does not attest network, emergency, signature, or scheduling facts.",
+    "Retained source repairs: exact lifecycle states, linked course roster, explicit promotion/filing facts, independent calibration expiry, comp expiry, and guarded override eligibility are intentional experiment definitions. Their typed ASTs and field descriptions, not the ambiguous source shorthand, are authoritative.",
+    "Rules operate on snapshots. A selected lifecycle base requires the exact named state unless its predicate explicitly lists alternatives.",
+    "Source business descriptions are retained for audit; the authored typed predicates and dictionaries define the experiment. No statutory compliance claim is made.",
+    "Source tag kinds are represented by Set<String>. Group membership is reflexive and transitive Cedar entity ancestry.",
+    "confirmDelivery/V13: Hazard membership is the trigger. Missing sign-off violates a separate mandatory obligation instead of disabling applicability.",
+    "confirmDelivery/V13: This implication is mandatory whenever the atom is selected, in either form; it survives all base exceptions and overrides.",
+    "confirmDelivery/V13: When this trigger holds, a custody signature for this delivery has been recorded. This is a trusted request-specific host attestation.",
+    "confirmDelivery/V6: Declared synthetic review/acceptance bands measured in packages per shipment. Source-explicit refill > 0 and production-release defect == 0 remain unchanged.",
+    "dispatchShipment/V6: Declared synthetic review/acceptance bands measured in packages per shipment. Source-explicit refill > 0 and production-release defect == 0 remain unchanged.",
+    "dispatchShipment/V6: This implication is mandatory whenever the atom is selected, in either form; it survives all base exceptions and overrides.",
+    "dispatchShipment/V6: When this trigger holds, the requester must hold one of: DispatchManager."
+  ],
+  "domain": "shipment_dispatch",
+  "entities": {
+    "CustodyLog": {
+      "attributes": {}
+    },
+    "DeliveryReceipt": {
+      "attributes": {
+        "recipient": {
+          "type": "User"
+        },
+        "shipment": {
+          "type": "Shipment"
+        },
+        "signedAt": {
+          "type": "datetime"
+        }
+      }
+    },
+    "Group": {
+      "attributes": {},
+      "member_of": [
+        "Group"
+      ]
+    },
+    "Role": {
+      "enum": [
+        "Planner",
+        "Driver",
+        "DispatchManager",
+        "DepotSupervisor",
+        "Auditor"
+      ]
+    },
+    "Shipment": {
+      "attributes": {
+        "deliveryWindowEnd": {
+          "type": "datetime"
+        },
+        "driverOfRecord": {
+          "type": "User"
+        },
+        "grossWeightKg": {
+          "bounds": [
+            0,
+            1000000
+          ],
+          "type": "Long",
+          "unit": "kilograms"
+        },
+        "hazmatClass": {
+          "representation": "zero or more label strings",
+          "type": "Set<String>"
+        },
+        "originDepot": {
+          "type": "String"
+        },
+        "pieceCount": {
+          "bounds": [
+            0,
+            1000000
+          ],
+          "type": "Long",
+          "unit": "packages per shipment"
+        },
+        "planner": {
+          "type": "User"
+        },
+        "status": {
+          "type": "ShipmentStatusValue"
+        },
+        "trackingCode": {
+          "type": "String"
+        }
+      }
+    },
+    "ShipmentStatusValue": {
+      "enum": [
+        "created",
+        "dispatched",
+        "intransit",
+        "delivered"
+      ]
+    },
+    "User": {
+      "attributes": {
+        "roles": {
+          "type": "Set<Role>"
+        }
+      }
+    }
+  },
+  "revision_contract": "business-composition-v4",
+  "source_action_chains": [
+    {
+      "chain": [
+        "dispatchShipment",
+        "confirmDelivery"
+      ],
+      "linked_by": [
+        "status",
+        "planner",
+        "driverOfRecord"
+      ],
+      "shared_resource": "Shipment"
+    }
+  ],
+  "source_sha256": "2907de8ce880b86d975423e46cde808f78a30bb93dc0a767cb3b4f0643c07c22",
+  "status": "authored experimental assumptions; not human semantic approval",
+  "version": "business-registry-v4"
+}

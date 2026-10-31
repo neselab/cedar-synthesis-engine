@@ -1,0 +1,13 @@
+entity Content { allowedRegions: Set<String>, embargoUntil: datetime, labels: Set<String>, publisher: User, requiredTier: Long, status: ContentStatusValue };
+entity ContentStatusValue enum ["draft", "published", "flagged", "removed"];
+entity Group in [Group] {  };
+entity Report { content: Content, reporter: User };
+entity Role enum ["Subscriber", "Moderator", "Editor", "Admin"];
+entity User { region: String, roles: Set<Role>, subscriptionTier: Long };
+action watchContent appliesTo { principal: [User], resource: [Content], context: {
+    currentTime: datetime,
+    deviceTrusted: Bool,
+    moderateScheduledEnd: datetime,
+    moderateScheduledStart: datetime,
+  },
+};

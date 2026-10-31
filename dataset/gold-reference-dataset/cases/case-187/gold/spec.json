@@ -1,0 +1,51 @@
+{
+  "domain": "code_repository",
+  "format_version": "complete-spec-v4",
+  "grouping": {
+    "applicability_triggers": "any",
+    "exception": "any",
+    "requirements": "all"
+  },
+  "parts": [
+    {
+      "anchor": "cloneRepository",
+      "bases": [
+        "G4"
+      ],
+      "conditions": [
+        {
+          "atom": "V11",
+          "form": "require",
+          "parameters": {
+            "state": "incubating"
+          },
+          "target": "@action"
+        },
+        {
+          "atom": "V13",
+          "form": "require",
+          "parameters": {
+            "label": "security"
+          },
+          "target": "@action"
+        },
+        {
+          "atom": "V9",
+          "form": "require",
+          "parameters": {},
+          "target": "@action"
+        }
+      ],
+      "overrides": []
+    }
+  ],
+  "provenance": {
+    "inherited_arithmetic_safety_patches": [],
+    "kind": "non-time-33 revised intent",
+    "source_case": "case-187",
+    "source_spec_sha256": "46246d810f9db57fec427d6a8377d5a4ebbec9a190e6317a97bad0813fcd0caf",
+    "transformation": "Remove only artificial 2000-2100 datetime bounds and catalog maxima; retain all business rules."
+  },
+  "registry_sha256": "95605b11278e1399e866c5f98c15ebcc8a8340486a1907279ea9d6216d84bf90",
+  "source_sha256": "2907de8ce880b86d975423e46cde808f78a30bb93dc0a767cb3b4f0643c07c22"
+}

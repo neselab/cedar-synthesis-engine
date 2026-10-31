@@ -1,0 +1,2 @@
+permit (principal is User, action == Action::"submitFeedback", resource is InterviewFeedback)
+when { (true && ((principal.roles.contains(Role::"Interviewer"))) && (!(true) || (principal != resource.application.referredBy)) && (!(true) || (resource.status == InterviewFeedbackStatusValue::"scheduled")) && (((context.submitFeedbackScheduledStart <= context.currentTime) && (context.currentTime < context.submitFeedbackScheduledEnd))) && (resource.application.hiringTeam.contains(principal)) && (context.onCorpNetwork)) };

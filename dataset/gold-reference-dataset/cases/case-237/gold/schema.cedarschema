@@ -1,0 +1,19 @@
+entity CreditNote { amount: Long, folio: Folio, issuedBy: User };
+entity Folio { adjustmentAmount: Long, approvedBy: User, charges: Set<String>, checkoutDeadline: datetime, disputeCategory: Set<String>, folioBalance: Long, folioCode: String, guest: User, guestSegment: Long, lineItemCount: Long, originalCharge: Long, postedBy: User, propertyRegion: Group, status: FolioStatusValue, vipFlag: Bool };
+entity FolioAuditLog {  };
+entity FolioStatusValue enum ["open", "adjustment_posted", "approved", "settled"];
+entity Group in [Group] {  };
+entity Role enum ["FrontDeskAgent", "NightAuditor", "AccountingClerk", "RevenueManager", "Auditor"];
+entity User { adjustmentAuthorityLevel: Long, assignedCodePattern: String, assignedGroup: Group, roles: Set<Role> };
+action approveAdjustment appliesTo { principal: [User], resource: [Folio], context: {
+    approveAdjustmentScheduledEnd: datetime,
+    approveAdjustmentScheduledStart: datetime,
+    currentTime: datetime,
+    disputeVerified: Bool,
+    gmOverrideDeclared: Bool,
+    largeCreditApprovalRecorded: Bool,
+    onPropertyNetwork: Bool,
+    vipHandlingReviewed: Bool,
+    vipSignoffRecorded: Bool,
+  },
+};

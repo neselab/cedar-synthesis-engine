@@ -1,0 +1,27 @@
+entity AuditLog {  };
+entity Group in [Group] {  };
+entity ProductionRelease { batchCode: String, releasedBy: User, workOrder: WorkOrder };
+entity Role enum ["Operator", "Inspector", "QualityManager", "ProductionSupervisor", "Auditor"];
+entity User { roles: Set<Role> };
+entity WorkOrder { createdAt: datetime, defectCount: Long, holdFlag: Bool, inspector: User, operator: User, partCode: String, station: String, status: WorkOrderStatusValue };
+entity WorkOrderStatusValue enum ["open", "inprogress", "inspected", "released"];
+action releaseToProduction appliesTo { principal: [User], resource: [WorkOrder], context: {
+    currentTime: datetime,
+    deviationAuthorized: Bool,
+    onPlantNetwork: Bool,
+    releaseToProductionScheduledEnd: datetime,
+    releaseToProductionScheduledStart: datetime,
+    signoffWorkOrderScheduledEnd: datetime,
+    signoffWorkOrderScheduledStart: datetime,
+  },
+};
+action signoffWorkOrder appliesTo { principal: [User], resource: [WorkOrder], context: {
+    currentTime: datetime,
+    deviationAuthorized: Bool,
+    onPlantNetwork: Bool,
+    releaseToProductionScheduledEnd: datetime,
+    releaseToProductionScheduledStart: datetime,
+    signoffWorkOrderScheduledEnd: datetime,
+    signoffWorkOrderScheduledStart: datetime,
+  },
+};

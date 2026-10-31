@@ -1,0 +1,62 @@
+{
+  "domain": "invoice_approval",
+  "format_version": "complete-spec-v4",
+  "grouping": {
+    "applicability_triggers": "any",
+    "exception": "any",
+    "requirements": "all"
+  },
+  "parts": [
+    {
+      "anchor": "approveInvoice",
+      "bases": [
+        "G1"
+      ],
+      "conditions": [
+        {
+          "atom": "V10",
+          "form": "require",
+          "parameters": {
+            "end_ms": 64800000,
+            "start_ms": 28800000
+          },
+          "target": "@action"
+        },
+        {
+          "atom": "V5",
+          "form": "require",
+          "parameters": {
+            "pattern": "OPS-*"
+          },
+          "target": "@action"
+        },
+        {
+          "atom": "V6",
+          "form": "applicability",
+          "parameters": {
+            "threshold": 5
+          },
+          "target": "G1"
+        },
+        {
+          "atom": "V8",
+          "form": "applicability",
+          "parameters": {
+            "threshold": 2500000
+          },
+          "target": "G1"
+        }
+      ],
+      "overrides": []
+    }
+  ],
+  "provenance": {
+    "kind": "less-specific-20 revised intent",
+    "source_case": "case-089",
+    "source_cohort_sha256": "dc765eca4c9085f9dbd4ad236e51e49541a2c1b43c7fdc65bc46c0daed92721c",
+    "source_spec_sha256": "f06103fd2e51566c048722f3f3130813dbbe2562dd112efd4e0585d2eb67019c",
+    "transformation": "Drop artificial 2000-2100 timestamp windows and catalog maxima; retain nonnegative and enumerated-level guards."
+  },
+  "registry_sha256": "3fb29f4a85fc8493d8dda6a0211ac2b3036b89da153d6f6fd5d39412924f8ecb",
+  "source_sha256": "2907de8ce880b86d975423e46cde808f78a30bb93dc0a767cb3b4f0643c07c22"
+}

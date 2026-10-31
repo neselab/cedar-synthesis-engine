@@ -1,0 +1,2 @@
+permit (principal is User, action == Action::"completePort", resource is PortRequest)
+when { (((resource.numberBlockSize >= 0)) && ((principal.roles.contains(Role::"LineTechnician") || principal.roles.contains(Role::"PortingSupervisor"))) && (!(true) || (principal == resource.assignedTechnician) || (context.portFreezeOverrideDeclared && (principal.roles.contains(Role::"PortingSupervisor")))) && (resource.portType.contains("inter_carrier")) && (context.regulatorEscalation)) };

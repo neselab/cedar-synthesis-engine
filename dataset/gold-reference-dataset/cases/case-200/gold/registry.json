@@ -1,0 +1,1836 @@
+{
+  "anchors": {
+    "approveAward": {
+      "atoms": {
+        "V1": {
+          "allowed_forms": [
+            "prohibit"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "prohibit",
+            "rationale": "A conflict, self-dealing condition, hold, lock, or already-enabled flag blocks this operation instead of relaxing its safeguards.",
+            "statement": "Authorization is denied when the requester is the applicant (self-award check).",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal"
+              },
+              {
+                "op": "field",
+                "path": "resource.application.applicant"
+              }
+            ],
+            "op": "eq"
+          },
+          "revision_notes": [
+            "Authorization is denied when the requester is the applicant (self-award check).",
+            "Composition rationale: A conflict, self-dealing condition, hold, lock, or already-enabled flag blocks this operation instead of relaxing its safeguards."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "prohibit",
+              "rationale": "A conflict, self-dealing condition, hold, lock, or already-enabled flag blocks this operation instead of relaxing its safeguards.",
+              "statement": "Authorization is denied when the requester is the applicant (self-award check).",
+              "target": "@action"
+            },
+            "id": "V1",
+            "meaning": "the requester is the applicant (self-award check)",
+            "reads": "Award.application.applicant"
+          }
+        },
+        "V10": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the request falls within a permitted window. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.approveAwardScheduledStart"
+                  },
+                  {
+                    "op": "field",
+                    "path": "context.currentTime"
+                  }
+                ],
+                "op": "time_le"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.currentTime"
+                  },
+                  {
+                    "op": "field",
+                    "path": "context.approveAwardScheduledEnd"
+                  }
+                ],
+                "op": "time_lt"
+              }
+            ],
+            "op": "all"
+          },
+          "revision_notes": [
+            "Authorization requires that the request falls within a permitted window. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the request falls within a permitted window. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V10",
+            "meaning": "the request falls within a permitted window",
+            "reads": "context.currentTime"
+          }
+        },
+        "V2": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the requester holds a particular role. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.roles"
+                  },
+                  {
+                    "id": "ProgramOfficer",
+                    "op": "entity",
+                    "type": "Role"
+                  }
+                ],
+                "op": "contains"
+              }
+            ],
+            "op": "any"
+          },
+          "revision_notes": [
+            "Authorization requires that the requester holds a particular role. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the requester holds a particular role. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V2",
+            "meaning": "the requester holds a particular role",
+            "reads": "principal is ProgramOfficer"
+          }
+        },
+        "V8": {
+          "allowed_forms": [
+            "applicability"
+          ],
+          "allowed_targets": [
+            "G4"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "applicability",
+            "rationale": "Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional.",
+            "statement": "Whenever the award amount crosses a money threshold, enforce this duty: the officer's approval authority must dominate the application's funding tier. Outside all selected triggers only this duty stops binding.",
+            "target": "G4"
+          },
+          "parameter_schema": {
+            "threshold": {
+              "type": "Long",
+              "values": [
+                10000000,
+                2500000,
+                50000000
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "threshold": 2500000
+            },
+            {
+              "threshold": 10000000
+            },
+            {
+              "threshold": 50000000
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.amount"
+              },
+              {
+                "name": "threshold",
+                "op": "parameter"
+              }
+            ],
+            "op": "gt"
+          },
+          "revision_notes": [
+            "USD-cent thresholds for small, departmental, and major research awards: $25000, $100000, $500000. These are synthetic organization policy choices.",
+            "Whenever the award amount crosses a money threshold, enforce this duty: the officer's approval authority must dominate the application's funding tier. Outside all selected triggers only this duty stops binding.",
+            "Composition rationale: Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "applicability",
+              "rationale": "Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional.",
+              "statement": "Whenever the award amount crosses a money threshold, enforce this duty: the officer's approval authority must dominate the application's funding tier. Outside all selected triggers only this duty stops binding.",
+              "target": "G4"
+            },
+            "id": "V8",
+            "meaning": "the award amount crosses a money threshold",
+            "reads": "Award.amount"
+          }
+        },
+        "V9": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the request comes from the government network. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "op": "field",
+            "path": "context.onGovNetwork"
+          },
+          "revision_notes": [
+            "Authorization requires that the request comes from the government network. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the request comes from the government network. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V9",
+            "meaning": "the request comes from the government network",
+            "reads": "context.onGovNetwork"
+          }
+        }
+      },
+      "bases": {
+        "G4": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.approvalAuthority"
+              },
+              {
+                "op": "field",
+                "path": "resource.application.fundingTier"
+              }
+            ],
+            "op": "ge"
+          },
+          "signature": "V6",
+          "source": {
+            "id": "G4",
+            "meaning": "the officer's approval authority must dominate the application's funding tier",
+            "reads": "user.approvalAuthority vs Award.application.fundingTier",
+            "signature": "V6"
+          }
+        },
+        "G5": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.status"
+              },
+              {
+                "id": "pending",
+                "op": "entity",
+                "type": "AwardStatusValue"
+              }
+            ],
+            "op": "eq"
+          },
+          "signature": "V11",
+          "source": {
+            "id": "G5",
+            "meaning": "an award may be approved only while it is pending",
+            "reads": "Award.status",
+            "signature": "V11"
+          }
+        }
+      },
+      "domain_gate": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2000-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  },
+                  {
+                    "op": "field",
+                    "path": "context.approveAwardScheduledEnd"
+                  }
+                ],
+                "op": "time_le"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.approveAwardScheduledEnd"
+                  },
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2100-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  }
+                ],
+                "op": "time_le"
+              }
+            ],
+            "op": "all"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2000-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  },
+                  {
+                    "op": "field",
+                    "path": "context.approveAwardScheduledStart"
+                  }
+                ],
+                "op": "time_le"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.approveAwardScheduledStart"
+                  },
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2100-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  }
+                ],
+                "op": "time_le"
+              }
+            ],
+            "op": "all"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2000-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  },
+                  {
+                    "op": "field",
+                    "path": "context.currentTime"
+                  }
+                ],
+                "op": "time_le"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.currentTime"
+                  },
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2100-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  }
+                ],
+                "op": "time_le"
+              }
+            ],
+            "op": "all"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.approvalAuthority"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.approvalAuthority"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.approvalAuthority"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 2
+                  }
+                ],
+                "op": "eq"
+              }
+            ],
+            "op": "any"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.amount"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "ge"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.amount"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1000000000
+                  }
+                ],
+                "op": "le"
+              }
+            ],
+            "op": "all"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.application.fundingTier"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.application.fundingTier"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.application.fundingTier"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 2
+                  }
+                ],
+                "op": "eq"
+              }
+            ],
+            "op": "any"
+          }
+        ],
+        "op": "all"
+      },
+      "eligibility": {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "ProgramOfficer",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "GrantsOfficer",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          }
+        ],
+        "op": "any"
+      },
+      "field_bindings": {
+        "Award.amount": "resource.amount",
+        "Award.application.applicant": "resource.application.applicant",
+        "Award.application.fundingTier": "resource.application.fundingTier",
+        "Award.status": "resource.status",
+        "context.approveAwardScheduledEnd": "context.approveAwardScheduledEnd",
+        "context.approveAwardScheduledStart": "context.approveAwardScheduledStart",
+        "context.currentTime": "context.currentTime",
+        "context.emergencyDeclared": "context.emergencyDeclared",
+        "context.onGovNetwork": "context.onGovNetwork",
+        "user.approvalAuthority": "principal.approvalAuthority"
+      },
+      "overrides": {
+        "G3": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "context.emergencyDeclared"
+              },
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "principal.roles"
+                      },
+                      {
+                        "id": "ProgramOfficer",
+                        "op": "entity",
+                        "type": "Role"
+                      }
+                    ],
+                    "op": "contains"
+                  }
+                ],
+                "op": "any"
+              }
+            ],
+            "op": "all"
+          },
+          "source": {
+            "id": "G3",
+            "meaning": "a declared funding emergency lets a program officer approve an award above their normal authority tier",
+            "overrides": [
+              "G4"
+            ],
+            "reads": "context.emergencyDeclared",
+            "requires_adjudication": true
+          },
+          "targets": [
+            "G4"
+          ]
+        }
+      },
+      "resource_type": "Award"
+    },
+    "obligateFunds": {
+      "atoms": {
+        "V10": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the request falls within a permitted window. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.obligateFundsScheduledStart"
+                  },
+                  {
+                    "op": "field",
+                    "path": "context.currentTime"
+                  }
+                ],
+                "op": "time_le"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.currentTime"
+                  },
+                  {
+                    "op": "field",
+                    "path": "context.obligateFundsScheduledEnd"
+                  }
+                ],
+                "op": "time_lt"
+              }
+            ],
+            "op": "all"
+          },
+          "revision_notes": [
+            "Authorization requires that the request falls within a permitted window. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the request falls within a permitted window. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V10",
+            "meaning": "the request falls within a permitted window",
+            "reads": "context.currentTime"
+          }
+        },
+        "V12": {
+          "allowed_forms": [
+            "obligation"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "obligation",
+            "rationale": "The source describes a trigger and an additional required consequence; encode that implication independently of bases.",
+            "statement": "When the award carries a high-risk flag requiring extra scrutiny, its explicit additional requirement must hold. This does not waive or scope any base.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.highRiskFlag"
+              },
+              {
+                "op": "literal",
+                "value": true
+              }
+            ],
+            "op": "eq"
+          },
+          "requirement": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.highRiskFlag"
+                      },
+                      {
+                        "op": "literal",
+                        "value": true
+                      }
+                    ],
+                    "op": "eq"
+                  }
+                ],
+                "op": "not"
+              },
+              {
+                "op": "field",
+                "path": "context.highRiskReviewCompleted"
+              }
+            ],
+            "op": "any"
+          },
+          "revision_notes": [
+            "When this trigger holds, additional high-risk award review is complete. This is a trusted request-specific host attestation.",
+            "When the award carries a high-risk flag requiring extra scrutiny, its explicit additional requirement must hold. This does not waive or scope any base.",
+            "Composition rationale: The source describes a trigger and an additional required consequence; encode that implication independently of bases."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "obligation",
+              "rationale": "The source describes a trigger and an additional required consequence; encode that implication independently of bases.",
+              "statement": "When the award carries a high-risk flag requiring extra scrutiny, its explicit additional requirement must hold. This does not waive or scope any base.",
+              "target": "@action"
+            },
+            "id": "V12",
+            "meaning": "the award carries a high-risk flag requiring extra scrutiny",
+            "reads": "Award.highRiskFlag"
+          }
+        },
+        "V2": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": false,
+            "kind": "require",
+            "rationale": "The original role predicate is already guaranteed by ordinary eligibility. Preserve it in the registry but exclude it from random condition selection; do not invent a supplemental role.",
+            "statement": "The original role remains an access requirement already implied by eligibility.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.roles"
+                  },
+                  {
+                    "id": "GrantsOfficer",
+                    "op": "entity",
+                    "type": "Role"
+                  }
+                ],
+                "op": "contains"
+              }
+            ],
+            "op": "any"
+          },
+          "revision_notes": [
+            "The original role remains an access requirement already implied by eligibility.",
+            "Composition rationale: The original role predicate is already guaranteed by ordinary eligibility. Preserve it in the registry but exclude it from random condition selection; do not invent a supplemental role."
+          ],
+          "sampling_enabled": false,
+          "source": {
+            "business_semantics": {
+              "enabled": false,
+              "kind": "require",
+              "rationale": "The original role predicate is already guaranteed by ordinary eligibility. Preserve it in the registry but exclude it from random condition selection; do not invent a supplemental role.",
+              "statement": "The original role remains an access requirement already implied by eligibility.",
+              "target": "@action"
+            },
+            "id": "V2",
+            "meaning": "the requester holds a particular role",
+            "reads": "principal is GrantsOfficer"
+          }
+        },
+        "V8": {
+          "allowed_forms": [
+            "applicability"
+          ],
+          "allowed_targets": [
+            "G1"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "applicability",
+            "rationale": "Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional.",
+            "statement": "Whenever the obligation amount crosses a money threshold, enforce this duty: the officer who approved an award may not obligate its funds. Outside all selected triggers only this duty stops binding.",
+            "target": "G1"
+          },
+          "parameter_schema": {
+            "threshold": {
+              "type": "Long",
+              "values": [
+                10000000,
+                2500000,
+                50000000
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "threshold": 2500000
+            },
+            {
+              "threshold": 10000000
+            },
+            {
+              "threshold": 50000000
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.amount"
+              },
+              {
+                "name": "threshold",
+                "op": "parameter"
+              }
+            ],
+            "op": "gt"
+          },
+          "revision_notes": [
+            "USD-cent thresholds for small, departmental, and major research awards: $25000, $100000, $500000. These are synthetic organization policy choices.",
+            "Whenever the obligation amount crosses a money threshold, enforce this duty: the officer who approved an award may not obligate its funds. Outside all selected triggers only this duty stops binding.",
+            "Composition rationale: Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "applicability",
+              "rationale": "Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional.",
+              "statement": "Whenever the obligation amount crosses a money threshold, enforce this duty: the officer who approved an award may not obligate its funds. Outside all selected triggers only this duty stops binding.",
+              "target": "G1"
+            },
+            "id": "V8",
+            "meaning": "the obligation amount crosses a money threshold",
+            "reads": "Award.amount"
+          }
+        },
+        "V9": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the request comes from the government network. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "op": "field",
+            "path": "context.onGovNetwork"
+          },
+          "revision_notes": [
+            "Authorization requires that the request comes from the government network. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the request comes from the government network. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V9",
+            "meaning": "the request comes from the government network",
+            "reads": "context.onGovNetwork"
+          }
+        }
+      },
+      "bases": {
+        "G1": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal"
+              },
+              {
+                "op": "field",
+                "path": "resource.approvedBy"
+              }
+            ],
+            "op": "ne"
+          },
+          "signature": "V1",
+          "source": {
+            "id": "G1",
+            "meaning": "the officer who approved an award may not obligate its funds",
+            "reads": "principal vs Award.approvedBy",
+            "signature": "V1"
+          }
+        },
+        "G5": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.status"
+              },
+              {
+                "id": "approved",
+                "op": "entity",
+                "type": "AwardStatusValue"
+              }
+            ],
+            "op": "eq"
+          },
+          "signature": "V11",
+          "source": {
+            "id": "G5",
+            "meaning": "funds may be obligated only after the award has been approved",
+            "reads": "Award.status",
+            "signature": "V11"
+          }
+        }
+      },
+      "domain_gate": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2000-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  },
+                  {
+                    "op": "field",
+                    "path": "context.currentTime"
+                  }
+                ],
+                "op": "time_le"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.currentTime"
+                  },
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2100-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  }
+                ],
+                "op": "time_le"
+              }
+            ],
+            "op": "all"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2000-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  },
+                  {
+                    "op": "field",
+                    "path": "context.obligateFundsScheduledEnd"
+                  }
+                ],
+                "op": "time_le"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.obligateFundsScheduledEnd"
+                  },
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2100-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  }
+                ],
+                "op": "time_le"
+              }
+            ],
+            "op": "all"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2000-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  },
+                  {
+                    "op": "field",
+                    "path": "context.obligateFundsScheduledStart"
+                  }
+                ],
+                "op": "time_le"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.obligateFundsScheduledStart"
+                  },
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2100-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  }
+                ],
+                "op": "time_le"
+              }
+            ],
+            "op": "all"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.amount"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "ge"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.amount"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1000000000
+                  }
+                ],
+                "op": "le"
+              }
+            ],
+            "op": "all"
+          }
+        ],
+        "op": "all"
+      },
+      "eligibility": {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "GrantsOfficer",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          }
+        ],
+        "op": "any"
+      },
+      "field_bindings": {
+        "Award.amount": "resource.amount",
+        "Award.approvedBy": "resource.approvedBy",
+        "Award.highRiskFlag": "resource.highRiskFlag",
+        "Award.status": "resource.status",
+        "context.currentTime": "context.currentTime",
+        "context.obligateFundsScheduledEnd": "context.obligateFundsScheduledEnd",
+        "context.obligateFundsScheduledStart": "context.obligateFundsScheduledStart",
+        "context.onGovNetwork": "context.onGovNetwork"
+      },
+      "overrides": {},
+      "resource_type": "Award"
+    },
+    "scoreApplication": {
+      "atoms": {
+        "V1": {
+          "allowed_forms": [
+            "prohibit"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "prohibit",
+            "rationale": "A conflict, self-dealing condition, hold, lock, or already-enabled flag blocks this operation instead of relaxing its safeguards.",
+            "statement": "Authorization is denied when the requester is the applicant themselves.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal"
+              },
+              {
+                "op": "field",
+                "path": "resource.applicant"
+              }
+            ],
+            "op": "eq"
+          },
+          "revision_notes": [
+            "Authorization is denied when the requester is the applicant themselves.",
+            "Composition rationale: A conflict, self-dealing condition, hold, lock, or already-enabled flag blocks this operation instead of relaxing its safeguards."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "prohibit",
+              "rationale": "A conflict, self-dealing condition, hold, lock, or already-enabled flag blocks this operation instead of relaxing its safeguards.",
+              "statement": "Authorization is denied when the requester is the applicant themselves.",
+              "target": "@action"
+            },
+            "id": "V1",
+            "meaning": "the requester is the applicant themselves",
+            "reads": "Application.applicant"
+          }
+        },
+        "V10": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the request falls within the review period. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.scoreApplicationScheduledStart"
+                  },
+                  {
+                    "op": "field",
+                    "path": "context.currentTime"
+                  }
+                ],
+                "op": "time_le"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.currentTime"
+                  },
+                  {
+                    "op": "field",
+                    "path": "context.scoreApplicationScheduledEnd"
+                  }
+                ],
+                "op": "time_lt"
+              }
+            ],
+            "op": "all"
+          },
+          "revision_notes": [
+            "Authorization requires that the request falls within the review period. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the request falls within the review period. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V10",
+            "meaning": "the request falls within the review period",
+            "reads": "context.currentTime"
+          }
+        },
+        "V2": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": false,
+            "kind": "require",
+            "rationale": "The original role predicate is already guaranteed by ordinary eligibility. Preserve it in the registry but exclude it from random condition selection; do not invent a supplemental role.",
+            "statement": "The original role remains an access requirement already implied by eligibility.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.roles"
+                  },
+                  {
+                    "id": "Reviewer",
+                    "op": "entity",
+                    "type": "Role"
+                  }
+                ],
+                "op": "contains"
+              }
+            ],
+            "op": "any"
+          },
+          "revision_notes": [
+            "The original role remains an access requirement already implied by eligibility.",
+            "Composition rationale: The original role predicate is already guaranteed by ordinary eligibility. Preserve it in the registry but exclude it from random condition selection; do not invent a supplemental role."
+          ],
+          "sampling_enabled": false,
+          "source": {
+            "business_semantics": {
+              "enabled": false,
+              "kind": "require",
+              "rationale": "The original role predicate is already guaranteed by ordinary eligibility. Preserve it in the registry but exclude it from random condition selection; do not invent a supplemental role.",
+              "statement": "The original role remains an access requirement already implied by eligibility.",
+              "target": "@action"
+            },
+            "id": "V2",
+            "meaning": "the requester holds a particular role",
+            "reads": "principal is Reviewer"
+          }
+        },
+        "V8": {
+          "allowed_forms": [
+            "obligation"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "obligation",
+            "rationale": "Explicit synthetic completion of the trigger consequence using a trusted request-specific fact; no unconditional grant or base waiver.",
+            "required_fact": "largeAwardReviewCompleted",
+            "statement": "When the requested amount crosses a money threshold, the additional large-award review is recorded; the selected conflict-of-interest rule remains unconditional.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "threshold": {
+              "type": "Long",
+              "values": [
+                10000000,
+                2500000,
+                50000000
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "threshold": 2500000
+            },
+            {
+              "threshold": 10000000
+            },
+            {
+              "threshold": 50000000
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.requestedAmount"
+              },
+              {
+                "name": "threshold",
+                "op": "parameter"
+              }
+            ],
+            "op": "gt"
+          },
+          "requirement": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.requestedAmount"
+                      },
+                      {
+                        "name": "threshold",
+                        "op": "parameter"
+                      }
+                    ],
+                    "op": "gt"
+                  }
+                ],
+                "op": "not"
+              },
+              {
+                "op": "field",
+                "path": "context.largeAwardReviewCompleted"
+              }
+            ],
+            "op": "any"
+          },
+          "revision_notes": [
+            "USD-cent thresholds for small, departmental, and major research awards: $25000, $100000, $500000. These are synthetic organization policy choices.",
+            "When the requested amount crosses a money threshold, the additional large-award review is recorded; the selected conflict-of-interest rule remains unconditional.",
+            "Composition rationale: Explicit synthetic completion of the trigger consequence using a trusted request-specific fact; no unconditional grant or base waiver."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "obligation",
+              "rationale": "Explicit synthetic completion of the trigger consequence using a trusted request-specific fact; no unconditional grant or base waiver.",
+              "required_fact": "largeAwardReviewCompleted",
+              "statement": "When the requested amount crosses a money threshold, the additional large-award review is recorded; the selected conflict-of-interest rule remains unconditional.",
+              "target": "@action"
+            },
+            "id": "V8",
+            "meaning": "the requested amount crosses a money threshold",
+            "reads": "Application.requestedAmount"
+          }
+        },
+        "V9": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the request comes from the government network. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "op": "field",
+            "path": "context.onGovNetwork"
+          },
+          "revision_notes": [
+            "Authorization requires that the request comes from the government network. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the request comes from the government network. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V9",
+            "meaning": "the request comes from the government network",
+            "reads": "context.onGovNetwork"
+          }
+        }
+      },
+      "bases": {
+        "G1": {
+          "predicate": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.conflictedApplications"
+                  },
+                  {
+                    "op": "field",
+                    "path": "resource"
+                  }
+                ],
+                "op": "contains"
+              }
+            ],
+            "op": "not"
+          },
+          "signature": "V4",
+          "source": {
+            "id": "G1",
+            "meaning": "a reviewer conflicted out of an application may not score it (conflict-of-interest wall)",
+            "reads": "user.conflictedApplications vs Application",
+            "signature": "V4"
+          }
+        },
+        "G5": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.status"
+              },
+              {
+                "id": "underReview",
+                "op": "entity",
+                "type": "ApplicationStatusValue"
+              }
+            ],
+            "op": "eq"
+          },
+          "signature": "V11",
+          "source": {
+            "id": "G5",
+            "meaning": "an application may be scored only while it is under review",
+            "reads": "Application.status",
+            "signature": "V11"
+          }
+        }
+      },
+      "domain_gate": {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.requestedAmount"
+              },
+              {
+                "op": "literal",
+                "value": 0
+              }
+            ],
+            "op": "ge"
+          }
+        ],
+        "op": "all"
+      },
+      "eligibility": {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "Reviewer",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          }
+        ],
+        "op": "any"
+      },
+      "field_bindings": {
+        "Application": "resource",
+        "Application.applicant": "resource.applicant",
+        "Application.requestedAmount": "resource.requestedAmount",
+        "Application.status": "resource.status",
+        "context.currentTime": "context.currentTime",
+        "context.onGovNetwork": "context.onGovNetwork",
+        "context.scoreApplicationScheduledEnd": "context.scoreApplicationScheduledEnd",
+        "context.scoreApplicationScheduledStart": "context.scoreApplicationScheduledStart",
+        "user.conflictedApplications": "principal.conflictedApplications"
+      },
+      "overrides": {},
+      "resource_type": "Application"
+    }
+  },
+  "business_review_revision": "2026-10-23-r1",
+  "context": {
+    "approveAwardScheduledEnd": {
+      "description": "exclusive end of the declared Scheduled window",
+      "type": "datetime"
+    },
+    "approveAwardScheduledStart": {
+      "description": "inclusive start of the declared Scheduled window",
+      "type": "datetime"
+    },
+    "currentTime": {
+      "type": "datetime"
+    },
+    "emergencyDeclared": {
+      "type": "Bool"
+    },
+    "highRiskReviewCompleted": {
+      "description": "additional high-risk award review is complete",
+      "type": "Bool"
+    },
+    "largeAwardReviewCompleted": {
+      "type": "Bool"
+    },
+    "obligateFundsScheduledEnd": {
+      "description": "exclusive end of the declared Scheduled window",
+      "type": "datetime"
+    },
+    "obligateFundsScheduledStart": {
+      "description": "inclusive start of the declared Scheduled window",
+      "type": "datetime"
+    },
+    "onGovNetwork": {
+      "type": "Bool"
+    },
+    "scoreApplicationScheduledEnd": {
+      "description": "exclusive end of the declared Scheduled window",
+      "type": "datetime"
+    },
+    "scoreApplicationScheduledStart": {
+      "description": "inclusive start of the declared Scheduled window",
+      "type": "datetime"
+    }
+  },
+  "contract": "complete-spec-v4",
+  "decisions": [
+    "Added context.approveAwardScheduledEnd: exclusive end of the declared Scheduled window",
+    "Added context.approveAwardScheduledStart: inclusive start of the declared Scheduled window",
+    "Added context.highRiskReviewCompleted: additional high-risk award review is complete",
+    "Added context.obligateFundsScheduledEnd: exclusive end of the declared Scheduled window",
+    "Added context.obligateFundsScheduledStart: inclusive start of the declared Scheduled window",
+    "Added context.scoreApplicationScheduledEnd: exclusive end of the declared Scheduled window",
+    "Added context.scoreApplicationScheduledStart: inclusive start of the declared Scheduled window",
+    "All source identities denote User entities; role sets may overlap without implicit exclusivity.",
+    "All timestamps read by predicates are bounded inclusively to 2000-01-01 through 2100-01-01 UTC; requests outside the explicit domain gate deny.",
+    "Business revision v2: catalogs are declared synthetic organizational policies, not empirical norms. Selected-atom obligations are mandatory in both forms and cannot be waived by a base exception or override.",
+    "Money is nonnegative integer USD cents, at most 1,000,000,000. Counts are nonnegative integers at most 1,000,000 unless a narrower dictionary is declared.",
+    "Request context is treated as trusted input from the host; authorization does not attest network, emergency, signature, or scheduling facts.",
+    "Retained source repairs: exact lifecycle states, linked course roster, explicit promotion/filing facts, independent calibration expiry, comp expiry, and guarded override eligibility are intentional experiment definitions. Their typed ASTs and field descriptions, not the ambiguous source shorthand, are authoritative.",
+    "Rules operate on snapshots. A selected lifecycle base requires the exact named state unless its predicate explicitly lists alternatives.",
+    "Source business descriptions are retained for audit; the authored typed predicates and dictionaries define the experiment. No statutory compliance claim is made.",
+    "Source tag kinds are represented by Set<String>. Group membership is reflexive and transitive Cedar entity ancestry.",
+    "approveAward/V8: USD-cent thresholds for small, departmental, and major research awards: $25000, $100000, $500000. These are synthetic organization policy choices.",
+    "obligateFunds/V12: This implication is mandatory whenever the atom is selected, in either form; it survives all base exceptions and overrides.",
+    "obligateFunds/V12: When this trigger holds, additional high-risk award review is complete. This is a trusted request-specific host attestation.",
+    "obligateFunds/V2: Refines the original role test with the supplemental DelegatedObligationOfficer role. Eligibility stays unchanged; this qualification can be present or absent for an eligible requester.",
+    "obligateFunds/V8: USD-cent thresholds for small, departmental, and major research awards: $25000, $100000, $500000. These are synthetic organization policy choices.",
+    "scoreApplication/V2: Refines the original role test with the supplemental PanelLeadReviewer role. Eligibility stays unchanged; this qualification can be present or absent for an eligible requester.",
+    "scoreApplication/V8: USD-cent thresholds for small, departmental, and major research awards: $25000, $100000, $500000. These are synthetic organization policy choices."
+  ],
+  "domain": "grant_awards",
+  "entities": {
+    "Application": {
+      "attributes": {
+        "applicant": {
+          "type": "User"
+        },
+        "assignedReviewers": {
+          "type": "Set<User>"
+        },
+        "fundingTier": {
+          "bounds": [
+            0,
+            2
+          ],
+          "levels": {
+            "major": 2,
+            "small": 0,
+            "standard": 1
+          },
+          "type": "Long"
+        },
+        "programCode": {
+          "type": "String"
+        },
+        "requestedAmount": {
+          "bounds": [
+            0,
+            1000000000
+          ],
+          "type": "Long",
+          "unit": "USD cents"
+        },
+        "status": {
+          "type": "ApplicationStatusValue"
+        }
+      }
+    },
+    "ApplicationStatusValue": {
+      "enum": [
+        "submitted",
+        "underReview",
+        "scored",
+        "awarded",
+        "rejected"
+      ]
+    },
+    "Award": {
+      "attributes": {
+        "amount": {
+          "bounds": [
+            0,
+            1000000000
+          ],
+          "type": "Long",
+          "unit": "USD cents"
+        },
+        "application": {
+          "type": "Application"
+        },
+        "approvedBy": {
+          "type": "User"
+        },
+        "highRiskFlag": {
+          "type": "Bool"
+        },
+        "obligatedBy": {
+          "type": "User"
+        },
+        "status": {
+          "type": "AwardStatusValue"
+        }
+      }
+    },
+    "AwardStatusValue": {
+      "enum": [
+        "pending",
+        "approved",
+        "obligated",
+        "closed"
+      ]
+    },
+    "Group": {
+      "attributes": {},
+      "member_of": [
+        "Group"
+      ]
+    },
+    "Role": {
+      "enum": [
+        "Reviewer",
+        "ProgramOfficer",
+        "GrantsOfficer",
+        "Applicant"
+      ]
+    },
+    "User": {
+      "attributes": {
+        "approvalAuthority": {
+          "bounds": [
+            0,
+            2
+          ],
+          "levels": {
+            "major": 2,
+            "small": 0,
+            "standard": 1
+          },
+          "type": "Long"
+        },
+        "conflictedApplications": {
+          "type": "Set<Application>"
+        },
+        "roles": {
+          "type": "Set<Role>"
+        }
+      }
+    }
+  },
+  "revision_contract": "business-composition-v4",
+  "source_action_chains": [
+    {
+      "chain": [
+        "approveAward",
+        "obligateFunds"
+      ],
+      "linked_by": [
+        "status",
+        "approvedBy",
+        "obligatedBy"
+      ],
+      "shared_resource": "Award"
+    }
+  ],
+  "source_sha256": "2907de8ce880b86d975423e46cde808f78a30bb93dc0a767cb3b4f0643c07c22",
+  "status": "authored experimental assumptions; not human semantic approval",
+  "version": "business-registry-v4"
+}

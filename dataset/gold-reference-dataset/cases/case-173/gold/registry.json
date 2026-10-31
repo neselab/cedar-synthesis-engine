@@ -1,0 +1,1745 @@
+{
+  "anchors": {
+    "applyComp": {
+      "atoms": {
+        "V10": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the request falls within the comp's valid-until application window. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "context.currentTime"
+              },
+              {
+                "op": "field",
+                "path": "resource.validUntil"
+              }
+            ],
+            "op": "time_lt"
+          },
+          "revision_notes": [
+            "Authorization requires that the request falls within the comp's valid-until application window. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the request falls within the comp's valid-until application window. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V10",
+            "meaning": "the request falls within the comp's valid-until application window",
+            "reads": "context.currentTime"
+          }
+        },
+        "V12": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the comp is not under a blackout-date restriction. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.blackoutFlag"
+              },
+              {
+                "op": "literal",
+                "value": false
+              }
+            ],
+            "op": "eq"
+          },
+          "revision_notes": [
+            "Authorization requires that the comp is not under a blackout-date restriction. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the comp is not under a blackout-date restriction. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V12",
+            "meaning": "the comp is not under a blackout-date restriction",
+            "reads": "CompAuthorization.blackoutFlag"
+          }
+        },
+        "V13": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the comp type tag matches a controlled category. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "label": {
+              "type": "String",
+              "values": [
+                "beverage",
+                "casino"
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "label": "casino"
+            },
+            {
+              "label": "beverage"
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.compType"
+              },
+              {
+                "name": "label",
+                "op": "parameter"
+              }
+            ],
+            "op": "contains"
+          },
+          "revision_notes": [
+            "Authorization requires that the comp type tag matches a controlled category. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the comp type tag matches a controlled category. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V13",
+            "meaning": "the comp type tag matches a controlled category",
+            "reads": "CompAuthorization.compType"
+          }
+        },
+        "V3": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the guest's loyalty-tier group is within the agent's assigned scope. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.loyaltyGroup"
+              },
+              {
+                "op": "field",
+                "path": "principal.assignedGroup"
+              }
+            ],
+            "op": "in"
+          },
+          "revision_notes": [
+            "Authorization requires that the guest's loyalty-tier group is within the agent's assigned scope. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the guest's loyalty-tier group is within the agent's assigned scope. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V3",
+            "meaning": "the guest's loyalty-tier group is within the agent's assigned scope",
+            "reads": "CompAuthorization.loyaltyGroup"
+          }
+        },
+        "V4": {
+          "allowed_forms": [
+            "obligation"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "obligation",
+            "rationale": "The source describes a trigger and an additional required consequence; encode that implication independently of bases.",
+            "statement": "When the perk set includes a perk that must be present on the voucher, its explicit additional requirement must hold. This does not waive or scope any base.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "member": {
+              "type": "String",
+              "values": [
+                "beverage_credit",
+                "gaming_credit",
+                "suite_upgrade"
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "member": "suite_upgrade"
+            },
+            {
+              "member": "gaming_credit"
+            },
+            {
+              "member": "beverage_credit"
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.perks"
+              },
+              {
+                "name": "member",
+                "op": "parameter"
+              }
+            ],
+            "op": "contains"
+          },
+          "requirement": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.perks"
+                      },
+                      {
+                        "name": "member",
+                        "op": "parameter"
+                      }
+                    ],
+                    "op": "contains"
+                  }
+                ],
+                "op": "not"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.voucherPerks"
+                  },
+                  {
+                    "name": "member",
+                    "op": "parameter"
+                  }
+                ],
+                "op": "contains"
+              }
+            ],
+            "op": "any"
+          },
+          "revision_notes": [
+            "The selected perk, when present in the authorization, must also be recorded on the voucher.",
+            "When the perk set includes a perk that must be present on the voucher, its explicit additional requirement must hold. This does not waive or scope any base.",
+            "Composition rationale: The source describes a trigger and an additional required consequence; encode that implication independently of bases."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "obligation",
+              "rationale": "The source describes a trigger and an additional required consequence; encode that implication independently of bases.",
+              "statement": "When the perk set includes a perk that must be present on the voucher, its explicit additional requirement must hold. This does not waive or scope any base.",
+              "target": "@action"
+            },
+            "id": "V4",
+            "meaning": "the perk set includes a perk that must be present on the voucher",
+            "reads": "CompAuthorization.perks"
+          }
+        },
+        "V8": {
+          "allowed_forms": [
+            "obligation"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "obligation",
+            "rationale": "A descriptive quantity threshold without a suitable duty target is completed as an explicitly authored additional review, not as a minimum transaction size or lifecycle waiver.",
+            "required_fact": "applyCompV8ReviewCompleted",
+            "statement": "When the complimentary value crosses a money threshold, the additional review recorded by applyCompV8ReviewCompleted must be complete; smaller requests do not need this additional review.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "threshold": {
+              "type": "Long",
+              "values": [
+                10000,
+                2500,
+                50000
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "threshold": 2500
+            },
+            {
+              "threshold": 10000
+            },
+            {
+              "threshold": 50000
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.compValue"
+              },
+              {
+                "name": "threshold",
+                "op": "parameter"
+              }
+            ],
+            "op": "gt"
+          },
+          "requirement": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.compValue"
+                      },
+                      {
+                        "name": "threshold",
+                        "op": "parameter"
+                      }
+                    ],
+                    "op": "gt"
+                  }
+                ],
+                "op": "not"
+              },
+              {
+                "op": "field",
+                "path": "context.applyCompV8ReviewCompleted"
+              }
+            ],
+            "op": "any"
+          },
+          "revision_notes": [
+            "USD-cent thresholds for per-authorization hospitality complimentary value: $25, $100, $500. These are synthetic organization policy choices.",
+            "When the complimentary value crosses a money threshold, the additional review recorded by applyCompV8ReviewCompleted must be complete; smaller requests do not need this additional review.",
+            "Composition rationale: A descriptive quantity threshold without a suitable duty target is completed as an explicitly authored additional review, not as a minimum transaction size or lifecycle waiver."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "obligation",
+              "rationale": "A descriptive quantity threshold without a suitable duty target is completed as an explicitly authored additional review, not as a minimum transaction size or lifecycle waiver.",
+              "required_fact": "applyCompV8ReviewCompleted",
+              "statement": "When the complimentary value crosses a money threshold, the additional review recorded by applyCompV8ReviewCompleted must be complete; smaller requests do not need this additional review.",
+              "target": "@action"
+            },
+            "id": "V8",
+            "meaning": "the complimentary value crosses a money threshold",
+            "reads": "CompAuthorization.compValue"
+          }
+        },
+        "V9": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the request originates on the on-property network. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "op": "field",
+            "path": "context.onPropertyNetwork"
+          },
+          "revision_notes": [
+            "Authorization requires that the request originates on the on-property network. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the request originates on the on-property network. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V9",
+            "meaning": "the request originates on the on-property network",
+            "reads": "context.onPropertyNetwork"
+          }
+        }
+      },
+      "bases": {
+        "G2": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal"
+              },
+              {
+                "op": "field",
+                "path": "resource.requestedBy"
+              }
+            ],
+            "op": "eq"
+          },
+          "signature": "V1",
+          "source": {
+            "id": "G2",
+            "meaning": "the same agent who requested the comp must be the one to apply it to the guest folio",
+            "reads": "principal vs CompAuthorization.requestedBy",
+            "signature": "V1"
+          }
+        },
+        "G4": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.compAuthorityLevel"
+              },
+              {
+                "op": "field",
+                "path": "resource.guestTier"
+              }
+            ],
+            "op": "ge"
+          },
+          "signature": "V6",
+          "source": {
+            "id": "G4",
+            "meaning": "the agent's comp authority level must dominate the guest's tier before the comp is applied",
+            "reads": "principal.compAuthorityLevel vs CompAuthorization.guestTier",
+            "signature": "V6"
+          }
+        },
+        "G5": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.status"
+              },
+              {
+                "id": "authorized",
+                "op": "entity",
+                "type": "CompAuthorizationStatusValue"
+              }
+            ],
+            "op": "eq"
+          },
+          "signature": "V11",
+          "source": {
+            "id": "G5",
+            "meaning": "a comp may be applied only after it has been authorized",
+            "reads": "CompAuthorization.status",
+            "signature": "V11"
+          }
+        }
+      },
+      "domain_gate": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2000-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  },
+                  {
+                    "op": "field",
+                    "path": "context.currentTime"
+                  }
+                ],
+                "op": "time_le"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.currentTime"
+                  },
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2100-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  }
+                ],
+                "op": "time_le"
+              }
+            ],
+            "op": "all"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.compAuthorityLevel"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.compAuthorityLevel"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.compAuthorityLevel"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 2
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.compAuthorityLevel"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 3
+                  }
+                ],
+                "op": "eq"
+              }
+            ],
+            "op": "any"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.compValue"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "ge"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.compValue"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1000000000
+                  }
+                ],
+                "op": "le"
+              }
+            ],
+            "op": "all"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.guestTier"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.guestTier"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.guestTier"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 2
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.guestTier"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 3
+                  }
+                ],
+                "op": "eq"
+              }
+            ],
+            "op": "any"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2000-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  },
+                  {
+                    "op": "field",
+                    "path": "resource.validUntil"
+                  }
+                ],
+                "op": "time_le"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.validUntil"
+                  },
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2100-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  }
+                ],
+                "op": "time_le"
+              }
+            ],
+            "op": "all"
+          }
+        ],
+        "op": "all"
+      },
+      "eligibility": {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "FrontDeskAgent",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "GuestServicesHost",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          }
+        ],
+        "op": "any"
+      },
+      "field_bindings": {
+        "CompAuthorization.blackoutFlag": "resource.blackoutFlag",
+        "CompAuthorization.compType": "resource.compType",
+        "CompAuthorization.compValue": "resource.compValue",
+        "CompAuthorization.guestTier": "resource.guestTier",
+        "CompAuthorization.loyaltyGroup": "resource.loyaltyGroup",
+        "CompAuthorization.perks": "resource.perks",
+        "CompAuthorization.requestedBy": "resource.requestedBy",
+        "CompAuthorization.status": "resource.status",
+        "CompAuthorization.validUntil": "resource.validUntil",
+        "context.currentTime": "context.currentTime",
+        "context.onPropertyNetwork": "context.onPropertyNetwork",
+        "principal.compAuthorityLevel": "principal.compAuthorityLevel",
+        "user.assignedGroup": "principal.assignedGroup"
+      },
+      "overrides": {},
+      "resource_type": "CompAuthorization"
+    },
+    "authorizeComp": {
+      "atoms": {
+        "V10": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the request falls within the manager's scheduled shift window. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.authorizeCompScheduledStart"
+                  },
+                  {
+                    "op": "field",
+                    "path": "context.currentTime"
+                  }
+                ],
+                "op": "time_le"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.currentTime"
+                  },
+                  {
+                    "op": "field",
+                    "path": "context.authorizeCompScheduledEnd"
+                  }
+                ],
+                "op": "time_lt"
+              }
+            ],
+            "op": "all"
+          },
+          "revision_notes": [
+            "Authorization requires that the request falls within the manager's scheduled shift window. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the request falls within the manager's scheduled shift window. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V10",
+            "meaning": "the request falls within the manager's scheduled shift window",
+            "reads": "context.currentTime"
+          }
+        },
+        "V12": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the comp is not under a blackout-date restriction. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.blackoutFlag"
+              },
+              {
+                "op": "literal",
+                "value": false
+              }
+            ],
+            "op": "eq"
+          },
+          "revision_notes": [
+            "Authorization requires that the comp is not under a blackout-date restriction. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the comp is not under a blackout-date restriction. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V12",
+            "meaning": "the comp is not under a blackout-date restriction",
+            "reads": "CompAuthorization.blackoutFlag"
+          }
+        },
+        "V13": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the comp type tag matches a controlled category such as casino or beverage. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "label": {
+              "type": "String",
+              "values": [
+                "beverage",
+                "casino"
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "label": "casino"
+            },
+            {
+              "label": "beverage"
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.compType"
+              },
+              {
+                "name": "label",
+                "op": "parameter"
+              }
+            ],
+            "op": "contains"
+          },
+          "revision_notes": [
+            "Authorization requires that the comp type tag matches a controlled category such as casino or beverage. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the comp type tag matches a controlled category such as casino or beverage. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V13",
+            "meaning": "the comp type tag matches a controlled category such as casino or beverage",
+            "reads": "CompAuthorization.compType"
+          }
+        },
+        "V14": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that a manager is confirmed on duty for the shift. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "op": "field",
+            "path": "context.managerOnDuty"
+          },
+          "revision_notes": [
+            "Authorization requires that a manager is confirmed on duty for the shift. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that a manager is confirmed on duty for the shift. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V14",
+            "meaning": "a manager is confirmed on duty for the shift",
+            "reads": "context.managerOnDuty"
+          }
+        },
+        "V3": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the guest belongs to a loyalty-tier group within the manager's scope. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.loyaltyGroup"
+              },
+              {
+                "op": "field",
+                "path": "principal.assignedGroup"
+              }
+            ],
+            "op": "in"
+          },
+          "revision_notes": [
+            "Authorization requires that the guest belongs to a loyalty-tier group within the manager's scope. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the guest belongs to a loyalty-tier group within the manager's scope. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V3",
+            "meaning": "the guest belongs to a loyalty-tier group within the manager's scope",
+            "reads": "CompAuthorization.loyaltyGroup"
+          }
+        },
+        "V4": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the perk set includes a restricted perk (suite upgrade or gaming credit). Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "member": {
+              "type": "String",
+              "values": [
+                "beverage_credit",
+                "gaming_credit",
+                "suite_upgrade"
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "member": "suite_upgrade"
+            },
+            {
+              "member": "gaming_credit"
+            },
+            {
+              "member": "beverage_credit"
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.perks"
+              },
+              {
+                "name": "member",
+                "op": "parameter"
+              }
+            ],
+            "op": "contains"
+          },
+          "revision_notes": [
+            "Authorization requires that the perk set includes a restricted perk (suite upgrade or gaming credit). Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the perk set includes a restricted perk (suite upgrade or gaming credit). Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V4",
+            "meaning": "the perk set includes a restricted perk (suite upgrade or gaming credit)",
+            "reads": "CompAuthorization.perks"
+          }
+        },
+        "V6": {
+          "allowed_forms": [
+            "applicability"
+          ],
+          "allowed_targets": [
+            "G1"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "applicability",
+            "rationale": "Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional.",
+            "statement": "Whenever the number of comped items crosses a threshold, enforce this duty: the agent who requested the comp may not authorize it (separation of duty over complimentary value). Outside all selected triggers only this duty stops binding.",
+            "target": "G1"
+          },
+          "parameter_schema": {
+            "threshold": {
+              "type": "Long",
+              "values": [
+                1,
+                10,
+                3
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "threshold": 1
+            },
+            {
+              "threshold": 3
+            },
+            {
+              "threshold": 10
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.itemCount"
+              },
+              {
+                "name": "threshold",
+                "op": "parameter"
+              }
+            ],
+            "op": "gt"
+          },
+          "revision_notes": [
+            "Declared synthetic review/acceptance bands measured in complimentary items per authorization. Source-explicit refill > 0 and production-release defect == 0 remain unchanged.",
+            "Whenever the number of comped items crosses a threshold, enforce this duty: the agent who requested the comp may not authorize it (separation of duty over complimentary value). Outside all selected triggers only this duty stops binding.",
+            "Composition rationale: Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "applicability",
+              "rationale": "Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional.",
+              "statement": "Whenever the number of comped items crosses a threshold, enforce this duty: the agent who requested the comp may not authorize it (separation of duty over complimentary value). Outside all selected triggers only this duty stops binding.",
+              "target": "G1"
+            },
+            "id": "V6",
+            "meaning": "the number of comped items crosses a threshold",
+            "reads": "CompAuthorization.itemCount"
+          }
+        },
+        "V8": {
+          "allowed_forms": [
+            "obligation"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "obligation",
+            "rationale": "The source describes a trigger and an additional required consequence; encode that implication independently of bases.",
+            "statement": "When the complimentary value crosses a money threshold requiring manager authorization, its explicit additional requirement must hold. This does not waive or scope any base.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "threshold": {
+              "type": "Long",
+              "values": [
+                10000,
+                2500,
+                50000
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "threshold": 2500
+            },
+            {
+              "threshold": 10000
+            },
+            {
+              "threshold": 50000
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.compValue"
+              },
+              {
+                "name": "threshold",
+                "op": "parameter"
+              }
+            ],
+            "op": "gt"
+          },
+          "requirement": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.compValue"
+                      },
+                      {
+                        "name": "threshold",
+                        "op": "parameter"
+                      }
+                    ],
+                    "op": "gt"
+                  }
+                ],
+                "op": "not"
+              },
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "principal.roles"
+                      },
+                      {
+                        "id": "FrontOfficeManager",
+                        "op": "entity",
+                        "type": "Role"
+                      }
+                    ],
+                    "op": "contains"
+                  }
+                ],
+                "op": "any"
+              }
+            ],
+            "op": "any"
+          },
+          "revision_notes": [
+            "USD-cent thresholds for per-authorization hospitality complimentary value: $25, $100, $500. These are synthetic organization policy choices.",
+            "When the complimentary value crosses a money threshold requiring manager authorization, its explicit additional requirement must hold. This does not waive or scope any base.",
+            "Composition rationale: The source describes a trigger and an additional required consequence; encode that implication independently of bases."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "obligation",
+              "rationale": "The source describes a trigger and an additional required consequence; encode that implication independently of bases.",
+              "statement": "When the complimentary value crosses a money threshold requiring manager authorization, its explicit additional requirement must hold. This does not waive or scope any base.",
+              "target": "@action"
+            },
+            "id": "V8",
+            "meaning": "the complimentary value crosses a money threshold requiring manager authorization",
+            "reads": "CompAuthorization.compValue"
+          }
+        },
+        "V9": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the request originates on the on-property network. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "op": "field",
+            "path": "context.onPropertyNetwork"
+          },
+          "revision_notes": [
+            "Authorization requires that the request originates on the on-property network. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the request originates on the on-property network. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V9",
+            "meaning": "the request originates on the on-property network",
+            "reads": "context.onPropertyNetwork"
+          }
+        }
+      },
+      "bases": {
+        "G1": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal"
+              },
+              {
+                "op": "field",
+                "path": "resource.requestedBy"
+              }
+            ],
+            "op": "ne"
+          },
+          "signature": "V1",
+          "source": {
+            "id": "G1",
+            "meaning": "the agent who requested the comp may not authorize it (separation of duty over complimentary value)",
+            "reads": "principal vs CompAuthorization.requestedBy",
+            "signature": "V1"
+          }
+        },
+        "G5": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.status"
+              },
+              {
+                "id": "requested",
+                "op": "entity",
+                "type": "CompAuthorizationStatusValue"
+              }
+            ],
+            "op": "eq"
+          },
+          "signature": "V11",
+          "source": {
+            "id": "G5",
+            "meaning": "a comp may be authorized only while it is in the requested state",
+            "reads": "CompAuthorization.status",
+            "signature": "V11"
+          }
+        }
+      },
+      "domain_gate": {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.compValue"
+              },
+              {
+                "op": "literal",
+                "value": 0
+              }
+            ],
+            "op": "ge"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.itemCount"
+              },
+              {
+                "op": "literal",
+                "value": 0
+              }
+            ],
+            "op": "ge"
+          }
+        ],
+        "op": "all"
+      },
+      "eligibility": {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "ShiftManager",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "FrontOfficeManager",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          }
+        ],
+        "op": "any"
+      },
+      "field_bindings": {
+        "CompAuthorization.blackoutFlag": "resource.blackoutFlag",
+        "CompAuthorization.compType": "resource.compType",
+        "CompAuthorization.compValue": "resource.compValue",
+        "CompAuthorization.itemCount": "resource.itemCount",
+        "CompAuthorization.loyaltyGroup": "resource.loyaltyGroup",
+        "CompAuthorization.perks": "resource.perks",
+        "CompAuthorization.requestedBy": "resource.requestedBy",
+        "CompAuthorization.status": "resource.status",
+        "context.authorizeCompScheduledEnd": "context.authorizeCompScheduledEnd",
+        "context.authorizeCompScheduledStart": "context.authorizeCompScheduledStart",
+        "context.currentTime": "context.currentTime",
+        "context.managerOnDuty": "context.managerOnDuty",
+        "context.onPropertyNetwork": "context.onPropertyNetwork",
+        "context.vipEscalationDeclared": "context.vipEscalationDeclared",
+        "user.assignedGroup": "principal.assignedGroup"
+      },
+      "overrides": {
+        "G3": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "context.vipEscalationDeclared"
+              },
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "principal.roles"
+                      },
+                      {
+                        "id": "FrontOfficeManager",
+                        "op": "entity",
+                        "type": "Role"
+                      }
+                    ],
+                    "op": "contains"
+                  }
+                ],
+                "op": "any"
+              }
+            ],
+            "op": "all"
+          },
+          "source": {
+            "id": "G3",
+            "meaning": "a declared VIP escalation lets a front-office manager authorize a comp they requested, overriding the separation-of-duty rule",
+            "overrides": [
+              "G1"
+            ],
+            "reads": "context.vipEscalationDeclared",
+            "requires_adjudication": true
+          },
+          "targets": [
+            "G1"
+          ]
+        }
+      },
+      "resource_type": "CompAuthorization"
+    }
+  },
+  "business_review_revision": "2026-10-23-r1",
+  "context": {
+    "applyCompV8ReviewCompleted": {
+      "type": "Bool"
+    },
+    "authorizeCompScheduledEnd": {
+      "description": "exclusive end of the declared Scheduled window",
+      "type": "datetime"
+    },
+    "authorizeCompScheduledStart": {
+      "description": "inclusive start of the declared Scheduled window",
+      "type": "datetime"
+    },
+    "currentTime": {
+      "type": "datetime"
+    },
+    "managerOnDuty": {
+      "type": "Bool"
+    },
+    "onPropertyNetwork": {
+      "type": "Bool"
+    },
+    "vipEscalationDeclared": {
+      "type": "Bool"
+    },
+    "voucherPerks": {
+      "description": "perks recorded on the voucher for this authorization",
+      "type": "Set<String>"
+    }
+  },
+  "contract": "complete-spec-v4",
+  "decisions": [
+    "Added CompAuthorization.validUntil: exclusive expiry completing the application-window clause",
+    "Added User.assignedGroup: assigned hierarchy scope for resource group conditions",
+    "Added User.compAuthorityLevel: source G4 principal attribute; uses the resource dominance scale",
+    "Added context.authorizeCompScheduledEnd: exclusive end of the declared Scheduled window",
+    "Added context.authorizeCompScheduledStart: inclusive start of the declared Scheduled window",
+    "Added context.voucherPerks: perks recorded on the voucher for this authorization",
+    "All source identities denote User entities; role sets may overlap without implicit exclusivity.",
+    "All timestamps read by predicates are bounded inclusively to 2000-01-01 through 2100-01-01 UTC; requests outside the explicit domain gate deny.",
+    "Business revision v2: catalogs are declared synthetic organizational policies, not empirical norms. Selected-atom obligations are mandatory in both forms and cannot be waived by a base exception or override.",
+    "CompLog.note is source documentation, not an attribute.",
+    "Money is nonnegative integer USD cents, at most 1,000,000,000. Counts are nonnegative integers at most 1,000,000 unless a narrower dictionary is declared.",
+    "Request context is treated as trusted input from the host; authorization does not attest network, emergency, signature, or scheduling facts.",
+    "Retained source repairs: exact lifecycle states, linked course roster, explicit promotion/filing facts, independent calibration expiry, comp expiry, and guarded override eligibility are intentional experiment definitions. Their typed ASTs and field descriptions, not the ambiguous source shorthand, are authoritative.",
+    "Rules operate on snapshots. A selected lifecycle base requires the exact named state unless its predicate explicitly lists alternatives.",
+    "Source business descriptions are retained for audit; the authored typed predicates and dictionaries define the experiment. No statutory compliance claim is made.",
+    "Source tag kinds are represented by Set<String>. Group membership is reflexive and transitive Cedar entity ancestry.",
+    "applyComp/V4: The selected perk, when present in the authorization, must also be recorded on the voucher.",
+    "applyComp/V4: This implication is mandatory whenever the atom is selected, in either form; it survives all base exceptions and overrides.",
+    "applyComp/V8: USD-cent thresholds for per-authorization hospitality complimentary value: $25, $100, $500. These are synthetic organization policy choices.",
+    "authorizeComp/V6: Declared synthetic review/acceptance bands measured in complimentary items per authorization. Source-explicit refill > 0 and production-release defect == 0 remain unchanged.",
+    "authorizeComp/V8: This implication is mandatory whenever the atom is selected, in either form; it survives all base exceptions and overrides.",
+    "authorizeComp/V8: USD-cent thresholds for per-authorization hospitality complimentary value: $25, $100, $500. These are synthetic organization policy choices.",
+    "authorizeComp/V8: When this trigger holds, the requester must hold one of: FrontOfficeManager."
+  ],
+  "domain": "comp_authorization",
+  "entities": {
+    "CompAuthorization": {
+      "attributes": {
+        "authCode": {
+          "type": "String"
+        },
+        "authorizedBy": {
+          "type": "User"
+        },
+        "blackoutFlag": {
+          "type": "Bool"
+        },
+        "compType": {
+          "representation": "zero or more label strings",
+          "type": "Set<String>"
+        },
+        "compValue": {
+          "bounds": [
+            0,
+            1000000000
+          ],
+          "type": "Long",
+          "unit": "USD cents"
+        },
+        "guestTier": {
+          "bounds": [
+            0,
+            3
+          ],
+          "description": "Synthetic ordinal scale; the same integer rank denotes the required authority tier when used by G4. No physical magnitude or external standard is implied.",
+          "levels": {
+            "invitation_only": 3,
+            "preferred": 1,
+            "premium": 2,
+            "standard": 0
+          },
+          "type": "Long"
+        },
+        "itemCount": {
+          "bounds": [
+            0,
+            1000000
+          ],
+          "type": "Long",
+          "unit": "complimentary items per authorization"
+        },
+        "loyaltyGroup": {
+          "type": "Group"
+        },
+        "perks": {
+          "type": "Set<String>"
+        },
+        "requestedAt": {
+          "type": "datetime"
+        },
+        "requestedBy": {
+          "type": "User"
+        },
+        "status": {
+          "type": "CompAuthorizationStatusValue"
+        },
+        "validUntil": {
+          "description": "exclusive expiry completing the application-window clause",
+          "type": "datetime"
+        }
+      }
+    },
+    "CompAuthorizationStatusValue": {
+      "enum": [
+        "drafted",
+        "requested",
+        "authorized",
+        "applied"
+      ]
+    },
+    "CompLog": {
+      "attributes": {}
+    },
+    "CompVoucher": {
+      "attributes": {
+        "authorization": {
+          "type": "CompAuthorization"
+        },
+        "issuedBy": {
+          "type": "User"
+        },
+        "value": {
+          "bounds": [
+            0,
+            1000000000
+          ],
+          "type": "Long",
+          "unit": "USD cents"
+        }
+      }
+    },
+    "Group": {
+      "attributes": {},
+      "member_of": [
+        "Group"
+      ]
+    },
+    "Role": {
+      "enum": [
+        "FrontDeskAgent",
+        "GuestServicesHost",
+        "ShiftManager",
+        "FrontOfficeManager",
+        "Auditor"
+      ]
+    },
+    "User": {
+      "attributes": {
+        "assignedGroup": {
+          "description": "assigned hierarchy scope for resource group conditions",
+          "type": "Group"
+        },
+        "compAuthorityLevel": {
+          "bounds": [
+            0,
+            3
+          ],
+          "description": "Synthetic ordinal scale; the same integer rank denotes the required authority tier when used by G4. No physical magnitude or external standard is implied.",
+          "levels": {
+            "invitation_only": 3,
+            "preferred": 1,
+            "premium": 2,
+            "standard": 0
+          },
+          "type": "Long"
+        },
+        "roles": {
+          "type": "Set<Role>"
+        }
+      }
+    }
+  },
+  "revision_contract": "business-composition-v4",
+  "source_action_chains": [
+    {
+      "chain": [
+        "authorizeComp",
+        "applyComp"
+      ],
+      "linked_by": [
+        "status",
+        "requestedBy",
+        "guestTier"
+      ],
+      "shared_resource": "CompAuthorization"
+    }
+  ],
+  "source_sha256": "2907de8ce880b86d975423e46cde808f78a30bb93dc0a767cb3b4f0643c07c22",
+  "status": "authored experimental assumptions; not human semantic approval",
+  "version": "business-registry-v4"
+}

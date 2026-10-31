@@ -1,0 +1,2 @@
+permit (principal is User, action == Action::"sendCommand", resource is Device)
+when { (true && ((principal.roles.contains(Role::"Operator") || principal.roles.contains(Role::"Technician") || principal.roles.contains(Role::"FleetAdmin"))) && (!(true) || (resource.status == DeviceStatusValue::"active")) && (!((resource.maintenanceMode == true)) || context.maintenanceCommandAuthorized) && (resource.firmwareTags.contains("beta")) && (context.sourceIp.isInRange(ip("192.168.0.0/16")))) };

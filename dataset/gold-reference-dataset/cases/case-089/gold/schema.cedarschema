@@ -1,0 +1,13 @@
+entity AuditLog {  };
+entity Group in [Group] {  };
+entity Invoice { amount: Long, approver?: User, costCenter: String, creator: User, lineItemCount: Long, status: InvoiceStatusValue, submittedAt: datetime, surcharge: Long };
+entity InvoiceStatusValue enum ["draft", "submitted", "approved", "paid"];
+entity Payment { amount: Long, invoice: Invoice, issuer: User };
+entity Role enum ["Clerk", "Approver", "FinanceManager", "Auditor"];
+entity User { roles: Set<Role> };
+action approveInvoice appliesTo { principal: [User], resource: [Invoice], context: {
+    currentTime: datetime,
+    emergencyDeclared: Bool,
+    onCorporateNetwork: Bool,
+  },
+};

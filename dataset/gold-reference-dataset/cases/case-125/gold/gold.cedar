@@ -1,0 +1,2 @@
+permit (principal is User, action == Action::"dispatchShipment", resource is Shipment)
+when { (((resource.pieceCount >= 0)) && ((principal.roles.contains(Role::"Driver") || principal.roles.contains(Role::"DispatchManager"))) && (!(true) || (resource.status == ShipmentStatusValue::"created")) && ((context.currentTime < resource.deliveryWindowEnd)) && (resource.hazmatClass.contains("corrosive")) && ((resource.trackingCode like "CARRIER-A-*")) && (!((resource.pieceCount > 10)) || (principal.roles.contains(Role::"DispatchManager")))) };

@@ -1,0 +1,5 @@
+permit (principal is User, action == Action::"approvePayout", resource is Payout)
+when { ((((resource.account.kycTier == 0) || (resource.account.kycTier == 1) || (resource.account.kycTier == 2) || (resource.account.kycTier == 3)) && (resource.amount >= 0)) && ((principal.roles.contains(Role::"FinanceApprover"))) && (!(true) || (resource.status == PayoutStatusValue::"requested")) && (((context.approvePayoutScheduledStart <= context.currentTime) && (context.currentTime < context.approvePayoutScheduledEnd))) && (context.onTrustedNetwork)) };
+
+permit (principal is User, action == Action::"disbursePayout", resource is Payout)
+when { ((((resource.account.kycTier == 0) || (resource.account.kycTier == 1) || (resource.account.kycTier == 2) || (resource.account.kycTier == 3)) && (resource.amount >= 0)) && ((principal.roles.contains(Role::"PayoutAgent"))) && (!(true) || (resource.account.fraudStatus == SellerAccountFraudStatusValue::"clear")) && ((resource.account.kycTier >= 2)) && (!((resource.amount > 50000)) || context.disbursePayoutV8ReviewCompleted)) };

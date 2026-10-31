@@ -1,0 +1,2 @@
+permit (principal is User, action == Action::"fileResponse", resource is Filing)
+when { (true && ((principal.roles.contains(Role::"PatentAttorney"))) && (!(true) || (principal == resource.application.prosecutingAttorney)) && (!(true) || (resource.status == FilingStatusValue::"draft")) && ((context.currentDate < resource.application.barDate)) && (context.mfaUsed) && (resource.application.team.contains(principal))) };

@@ -1,0 +1,68 @@
+{
+  "domain": "shipment_dispatch",
+  "format_version": "complete-spec-v4",
+  "grouping": {
+    "applicability_triggers": "any",
+    "exception": "any",
+    "requirements": "all"
+  },
+  "parts": [
+    {
+      "anchor": "confirmDelivery",
+      "bases": [
+        "G5"
+      ],
+      "conditions": [
+        {
+          "atom": "V13",
+          "form": "obligation",
+          "parameters": {
+            "label": "flammable"
+          },
+          "target": "@action"
+        },
+        {
+          "atom": "V14",
+          "form": "require",
+          "parameters": {},
+          "target": "@action"
+        }
+      ],
+      "overrides": []
+    },
+    {
+      "anchor": "dispatchShipment",
+      "bases": [
+        "G5"
+      ],
+      "conditions": [
+        {
+          "atom": "V13",
+          "form": "require",
+          "parameters": {
+            "label": "toxic"
+          },
+          "target": "@action"
+        },
+        {
+          "atom": "V6",
+          "form": "obligation",
+          "parameters": {
+            "threshold": 1000
+          },
+          "target": "@action"
+        }
+      ],
+      "overrides": []
+    }
+  ],
+  "provenance": {
+    "kind": "less-specific-20 revised intent",
+    "source_case": "case-078",
+    "source_cohort_sha256": "dc765eca4c9085f9dbd4ad236e51e49541a2c1b43c7fdc65bc46c0daed92721c",
+    "source_spec_sha256": "05eff6ae6d6f53478242d1d4f29519d303328254325a41362656e86c6269bd57",
+    "transformation": "Drop artificial 2000-2100 timestamp windows and catalog maxima; retain nonnegative and enumerated-level guards."
+  },
+  "registry_sha256": "29d5648f9c76f67a1f3a93e668115cbd7d62927986b4b1dbb73e9711276c0035",
+  "source_sha256": "2907de8ce880b86d975423e46cde808f78a30bb93dc0a767cb3b4f0643c07c22"
+}

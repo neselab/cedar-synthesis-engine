@@ -1,0 +1,2 @@
+permit (principal is User, action == Action::"approvePayroll", resource is PayrollRun)
+when { (((resource.amount >= 0)) && ((principal.roles.contains(Role::"Manager") || principal.roles.contains(Role::"PayrollAdmin"))) && (!(true) || (resource.status == PayrollRunStatusValue::"submitted")) && (((context.approvePayrollScheduledStart <= context.currentTime) && (context.currentTime < context.approvePayrollScheduledEnd))) && ((principal.roles.contains(Role::"Manager"))) && (context.onVpn)) };

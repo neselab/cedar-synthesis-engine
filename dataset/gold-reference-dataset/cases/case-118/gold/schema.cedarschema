@@ -1,0 +1,17 @@
+entity AccessLog {  };
+entity Group in [Group] {  };
+entity Order { destinationZone: Zone, itemCount: Long, items: Set<String>, pickListCode: String, picker: User, releasedAt: datetime, requestedBy: User, status: OrderStatusValue };
+entity OrderStatusValue enum ["created", "released", "picking", "picked", "staged"];
+entity Role enum ["Picker", "ForkliftOperator", "ZoneSupervisor", "WarehouseManager", "SecurityOfficer"];
+entity User { assignedCodePattern: String, assignedGroup: Group, clearance: Long, roles: Set<Role> };
+entity Zone { operationalStatus: ZoneOperationalStatusValue, sensitivity: Long, zoneCode: String, zoneGroup: Group, zoneLocked: Bool };
+entity ZoneOperationalStatusValue enum ["closed", "open", "maintenance", "lockdown"];
+action pickOrder appliesTo { principal: [User], resource: [Order], context: {
+    currentTime: datetime,
+    emergencyDeclared: Bool,
+    onSiteBadge: Bool,
+    pickOrderScheduledEnd: datetime,
+    pickOrderScheduledStart: datetime,
+    pickOrderV6ReviewCompleted: Bool,
+  },
+};

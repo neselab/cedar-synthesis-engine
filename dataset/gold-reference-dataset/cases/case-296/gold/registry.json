@@ -1,0 +1,1765 @@
+{
+  "anchors": {
+    "acknowledgeCritical": {
+      "atoms": {
+        "V10": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the acknowledgment is within the required read-back time. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "limit_ms": {
+              "type": "Long",
+              "values": [
+                1800000,
+                3600000,
+                900000
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "limit_ms": 900000
+            },
+            {
+              "limit_ms": 1800000
+            },
+            {
+              "limit_ms": 3600000
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "op": "field",
+                                "path": "context.currentTime"
+                              },
+                              {
+                                "args": [
+                                  {
+                                    "op": "literal",
+                                    "value": "1970-01-01T00:00:00Z"
+                                  }
+                                ],
+                                "op": "datetime"
+                              }
+                            ],
+                            "op": "time_lt"
+                          },
+                          {
+                            "args": [
+                              {
+                                "op": "field",
+                                "path": "resource.criticalNotifiedAt"
+                              },
+                              {
+                                "args": [
+                                  {
+                                    "op": "literal",
+                                    "value": "1970-01-01T00:00:00Z"
+                                  }
+                                ],
+                                "op": "datetime"
+                              }
+                            ],
+                            "op": "time_lt"
+                          }
+                        ],
+                        "op": "all"
+                      },
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "op": "literal",
+                                    "value": "1970-01-01T00:00:00Z"
+                                  }
+                                ],
+                                "op": "datetime"
+                              },
+                              {
+                                "op": "field",
+                                "path": "context.currentTime"
+                              }
+                            ],
+                            "op": "time_le"
+                          },
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "op": "literal",
+                                    "value": "1970-01-01T00:00:00Z"
+                                  }
+                                ],
+                                "op": "datetime"
+                              },
+                              {
+                                "op": "field",
+                                "path": "resource.criticalNotifiedAt"
+                              }
+                            ],
+                            "op": "time_le"
+                          }
+                        ],
+                        "op": "all"
+                      }
+                    ],
+                    "op": "any"
+                  },
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.criticalNotifiedAt"
+                      },
+                      {
+                        "op": "field",
+                        "path": "context.currentTime"
+                      }
+                    ],
+                    "op": "time_le"
+                  },
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "op": "field",
+                            "path": "context.currentTime"
+                          },
+                          {
+                            "op": "field",
+                            "path": "resource.criticalNotifiedAt"
+                          }
+                        ],
+                        "op": "time_diff"
+                      },
+                      {
+                        "name": "limit_ms",
+                        "op": "parameter"
+                      }
+                    ],
+                    "op": "le"
+                  }
+                ],
+                "op": "all"
+              },
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.criticalNotifiedAt"
+                      },
+                      {
+                        "args": [
+                          {
+                            "op": "literal",
+                            "value": "1970-01-01T00:00:00Z"
+                          }
+                        ],
+                        "op": "datetime"
+                      }
+                    ],
+                    "op": "time_lt"
+                  },
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "op": "literal",
+                            "value": "1969-12-31T23:00:00Z"
+                          }
+                        ],
+                        "op": "datetime"
+                      },
+                      {
+                        "op": "field",
+                        "path": "resource.criticalNotifiedAt"
+                      }
+                    ],
+                    "op": "time_le"
+                  },
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "op": "literal",
+                            "value": "1970-01-01T00:00:00Z"
+                          }
+                        ],
+                        "op": "datetime"
+                      },
+                      {
+                        "op": "field",
+                        "path": "context.currentTime"
+                      }
+                    ],
+                    "op": "time_le"
+                  },
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "op": "field",
+                            "path": "context.currentTime"
+                          },
+                          {
+                            "args": [
+                              {
+                                "op": "literal",
+                                "value": "1970-01-01T00:00:00Z"
+                              }
+                            ],
+                            "op": "datetime"
+                          }
+                        ],
+                        "op": "time_diff"
+                      },
+                      {
+                        "name": "limit_ms",
+                        "op": "parameter"
+                      }
+                    ],
+                    "op": "le"
+                  },
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "op": "field",
+                            "path": "context.currentTime"
+                          },
+                          {
+                            "args": [
+                              {
+                                "op": "literal",
+                                "value": "1970-01-01T00:00:00Z"
+                              }
+                            ],
+                            "op": "datetime"
+                          }
+                        ],
+                        "op": "time_diff"
+                      },
+                      {
+                        "args": [
+                          {
+                            "name": "limit_ms",
+                            "op": "parameter"
+                          },
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "op": "literal",
+                                    "value": "1970-01-01T00:00:00Z"
+                                  }
+                                ],
+                                "op": "datetime"
+                              },
+                              {
+                                "op": "field",
+                                "path": "resource.criticalNotifiedAt"
+                              }
+                            ],
+                            "op": "time_diff"
+                          }
+                        ],
+                        "op": "sub"
+                      }
+                    ],
+                    "op": "le"
+                  }
+                ],
+                "op": "all"
+              }
+            ],
+            "op": "any"
+          },
+          "revision_notes": [
+            "Authorization requires that the acknowledgment is within the required read-back time. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the acknowledgment is within the required read-back time. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V10",
+            "meaning": "the acknowledgment is within the required read-back time",
+            "reads": "context.currentTime"
+          }
+        },
+        "V12": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the result carries a critical-value flag. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.criticalFlag"
+              },
+              {
+                "op": "literal",
+                "value": true
+              }
+            ],
+            "op": "eq"
+          },
+          "revision_notes": [
+            "Authorization requires that the result carries a critical-value flag. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the result carries a critical-value flag. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V12",
+            "meaning": "the result carries a critical-value flag",
+            "reads": "LabResult.criticalFlag"
+          }
+        },
+        "V14": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that MFA was used. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "op": "field",
+            "path": "context.mfaUsed"
+          },
+          "revision_notes": [
+            "Authorization requires that MFA was used. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that MFA was used. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V14",
+            "meaning": "MFA was used",
+            "reads": "context.mfaUsed"
+          }
+        },
+        "V9": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the request comes from the hospital network. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "op": "field",
+            "path": "context.onHospitalNetwork"
+          },
+          "revision_notes": [
+            "Authorization requires that the request comes from the hospital network. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the request comes from the hospital network. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V9",
+            "meaning": "the request comes from the hospital network",
+            "reads": "context.onHospitalNetwork"
+          }
+        }
+      },
+      "bases": {
+        "G2": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal"
+              },
+              {
+                "op": "field",
+                "path": "resource.orderingProvider"
+              }
+            ],
+            "op": "eq"
+          },
+          "signature": "V1",
+          "source": {
+            "id": "G2",
+            "meaning": "the provider who ordered the test must be the one who signs off on its critical value",
+            "reads": "principal vs LabResult.orderingProvider",
+            "signature": "V1"
+          }
+        },
+        "G5": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.status"
+              },
+              {
+                "id": "criticalHold",
+                "op": "entity",
+                "type": "LabResultStatusValue"
+              }
+            ],
+            "op": "eq"
+          },
+          "signature": "V11",
+          "source": {
+            "id": "G5",
+            "meaning": "a critical value may be acknowledged only while the result is on critical hold",
+            "reads": "LabResult.status",
+            "signature": "V11"
+          }
+        }
+      },
+      "domain_gate": {
+        "op": "literal",
+        "value": true
+      },
+      "eligibility": {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "OrderingProvider",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          }
+        ],
+        "op": "any"
+      },
+      "field_bindings": {
+        "LabResult.criticalFlag": "resource.criticalFlag",
+        "LabResult.criticalNotifiedAt": "resource.criticalNotifiedAt",
+        "LabResult.orderingProvider": "resource.orderingProvider",
+        "LabResult.status": "resource.status",
+        "context.coverageAuthorized": "context.coverageAuthorized",
+        "context.currentTime": "context.currentTime",
+        "context.mfaUsed": "context.mfaUsed",
+        "context.onHospitalNetwork": "context.onHospitalNetwork"
+      },
+      "overrides": {
+        "G3": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "context.coverageAuthorized"
+              },
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "principal.roles"
+                      },
+                      {
+                        "id": "OrderingProvider",
+                        "op": "entity",
+                        "type": "Role"
+                      }
+                    ],
+                    "op": "contains"
+                  }
+                ],
+                "op": "any"
+              }
+            ],
+            "op": "all"
+          },
+          "source": {
+            "id": "G3",
+            "meaning": "an authorized covering provider may acknowledge the critical value in the ordering provider's absence",
+            "overrides": [
+              "G2"
+            ],
+            "reads": "context.coverageAuthorized",
+            "requires_adjudication": true
+          },
+          "targets": [
+            "G2"
+          ]
+        }
+      },
+      "resource_type": "LabResult"
+    },
+    "releaseResult": {
+      "atoms": {
+        "V10": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the request falls within a permitted window. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.releaseResultScheduledStart"
+                  },
+                  {
+                    "op": "field",
+                    "path": "context.currentTime"
+                  }
+                ],
+                "op": "time_le"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.currentTime"
+                  },
+                  {
+                    "op": "field",
+                    "path": "context.releaseResultScheduledEnd"
+                  }
+                ],
+                "op": "time_lt"
+              }
+            ],
+            "op": "all"
+          },
+          "revision_notes": [
+            "Authorization requires that the request falls within a permitted window. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the request falls within a permitted window. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V10",
+            "meaning": "the request falls within a permitted window",
+            "reads": "context.currentTime"
+          }
+        },
+        "V12": {
+          "allowed_forms": [
+            "obligation"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "obligation",
+            "rationale": "Explicit synthetic completion of the trigger consequence using a trusted request-specific fact; no unconditional grant or base waiver.",
+            "required_fact": "criticalReleaseReviewCompleted",
+            "statement": "When the result carries a critical-value flag, the critical-result release review is complete.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.criticalFlag"
+              },
+              {
+                "op": "literal",
+                "value": true
+              }
+            ],
+            "op": "eq"
+          },
+          "requirement": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.criticalFlag"
+                      },
+                      {
+                        "op": "literal",
+                        "value": true
+                      }
+                    ],
+                    "op": "eq"
+                  }
+                ],
+                "op": "not"
+              },
+              {
+                "op": "field",
+                "path": "context.criticalReleaseReviewCompleted"
+              }
+            ],
+            "op": "any"
+          },
+          "revision_notes": [
+            "When the result carries a critical-value flag, the critical-result release review is complete.",
+            "Composition rationale: Explicit synthetic completion of the trigger consequence using a trusted request-specific fact; no unconditional grant or base waiver."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "obligation",
+              "rationale": "Explicit synthetic completion of the trigger consequence using a trusted request-specific fact; no unconditional grant or base waiver.",
+              "required_fact": "criticalReleaseReviewCompleted",
+              "statement": "When the result carries a critical-value flag, the critical-result release review is complete.",
+              "target": "@action"
+            },
+            "id": "V12",
+            "meaning": "the result carries a critical-value flag",
+            "reads": "LabResult.criticalFlag"
+          }
+        },
+        "V14": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that MFA was used. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "op": "field",
+            "path": "context.mfaUsed"
+          },
+          "revision_notes": [
+            "Authorization requires that MFA was used. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that MFA was used. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V14",
+            "meaning": "MFA was used",
+            "reads": "context.mfaUsed"
+          }
+        },
+        "V2": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the requester holds a particular role. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.roles"
+                  },
+                  {
+                    "id": "Pathologist",
+                    "op": "entity",
+                    "type": "Role"
+                  }
+                ],
+                "op": "contains"
+              }
+            ],
+            "op": "any"
+          },
+          "revision_notes": [
+            "Authorization requires that the requester holds a particular role. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the requester holds a particular role. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V2",
+            "meaning": "the requester holds a particular role",
+            "reads": "principal is Pathologist"
+          }
+        },
+        "V6": {
+          "allowed_forms": [
+            "obligation"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "obligation",
+            "rationale": "The source describes a trigger and an additional required consequence; encode that implication independently of bases.",
+            "statement": "When the result's sensitivity is at least a level (restricted results require a pathologist), its explicit additional requirement must hold. This does not waive or scope any base.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "threshold": {
+              "type": "Long",
+              "values": [
+                1,
+                2
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "threshold": 1
+            },
+            {
+              "threshold": 2
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.sensitivity"
+              },
+              {
+                "name": "threshold",
+                "op": "parameter"
+              }
+            ],
+            "op": "ge"
+          },
+          "requirement": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.sensitivity"
+                      },
+                      {
+                        "name": "threshold",
+                        "op": "parameter"
+                      }
+                    ],
+                    "op": "ge"
+                  }
+                ],
+                "op": "not"
+              },
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "principal.roles"
+                      },
+                      {
+                        "id": "Pathologist",
+                        "op": "entity",
+                        "type": "Role"
+                      }
+                    ],
+                    "op": "contains"
+                  }
+                ],
+                "op": "any"
+              }
+            ],
+            "op": "any"
+          },
+          "revision_notes": [
+            "Only interior effective cut points are offered on the named ordinal scale; exclude universally satisfied endpoints.",
+            "When the result's sensitivity is at least a level (restricted results require a pathologist), its explicit additional requirement must hold. This does not waive or scope any base.",
+            "Composition rationale: The source describes a trigger and an additional required consequence; encode that implication independently of bases."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "obligation",
+              "rationale": "The source describes a trigger and an additional required consequence; encode that implication independently of bases.",
+              "statement": "When the result's sensitivity is at least a level (restricted results require a pathologist), its explicit additional requirement must hold. This does not waive or scope any base.",
+              "target": "@action"
+            },
+            "id": "V6",
+            "meaning": "the result's sensitivity is at least a level (restricted results require a pathologist)",
+            "reads": "LabResult.sensitivity"
+          }
+        }
+      },
+      "bases": {
+        "G1": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal"
+              },
+              {
+                "op": "field",
+                "path": "resource.verifiedBy"
+              }
+            ],
+            "op": "ne"
+          },
+          "signature": "V1",
+          "source": {
+            "id": "G1",
+            "meaning": "the technologist who verified a result may not be the one who releases it to the chart",
+            "reads": "principal vs LabResult.verifiedBy",
+            "signature": "V1"
+          }
+        },
+        "G5": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.status"
+              },
+              {
+                "id": "verified",
+                "op": "entity",
+                "type": "LabResultStatusValue"
+              }
+            ],
+            "op": "eq"
+          },
+          "signature": "V11",
+          "source": {
+            "id": "G5",
+            "meaning": "a result may be released only after it has been verified",
+            "reads": "LabResult.status",
+            "signature": "V11"
+          }
+        }
+      },
+      "domain_gate": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.sensitivity"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.sensitivity"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.sensitivity"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 2
+                  }
+                ],
+                "op": "eq"
+              }
+            ],
+            "op": "any"
+          }
+        ],
+        "op": "all"
+      },
+      "eligibility": {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "Pathologist",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "OrderingProvider",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          }
+        ],
+        "op": "any"
+      },
+      "field_bindings": {
+        "LabResult.criticalFlag": "resource.criticalFlag",
+        "LabResult.sensitivity": "resource.sensitivity",
+        "LabResult.status": "resource.status",
+        "LabResult.verifiedBy": "resource.verifiedBy",
+        "context.currentTime": "context.currentTime",
+        "context.emergencyRelease": "context.emergencyRelease",
+        "context.mfaUsed": "context.mfaUsed",
+        "context.releaseResultScheduledEnd": "context.releaseResultScheduledEnd",
+        "context.releaseResultScheduledStart": "context.releaseResultScheduledStart"
+      },
+      "overrides": {
+        "G3": {
+          "eligibility_extension": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.emergencyRelease"
+                  },
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "op": "field",
+                            "path": "principal.roles"
+                          },
+                          {
+                            "id": "MedicalTechnologist",
+                            "op": "entity",
+                            "type": "Role"
+                          }
+                        ],
+                        "op": "contains"
+                      }
+                    ],
+                    "op": "any"
+                  }
+                ],
+                "op": "all"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal"
+                  },
+                  {
+                    "op": "field",
+                    "path": "resource.verifiedBy"
+                  }
+                ],
+                "op": "eq"
+              }
+            ],
+            "op": "all"
+          },
+          "predicate": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.emergencyRelease"
+                  },
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "op": "field",
+                            "path": "principal.roles"
+                          },
+                          {
+                            "id": "MedicalTechnologist",
+                            "op": "entity",
+                            "type": "Role"
+                          }
+                        ],
+                        "op": "contains"
+                      }
+                    ],
+                    "op": "any"
+                  }
+                ],
+                "op": "all"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal"
+                  },
+                  {
+                    "op": "field",
+                    "path": "resource.verifiedBy"
+                  }
+                ],
+                "op": "eq"
+              }
+            ],
+            "op": "all"
+          },
+          "source": {
+            "id": "G3",
+            "meaning": "a declared emergency lets the verifying technologist also release the result, overriding the two-person split",
+            "overrides": [
+              "G1"
+            ],
+            "reads": "context.emergencyRelease",
+            "requires_adjudication": true
+          },
+          "targets": [
+            "G1"
+          ]
+        }
+      },
+      "resource_type": "LabResult"
+    },
+    "releaseToPortal": {
+      "atoms": {
+        "V1": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the requester is the ordering provider. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal"
+              },
+              {
+                "op": "field",
+                "path": "resource.orderingProvider"
+              }
+            ],
+            "op": "eq"
+          },
+          "revision_notes": [
+            "Authorization requires that the requester is the ordering provider. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the requester is the ordering provider. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V1",
+            "meaning": "the requester is the ordering provider",
+            "reads": "LabResult.orderingProvider"
+          }
+        },
+        "V10": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the patient-portal embargo window has elapsed. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.portalReleaseAt"
+              },
+              {
+                "op": "field",
+                "path": "context.currentTime"
+              }
+            ],
+            "op": "time_le"
+          },
+          "revision_notes": [
+            "Authorization requires that the patient-portal embargo window has elapsed. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the patient-portal embargo window has elapsed. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V10",
+            "meaning": "the patient-portal embargo window has elapsed",
+            "reads": "context.currentTime vs LabResult.portalReleaseAt"
+          }
+        },
+        "V12": {
+          "allowed_forms": [
+            "obligation"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "obligation",
+            "rationale": "The source describes a trigger and an additional required consequence; encode that implication independently of bases.",
+            "statement": "When the result carries a critical-value flag (held from the portal until acknowledged), its explicit additional requirement must hold. This does not waive or scope any base.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.criticalFlag"
+              },
+              {
+                "op": "literal",
+                "value": true
+              }
+            ],
+            "op": "eq"
+          },
+          "requirement": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.criticalFlag"
+                      },
+                      {
+                        "op": "literal",
+                        "value": true
+                      }
+                    ],
+                    "op": "eq"
+                  }
+                ],
+                "op": "not"
+              },
+              {
+                "op": "field",
+                "path": "context.criticalAcknowledged"
+              }
+            ],
+            "op": "any"
+          },
+          "revision_notes": [
+            "When this trigger holds, the critical result has been acknowledged before portal release. This is a trusted request-specific host attestation.",
+            "When the result carries a critical-value flag (held from the portal until acknowledged), its explicit additional requirement must hold. This does not waive or scope any base.",
+            "Composition rationale: The source describes a trigger and an additional required consequence; encode that implication independently of bases."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "obligation",
+              "rationale": "The source describes a trigger and an additional required consequence; encode that implication independently of bases.",
+              "statement": "When the result carries a critical-value flag (held from the portal until acknowledged), its explicit additional requirement must hold. This does not waive or scope any base.",
+              "target": "@action"
+            },
+            "id": "V12",
+            "meaning": "the result carries a critical-value flag (held from the portal until acknowledged)",
+            "reads": "LabResult.criticalFlag"
+          }
+        },
+        "V14": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that MFA was used. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "op": "field",
+            "path": "context.mfaUsed"
+          },
+          "revision_notes": [
+            "Authorization requires that MFA was used. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that MFA was used. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V14",
+            "meaning": "MFA was used",
+            "reads": "context.mfaUsed"
+          }
+        }
+      },
+      "bases": {
+        "G4": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.credentialLevel"
+              },
+              {
+                "op": "field",
+                "path": "resource.sensitivity"
+              }
+            ],
+            "op": "ge"
+          },
+          "signature": "V6",
+          "source": {
+            "id": "G4",
+            "meaning": "the releaser's credential level must dominate the result's sensitivity before it is pushed to the patient portal",
+            "reads": "user.credentialLevel vs LabResult.sensitivity",
+            "signature": "V6"
+          }
+        },
+        "G5": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.status"
+              },
+              {
+                "id": "released",
+                "op": "entity",
+                "type": "LabResultStatusValue"
+              }
+            ],
+            "op": "eq"
+          },
+          "signature": "V11",
+          "source": {
+            "id": "G5",
+            "meaning": "a result may be released to the portal only after it has been released to the chart",
+            "reads": "LabResult.status",
+            "signature": "V11"
+          }
+        }
+      },
+      "domain_gate": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.credentialLevel"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.credentialLevel"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.credentialLevel"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 2
+                  }
+                ],
+                "op": "eq"
+              }
+            ],
+            "op": "any"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.sensitivity"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.sensitivity"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.sensitivity"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 2
+                  }
+                ],
+                "op": "eq"
+              }
+            ],
+            "op": "any"
+          }
+        ],
+        "op": "all"
+      },
+      "eligibility": {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "Pathologist",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "LabDirector",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          }
+        ],
+        "op": "any"
+      },
+      "field_bindings": {
+        "LabResult.criticalFlag": "resource.criticalFlag",
+        "LabResult.orderingProvider": "resource.orderingProvider",
+        "LabResult.portalReleaseAt": "resource.portalReleaseAt",
+        "LabResult.sensitivity": "resource.sensitivity",
+        "LabResult.status": "resource.status",
+        "context.currentTime": "context.currentTime",
+        "context.mfaUsed": "context.mfaUsed",
+        "user.credentialLevel": "principal.credentialLevel"
+      },
+      "overrides": {},
+      "resource_type": "LabResult"
+    }
+  },
+  "business_review_revision": "2026-10-23-r1",
+  "context": {
+    "coverageAuthorized": {
+      "type": "Bool"
+    },
+    "criticalAcknowledged": {
+      "description": "the critical result has been acknowledged before portal release",
+      "type": "Bool"
+    },
+    "criticalReleaseReviewCompleted": {
+      "type": "Bool"
+    },
+    "currentTime": {
+      "type": "datetime"
+    },
+    "emergencyRelease": {
+      "type": "Bool"
+    },
+    "mfaUsed": {
+      "type": "Bool"
+    },
+    "onHospitalNetwork": {
+      "type": "Bool"
+    },
+    "releaseResultScheduledEnd": {
+      "description": "exclusive end of the declared Scheduled window",
+      "type": "datetime"
+    },
+    "releaseResultScheduledStart": {
+      "description": "inclusive start of the declared Scheduled window",
+      "type": "datetime"
+    }
+  },
+  "contract": "complete-spec-v4",
+  "decisions": [
+    "Added LabResult.criticalNotifiedAt: start of the critical-result read-back timer",
+    "Added context.criticalAcknowledged: the critical result has been acknowledged before portal release",
+    "Added context.releaseResultScheduledEnd: exclusive end of the declared Scheduled window",
+    "Added context.releaseResultScheduledStart: inclusive start of the declared Scheduled window",
+    "All source identities denote User entities; role sets may overlap without implicit exclusivity.",
+    "All timestamps read by predicates are bounded inclusively to 2000-01-01 through 2100-01-01 UTC; requests outside the explicit domain gate deny.",
+    "Business revision v2: catalogs are declared synthetic organizational policies, not empirical norms. Selected-atom obligations are mandatory in both forms and cannot be waived by a base exception or override.",
+    "Money is nonnegative integer USD cents, at most 1,000,000,000. Counts are nonnegative integers at most 1,000,000 unless a narrower dictionary is declared.",
+    "Request context is treated as trusted input from the host; authorization does not attest network, emergency, signature, or scheduling facts.",
+    "Retained source repairs: exact lifecycle states, linked course roster, explicit promotion/filing facts, independent calibration expiry, comp expiry, and guarded override eligibility are intentional experiment definitions. Their typed ASTs and field descriptions, not the ambiguous source shorthand, are authoritative.",
+    "Rules operate on snapshots. A selected lifecycle base requires the exact named state unless its predicate explicitly lists alternatives.",
+    "Source business descriptions are retained for audit; the authored typed predicates and dictionaries define the experiment. No statutory compliance claim is made.",
+    "Source tag kinds are represented by Set<String>. Group membership is reflexive and transitive Cedar entity ancestry.",
+    "releaseResult/G3 explicitly extends eligibility to ['MedicalTechnologist'] only while the override guard holds; these roles were absent from the source anchor role list.",
+    "releaseResult/V6: Only interior effective cut points are offered on the named ordinal scale; exclude universally satisfied endpoints.",
+    "releaseResult/V6: This implication is mandatory whenever the atom is selected, in either form; it survives all base exceptions and overrides.",
+    "releaseResult/V6: When this trigger holds, the requester must hold one of: Pathologist.",
+    "releaseToPortal/V12: This implication is mandatory whenever the atom is selected, in either form; it survives all base exceptions and overrides.",
+    "releaseToPortal/V12: When this trigger holds, the critical result has been acknowledged before portal release. This is a trusted request-specific host attestation."
+  ],
+  "domain": "lab_result_release",
+  "entities": {
+    "Group": {
+      "attributes": {},
+      "member_of": [
+        "Group"
+      ]
+    },
+    "LabOrder": {
+      "attributes": {
+        "orderingProvider": {
+          "type": "User"
+        },
+        "patient": {
+          "type": "User"
+        },
+        "status": {
+          "type": "LabOrderStatusValue"
+        },
+        "testCode": {
+          "type": "String"
+        }
+      }
+    },
+    "LabOrderStatusValue": {
+      "enum": [
+        "ordered",
+        "collected",
+        "resulted"
+      ]
+    },
+    "LabResult": {
+      "attributes": {
+        "criticalFlag": {
+          "type": "Bool"
+        },
+        "criticalNotifiedAt": {
+          "description": "start of the critical-result read-back timer",
+          "type": "datetime"
+        },
+        "orderingProvider": {
+          "type": "User"
+        },
+        "patient": {
+          "type": "User"
+        },
+        "portalReleaseAt": {
+          "type": "datetime"
+        },
+        "sensitivity": {
+          "bounds": [
+            0,
+            2
+          ],
+          "levels": {
+            "restricted": 2,
+            "routine": 0,
+            "sensitive": 1
+          },
+          "type": "Long"
+        },
+        "status": {
+          "type": "LabResultStatusValue"
+        },
+        "verifiedBy": {
+          "type": "User"
+        }
+      }
+    },
+    "LabResultStatusValue": {
+      "enum": [
+        "pending",
+        "verified",
+        "criticalHold",
+        "released",
+        "portalReleased"
+      ]
+    },
+    "Role": {
+      "enum": [
+        "MedicalTechnologist",
+        "Pathologist",
+        "OrderingProvider",
+        "LabDirector"
+      ]
+    },
+    "User": {
+      "attributes": {
+        "credentialLevel": {
+          "bounds": [
+            0,
+            2
+          ],
+          "levels": {
+            "restricted": 2,
+            "routine": 0,
+            "sensitive": 1
+          },
+          "type": "Long"
+        },
+        "roles": {
+          "type": "Set<Role>"
+        }
+      }
+    }
+  },
+  "revision_contract": "business-composition-v4",
+  "source_action_chains": [
+    {
+      "chain": [
+        "releaseResult",
+        "releaseToPortal",
+        "acknowledgeCritical"
+      ],
+      "linked_by": [
+        "status",
+        "orderingProvider",
+        "verifiedBy"
+      ],
+      "shared_resource": "LabResult"
+    }
+  ],
+  "source_sha256": "2907de8ce880b86d975423e46cde808f78a30bb93dc0a767cb3b4f0643c07c22",
+  "status": "authored experimental assumptions; not human semantic approval",
+  "version": "business-registry-v4"
+}

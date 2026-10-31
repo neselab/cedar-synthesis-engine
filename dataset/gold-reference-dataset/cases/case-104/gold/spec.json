@@ -1,0 +1,76 @@
+{
+  "domain": "lab_result_release",
+  "format_version": "complete-spec-v4",
+  "grouping": {
+    "applicability_triggers": "any",
+    "exception": "any",
+    "requirements": "all"
+  },
+  "parts": [
+    {
+      "anchor": "acknowledgeCritical",
+      "bases": [
+        "G2"
+      ],
+      "conditions": [
+        {
+          "atom": "V10",
+          "form": "require",
+          "parameters": {
+            "limit_ms": 900000
+          },
+          "target": "@action"
+        }
+      ],
+      "overrides": [
+        {
+          "id": "G3",
+          "targets": [
+            "G2"
+          ]
+        }
+      ]
+    },
+    {
+      "anchor": "releaseResult",
+      "bases": [
+        "G1"
+      ],
+      "conditions": [
+        {
+          "atom": "V12",
+          "form": "obligation",
+          "parameters": {},
+          "target": "@action"
+        }
+      ],
+      "overrides": [
+        {
+          "id": "G3",
+          "targets": [
+            "G1"
+          ]
+        }
+      ]
+    },
+    {
+      "anchor": "releaseToPortal",
+      "bases": [
+        "G5"
+      ],
+      "conditions": [],
+      "overrides": []
+    }
+  ],
+  "provenance": {
+    "arithmetic_safety_patches": [
+      "acknowledgeCritical.V10"
+    ],
+    "kind": "less-specific-200 revised intent",
+    "source_case": "case-104",
+    "source_spec_sha256": "ca953c74a3139b7f922bc83aadb79afe422f75802b4a6dbd91d8dbf0f4b9a539",
+    "transformation": "Drop only artificial 2000-2100 timestamp windows and catalog maxima 1000000/1000000000; retain all other gates."
+  },
+  "registry_sha256": "00894158366814fdf945b4a017abc2b09cf974f8db7c989a8833dc5185c7536a",
+  "source_sha256": "2907de8ce880b86d975423e46cde808f78a30bb93dc0a767cb3b4f0643c07c22"
+}

@@ -1,0 +1,52 @@
+{
+  "domain": "ad_campaigns",
+  "format_version": "complete-spec-v4",
+  "grouping": {
+    "applicability_triggers": "any",
+    "exception": "any",
+    "requirements": "all"
+  },
+  "parts": [
+    {
+      "anchor": "reviewCreative",
+      "bases": [
+        "G1",
+        "G4"
+      ],
+      "conditions": [
+        {
+          "atom": "V11",
+          "form": "require",
+          "parameters": {
+            "state": "pending"
+          },
+          "target": "@action"
+        },
+        {
+          "atom": "V13",
+          "form": "require",
+          "parameters": {
+            "label": "advertising"
+          },
+          "target": "@action"
+        },
+        {
+          "atom": "V14",
+          "form": "require",
+          "parameters": {},
+          "target": "@action"
+        }
+      ],
+      "overrides": []
+    }
+  ],
+  "provenance": {
+    "inherited_arithmetic_safety_patches": [],
+    "kind": "non-time-33 revised intent",
+    "source_case": "case-063",
+    "source_spec_sha256": "bb5b203c7e0fe6ffe552e3eb2d4946dcb9ca0414291b1c9cb750c56e45347e10",
+    "transformation": "Remove only artificial 2000-2100 datetime bounds and catalog maxima; retain all business rules."
+  },
+  "registry_sha256": "f540b5709a84a7347fede5ac20f347f29aa3601cfb790628a5313934db302737",
+  "source_sha256": "2907de8ce880b86d975423e46cde808f78a30bb93dc0a767cb3b4f0643c07c22"
+}

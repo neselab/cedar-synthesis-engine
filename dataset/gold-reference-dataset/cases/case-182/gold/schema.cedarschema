@@ -1,0 +1,19 @@
+entity Application { candidate: User, hiringTeam: Set<User>, piiSensitivity: Long, referredBy: User, reqCode: String, status: ApplicationStatusValue };
+entity ApplicationStatusValue enum ["received", "screening", "interviewing", "offer", "closed"];
+entity Group in [Group] {  };
+entity InterviewFeedback { application: Application, candidate: User, interviewer: User, status: InterviewFeedbackStatusValue };
+entity InterviewFeedbackStatusValue enum ["scheduled", "submitted", "calibrated"];
+entity Offer { application: Application, compensation: Long, extendedBy: User, signingBonus: Long, status: OfferStatusValue };
+entity OfferStatusValue enum ["drafted", "approved", "extended", "accepted"];
+entity Role enum ["Recruiter", "HiringManager", "Interviewer", "Coordinator"];
+entity User { piiClearance: Long, roles: Set<Role> };
+action approveOffer appliesTo { principal: [User], resource: [Offer], context: {
+    approveOfferScheduledEnd: datetime,
+    approveOfferScheduledStart: datetime,
+    currentTime: datetime,
+    execApproval: Bool,
+    onCorpNetwork: Bool,
+    submitFeedbackScheduledEnd: datetime,
+    submitFeedbackScheduledStart: datetime,
+  },
+};

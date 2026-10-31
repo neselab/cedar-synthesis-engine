@@ -1,0 +1,2 @@
+permit (principal is User, action == Action::"reviewPage", resource is Page)
+when { (true && ((principal.roles.contains(Role::"Reviewer") || principal.roles.contains(Role::"SpaceAdmin"))) && (!(true) || (principal != resource.author)) && (!(true) || (resource.status == PageStatusValue::"in_review")) && (((context.reviewPageScheduledStart <= context.currentTime) && (context.currentTime < context.reviewPageScheduledEnd))) && (resource.labels.contains("external")) && (resource.space.members.contains(principal))) };

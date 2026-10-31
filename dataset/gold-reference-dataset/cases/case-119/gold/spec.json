@@ -1,0 +1,47 @@
+{
+  "domain": "student_records",
+  "format_version": "complete-spec-v4",
+  "grouping": {
+    "applicability_triggers": "any",
+    "exception": "any",
+    "requirements": "all"
+  },
+  "parts": [
+    {
+      "anchor": "viewRecord",
+      "bases": [
+        "G5"
+      ],
+      "conditions": [
+        {
+          "atom": "V1",
+          "form": "require",
+          "parameters": {},
+          "target": "@action"
+        },
+        {
+          "atom": "V10",
+          "form": "require",
+          "parameters": {},
+          "target": "@action"
+        },
+        {
+          "atom": "V12",
+          "form": "prohibit",
+          "parameters": {},
+          "target": "@action"
+        }
+      ],
+      "overrides": []
+    }
+  ],
+  "provenance": {
+    "arithmetic_safety_patches": [],
+    "kind": "less-specific-200 revised intent",
+    "source_case": "case-119",
+    "source_spec_sha256": "25b3a71d883f494f02149fed5a096a9e87238ba37e2b25aa2181247821cdc6f3",
+    "transformation": "Drop only artificial 2000-2100 timestamp windows and catalog maxima 1000000/1000000000; retain all other gates."
+  },
+  "registry_sha256": "19362df9380e13561ac595879aff3b482c3077dc5d588acfb49bdc5f6ef6eebe",
+  "source_sha256": "2907de8ce880b86d975423e46cde808f78a30bb93dc0a767cb3b4f0643c07c22"
+}

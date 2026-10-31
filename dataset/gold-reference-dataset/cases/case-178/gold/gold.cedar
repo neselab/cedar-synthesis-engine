@@ -1,0 +1,2 @@
+permit (principal is User, action == Action::"adjudicateCase", resource is Case)
+when { (true && ((principal.roles.contains(Role::"AdjudicationOfficer") || principal.roles.contains(Role::"SupervisoryOfficer"))) && (!(true) || !(principal.recusedCases.contains(resource)) || (context.supervisorApproval && (principal.roles.contains(Role::"AdjudicationOfficer") || principal.roles.contains(Role::"SupervisoryOfficer")))) && (!(true) || (resource.status == CaseStatusValue::"checkCleared")) && (!((principal == resource.applicant))) && (context.onGovNetwork)) };

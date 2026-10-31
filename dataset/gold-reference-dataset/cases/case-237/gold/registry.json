@@ -1,0 +1,1978 @@
+{
+  "anchors": {
+    "approveAdjustment": {
+      "atoms": {
+        "V10": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the approval falls within the night-audit cutoff window. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.approveAdjustmentScheduledStart"
+                  },
+                  {
+                    "op": "field",
+                    "path": "context.currentTime"
+                  }
+                ],
+                "op": "time_le"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.currentTime"
+                  },
+                  {
+                    "op": "field",
+                    "path": "context.approveAdjustmentScheduledEnd"
+                  }
+                ],
+                "op": "time_lt"
+              }
+            ],
+            "op": "all"
+          },
+          "revision_notes": [
+            "Authorization requires that the approval falls within the night-audit cutoff window. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the approval falls within the night-audit cutoff window. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V10",
+            "meaning": "the approval falls within the night-audit cutoff window",
+            "reads": "context.currentTime"
+          }
+        },
+        "V12": {
+          "allowed_forms": [
+            "obligation"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "obligation",
+            "rationale": "The source describes a trigger and an additional required consequence; encode that implication independently of bases.",
+            "statement": "When the folio carries a VIP flag requiring extra sign-off, its explicit additional requirement must hold. This does not waive or scope any base.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.vipFlag"
+              },
+              {
+                "op": "literal",
+                "value": true
+              }
+            ],
+            "op": "eq"
+          },
+          "requirement": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.vipFlag"
+                      },
+                      {
+                        "op": "literal",
+                        "value": true
+                      }
+                    ],
+                    "op": "eq"
+                  }
+                ],
+                "op": "not"
+              },
+              {
+                "op": "field",
+                "path": "context.vipSignoffRecorded"
+              }
+            ],
+            "op": "any"
+          },
+          "revision_notes": [
+            "When this trigger holds, additional VIP adjustment sign-off is recorded. This is a trusted request-specific host attestation.",
+            "When the folio carries a VIP flag requiring extra sign-off, its explicit additional requirement must hold. This does not waive or scope any base.",
+            "Composition rationale: The source describes a trigger and an additional required consequence; encode that implication independently of bases."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "obligation",
+              "rationale": "The source describes a trigger and an additional required consequence; encode that implication independently of bases.",
+              "statement": "When the folio carries a VIP flag requiring extra sign-off, its explicit additional requirement must hold. This does not waive or scope any base.",
+              "target": "@action"
+            },
+            "id": "V12",
+            "meaning": "the folio carries a VIP flag requiring extra sign-off",
+            "reads": "Folio.vipFlag"
+          }
+        },
+        "V13": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the dispute category tag matches a regulated category. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "label": {
+              "type": "String",
+              "values": [
+                "billing_error",
+                "chargeback",
+                "comp"
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "label": "chargeback"
+            },
+            {
+              "label": "comp"
+            },
+            {
+              "label": "billing_error"
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.disputeCategory"
+              },
+              {
+                "name": "label",
+                "op": "parameter"
+              }
+            ],
+            "op": "contains"
+          },
+          "revision_notes": [
+            "Authorization requires that the dispute category tag matches a regulated category. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the dispute category tag matches a regulated category. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V13",
+            "meaning": "the dispute category tag matches a regulated category",
+            "reads": "Folio.disputeCategory"
+          }
+        },
+        "V14": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the underlying dispute has been verified before approval. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "op": "field",
+            "path": "context.disputeVerified"
+          },
+          "revision_notes": [
+            "Authorization requires that the underlying dispute has been verified before approval. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the underlying dispute has been verified before approval. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V14",
+            "meaning": "the underlying dispute has been verified before approval",
+            "reads": "context.disputeVerified"
+          }
+        },
+        "V2": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the approver holds the revenue-manager role required for large credits. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.roles"
+                  },
+                  {
+                    "id": "RevenueManager",
+                    "op": "entity",
+                    "type": "Role"
+                  }
+                ],
+                "op": "contains"
+              }
+            ],
+            "op": "any"
+          },
+          "revision_notes": [
+            "Authorization requires that the approver holds the revenue-manager role required for large credits. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the approver holds the revenue-manager role required for large credits. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V2",
+            "meaning": "the approver holds the revenue-manager role required for large credits",
+            "reads": "principal.role"
+          }
+        },
+        "V3": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the folio's property region falls within the approver's region hierarchy. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.propertyRegion"
+              },
+              {
+                "op": "field",
+                "path": "principal.assignedGroup"
+              }
+            ],
+            "op": "in"
+          },
+          "revision_notes": [
+            "Authorization requires that the folio's property region falls within the approver's region hierarchy. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the folio's property region falls within the approver's region hierarchy. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V3",
+            "meaning": "the folio's property region falls within the approver's region hierarchy",
+            "reads": "Folio.propertyRegion"
+          }
+        },
+        "V5": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the folio code carries a controlled property prefix. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "pattern": {
+              "type": "String",
+              "values": [
+                "PROPERTY-A-*",
+                "PROPERTY-B-*"
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "pattern": "PROPERTY-A-*"
+            },
+            {
+              "pattern": "PROPERTY-B-*"
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.folioCode"
+              },
+              {
+                "name": "pattern",
+                "op": "parameter"
+              }
+            ],
+            "op": "like"
+          },
+          "revision_notes": [
+            "Authorization requires that the folio code carries a controlled property prefix. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the folio code carries a controlled property prefix. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V5",
+            "meaning": "the folio code carries a controlled property prefix",
+            "reads": "Folio.folioCode"
+          }
+        },
+        "V7": {
+          "allowed_forms": [
+            "applicability"
+          ],
+          "allowed_targets": [
+            "G1"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "applicability",
+            "rationale": "Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional.",
+            "statement": "Whenever the resulting folio balance after the adjustment crosses a threshold, enforce this duty: the clerk who posted the adjustment may not approve it (separation of duty). Outside all selected triggers only this duty stops binding.",
+            "target": "G1"
+          },
+          "parameter_schema": {
+            "threshold": {
+              "type": "Long",
+              "values": [
+                10000,
+                250000,
+                50000
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "threshold": 10000
+            },
+            {
+              "threshold": 50000
+            },
+            {
+              "threshold": 250000
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.folioBalance"
+                  },
+                  {
+                    "op": "field",
+                    "path": "resource.adjustmentAmount"
+                  }
+                ],
+                "op": "sub"
+              },
+              {
+                "name": "threshold",
+                "op": "parameter"
+              }
+            ],
+            "op": "gt"
+          },
+          "revision_notes": [
+            "USD-cent thresholds for individual adjustments versus remaining guest folio balances: $100, $500, $2500. These are synthetic organization policy choices.",
+            "Whenever the resulting folio balance after the adjustment crosses a threshold, enforce this duty: the clerk who posted the adjustment may not approve it (separation of duty). Outside all selected triggers only this duty stops binding.",
+            "Composition rationale: Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "applicability",
+              "rationale": "Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional.",
+              "statement": "Whenever the resulting folio balance after the adjustment crosses a threshold, enforce this duty: the clerk who posted the adjustment may not approve it (separation of duty). Outside all selected triggers only this duty stops binding.",
+              "target": "G1"
+            },
+            "id": "V7",
+            "meaning": "the resulting folio balance after the adjustment crosses a threshold",
+            "reads": "Folio.folioBalance - Folio.adjustmentAmount"
+          }
+        },
+        "V8": {
+          "allowed_forms": [
+            "obligation"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "obligation",
+            "rationale": "Explicit synthetic completion of the trigger consequence using a trusted request-specific fact; no unconditional grant or base waiver.",
+            "required_fact": "largeCreditApprovalRecorded",
+            "statement": "When the adjustment amount crosses a money threshold requiring manager approval, an additional large-credit approval has been recorded.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "threshold": {
+              "type": "Long",
+              "values": [
+                10000,
+                2500,
+                50000
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "threshold": 2500
+            },
+            {
+              "threshold": 10000
+            },
+            {
+              "threshold": 50000
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.adjustmentAmount"
+              },
+              {
+                "name": "threshold",
+                "op": "parameter"
+              }
+            ],
+            "op": "gt"
+          },
+          "requirement": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.adjustmentAmount"
+                      },
+                      {
+                        "name": "threshold",
+                        "op": "parameter"
+                      }
+                    ],
+                    "op": "gt"
+                  }
+                ],
+                "op": "not"
+              },
+              {
+                "op": "field",
+                "path": "context.largeCreditApprovalRecorded"
+              }
+            ],
+            "op": "any"
+          },
+          "revision_notes": [
+            "USD-cent thresholds for individual adjustments versus remaining guest folio balances: $25, $100, $500. These are synthetic organization policy choices.",
+            "When the adjustment amount crosses a money threshold requiring manager approval, an additional large-credit approval has been recorded.",
+            "Composition rationale: Explicit synthetic completion of the trigger consequence using a trusted request-specific fact; no unconditional grant or base waiver."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "obligation",
+              "rationale": "Explicit synthetic completion of the trigger consequence using a trusted request-specific fact; no unconditional grant or base waiver.",
+              "required_fact": "largeCreditApprovalRecorded",
+              "statement": "When the adjustment amount crosses a money threshold requiring manager approval, an additional large-credit approval has been recorded.",
+              "target": "@action"
+            },
+            "id": "V8",
+            "meaning": "the adjustment amount crosses a money threshold requiring manager approval",
+            "reads": "Folio.adjustmentAmount"
+          }
+        }
+      },
+      "bases": {
+        "G1": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal"
+              },
+              {
+                "op": "field",
+                "path": "resource.postedBy"
+              }
+            ],
+            "op": "ne"
+          },
+          "signature": "V1",
+          "source": {
+            "id": "G1",
+            "meaning": "the clerk who posted the adjustment may not approve it (separation of duty)",
+            "reads": "principal vs Folio.postedBy",
+            "signature": "V1"
+          }
+        },
+        "G5": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.status"
+              },
+              {
+                "id": "adjustment_posted",
+                "op": "entity",
+                "type": "FolioStatusValue"
+              }
+            ],
+            "op": "eq"
+          },
+          "signature": "V11",
+          "source": {
+            "id": "G5",
+            "meaning": "an adjustment may be approved only after it has been posted (status adjustment_posted)",
+            "reads": "Folio.status",
+            "signature": "V11"
+          }
+        }
+      },
+      "domain_gate": {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.adjustmentAmount"
+              },
+              {
+                "op": "literal",
+                "value": 0
+              }
+            ],
+            "op": "ge"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.folioBalance"
+              },
+              {
+                "op": "literal",
+                "value": 0
+              }
+            ],
+            "op": "ge"
+          }
+        ],
+        "op": "all"
+      },
+      "eligibility": {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "AccountingClerk",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "RevenueManager",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          }
+        ],
+        "op": "any"
+      },
+      "field_bindings": {
+        "Folio.adjustmentAmount": "resource.adjustmentAmount",
+        "Folio.disputeCategory": "resource.disputeCategory",
+        "Folio.folioBalance": "resource.folioBalance",
+        "Folio.folioCode": "resource.folioCode",
+        "Folio.postedBy": "resource.postedBy",
+        "Folio.propertyRegion": "resource.propertyRegion",
+        "Folio.status": "resource.status",
+        "Folio.vipFlag": "resource.vipFlag",
+        "context.approveAdjustmentScheduledEnd": "context.approveAdjustmentScheduledEnd",
+        "context.approveAdjustmentScheduledStart": "context.approveAdjustmentScheduledStart",
+        "context.currentTime": "context.currentTime",
+        "context.disputeVerified": "context.disputeVerified",
+        "context.gmOverrideDeclared": "context.gmOverrideDeclared",
+        "user.assignedGroup": "principal.assignedGroup"
+      },
+      "overrides": {
+        "G3": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "context.gmOverrideDeclared"
+              },
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "principal.roles"
+                      },
+                      {
+                        "id": "RevenueManager",
+                        "op": "entity",
+                        "type": "Role"
+                      }
+                    ],
+                    "op": "contains"
+                  }
+                ],
+                "op": "any"
+              }
+            ],
+            "op": "all"
+          },
+          "source": {
+            "id": "G3",
+            "meaning": "a declared general-manager override lets a revenue manager approve an adjustment they posted, overriding the separation-of-duty rule",
+            "overrides": [
+              "G1"
+            ],
+            "reads": "context.gmOverrideDeclared",
+            "requires_adjudication": true
+          },
+          "targets": [
+            "G1"
+          ]
+        }
+      },
+      "resource_type": "Folio"
+    },
+    "postAdjustment": {
+      "atoms": {
+        "V10": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the adjustment is posted before the guest's checkout deadline. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "context.currentTime"
+              },
+              {
+                "op": "field",
+                "path": "resource.checkoutDeadline"
+              }
+            ],
+            "op": "time_lt"
+          },
+          "revision_notes": [
+            "Authorization requires that the adjustment is posted before the guest's checkout deadline. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the adjustment is posted before the guest's checkout deadline. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V10",
+            "meaning": "the adjustment is posted before the guest's checkout deadline",
+            "reads": "context.currentTime vs Folio.checkoutDeadline"
+          }
+        },
+        "V12": {
+          "allowed_forms": [
+            "obligation"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "obligation",
+            "rationale": "The source describes a trigger and an additional required consequence; encode that implication independently of bases.",
+            "statement": "When the folio carries a VIP flag requiring extra care, its explicit additional requirement must hold. This does not waive or scope any base.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.vipFlag"
+              },
+              {
+                "op": "literal",
+                "value": true
+              }
+            ],
+            "op": "eq"
+          },
+          "requirement": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.vipFlag"
+                      },
+                      {
+                        "op": "literal",
+                        "value": true
+                      }
+                    ],
+                    "op": "eq"
+                  }
+                ],
+                "op": "not"
+              },
+              {
+                "op": "field",
+                "path": "context.vipHandlingReviewed"
+              }
+            ],
+            "op": "any"
+          },
+          "revision_notes": [
+            "When this trigger holds, VIP posting review is complete. This is a trusted request-specific host attestation.",
+            "When the folio carries a VIP flag requiring extra care, its explicit additional requirement must hold. This does not waive or scope any base.",
+            "Composition rationale: The source describes a trigger and an additional required consequence; encode that implication independently of bases."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "obligation",
+              "rationale": "The source describes a trigger and an additional required consequence; encode that implication independently of bases.",
+              "statement": "When the folio carries a VIP flag requiring extra care, its explicit additional requirement must hold. This does not waive or scope any base.",
+              "target": "@action"
+            },
+            "id": "V12",
+            "meaning": "the folio carries a VIP flag requiring extra care",
+            "reads": "Folio.vipFlag"
+          }
+        },
+        "V13": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the dispute category tag matches a monitored category such as chargeback or comp. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "label": {
+              "type": "String",
+              "values": [
+                "billing_error",
+                "chargeback",
+                "comp"
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "label": "chargeback"
+            },
+            {
+              "label": "comp"
+            },
+            {
+              "label": "billing_error"
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.disputeCategory"
+              },
+              {
+                "name": "label",
+                "op": "parameter"
+              }
+            ],
+            "op": "contains"
+          },
+          "revision_notes": [
+            "Authorization requires that the dispute category tag matches a monitored category such as chargeback or comp. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the dispute category tag matches a monitored category such as chargeback or comp. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V13",
+            "meaning": "the dispute category tag matches a monitored category such as chargeback or comp",
+            "reads": "Folio.disputeCategory"
+          }
+        },
+        "V14": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the underlying dispute has been verified before posting. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "op": "field",
+            "path": "context.disputeVerified"
+          },
+          "revision_notes": [
+            "Authorization requires that the underlying dispute has been verified before posting. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the underlying dispute has been verified before posting. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V14",
+            "meaning": "the underlying dispute has been verified before posting",
+            "reads": "context.disputeVerified"
+          }
+        },
+        "V3": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the folio's property region falls within the agent's assigned region. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.propertyRegion"
+              },
+              {
+                "op": "field",
+                "path": "principal.assignedGroup"
+              }
+            ],
+            "op": "in"
+          },
+          "revision_notes": [
+            "Authorization requires that the folio's property region falls within the agent's assigned region. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the folio's property region falls within the agent's assigned region. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V3",
+            "meaning": "the folio's property region falls within the agent's assigned region",
+            "reads": "Folio.propertyRegion"
+          }
+        },
+        "V4": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the folio's charge set includes a disputed charge line. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "member": {
+              "type": "String",
+              "values": [
+                "DISPUTED-001",
+                "DISPUTED-002"
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "member": "DISPUTED-001"
+            },
+            {
+              "member": "DISPUTED-002"
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.charges"
+              },
+              {
+                "name": "member",
+                "op": "parameter"
+              }
+            ],
+            "op": "contains"
+          },
+          "revision_notes": [
+            "Authorization requires that the folio's charge set includes a disputed charge line. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the folio's charge set includes a disputed charge line. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V4",
+            "meaning": "the folio's charge set includes a disputed charge line",
+            "reads": "Folio.charges"
+          }
+        },
+        "V5": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the folio code carries the agent's assigned property prefix. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "pattern": {
+              "type": "String",
+              "values": [
+                "PROPERTY-A-*",
+                "PROPERTY-B-*"
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "pattern": "PROPERTY-A-*"
+            },
+            {
+              "pattern": "PROPERTY-B-*"
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.assignedCodePattern"
+                  },
+                  {
+                    "name": "pattern",
+                    "op": "parameter"
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.folioCode"
+                  },
+                  {
+                    "name": "pattern",
+                    "op": "parameter"
+                  }
+                ],
+                "op": "like"
+              }
+            ],
+            "op": "all"
+          },
+          "revision_notes": [
+            "Authorization requires that the folio code carries the agent's assigned property prefix. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the folio code carries the agent's assigned property prefix. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V5",
+            "meaning": "the folio code carries the agent's assigned property prefix",
+            "reads": "Folio.folioCode"
+          }
+        },
+        "V7": {
+          "allowed_forms": [
+            "applicability"
+          ],
+          "allowed_targets": [
+            "G4"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "applicability",
+            "rationale": "Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional.",
+            "statement": "Whenever the net charge after the adjustment (original charge minus adjustment) crosses a threshold, enforce this duty: the agent's adjustment authority level must dominate the guest's segment before posting an adjustment. Outside all selected triggers only this duty stops binding.",
+            "target": "G4"
+          },
+          "parameter_schema": {
+            "threshold": {
+              "type": "Long",
+              "values": [
+                10000,
+                250000,
+                50000
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "threshold": 10000
+            },
+            {
+              "threshold": 50000
+            },
+            {
+              "threshold": 250000
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.originalCharge"
+                  },
+                  {
+                    "op": "field",
+                    "path": "resource.adjustmentAmount"
+                  }
+                ],
+                "op": "sub"
+              },
+              {
+                "name": "threshold",
+                "op": "parameter"
+              }
+            ],
+            "op": "gt"
+          },
+          "revision_notes": [
+            "USD-cent thresholds for individual adjustments versus remaining guest folio balances: $100, $500, $2500. These are synthetic organization policy choices.",
+            "Whenever the net charge after the adjustment (original charge minus adjustment) crosses a threshold, enforce this duty: the agent's adjustment authority level must dominate the guest's segment before posting an adjustment. Outside all selected triggers only this duty stops binding.",
+            "Composition rationale: Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "applicability",
+              "rationale": "Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional.",
+              "statement": "Whenever the net charge after the adjustment (original charge minus adjustment) crosses a threshold, enforce this duty: the agent's adjustment authority level must dominate the guest's segment before posting an adjustment. Outside all selected triggers only this duty stops binding.",
+              "target": "G4"
+            },
+            "id": "V7",
+            "meaning": "the net charge after the adjustment (original charge minus adjustment) crosses a threshold",
+            "reads": "Folio.originalCharge - Folio.adjustmentAmount"
+          }
+        },
+        "V8": {
+          "allowed_forms": [
+            "applicability"
+          ],
+          "allowed_targets": [
+            "G4"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "applicability",
+            "rationale": "Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional.",
+            "statement": "Whenever the adjustment amount crosses a money threshold, enforce this duty: the agent's adjustment authority level must dominate the guest's segment before posting an adjustment. Outside all selected triggers only this duty stops binding.",
+            "target": "G4"
+          },
+          "parameter_schema": {
+            "threshold": {
+              "type": "Long",
+              "values": [
+                10000,
+                2500,
+                50000
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "threshold": 2500
+            },
+            {
+              "threshold": 10000
+            },
+            {
+              "threshold": 50000
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.adjustmentAmount"
+              },
+              {
+                "name": "threshold",
+                "op": "parameter"
+              }
+            ],
+            "op": "gt"
+          },
+          "revision_notes": [
+            "USD-cent thresholds for individual adjustments versus remaining guest folio balances: $25, $100, $500. These are synthetic organization policy choices.",
+            "Whenever the adjustment amount crosses a money threshold, enforce this duty: the agent's adjustment authority level must dominate the guest's segment before posting an adjustment. Outside all selected triggers only this duty stops binding.",
+            "Composition rationale: Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "applicability",
+              "rationale": "Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional.",
+              "statement": "Whenever the adjustment amount crosses a money threshold, enforce this duty: the agent's adjustment authority level must dominate the guest's segment before posting an adjustment. Outside all selected triggers only this duty stops binding.",
+              "target": "G4"
+            },
+            "id": "V8",
+            "meaning": "the adjustment amount crosses a money threshold",
+            "reads": "Folio.adjustmentAmount"
+          }
+        },
+        "V9": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the request originates on the on-property network. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "op": "field",
+            "path": "context.onPropertyNetwork"
+          },
+          "revision_notes": [
+            "Authorization requires that the request originates on the on-property network. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the request originates on the on-property network. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V9",
+            "meaning": "the request originates on the on-property network",
+            "reads": "context.onPropertyNetwork"
+          }
+        }
+      },
+      "bases": {
+        "G4": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.adjustmentAuthorityLevel"
+              },
+              {
+                "op": "field",
+                "path": "resource.guestSegment"
+              }
+            ],
+            "op": "ge"
+          },
+          "signature": "V6",
+          "source": {
+            "id": "G4",
+            "meaning": "the agent's adjustment authority level must dominate the guest's segment before posting an adjustment",
+            "reads": "principal.adjustmentAuthorityLevel vs Folio.guestSegment",
+            "signature": "V6"
+          }
+        },
+        "G5": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.status"
+              },
+              {
+                "id": "open",
+                "op": "entity",
+                "type": "FolioStatusValue"
+              }
+            ],
+            "op": "eq"
+          },
+          "signature": "V11",
+          "source": {
+            "id": "G5",
+            "meaning": "an adjustment may be posted only while the folio is open",
+            "reads": "Folio.status",
+            "signature": "V11"
+          }
+        }
+      },
+      "domain_gate": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2000-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  },
+                  {
+                    "op": "field",
+                    "path": "context.currentTime"
+                  }
+                ],
+                "op": "time_le"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.currentTime"
+                  },
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2100-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  }
+                ],
+                "op": "time_le"
+              }
+            ],
+            "op": "all"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.adjustmentAuthorityLevel"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.adjustmentAuthorityLevel"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.adjustmentAuthorityLevel"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 2
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.adjustmentAuthorityLevel"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 3
+                  }
+                ],
+                "op": "eq"
+              }
+            ],
+            "op": "any"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.adjustmentAmount"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "ge"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.adjustmentAmount"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1000000000
+                  }
+                ],
+                "op": "le"
+              }
+            ],
+            "op": "all"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2000-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  },
+                  {
+                    "op": "field",
+                    "path": "resource.checkoutDeadline"
+                  }
+                ],
+                "op": "time_le"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.checkoutDeadline"
+                  },
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2100-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  }
+                ],
+                "op": "time_le"
+              }
+            ],
+            "op": "all"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.guestSegment"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.guestSegment"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.guestSegment"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 2
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.guestSegment"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 3
+                  }
+                ],
+                "op": "eq"
+              }
+            ],
+            "op": "any"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.originalCharge"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "ge"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.originalCharge"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1000000000
+                  }
+                ],
+                "op": "le"
+              }
+            ],
+            "op": "all"
+          }
+        ],
+        "op": "all"
+      },
+      "eligibility": {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "FrontDeskAgent",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "NightAuditor",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          }
+        ],
+        "op": "any"
+      },
+      "field_bindings": {
+        "Folio.adjustmentAmount": "resource.adjustmentAmount",
+        "Folio.charges": "resource.charges",
+        "Folio.checkoutDeadline": "resource.checkoutDeadline",
+        "Folio.disputeCategory": "resource.disputeCategory",
+        "Folio.folioCode": "resource.folioCode",
+        "Folio.guestSegment": "resource.guestSegment",
+        "Folio.originalCharge": "resource.originalCharge",
+        "Folio.propertyRegion": "resource.propertyRegion",
+        "Folio.status": "resource.status",
+        "Folio.vipFlag": "resource.vipFlag",
+        "context.currentTime": "context.currentTime",
+        "context.disputeVerified": "context.disputeVerified",
+        "context.onPropertyNetwork": "context.onPropertyNetwork",
+        "principal.adjustmentAuthorityLevel": "principal.adjustmentAuthorityLevel",
+        "user.assignedCodePattern": "principal.assignedCodePattern",
+        "user.assignedGroup": "principal.assignedGroup"
+      },
+      "overrides": {},
+      "resource_type": "Folio"
+    }
+  },
+  "business_review_revision": "2026-10-23-r1",
+  "context": {
+    "approveAdjustmentScheduledEnd": {
+      "description": "exclusive end of the declared Scheduled window",
+      "type": "datetime"
+    },
+    "approveAdjustmentScheduledStart": {
+      "description": "inclusive start of the declared Scheduled window",
+      "type": "datetime"
+    },
+    "currentTime": {
+      "type": "datetime"
+    },
+    "disputeVerified": {
+      "type": "Bool"
+    },
+    "gmOverrideDeclared": {
+      "type": "Bool"
+    },
+    "largeCreditApprovalRecorded": {
+      "type": "Bool"
+    },
+    "onPropertyNetwork": {
+      "type": "Bool"
+    },
+    "vipHandlingReviewed": {
+      "description": "VIP posting review is complete",
+      "type": "Bool"
+    },
+    "vipSignoffRecorded": {
+      "description": "additional VIP adjustment sign-off is recorded",
+      "type": "Bool"
+    }
+  },
+  "contract": "complete-spec-v4",
+  "decisions": [
+    "Added User.adjustmentAuthorityLevel: source G4 principal attribute; uses the resource dominance scale",
+    "Added User.assignedCodePattern: assigned pattern must equal the selected literal before matching the resource code",
+    "Added User.assignedGroup: assigned hierarchy scope for resource group conditions",
+    "Added context.approveAdjustmentScheduledEnd: exclusive end of the declared Scheduled window",
+    "Added context.approveAdjustmentScheduledStart: inclusive start of the declared Scheduled window",
+    "Added context.vipHandlingReviewed: VIP posting review is complete",
+    "Added context.vipSignoffRecorded: additional VIP adjustment sign-off is recorded",
+    "All source identities denote User entities; role sets may overlap without implicit exclusivity.",
+    "All timestamps read by predicates are bounded inclusively to 2000-01-01 through 2100-01-01 UTC; requests outside the explicit domain gate deny.",
+    "Business revision v2: catalogs are declared synthetic organizational policies, not empirical norms. Selected-atom obligations are mandatory in both forms and cannot be waived by a base exception or override.",
+    "FolioAuditLog.note is source documentation, not an attribute.",
+    "Money is nonnegative integer USD cents, at most 1,000,000,000. Counts are nonnegative integers at most 1,000,000 unless a narrower dictionary is declared.",
+    "Request context is treated as trusted input from the host; authorization does not attest network, emergency, signature, or scheduling facts.",
+    "Retained source repairs: exact lifecycle states, linked course roster, explicit promotion/filing facts, independent calibration expiry, comp expiry, and guarded override eligibility are intentional experiment definitions. Their typed ASTs and field descriptions, not the ambiguous source shorthand, are authoritative.",
+    "Rules operate on snapshots. A selected lifecycle base requires the exact named state unless its predicate explicitly lists alternatives.",
+    "Source business descriptions are retained for audit; the authored typed predicates and dictionaries define the experiment. No statutory compliance claim is made.",
+    "Source tag kinds are represented by Set<String>. Group membership is reflexive and transitive Cedar entity ancestry.",
+    "approveAdjustment/V12: This implication is mandatory whenever the atom is selected, in either form; it survives all base exceptions and overrides.",
+    "approveAdjustment/V12: When this trigger holds, additional VIP adjustment sign-off is recorded. This is a trusted request-specific host attestation.",
+    "approveAdjustment/V7: USD-cent thresholds for individual adjustments versus remaining guest folio balances: $100, $500, $2500. These are synthetic organization policy choices.",
+    "approveAdjustment/V8: USD-cent thresholds for individual adjustments versus remaining guest folio balances: $25, $100, $500. These are synthetic organization policy choices.",
+    "postAdjustment/V12: This implication is mandatory whenever the atom is selected, in either form; it survives all base exceptions and overrides.",
+    "postAdjustment/V12: When this trigger holds, VIP posting review is complete. This is a trusted request-specific host attestation.",
+    "postAdjustment/V7: USD-cent thresholds for individual adjustments versus remaining guest folio balances: $100, $500, $2500. These are synthetic organization policy choices.",
+    "postAdjustment/V8: USD-cent thresholds for individual adjustments versus remaining guest folio balances: $25, $100, $500. These are synthetic organization policy choices."
+  ],
+  "domain": "folio_adjustment",
+  "entities": {
+    "CreditNote": {
+      "attributes": {
+        "amount": {
+          "bounds": [
+            0,
+            1000000000
+          ],
+          "type": "Long",
+          "unit": "USD cents"
+        },
+        "folio": {
+          "type": "Folio"
+        },
+        "issuedBy": {
+          "type": "User"
+        }
+      }
+    },
+    "Folio": {
+      "attributes": {
+        "adjustmentAmount": {
+          "bounds": [
+            0,
+            1000000000
+          ],
+          "type": "Long",
+          "unit": "USD cents"
+        },
+        "approvedBy": {
+          "type": "User"
+        },
+        "charges": {
+          "type": "Set<String>"
+        },
+        "checkoutDeadline": {
+          "type": "datetime"
+        },
+        "disputeCategory": {
+          "representation": "zero or more label strings",
+          "type": "Set<String>"
+        },
+        "folioBalance": {
+          "bounds": [
+            0,
+            1000000000
+          ],
+          "type": "Long",
+          "unit": "USD cents"
+        },
+        "folioCode": {
+          "type": "String"
+        },
+        "guest": {
+          "type": "User"
+        },
+        "guestSegment": {
+          "bounds": [
+            0,
+            3
+          ],
+          "description": "Synthetic ordinal scale; the same integer rank denotes the required authority tier when used by G4. No physical magnitude or external standard is implied.",
+          "levels": {
+            "contracted_vip": 3,
+            "preferred": 1,
+            "premium": 2,
+            "standard": 0
+          },
+          "type": "Long"
+        },
+        "lineItemCount": {
+          "bounds": [
+            0,
+            1000000
+          ],
+          "type": "Long",
+          "unit": "integer units"
+        },
+        "originalCharge": {
+          "bounds": [
+            0,
+            1000000000
+          ],
+          "type": "Long",
+          "unit": "USD cents"
+        },
+        "postedBy": {
+          "type": "User"
+        },
+        "propertyRegion": {
+          "type": "Group"
+        },
+        "status": {
+          "type": "FolioStatusValue"
+        },
+        "vipFlag": {
+          "type": "Bool"
+        }
+      }
+    },
+    "FolioAuditLog": {
+      "attributes": {}
+    },
+    "FolioStatusValue": {
+      "enum": [
+        "open",
+        "adjustment_posted",
+        "approved",
+        "settled"
+      ]
+    },
+    "Group": {
+      "attributes": {},
+      "member_of": [
+        "Group"
+      ]
+    },
+    "Role": {
+      "enum": [
+        "FrontDeskAgent",
+        "NightAuditor",
+        "AccountingClerk",
+        "RevenueManager",
+        "Auditor"
+      ]
+    },
+    "User": {
+      "attributes": {
+        "adjustmentAuthorityLevel": {
+          "bounds": [
+            0,
+            3
+          ],
+          "description": "Synthetic ordinal scale; the same integer rank denotes the required authority tier when used by G4. No physical magnitude or external standard is implied.",
+          "levels": {
+            "contracted_vip": 3,
+            "preferred": 1,
+            "premium": 2,
+            "standard": 0
+          },
+          "type": "Long"
+        },
+        "assignedCodePattern": {
+          "description": "assigned pattern must equal the selected literal before matching the resource code",
+          "type": "String"
+        },
+        "assignedGroup": {
+          "description": "assigned hierarchy scope for resource group conditions",
+          "type": "Group"
+        },
+        "roles": {
+          "type": "Set<Role>"
+        }
+      }
+    }
+  },
+  "revision_contract": "business-composition-v4",
+  "source_action_chains": [
+    {
+      "chain": [
+        "postAdjustment",
+        "approveAdjustment"
+      ],
+      "linked_by": [
+        "status",
+        "postedBy",
+        "guestSegment"
+      ],
+      "shared_resource": "Folio"
+    }
+  ],
+  "source_sha256": "2907de8ce880b86d975423e46cde808f78a30bb93dc0a767cb3b4f0643c07c22",
+  "status": "authored experimental assumptions; not human semantic approval",
+  "version": "business-registry-v4"
+}

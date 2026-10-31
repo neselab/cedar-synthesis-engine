@@ -1,0 +1,2 @@
+permit (principal is User, action == Action::"viewCardData", resource is Order)
+when { (true && ((principal.roles.contains(Role::"ServiceRep") || principal.roles.contains(Role::"Auditor"))) && (!(true) || (resource.status != OrderStatusValue::"refunded")) && ((resource.containsCardData == true)) && (context.mfaUsed) && ((principal.roles.contains(Role::"Auditor"))) && (context.inCardholderZone)) };

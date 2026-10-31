@@ -1,0 +1,2 @@
+permit (principal is User, action == Action::"authorizeComp", resource is CompAuthorization)
+when { (((resource.compValue >= 0) && (resource.itemCount >= 0)) && ((principal.roles.contains(Role::"ShiftManager") || principal.roles.contains(Role::"FrontOfficeManager"))) && (!(((resource.itemCount > 10))) || (principal != resource.requestedBy)) && (context.managerOnDuty) && (resource.perks.contains("suite_upgrade")) && (!((resource.compValue > 10000)) || (principal.roles.contains(Role::"FrontOfficeManager")))) };

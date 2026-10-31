@@ -1,0 +1,21 @@
+entity Campaign { advertiser: User, budget: Long, budgetTier: Long, contingency: Long, preparedBy: User, riskLabels: Set<String>, scheduledStart: datetime, status: CampaignStatusValue };
+entity CampaignStatusValue enum ["draft", "review", "approved", "launched", "ended"];
+entity Creative { campaign: Campaign, contentTags: Set<String>, riskRating: Long, status: CreativeStatusValue, submittedBy: User };
+entity CreativeStatusValue enum ["pending", "approved", "rejected"];
+entity Group in [Group] {  };
+entity Role enum ["Advertiser", "AccountManager", "BrandSafetyReviewer", "CampaignDirector"];
+entity User { reviewerLevel: Long, roles: Set<Role> };
+action approveBudget appliesTo { principal: [User], resource: [Campaign], context: {
+    currentTime: datetime,
+    deviceTrusted: Bool,
+    emergencyLaunch: Bool,
+    mfaUsed: Bool,
+  },
+};
+action launchCampaign appliesTo { principal: [User], resource: [Campaign], context: {
+    currentTime: datetime,
+    deviceTrusted: Bool,
+    emergencyLaunch: Bool,
+    mfaUsed: Bool,
+  },
+};

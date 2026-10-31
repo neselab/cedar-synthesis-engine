@@ -1,0 +1,68 @@
+{
+  "domain": "folio_adjustment",
+  "format_version": "complete-spec-v4",
+  "grouping": {
+    "applicability_triggers": "any",
+    "exception": "any",
+    "requirements": "all"
+  },
+  "parts": [
+    {
+      "anchor": "approveAdjustment",
+      "bases": [
+        "G5"
+      ],
+      "conditions": [
+        {
+          "atom": "V3",
+          "form": "require",
+          "parameters": {},
+          "target": "@action"
+        },
+        {
+          "atom": "V8",
+          "form": "obligation",
+          "parameters": {
+            "threshold": 10000
+          },
+          "target": "@action"
+        }
+      ],
+      "overrides": []
+    },
+    {
+      "anchor": "postAdjustment",
+      "bases": [
+        "G4"
+      ],
+      "conditions": [
+        {
+          "atom": "V13",
+          "form": "require",
+          "parameters": {
+            "label": "billing_error"
+          },
+          "target": "@action"
+        },
+        {
+          "atom": "V7",
+          "form": "applicability",
+          "parameters": {
+            "threshold": 250000
+          },
+          "target": "G4"
+        }
+      ],
+      "overrides": []
+    }
+  ],
+  "provenance": {
+    "arithmetic_safety_patches": [],
+    "kind": "less-specific-200 revised intent",
+    "source_case": "case-010",
+    "source_spec_sha256": "fdbd130d878a826aa2f8f784425bc7c65f59e281eef25cff55116b8f20763f44",
+    "transformation": "Drop only artificial 2000-2100 timestamp windows and catalog maxima 1000000/1000000000; retain all other gates."
+  },
+  "registry_sha256": "bfe2be30cfa236a55a834881230554b8f3a06514b99b4ee6b8ac4deafd26208b",
+  "source_sha256": "2907de8ce880b86d975423e46cde808f78a30bb93dc0a767cb3b4f0643c07c22"
+}

@@ -1,0 +1,20 @@
+entity AuditLog {  };
+entity BillingRun { account: MeterAccount, accountTier: Long, approver: User, billAmount: Long, preparedAt: datetime, preparer: User, rate: Long, rateClass: Set<String>, region: Group, status: BillingRunStatusValue, usage: Long };
+entity BillingRunStatusValue enum ["open", "calculated", "submitted", "approved", "invoiced"];
+entity Group in [Group] {  };
+entity MeterAccount { accountHolder: User, adjustmentCount: Long, lastBillAmount: Long, lastReadAt: datetime, lastReadBy: User, rateClass: Set<String>, region: Group, status: MeterAccountStatusValue, tier: Long };
+entity MeterAccountStatusValue enum ["active", "under_review", "estimated", "adjusted", "closed"];
+entity Role enum ["MeterReader", "BillingAnalyst", "BillingManager", "DataSteward", "Auditor"];
+entity User { assignedGroup: Group, authorityLevel: Long, roles: Set<Role> };
+action adjustReading appliesTo { principal: [User], resource: [MeterAccount], context: {
+    currentTime: datetime,
+    emergencyDeclared: Bool,
+    onCorporateNetwork: Bool,
+  },
+};
+action approveBillingRun appliesTo { principal: [User], resource: [BillingRun], context: {
+    currentTime: datetime,
+    emergencyDeclared: Bool,
+    onCorporateNetwork: Bool,
+  },
+};

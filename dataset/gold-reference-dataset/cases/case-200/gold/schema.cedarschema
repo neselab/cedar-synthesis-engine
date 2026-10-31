@@ -1,0 +1,21 @@
+entity Application { applicant: User, assignedReviewers: Set<User>, fundingTier: Long, programCode: String, requestedAmount: Long, status: ApplicationStatusValue };
+entity ApplicationStatusValue enum ["submitted", "underReview", "scored", "awarded", "rejected"];
+entity Award { amount: Long, application: Application, approvedBy: User, highRiskFlag: Bool, obligatedBy: User, status: AwardStatusValue };
+entity AwardStatusValue enum ["pending", "approved", "obligated", "closed"];
+entity Group in [Group] {  };
+entity Role enum ["Reviewer", "ProgramOfficer", "GrantsOfficer", "Applicant"];
+entity User { approvalAuthority: Long, conflictedApplications: Set<Application>, roles: Set<Role> };
+action scoreApplication appliesTo { principal: [User], resource: [Application], context: {
+    approveAwardScheduledEnd: datetime,
+    approveAwardScheduledStart: datetime,
+    currentTime: datetime,
+    emergencyDeclared: Bool,
+    highRiskReviewCompleted: Bool,
+    largeAwardReviewCompleted: Bool,
+    obligateFundsScheduledEnd: datetime,
+    obligateFundsScheduledStart: datetime,
+    onGovNetwork: Bool,
+    scoreApplicationScheduledEnd: datetime,
+    scoreApplicationScheduledStart: datetime,
+  },
+};

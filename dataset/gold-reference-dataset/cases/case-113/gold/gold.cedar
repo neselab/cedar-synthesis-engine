@@ -1,0 +1,5 @@
+permit (principal is User, action == Action::"approveReturnToService", resource is Asset)
+when { (true && ((principal.roles.contains(Role::"QualityInspector") || principal.roles.contains(Role::"MetrologyManager"))) && (!(true) || (resource.status == AssetStatusValue::"calibrated")) && (!(resource.hazardClass.contains("biological")) || context.hazardSignoffRecorded) && (context.onPlantNetwork)) };
+
+permit (principal is User, action == Action::"performCalibration", resource is Asset)
+when { ((((principal.certLevel == 0) || (principal.certLevel == 1) || (principal.certLevel == 2) || (principal.certLevel == 3)) && ((resource.equipmentClass == 0) || (resource.equipmentClass == 1) || (resource.equipmentClass == 2) || (resource.equipmentClass == 3)) && (resource.measurementPointCount >= 0)) && ((principal.roles.contains(Role::"CalibrationTechnician") || principal.roles.contains(Role::"SeniorTechnician"))) && (!(true) || (resource.status == AssetStatusValue::"due")) && (context.cleanRoomCertified) && (context.onPlantNetwork)) };

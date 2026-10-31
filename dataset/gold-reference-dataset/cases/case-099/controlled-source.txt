@@ -1,0 +1,50 @@
+# Marketplace seller authorization requirements
+
+Case: case-099
+Domain: marketplace_seller
+Selected actions: approvePayout, disbursePayout
+
+## Purpose
+
+Determine whether a user may perform each of these operations: approve a payout; disburse a payout.
+Each request names one user, one action, one resource, and trusted context supplied by the host application. Decide whether to allow that request using the current recorded facts.
+The permissions do not perform state changes or assert an execution order between actions.
+
+## How permissions apply
+
+For each action, allow access if and only if the stated requester and resource types match and ALL requirements in that action section hold. Otherwise deny access. Deny requests for actions not listed here.
+Each unless clause waives only the requirement in its own sentence. It never grants access or waives other requirements.
+If a condition in an If sentence is false, only that sentence imposes no additional duty; every other requirement still applies.
+Users may hold multiple roles. Role membership and ownership are distinct facts. Money is expressed in integer USD cents. Times are UTC. Daily time windows recur every day of the week.
+Brackets identify exact fields or entity types. Role and status values identify entities of their declared types. True and false are Boolean values. Every listed interval includes only the endpoints explicitly stated.
+Optional-field presence is explicit in the rules. A guarded predicate is false if a field it needs is missing; preserve the enclosing negation, condition, or waiver. Requirements about presence remain binding.
+The separately supplied Cedar schema defines entity types, fields, optionality, action types, and valid enum vocabulary. Use that schema unchanged. Its declarations alone add no authorization requirements; declaring schedule fields does not impose a time window.
+
+## Permission to approve a payout
+Action: approvePayout
+Requester type: User.
+Resource type: Payout.
+
+Allow this action if and only if all the following requirements hold:
+
+- Access requires that the user has the "FinanceApprover" role.
+- Access requires that the payout's account / kyc tier [resource.account.kycTier] is one of [0; 1; 2; 3].
+- Access requires that the payout's amount [resource.amount] is at least 0 USD cents.
+- Access requires that the payout's status [resource.status] equals the "requested" status [PayoutStatusValue].
+- Access requires that all of [the request's scheduled start time [context.approvePayoutScheduledStart] is no later than the request's current time [context.currentTime]; the request's current time [context.currentTime] is earlier than the request's scheduled end time [context.approvePayoutScheduledEnd]].
+- Access requires that the request is on the trusted network [context.onTrustedNetwork].
+
+## Permission to disburse a payout
+Action: disbursePayout
+Requester type: User.
+Resource type: Payout.
+
+Allow this action if and only if all the following requirements hold:
+
+- Access requires that the user has the "PayoutAgent" role.
+- Access requires that the payout's account / kyc tier [resource.account.kycTier] is one of [0; 1; 2; 3].
+- Access requires that the payout's amount [resource.amount] is at least 0 USD cents.
+- Access requires that the payout's account / fraud status [resource.account.fraudStatus] equals the "clear" status [SellerAccountFraudStatusValue].
+- Access requires that the payout's account / kyc tier [resource.account.kycTier] is at least 2.
+- If the payout's amount [resource.amount] exceeds 50,000 USD cents, access requires that the host confirms completion of the additional review [context.disbursePayoutV8ReviewCompleted].
+

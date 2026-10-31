@@ -1,0 +1,2 @@
+permit (principal is User, action == Action::"approveOffer", resource is Offer)
+when { (((resource.compensation >= 0) && (resource.signingBonus >= 0)) && ((principal.roles.contains(Role::"HiringManager"))) && (!(true) || (principal != resource.extendedBy) || (context.execApproval && (principal.roles.contains(Role::"HiringManager")))) && (!(true) || (resource.status == OfferStatusValue::"drafted"))) };

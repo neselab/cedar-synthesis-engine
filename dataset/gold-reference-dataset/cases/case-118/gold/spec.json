@@ -1,0 +1,57 @@
+{
+  "domain": "warehouse_fulfillment",
+  "format_version": "complete-spec-v4",
+  "grouping": {
+    "applicability_triggers": "any",
+    "exception": "any",
+    "requirements": "all"
+  },
+  "parts": [
+    {
+      "anchor": "pickOrder",
+      "bases": [
+        "G5"
+      ],
+      "conditions": [
+        {
+          "atom": "V10",
+          "form": "require",
+          "parameters": {},
+          "target": "@action"
+        },
+        {
+          "atom": "V14",
+          "form": "require",
+          "parameters": {},
+          "target": "@action"
+        },
+        {
+          "atom": "V4",
+          "form": "require",
+          "parameters": {
+            "member": "RESTRICTED-003"
+          },
+          "target": "@action"
+        },
+        {
+          "atom": "V6",
+          "form": "obligation",
+          "parameters": {
+            "threshold": 200
+          },
+          "target": "@action"
+        }
+      ],
+      "overrides": []
+    }
+  ],
+  "provenance": {
+    "kind": "less-specific-20 revised intent",
+    "source_case": "case-118",
+    "source_cohort_sha256": "dc765eca4c9085f9dbd4ad236e51e49541a2c1b43c7fdc65bc46c0daed92721c",
+    "source_spec_sha256": "5772622f393b10dce6a43d5590e2e5dc745d349046e73b9dc8ae5b8082682a75",
+    "transformation": "Drop artificial 2000-2100 timestamp windows and catalog maxima; retain nonnegative and enumerated-level guards."
+  },
+  "registry_sha256": "67b2524d443efd5a63b0fc620dfca6d41202315c9c7f33243f4076be5c8fff6b",
+  "source_sha256": "2907de8ce880b86d975423e46cde808f78a30bb93dc0a767cb3b4f0643c07c22"
+}

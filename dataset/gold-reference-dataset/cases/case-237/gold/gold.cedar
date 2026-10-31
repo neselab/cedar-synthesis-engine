@@ -1,0 +1,2 @@
+permit (principal is User, action == Action::"approveAdjustment", resource is Folio)
+when { (((resource.adjustmentAmount >= 0) && (resource.folioBalance >= 0)) && ((principal.roles.contains(Role::"AccountingClerk") || principal.roles.contains(Role::"RevenueManager"))) && (!(true) || (principal != resource.postedBy)) && (resource.disputeCategory.contains("billing_error")) && (context.disputeVerified) && ((resource.folioCode like "PROPERTY-A-*")) && (!((resource.adjustmentAmount > 2500)) || context.largeCreditApprovalRecorded)) };

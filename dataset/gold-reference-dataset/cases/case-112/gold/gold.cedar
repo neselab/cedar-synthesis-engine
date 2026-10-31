@@ -1,0 +1,5 @@
+permit (principal is User, action == Action::"authorizeSwitching", resource is SwitchingOrder)
+when { ((((resource.voltageLevel == 0) || (resource.voltageLevel == 1) || (resource.voltageLevel == 2) || (resource.voltageLevel == 3))) && ((principal.roles.contains(Role::"Planner") || principal.roles.contains(Role::"ShiftSupervisor"))) && (!(true) || (principal != resource.executor)) && (!(true) || (resource.status == SwitchingOrderStatusValue::"planned")) && (((principal.assignedCodePattern == "FEEDER-A-*") && (resource.feeder like "FEEDER-A-*")))) };
+
+permit (principal is User, action == Action::"executeSwitching", resource is SwitchingOrder)
+when { (((resource.circuitCount >= 0)) && ((principal.roles.contains(Role::"Operator") || principal.roles.contains(Role::"ControlRoomOperator"))) && (!(true) || (resource.status == SwitchingOrderStatusValue::"authorized")) && (((resource.scheduledStart <= context.currentTime) && (context.currentTime < resource.scheduledEnd))) && (!((resource.circuitCount > 10)) || (principal.roles.contains(Role::"ControlRoomOperator")))) };

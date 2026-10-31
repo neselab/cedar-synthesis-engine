@@ -1,0 +1,765 @@
+{
+  "acknowledgeCritical": {
+    "args": [
+      {
+        "op": "literal",
+        "value": true
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.roles"
+                  },
+                  {
+                    "id": "OrderingProvider",
+                    "op": "entity",
+                    "type": "Role"
+                  }
+                ],
+                "op": "contains"
+              }
+            ],
+            "op": "any"
+          }
+        ],
+        "op": "any"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "literal",
+                "value": true
+              }
+            ],
+            "op": "not"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal"
+              },
+              {
+                "op": "field",
+                "path": "resource.orderingProvider"
+              }
+            ],
+            "op": "eq"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "context.coverageAuthorized"
+              },
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "principal.roles"
+                      },
+                      {
+                        "id": "OrderingProvider",
+                        "op": "entity",
+                        "type": "Role"
+                      }
+                    ],
+                    "op": "contains"
+                  }
+                ],
+                "op": "any"
+              }
+            ],
+            "op": "all"
+          }
+        ],
+        "op": "any"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "op": "field",
+                                "path": "context.currentTime"
+                              },
+                              {
+                                "args": [
+                                  {
+                                    "op": "literal",
+                                    "value": "1970-01-01T00:00:00Z"
+                                  }
+                                ],
+                                "op": "datetime"
+                              }
+                            ],
+                            "op": "time_lt"
+                          },
+                          {
+                            "args": [
+                              {
+                                "op": "field",
+                                "path": "resource.criticalNotifiedAt"
+                              },
+                              {
+                                "args": [
+                                  {
+                                    "op": "literal",
+                                    "value": "1970-01-01T00:00:00Z"
+                                  }
+                                ],
+                                "op": "datetime"
+                              }
+                            ],
+                            "op": "time_lt"
+                          }
+                        ],
+                        "op": "all"
+                      },
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "op": "literal",
+                                    "value": "1970-01-01T00:00:00Z"
+                                  }
+                                ],
+                                "op": "datetime"
+                              },
+                              {
+                                "op": "field",
+                                "path": "context.currentTime"
+                              }
+                            ],
+                            "op": "time_le"
+                          },
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "op": "literal",
+                                    "value": "1970-01-01T00:00:00Z"
+                                  }
+                                ],
+                                "op": "datetime"
+                              },
+                              {
+                                "op": "field",
+                                "path": "resource.criticalNotifiedAt"
+                              }
+                            ],
+                            "op": "time_le"
+                          }
+                        ],
+                        "op": "all"
+                      }
+                    ],
+                    "op": "any"
+                  },
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.criticalNotifiedAt"
+                      },
+                      {
+                        "op": "field",
+                        "path": "context.currentTime"
+                      }
+                    ],
+                    "op": "time_le"
+                  },
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "op": "field",
+                            "path": "context.currentTime"
+                          },
+                          {
+                            "op": "field",
+                            "path": "resource.criticalNotifiedAt"
+                          }
+                        ],
+                        "op": "time_diff"
+                      },
+                      {
+                        "op": "literal",
+                        "value": 900000
+                      }
+                    ],
+                    "op": "le"
+                  }
+                ],
+                "op": "all"
+              },
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.criticalNotifiedAt"
+                      },
+                      {
+                        "args": [
+                          {
+                            "op": "literal",
+                            "value": "1970-01-01T00:00:00Z"
+                          }
+                        ],
+                        "op": "datetime"
+                      }
+                    ],
+                    "op": "time_lt"
+                  },
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "op": "literal",
+                            "value": "1969-12-31T23:00:00Z"
+                          }
+                        ],
+                        "op": "datetime"
+                      },
+                      {
+                        "op": "field",
+                        "path": "resource.criticalNotifiedAt"
+                      }
+                    ],
+                    "op": "time_le"
+                  },
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "op": "literal",
+                            "value": "1970-01-01T00:00:00Z"
+                          }
+                        ],
+                        "op": "datetime"
+                      },
+                      {
+                        "op": "field",
+                        "path": "context.currentTime"
+                      }
+                    ],
+                    "op": "time_le"
+                  },
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "op": "field",
+                            "path": "context.currentTime"
+                          },
+                          {
+                            "args": [
+                              {
+                                "op": "literal",
+                                "value": "1970-01-01T00:00:00Z"
+                              }
+                            ],
+                            "op": "datetime"
+                          }
+                        ],
+                        "op": "time_diff"
+                      },
+                      {
+                        "op": "literal",
+                        "value": 900000
+                      }
+                    ],
+                    "op": "le"
+                  },
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "op": "field",
+                            "path": "context.currentTime"
+                          },
+                          {
+                            "args": [
+                              {
+                                "op": "literal",
+                                "value": "1970-01-01T00:00:00Z"
+                              }
+                            ],
+                            "op": "datetime"
+                          }
+                        ],
+                        "op": "time_diff"
+                      },
+                      {
+                        "args": [
+                          {
+                            "op": "literal",
+                            "value": 900000
+                          },
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "op": "literal",
+                                    "value": "1970-01-01T00:00:00Z"
+                                  }
+                                ],
+                                "op": "datetime"
+                              },
+                              {
+                                "op": "field",
+                                "path": "resource.criticalNotifiedAt"
+                              }
+                            ],
+                            "op": "time_diff"
+                          }
+                        ],
+                        "op": "sub"
+                      }
+                    ],
+                    "op": "le"
+                  }
+                ],
+                "op": "all"
+              }
+            ],
+            "op": "any"
+          }
+        ],
+        "op": "any"
+      }
+    ],
+    "op": "all"
+  },
+  "releaseResult": {
+    "args": [
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.sensitivity"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.sensitivity"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.sensitivity"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 2
+                  }
+                ],
+                "op": "eq"
+              }
+            ],
+            "op": "any"
+          }
+        ],
+        "op": "all"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.roles"
+                  },
+                  {
+                    "id": "Pathologist",
+                    "op": "entity",
+                    "type": "Role"
+                  }
+                ],
+                "op": "contains"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.roles"
+                  },
+                  {
+                    "id": "OrderingProvider",
+                    "op": "entity",
+                    "type": "Role"
+                  }
+                ],
+                "op": "contains"
+              }
+            ],
+            "op": "any"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.emergencyRelease"
+                  },
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "op": "field",
+                            "path": "principal.roles"
+                          },
+                          {
+                            "id": "MedicalTechnologist",
+                            "op": "entity",
+                            "type": "Role"
+                          }
+                        ],
+                        "op": "contains"
+                      }
+                    ],
+                    "op": "any"
+                  }
+                ],
+                "op": "all"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal"
+                  },
+                  {
+                    "op": "field",
+                    "path": "resource.verifiedBy"
+                  }
+                ],
+                "op": "eq"
+              }
+            ],
+            "op": "all"
+          }
+        ],
+        "op": "any"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "literal",
+                "value": true
+              }
+            ],
+            "op": "not"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal"
+              },
+              {
+                "op": "field",
+                "path": "resource.verifiedBy"
+              }
+            ],
+            "op": "ne"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.emergencyRelease"
+                  },
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "op": "field",
+                            "path": "principal.roles"
+                          },
+                          {
+                            "id": "MedicalTechnologist",
+                            "op": "entity",
+                            "type": "Role"
+                          }
+                        ],
+                        "op": "contains"
+                      }
+                    ],
+                    "op": "any"
+                  }
+                ],
+                "op": "all"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal"
+                  },
+                  {
+                    "op": "field",
+                    "path": "resource.verifiedBy"
+                  }
+                ],
+                "op": "eq"
+              }
+            ],
+            "op": "all"
+          }
+        ],
+        "op": "any"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.criticalFlag"
+                  },
+                  {
+                    "op": "literal",
+                    "value": true
+                  }
+                ],
+                "op": "eq"
+              }
+            ],
+            "op": "not"
+          },
+          {
+            "op": "field",
+            "path": "context.criticalReleaseReviewCompleted"
+          }
+        ],
+        "op": "any"
+      }
+    ],
+    "op": "all"
+  },
+  "releaseToPortal": {
+    "args": [
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.credentialLevel"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.credentialLevel"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.credentialLevel"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 2
+                  }
+                ],
+                "op": "eq"
+              }
+            ],
+            "op": "any"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.sensitivity"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.sensitivity"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.sensitivity"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 2
+                  }
+                ],
+                "op": "eq"
+              }
+            ],
+            "op": "any"
+          }
+        ],
+        "op": "all"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.roles"
+                  },
+                  {
+                    "id": "Pathologist",
+                    "op": "entity",
+                    "type": "Role"
+                  }
+                ],
+                "op": "contains"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.roles"
+                  },
+                  {
+                    "id": "LabDirector",
+                    "op": "entity",
+                    "type": "Role"
+                  }
+                ],
+                "op": "contains"
+              }
+            ],
+            "op": "any"
+          }
+        ],
+        "op": "any"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "literal",
+                "value": true
+              }
+            ],
+            "op": "not"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.status"
+              },
+              {
+                "id": "released",
+                "op": "entity",
+                "type": "LabResultStatusValue"
+              }
+            ],
+            "op": "eq"
+          }
+        ],
+        "op": "any"
+      }
+    ],
+    "op": "all"
+  }
+}

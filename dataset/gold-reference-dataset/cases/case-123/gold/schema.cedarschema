@@ -1,0 +1,16 @@
+entity Contract { contractValue: Long, counterparty: User, drafter: User, effectiveDate: datetime, requiredAuthority: Long, reviewer: User, status: ContractStatusValue };
+entity ContractStatusValue enum ["draft", "inReview", "approved", "signed", "executed"];
+entity Group in [Group] {  };
+entity Role enum ["Drafter", "Reviewer", "Signatory", "ContractAdmin"];
+entity Signature { amount: Long, contract: Contract, signedBy: User };
+entity User { conflictedCounterparties: Set<User>, roles: Set<Role>, signingAuthority: Long };
+action signContract appliesTo { principal: [User], resource: [Contract], context: {
+    currentDate: datetime,
+    escalationApproved: Bool,
+    executeContractV8ReviewCompleted: Bool,
+    mfaUsed: Bool,
+    onCorpNetwork: Bool,
+    reviewContractScheduledEnd: datetime,
+    reviewContractScheduledStart: datetime,
+  },
+};

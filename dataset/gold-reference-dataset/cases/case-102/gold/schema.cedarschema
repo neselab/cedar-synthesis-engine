@@ -1,0 +1,29 @@
+entity CompAuthorization { authCode: String, authorizedBy: User, blackoutFlag: Bool, compType: Set<String>, compValue: Long, guestTier: Long, itemCount: Long, loyaltyGroup: Group, perks: Set<String>, requestedAt: datetime, requestedBy: User, status: CompAuthorizationStatusValue, validUntil: datetime };
+entity CompAuthorizationStatusValue enum ["drafted", "requested", "authorized", "applied"];
+entity CompLog {  };
+entity CompVoucher { authorization: CompAuthorization, issuedBy: User, value: Long };
+entity Group in [Group] {  };
+entity Role enum ["FrontDeskAgent", "GuestServicesHost", "ShiftManager", "FrontOfficeManager", "Auditor"];
+entity User { assignedGroup: Group, compAuthorityLevel: Long, roles: Set<Role> };
+action applyComp appliesTo { principal: [User], resource: [CompAuthorization], context: {
+    applyCompV8ReviewCompleted: Bool,
+    authorizeCompScheduledEnd: datetime,
+    authorizeCompScheduledStart: datetime,
+    currentTime: datetime,
+    managerOnDuty: Bool,
+    onPropertyNetwork: Bool,
+    vipEscalationDeclared: Bool,
+    voucherPerks: Set<String>,
+  },
+};
+action authorizeComp appliesTo { principal: [User], resource: [CompAuthorization], context: {
+    applyCompV8ReviewCompleted: Bool,
+    authorizeCompScheduledEnd: datetime,
+    authorizeCompScheduledStart: datetime,
+    currentTime: datetime,
+    managerOnDuty: Bool,
+    onPropertyNetwork: Bool,
+    vipEscalationDeclared: Bool,
+    voucherPerks: Set<String>,
+  },
+};

@@ -1,0 +1,66 @@
+{
+  "domain": "warehouse_fulfillment",
+  "format_version": "complete-spec-v4",
+  "grouping": {
+    "applicability_triggers": "any",
+    "exception": "any",
+    "requirements": "all"
+  },
+  "parts": [
+    {
+      "anchor": "accessZone",
+      "bases": [
+        "G4"
+      ],
+      "conditions": [
+        {
+          "atom": "V12",
+          "form": "require",
+          "parameters": {},
+          "target": "@action"
+        },
+        {
+          "atom": "V2",
+          "form": "require",
+          "parameters": {},
+          "target": "@action"
+        }
+      ],
+      "overrides": []
+    },
+    {
+      "anchor": "pickOrder",
+      "bases": [
+        "G5"
+      ],
+      "conditions": [
+        {
+          "atom": "V4",
+          "form": "require",
+          "parameters": {
+            "member": "RESTRICTED-003"
+          },
+          "target": "@action"
+        },
+        {
+          "atom": "V5",
+          "form": "require",
+          "parameters": {
+            "pattern": "WAVE-B-*"
+          },
+          "target": "@action"
+        }
+      ],
+      "overrides": []
+    }
+  ],
+  "provenance": {
+    "arithmetic_safety_patches": [],
+    "kind": "less-specific-200 revised intent",
+    "source_case": "case-015",
+    "source_spec_sha256": "8f1069de5ee1eecf16c4f4b8f3cf8a1c81548a616b6b836b1e47c532971071e9",
+    "transformation": "Drop only artificial 2000-2100 timestamp windows and catalog maxima 1000000/1000000000; retain all other gates."
+  },
+  "registry_sha256": "02d1909ed39d71a090a0beb7e73e6f790f8cf2c1d6810be21154387fc8a80581",
+  "source_sha256": "2907de8ce880b86d975423e46cde808f78a30bb93dc0a767cb3b4f0643c07c22"
+}

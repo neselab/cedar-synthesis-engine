@@ -1,0 +1,36 @@
+# Shipment dispatch authorization requirements
+
+Case: case-158
+Domain: shipment_dispatch
+Selected actions: confirmDelivery
+
+## Purpose
+
+Determine whether a user may perform each of these operations: confirm a shipment delivery.
+Each request names one user, one action, one resource, and trusted context supplied by the host application. Decide whether to allow that request using the current recorded facts.
+The permissions do not perform state changes or assert an execution order between actions.
+
+## How permissions apply
+
+For each action, allow access if and only if the stated requester and resource types match and ALL requirements in that action section hold. Otherwise deny access. Deny requests for actions not listed here.
+Each unless clause waives only the requirement in its own sentence. It never grants access or waives other requirements.
+If a condition in an If sentence is false, only that sentence imposes no additional duty; every other requirement still applies.
+Users may hold multiple roles. Role membership and ownership are distinct facts. Money is expressed in integer USD cents. Times are UTC. Daily time windows recur every day of the week.
+Brackets identify exact fields or entity types. Role and status values identify entities of their declared types. True and false are Boolean values. Every listed interval includes only the endpoints explicitly stated.
+Optional-field presence is explicit in the rules. A guarded predicate is false if a field it needs is missing; preserve the enclosing negation, condition, or waiver. Requirements about presence remain binding.
+The separately supplied Cedar schema defines entity types, fields, optionality, action types, and valid enum vocabulary. Use that schema unchanged. Its declarations alone add no authorization requirements; declaring schedule fields does not impose a time window.
+
+## Permission to confirm a shipment delivery
+Action: confirmDelivery
+Requester type: User.
+Resource type: Shipment.
+
+Allow this action if and only if all the following requirements hold:
+
+- Access requires that at least one of [the user has the "Driver" role; the user has the "DepotSupervisor" role].
+- Access requires that the shipment's piece count [resource.pieceCount] is at least 0.
+- Unless all of [the expedite has been declared [context.expediteDeclared]; the user has the "DepotSupervisor" role], access requires that the user [principal] equals the shipment's driver of record [resource.driverOfRecord].
+- If the shipment's hazmat class [resource.hazmatClass] contains "toxic", access requires that the custody signature has been captured [context.custodySignatureCaptured].
+- If the shipment's piece count [resource.pieceCount] exceeds 100, access requires that the host confirms completion of the additional review [context.confirmDeliveryV6ReviewCompleted].
+- Access requires that the request is on the depot network [context.onDepotNetwork].
+

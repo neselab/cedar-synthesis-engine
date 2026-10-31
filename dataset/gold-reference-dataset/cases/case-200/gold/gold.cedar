@@ -1,0 +1,2 @@
+permit (principal is User, action == Action::"scoreApplication", resource is Application)
+when { (((resource.requestedAmount >= 0)) && ((principal.roles.contains(Role::"Reviewer"))) && (!(true) || (resource.status == ApplicationStatusValue::"underReview")) && (((context.scoreApplicationScheduledStart <= context.currentTime) && (context.currentTime < context.scoreApplicationScheduledEnd))) && (!((resource.requestedAmount > 10000000)) || context.largeAwardReviewCompleted) && (context.onGovNetwork)) };

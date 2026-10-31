@@ -1,0 +1,63 @@
+{
+  "domain": "meter_data_management",
+  "format_version": "complete-spec-v4",
+  "grouping": {
+    "applicability_triggers": "any",
+    "exception": "any",
+    "requirements": "all"
+  },
+  "parts": [
+    {
+      "anchor": "adjustReading",
+      "bases": [
+        "G1"
+      ],
+      "conditions": [
+        {
+          "atom": "V8",
+          "form": "applicability",
+          "parameters": {
+            "threshold": 50000
+          },
+          "target": "G1"
+        }
+      ],
+      "overrides": []
+    },
+    {
+      "anchor": "approveBillingRun",
+      "bases": [
+        "G4"
+      ],
+      "conditions": [
+        {
+          "atom": "V3",
+          "form": "require",
+          "parameters": {},
+          "target": "@action"
+        },
+        {
+          "atom": "V7",
+          "form": "applicability",
+          "parameters": {
+            "threshold": 15000
+          },
+          "target": "G4"
+        }
+      ],
+      "overrides": []
+    }
+  ],
+  "provenance": {
+    "arithmetic_safety_patches": [],
+    "arithmetic_safety_revision": [
+      "approveBillingRun.V7:nonnegative_product_threshold"
+    ],
+    "kind": "less-specific-200 revised intent",
+    "source_case": "case-086",
+    "source_spec_sha256": "6de70f7afb2647180681572f4ff9be8218c98bc9694d05baec7835aa57bddb36",
+    "transformation": "Drop only artificial 2000-2100 timestamp windows and catalog maxima 1000000/1000000000; retain all other gates."
+  },
+  "registry_sha256": "905cdbfdf25382413c7d4ffc760d89bbc70316e5b9ad8f597a7853be89ea5b5c",
+  "source_sha256": "2907de8ce880b86d975423e46cde808f78a30bb93dc0a767cb3b4f0643c07c22"
+}

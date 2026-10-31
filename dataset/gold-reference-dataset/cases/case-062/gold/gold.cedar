@@ -1,0 +1,2 @@
+permit (principal is User, action == Action::"deleteResource", resource is CloudResource)
+when { (true && ((principal.roles.contains(Role::"Owner") || principal.roles.contains(Role::"OrgAdmin"))) && (!(true) || (resource.environment != CloudResourceEnvironmentValue::"prod") || (resource.temporaryGrant && (principal.roles.contains(Role::"Owner") || principal.roles.contains(Role::"OrgAdmin")))) && (context.mfaUsed) && ((principal.memberOf in resource.orgUnit)) && (context.sourceIp.isInRange(ip("172.16.0.0/12")))) };

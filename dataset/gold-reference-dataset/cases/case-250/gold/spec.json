@@ -1,0 +1,56 @@
+{
+  "domain": "patent_prosecution",
+  "format_version": "complete-spec-v4",
+  "grouping": {
+    "applicability_triggers": "any",
+    "exception": "any",
+    "requirements": "all"
+  },
+  "parts": [
+    {
+      "anchor": "accessApplication",
+      "bases": [
+        "G4"
+      ],
+      "conditions": [
+        {
+          "atom": "V11",
+          "form": "require",
+          "parameters": {
+            "state": "underExamination"
+          },
+          "target": "@action"
+        },
+        {
+          "atom": "V2",
+          "form": "require",
+          "parameters": {},
+          "target": "@action"
+        },
+        {
+          "atom": "V4",
+          "form": "require",
+          "parameters": {},
+          "target": "@action"
+        }
+      ],
+      "overrides": [
+        {
+          "id": "G3",
+          "targets": [
+            "G4"
+          ]
+        }
+      ]
+    }
+  ],
+  "provenance": {
+    "arithmetic_safety_patches": [],
+    "kind": "less-specific-200 revised intent",
+    "source_case": "case-250",
+    "source_spec_sha256": "708915b29dbc66ae57f19e669046ea9c5d75437473e6de4fd5acb099356b2cec",
+    "transformation": "Drop only artificial 2000-2100 timestamp windows and catalog maxima 1000000/1000000000; retain all other gates."
+  },
+  "registry_sha256": "9f0cb86814867f40c5761ee914685d61069622adcfb85a0d1a07bcf4f81fa2f8",
+  "source_sha256": "2907de8ce880b86d975423e46cde808f78a30bb93dc0a767cb3b4f0643c07c22"
+}

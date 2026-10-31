@@ -1,0 +1,70 @@
+{
+  "domain": "policy_underwriting",
+  "format_version": "complete-spec-v4",
+  "grouping": {
+    "applicability_triggers": "any",
+    "exception": "any",
+    "requirements": "all"
+  },
+  "parts": [
+    {
+      "anchor": "approveException",
+      "bases": [
+        "G2"
+      ],
+      "conditions": [
+        {
+          "atom": "V4",
+          "form": "obligation",
+          "parameters": {
+            "member": "commercial_property"
+          },
+          "target": "@action"
+        },
+        {
+          "atom": "V8",
+          "form": "obligation",
+          "parameters": {
+            "threshold": 1000000
+          },
+          "target": "@action"
+        }
+      ],
+      "overrides": []
+    },
+    {
+      "anchor": "bindPolicy",
+      "bases": [
+        "G5"
+      ],
+      "conditions": [
+        {
+          "atom": "V13",
+          "form": "require",
+          "parameters": {
+            "label": "commercial"
+          },
+          "target": "@action"
+        },
+        {
+          "atom": "V4",
+          "form": "require",
+          "parameters": {
+            "member": "controlled_liability"
+          },
+          "target": "@action"
+        }
+      ],
+      "overrides": []
+    }
+  ],
+  "provenance": {
+    "inherited_arithmetic_safety_patches": [],
+    "kind": "non-time-33 revised intent",
+    "source_case": "case-083",
+    "source_spec_sha256": "0d7a0f746f51a77ef9b7f084c65bb24d93ef70ef3f8470a750887417ac5f2997",
+    "transformation": "Remove only artificial 2000-2100 datetime bounds and catalog maxima; retain all business rules."
+  },
+  "registry_sha256": "92cb43145cda42632622ab2a6ee93082da08d9b2a8e0974f1cc8128e816a479e",
+  "source_sha256": "2907de8ce880b86d975423e46cde808f78a30bb93dc0a767cb3b4f0643c07c22"
+}

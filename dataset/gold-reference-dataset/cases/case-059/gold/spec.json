@@ -1,0 +1,51 @@
+{
+  "domain": "classified_documents",
+  "format_version": "complete-spec-v4",
+  "grouping": {
+    "applicability_triggers": "any",
+    "exception": "any",
+    "requirements": "all"
+  },
+  "parts": [
+    {
+      "anchor": "readDocument",
+      "bases": [
+        "G4"
+      ],
+      "conditions": [
+        {
+          "atom": "V11",
+          "form": "require",
+          "parameters": {
+            "state": "released"
+          },
+          "target": "@action"
+        },
+        {
+          "atom": "V13",
+          "form": "require",
+          "parameters": {
+            "label": "CHARLIE"
+          },
+          "target": "@action"
+        },
+        {
+          "atom": "V9",
+          "form": "require",
+          "parameters": {},
+          "target": "@action"
+        }
+      ],
+      "overrides": []
+    }
+  ],
+  "provenance": {
+    "arithmetic_safety_patches": [],
+    "kind": "less-specific-200 revised intent",
+    "source_case": "case-059",
+    "source_spec_sha256": "3a6bdb323350b20bc18537d9c36335edfce0debf2a9c20bd17013bb102807526",
+    "transformation": "Drop only artificial 2000-2100 timestamp windows and catalog maxima 1000000/1000000000; retain all other gates."
+  },
+  "registry_sha256": "2168b2e0f80b8b87be15d346e81313846c5e722531472841546f39fc58188cce",
+  "source_sha256": "2907de8ce880b86d975423e46cde808f78a30bb93dc0a767cb3b4f0643c07c22"
+}

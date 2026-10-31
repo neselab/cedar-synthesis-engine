@@ -1,0 +1,16 @@
+entity Account { allowedBeneficiaries: Set<User>, holder: User };
+entity Group in [Group] {  };
+entity Role enum ["Originator", "Verifier", "TreasuryOfficer", "ComplianceReviewer"];
+entity User { approvalTier: Long, roles: Set<Role> };
+entity WireTransfer { account: Account, amount: Long, amountTier: Long, beneficiary: User, currencyCode: String, fee: Long, highRisk: Bool, initiatedBy: User, screenedBy: User, status: WireTransferStatusValue, verifiedBy: User };
+entity WireTransferStatusValue enum ["drafted", "verified", "released", "settled"];
+action releaseWire appliesTo { principal: [User], resource: [WireTransfer], context: {
+    currencyReviewCompleted: Bool,
+    currentTime: datetime,
+    dailyCutoff: datetime,
+    emergencyDeclared: Bool,
+    highRiskReviewCompleted: Bool,
+    mfaUsed: Bool,
+    onSecureNetwork: Bool,
+  },
+};

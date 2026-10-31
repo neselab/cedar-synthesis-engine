@@ -1,0 +1,2 @@
+permit (principal is User, action == Action::"approveClaim", resource is Claim)
+when { (((resource.claimAmount >= 0) && (resource.deductible >= 0) && (resource.lineItemCount >= 0)) && ((principal.roles.contains(Role::"Reviewer") || principal.roles.contains(Role::"ClaimsManager"))) && (!(true) || (principal != resource.handler)) && (!(true) || (resource.status == ClaimStatusValue::"reviewed")) && ((resource.fraudHold == false)) && ((resource.claimCode like "PROPERTY-*")) && (context.onCorporateNetwork)) };

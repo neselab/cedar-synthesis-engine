@@ -1,0 +1,14 @@
+entity Group in [Group] {  };
+entity LabOrder { patient: User };
+entity MedicalRecord { careTeam: Set<User>, patient: User, sensitivity: Long, status: MedicalRecordStatusValue, ward: String };
+entity MedicalRecordStatusValue enum ["open", "finalized", "sealed"];
+entity Prescription { patient: User, prescriber: User, status: PrescriptionStatusValue };
+entity PrescriptionStatusValue enum ["draft", "countersigned", "dispensed"];
+entity Role enum ["AttendingPhysician", "Resident", "Nurse", "Pharmacist"];
+entity User { clearedFor: Long, roles: Set<Role>, ward: String };
+action viewRecord appliesTo { principal: [User], resource: [MedicalRecord], context: {
+    currentShift: Bool,
+    emergencyDeclared: Bool,
+    mfaUsed: Bool,
+  },
+};

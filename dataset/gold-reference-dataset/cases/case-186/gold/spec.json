@@ -1,0 +1,69 @@
+{
+  "domain": "folio_adjustment",
+  "format_version": "complete-spec-v4",
+  "grouping": {
+    "applicability_triggers": "any",
+    "exception": "any",
+    "requirements": "all"
+  },
+  "parts": [
+    {
+      "anchor": "approveAdjustment",
+      "bases": [
+        "G1"
+      ],
+      "conditions": [
+        {
+          "atom": "V13",
+          "form": "require",
+          "parameters": {
+            "label": "chargeback"
+          },
+          "target": "@action"
+        }
+      ],
+      "overrides": [
+        {
+          "id": "G3",
+          "targets": [
+            "G1"
+          ]
+        }
+      ]
+    },
+    {
+      "anchor": "postAdjustment",
+      "bases": [
+        "G4"
+      ],
+      "conditions": [
+        {
+          "atom": "V13",
+          "form": "require",
+          "parameters": {
+            "label": "comp"
+          },
+          "target": "@action"
+        },
+        {
+          "atom": "V8",
+          "form": "applicability",
+          "parameters": {
+            "threshold": 50000
+          },
+          "target": "G4"
+        }
+      ],
+      "overrides": []
+    }
+  ],
+  "provenance": {
+    "inherited_arithmetic_safety_patches": [],
+    "kind": "non-time-33 revised intent",
+    "source_case": "case-186",
+    "source_spec_sha256": "23de100ac22b6fc967bc98128dd4eb015a0e6b1b1307e4f8eaccc70b9d04e0e0",
+    "transformation": "Remove only artificial 2000-2100 datetime bounds and catalog maxima; retain all business rules."
+  },
+  "registry_sha256": "bfe2be30cfa236a55a834881230554b8f3a06514b99b4ee6b8ac4deafd26208b",
+  "source_sha256": "2907de8ce880b86d975423e46cde808f78a30bb93dc0a767cb3b4f0643c07c22"
+}

@@ -1,0 +1,65 @@
+{
+  "domain": "inpatient_records",
+  "format_version": "complete-spec-v4",
+  "grouping": {
+    "applicability_triggers": "any",
+    "exception": "any",
+    "requirements": "all"
+  },
+  "parts": [
+    {
+      "anchor": "countersign",
+      "bases": [
+        "G2"
+      ],
+      "conditions": [
+        {
+          "atom": "V14",
+          "form": "require",
+          "parameters": {},
+          "target": "@action"
+        }
+      ],
+      "overrides": []
+    },
+    {
+      "anchor": "dispense",
+      "bases": [
+        "G5"
+      ],
+      "conditions": [
+        {
+          "atom": "V14",
+          "form": "require",
+          "parameters": {},
+          "target": "@action"
+        }
+      ],
+      "overrides": []
+    },
+    {
+      "anchor": "writePrescription",
+      "bases": [
+        "G1"
+      ],
+      "conditions": [
+        {
+          "atom": "V14",
+          "form": "require",
+          "parameters": {},
+          "target": "@action"
+        }
+      ],
+      "overrides": []
+    }
+  ],
+  "provenance": {
+    "kind": "less-specific-20 revised intent",
+    "source_case": "case-270",
+    "source_cohort_sha256": "dc765eca4c9085f9dbd4ad236e51e49541a2c1b43c7fdc65bc46c0daed92721c",
+    "source_spec_sha256": "fdfaffe826f82c9079c79199fc6ca0b0a906ed23f339ebcec24a09020d44fc55",
+    "transformation": "Drop artificial 2000-2100 timestamp windows and catalog maxima; retain nonnegative and enumerated-level guards."
+  },
+  "registry_sha256": "4b847d8ef365016cee74c30541ce51bbe4e5c7217cb2cf6eb9f7d17101296f03",
+  "source_sha256": "2907de8ce880b86d975423e46cde808f78a30bb93dc0a767cb3b4f0643c07c22"
+}

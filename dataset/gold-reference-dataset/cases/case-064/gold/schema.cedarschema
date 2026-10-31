@@ -1,0 +1,18 @@
+entity Course { instructor: User, roster: Set<User> };
+entity Grade { course: String, courseRecord: Course, gradedBy: User, status: GradeStatusValue, student: User };
+entity GradeStatusValue enum ["draft", "posted", "finalized"];
+entity Group in [Group] {  };
+entity Role enum ["Instructor", "Student", "Parent", "Registrar"];
+entity StudentRecord { advisor: User, ferpaBlock: Bool, status: StudentRecordStatusValue, student: User, studentAge: Long };
+entity StudentRecordStatusValue enum ["active", "graduated", "withdrawn"];
+entity User { roles: Set<Role> };
+action postGrade appliesTo { principal: [User], resource: [Grade], context: {
+    currentDate: datetime,
+    directoryDisclosure: Bool,
+    gradingDeadline: datetime,
+    minorRecordAccessAuthorized: Bool,
+    onCampusNetwork: Bool,
+    viewRecordScheduledEnd: datetime,
+    viewRecordScheduledStart: datetime,
+  },
+};

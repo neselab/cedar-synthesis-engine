@@ -1,0 +1,701 @@
+{
+  "approveChange": {
+    "args": [
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.authorityLevel"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.authorityLevel"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.authorityLevel"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 2
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.authorityLevel"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 3
+                  }
+                ],
+                "op": "eq"
+              }
+            ],
+            "op": "any"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.affectedNodeCount"
+              },
+              {
+                "op": "literal",
+                "value": 0
+              }
+            ],
+            "op": "ge"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.changeRisk"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.changeRisk"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.changeRisk"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 2
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.changeRisk"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 3
+                  }
+                ],
+                "op": "eq"
+              }
+            ],
+            "op": "any"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.estimatedCost"
+              },
+              {
+                "op": "literal",
+                "value": 0
+              }
+            ],
+            "op": "ge"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.rollbackStepCount"
+              },
+              {
+                "op": "literal",
+                "value": 0
+              }
+            ],
+            "op": "ge"
+          }
+        ],
+        "op": "all"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.roles"
+                  },
+                  {
+                    "id": "ChangeManager",
+                    "op": "entity",
+                    "type": "Role"
+                  }
+                ],
+                "op": "contains"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.roles"
+                  },
+                  {
+                    "id": "CABApprover",
+                    "op": "entity",
+                    "type": "Role"
+                  }
+                ],
+                "op": "contains"
+              }
+            ],
+            "op": "any"
+          }
+        ],
+        "op": "any"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "literal",
+                "value": true
+              }
+            ],
+            "op": "not"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.authorityLevel"
+              },
+              {
+                "op": "field",
+                "path": "resource.changeRisk"
+              }
+            ],
+            "op": "ge"
+          }
+        ],
+        "op": "any"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.affectedNodeCount"
+                      },
+                      {
+                        "op": "literal",
+                        "value": 10
+                      }
+                    ],
+                    "op": "gt"
+                  },
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.rollbackStepCount"
+                      },
+                      {
+                        "args": [
+                          {
+                            "op": "literal",
+                            "value": 10
+                          },
+                          {
+                            "op": "field",
+                            "path": "resource.affectedNodeCount"
+                          }
+                        ],
+                        "op": "sub"
+                      }
+                    ],
+                    "op": "gt"
+                  }
+                ],
+                "op": "any"
+              }
+            ],
+            "op": "not"
+          },
+          {
+            "op": "field",
+            "path": "context.approveChangeV7ReviewCompleted"
+          }
+        ],
+        "op": "any"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.estimatedCost"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1000000
+                  }
+                ],
+                "op": "gt"
+              }
+            ],
+            "op": "not"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.roles"
+                  },
+                  {
+                    "id": "CABApprover",
+                    "op": "entity",
+                    "type": "Role"
+                  }
+                ],
+                "op": "contains"
+              }
+            ],
+            "op": "any"
+          }
+        ],
+        "op": "any"
+      }
+    ],
+    "op": "all"
+  },
+  "implementChange": {
+    "args": [
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.affectedNodeCount"
+              },
+              {
+                "op": "literal",
+                "value": 0
+              }
+            ],
+            "op": "ge"
+          }
+        ],
+        "op": "all"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.roles"
+                  },
+                  {
+                    "id": "NetworkEngineer",
+                    "op": "entity",
+                    "type": "Role"
+                  }
+                ],
+                "op": "contains"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.roles"
+                  },
+                  {
+                    "id": "SeniorEngineer",
+                    "op": "entity",
+                    "type": "Role"
+                  }
+                ],
+                "op": "contains"
+              }
+            ],
+            "op": "any"
+          }
+        ],
+        "op": "any"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "literal",
+                "value": true
+              }
+            ],
+            "op": "not"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.status"
+              },
+              {
+                "id": "approved",
+                "op": "entity",
+                "type": "ChangeRequestStatusValue"
+              }
+            ],
+            "op": "eq"
+          }
+        ],
+        "op": "any"
+      },
+      {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "op": "field",
+                                "path": "resource.maintenanceWindowStart"
+                              },
+                              {
+                                "args": [
+                                  {
+                                    "op": "literal",
+                                    "value": "1970-01-01T00:00:00Z"
+                                  }
+                                ],
+                                "op": "datetime"
+                              }
+                            ],
+                            "op": "time_lt"
+                          },
+                          {
+                            "args": [
+                              {
+                                "op": "field",
+                                "path": "context.currentTime"
+                              },
+                              {
+                                "args": [
+                                  {
+                                    "op": "literal",
+                                    "value": "1970-01-01T00:00:00Z"
+                                  }
+                                ],
+                                "op": "datetime"
+                              }
+                            ],
+                            "op": "time_lt"
+                          }
+                        ],
+                        "op": "all"
+                      },
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "op": "literal",
+                                    "value": "1970-01-01T00:00:00Z"
+                                  }
+                                ],
+                                "op": "datetime"
+                              },
+                              {
+                                "op": "field",
+                                "path": "resource.maintenanceWindowStart"
+                              }
+                            ],
+                            "op": "time_le"
+                          },
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "op": "literal",
+                                    "value": "1970-01-01T00:00:00Z"
+                                  }
+                                ],
+                                "op": "datetime"
+                              },
+                              {
+                                "op": "field",
+                                "path": "context.currentTime"
+                              }
+                            ],
+                            "op": "time_le"
+                          }
+                        ],
+                        "op": "all"
+                      }
+                    ],
+                    "op": "any"
+                  },
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.maintenanceWindowStart"
+                      },
+                      {
+                        "op": "field",
+                        "path": "context.currentTime"
+                      }
+                    ],
+                    "op": "time_le"
+                  },
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "op": "field",
+                            "path": "context.currentTime"
+                          },
+                          {
+                            "op": "field",
+                            "path": "resource.maintenanceWindowStart"
+                          }
+                        ],
+                        "op": "time_diff"
+                      },
+                      {
+                        "op": "literal",
+                        "value": 14400000
+                      }
+                    ],
+                    "op": "lt"
+                  }
+                ],
+                "op": "all"
+              },
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.maintenanceWindowStart"
+                      },
+                      {
+                        "args": [
+                          {
+                            "op": "literal",
+                            "value": "1970-01-01T00:00:00Z"
+                          }
+                        ],
+                        "op": "datetime"
+                      }
+                    ],
+                    "op": "time_lt"
+                  },
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "op": "literal",
+                            "value": "1969-01-01T00:00:00Z"
+                          }
+                        ],
+                        "op": "datetime"
+                      },
+                      {
+                        "op": "field",
+                        "path": "resource.maintenanceWindowStart"
+                      }
+                    ],
+                    "op": "time_le"
+                  },
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "op": "literal",
+                            "value": "1970-01-01T00:00:00Z"
+                          }
+                        ],
+                        "op": "datetime"
+                      },
+                      {
+                        "op": "field",
+                        "path": "context.currentTime"
+                      }
+                    ],
+                    "op": "time_le"
+                  },
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "op": "field",
+                            "path": "context.currentTime"
+                          },
+                          {
+                            "args": [
+                              {
+                                "op": "literal",
+                                "value": "1970-01-01T00:00:00Z"
+                              }
+                            ],
+                            "op": "datetime"
+                          }
+                        ],
+                        "op": "time_diff"
+                      },
+                      {
+                        "op": "literal",
+                        "value": 14400000
+                      }
+                    ],
+                    "op": "lt"
+                  },
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "op": "field",
+                            "path": "context.currentTime"
+                          },
+                          {
+                            "args": [
+                              {
+                                "op": "literal",
+                                "value": "1970-01-01T00:00:00Z"
+                              }
+                            ],
+                            "op": "datetime"
+                          }
+                        ],
+                        "op": "time_diff"
+                      },
+                      {
+                        "args": [
+                          {
+                            "op": "literal",
+                            "value": 14400000
+                          },
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "op": "literal",
+                                    "value": "1970-01-01T00:00:00Z"
+                                  }
+                                ],
+                                "op": "datetime"
+                              },
+                              {
+                                "op": "field",
+                                "path": "resource.maintenanceWindowStart"
+                              }
+                            ],
+                            "op": "time_diff"
+                          }
+                        ],
+                        "op": "sub"
+                      }
+                    ],
+                    "op": "lt"
+                  }
+                ],
+                "op": "all"
+              }
+            ],
+            "op": "any"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.emergencyChange"
+              },
+              {
+                "op": "literal",
+                "value": true
+              }
+            ],
+            "op": "eq"
+          }
+        ],
+        "op": "any"
+      }
+    ],
+    "op": "all"
+  }
+}

@@ -1,0 +1,66 @@
+{
+  "domain": "code_repository",
+  "format_version": "complete-spec-v4",
+  "grouping": {
+    "applicability_triggers": "any",
+    "exception": "any",
+    "requirements": "all"
+  },
+  "parts": [
+    {
+      "anchor": "mergePullRequest",
+      "bases": [
+        "G5"
+      ],
+      "conditions": [
+        {
+          "atom": "V5",
+          "form": "require",
+          "parameters": {
+            "pattern": "release/*"
+          },
+          "target": "@action"
+        },
+        {
+          "atom": "V6",
+          "form": "require",
+          "parameters": {
+            "threshold": 2
+          },
+          "target": "@action"
+        }
+      ],
+      "overrides": []
+    },
+    {
+      "anchor": "reviewPullRequest",
+      "bases": [
+        "G1"
+      ],
+      "conditions": [
+        {
+          "atom": "V12",
+          "form": "obligation",
+          "parameters": {},
+          "target": "@action"
+        },
+        {
+          "atom": "V2",
+          "form": "require",
+          "parameters": {},
+          "target": "@action"
+        }
+      ],
+      "overrides": []
+    }
+  ],
+  "provenance": {
+    "inherited_arithmetic_safety_patches": [],
+    "kind": "non-time-33 revised intent",
+    "source_case": "case-179",
+    "source_spec_sha256": "abdb2d2a0f8e289b9156a59c2e95b92655f08dee65a02f1d54c2bb70791e4784",
+    "transformation": "Remove only artificial 2000-2100 datetime bounds and catalog maxima; retain all business rules."
+  },
+  "registry_sha256": "06f4bade9ff6c23a653a597d12ca80ae36fba9dfca21520627f0d872840eb690",
+  "source_sha256": "2907de8ce880b86d975423e46cde808f78a30bb93dc0a767cb3b4f0643c07c22"
+}

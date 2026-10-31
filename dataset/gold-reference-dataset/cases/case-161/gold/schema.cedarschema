@@ -1,0 +1,16 @@
+entity Group in [Group] {  };
+entity Page { author: User, classification: Long, externalShareEnabled: Bool, labels: Set<String>, reviewer: User, space: Space, status: PageStatusValue };
+entity PageStatusValue enum ["draft", "in_review", "published", "archived"];
+entity Role enum ["Contributor", "Reviewer", "SpaceAdmin", "Reader"];
+entity Space in [Space] { members: Set<User> };
+entity User { clearance: Long, memberOf: Space, roles: Set<Role> };
+action viewPage appliesTo { principal: [User], resource: [Page], context: {
+    currentTime: datetime,
+    emergencyAccess: Bool,
+    enableExternalShareScheduledEnd: datetime,
+    enableExternalShareScheduledStart: datetime,
+    onCorpNetwork: Bool,
+    reviewPageScheduledEnd: datetime,
+    reviewPageScheduledStart: datetime,
+  },
+};

@@ -1,0 +1,1681 @@
+{
+  "anchors": {
+    "authorizeRefill": {
+      "atoms": {
+        "V10": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the request falls within pharmacy operating hours. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "end_ms": {
+              "type": "Long",
+              "values": [
+                57600000,
+                61200000,
+                64800000
+              ]
+            },
+            "start_ms": {
+              "type": "Long",
+              "values": [
+                28800000,
+                32400000,
+                36000000
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "end_ms": 61200000,
+              "start_ms": 32400000
+            },
+            {
+              "end_ms": 64800000,
+              "start_ms": 28800000
+            },
+            {
+              "end_ms": 57600000,
+              "start_ms": 36000000
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "context.currentTime"
+                      }
+                    ],
+                    "op": "utc_time_ms"
+                  },
+                  {
+                    "name": "start_ms",
+                    "op": "parameter"
+                  }
+                ],
+                "op": "ge"
+              },
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "context.currentTime"
+                      }
+                    ],
+                    "op": "utc_time_ms"
+                  },
+                  {
+                    "name": "end_ms",
+                    "op": "parameter"
+                  }
+                ],
+                "op": "lt"
+              }
+            ],
+            "op": "all"
+          },
+          "revision_notes": [
+            "Authorization requires that the request falls within pharmacy operating hours. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the request falls within pharmacy operating hours. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V10",
+            "meaning": "the request falls within pharmacy operating hours",
+            "reads": "context.currentTime"
+          }
+        },
+        "V14": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the prescription-drug-monitoring database was checked before the refill. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "op": "field",
+            "path": "context.pdmpChecked"
+          },
+          "revision_notes": [
+            "Authorization requires that the prescription-drug-monitoring database was checked before the refill. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the prescription-drug-monitoring database was checked before the refill. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V14",
+            "meaning": "the prescription-drug-monitoring database was checked before the refill",
+            "reads": "context.pdmpChecked"
+          }
+        },
+        "V5": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the prescriber's DEA registration number matches an allowed pattern. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "pattern": {
+              "type": "String",
+              "values": [
+                "AB*",
+                "BC*",
+                "FM*"
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "pattern": "AB*"
+            },
+            {
+              "pattern": "BC*"
+            },
+            {
+              "pattern": "FM*"
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.prescriberDEA"
+              },
+              {
+                "name": "pattern",
+                "op": "parameter"
+              }
+            ],
+            "op": "like"
+          },
+          "revision_notes": [
+            "Authorization requires that the prescriber's DEA registration number matches an allowed pattern. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the prescriber's DEA registration number matches an allowed pattern. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V5",
+            "meaning": "the prescriber's DEA registration number matches an allowed pattern",
+            "reads": "Prescription.prescriberDEA"
+          }
+        },
+        "V6": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "An explicit minimum prerequisite must be satisfied, not turned into an optional trigger for an invented additional review.",
+            "statement": "Authorization requires at least one remaining authorized refill. An exhausted refill count is denied.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "threshold": {
+              "type": "Long",
+              "values": [
+                0
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "threshold": 0
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.refillsRemaining"
+              },
+              {
+                "name": "threshold",
+                "op": "parameter"
+              }
+            ],
+            "op": "gt"
+          },
+          "revision_notes": [
+            "Declared synthetic review/acceptance bands measured in remaining authorized refills in a synthetic prescription record. Source-explicit refill > 0 and production-release defect == 0 remain unchanged.",
+            "Authorization requires at least one remaining authorized refill. An exhausted refill count is denied.",
+            "Composition rationale: An explicit minimum prerequisite must be satisfied, not turned into an optional trigger for an invented additional review."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "An explicit minimum prerequisite must be satisfied, not turned into an optional trigger for an invented additional review.",
+              "statement": "Authorization requires at least one remaining authorized refill. An exhausted refill count is denied.",
+              "target": "@action"
+            },
+            "id": "V6",
+            "meaning": "the refills remaining is above zero",
+            "reads": "Prescription.refillsRemaining"
+          }
+        }
+      },
+      "bases": {
+        "G2": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal"
+              },
+              {
+                "op": "field",
+                "path": "resource.verifiedBy"
+              }
+            ],
+            "op": "eq"
+          },
+          "signature": "V1",
+          "source": {
+            "id": "G2",
+            "meaning": "the pharmacist who verified the prescription must be the one who authorizes its refill",
+            "reads": "principal vs Prescription.verifiedBy",
+            "signature": "V1"
+          }
+        },
+        "G5": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.status"
+              },
+              {
+                "id": "dispensed",
+                "op": "entity",
+                "type": "PrescriptionStatusValue"
+              }
+            ],
+            "op": "eq"
+          },
+          "signature": "V11",
+          "source": {
+            "id": "G5",
+            "meaning": "a refill may be authorized only after the prescription has been dispensed",
+            "reads": "Prescription.status",
+            "signature": "V11"
+          }
+        }
+      },
+      "domain_gate": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.refillsRemaining"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "ge"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.refillsRemaining"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 12
+                  }
+                ],
+                "op": "le"
+              }
+            ],
+            "op": "all"
+          }
+        ],
+        "op": "all"
+      },
+      "eligibility": {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "PharmacistInCharge",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          }
+        ],
+        "op": "any"
+      },
+      "field_bindings": {
+        "Prescription.prescriberDEA": "resource.prescriberDEA",
+        "Prescription.refillsRemaining": "resource.refillsRemaining",
+        "Prescription.status": "resource.status",
+        "Prescription.verifiedBy": "resource.verifiedBy",
+        "context.currentTime": "context.currentTime",
+        "context.pdmpChecked": "context.pdmpChecked"
+      },
+      "overrides": {},
+      "resource_type": "Prescription"
+    },
+    "dispenseMedication": {
+      "atoms": {
+        "V10": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the request falls within pharmacy operating hours. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "end_ms": {
+              "type": "Long",
+              "values": [
+                57600000,
+                61200000,
+                64800000
+              ]
+            },
+            "start_ms": {
+              "type": "Long",
+              "values": [
+                28800000,
+                32400000,
+                36000000
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "end_ms": 61200000,
+              "start_ms": 32400000
+            },
+            {
+              "end_ms": 64800000,
+              "start_ms": 28800000
+            },
+            {
+              "end_ms": 57600000,
+              "start_ms": 36000000
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "context.currentTime"
+                      }
+                    ],
+                    "op": "utc_time_ms"
+                  },
+                  {
+                    "name": "start_ms",
+                    "op": "parameter"
+                  }
+                ],
+                "op": "ge"
+              },
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "context.currentTime"
+                      }
+                    ],
+                    "op": "utc_time_ms"
+                  },
+                  {
+                    "name": "end_ms",
+                    "op": "parameter"
+                  }
+                ],
+                "op": "lt"
+              }
+            ],
+            "op": "all"
+          },
+          "revision_notes": [
+            "Authorization requires that the request falls within pharmacy operating hours. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the request falls within pharmacy operating hours. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V10",
+            "meaning": "the request falls within pharmacy operating hours",
+            "reads": "context.currentTime"
+          }
+        },
+        "V14": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that MFA was used (required for a controlled-substance dispense). Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "op": "field",
+            "path": "context.mfaUsed"
+          },
+          "revision_notes": [
+            "Authorization requires that MFA was used (required for a controlled-substance dispense). Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that MFA was used (required for a controlled-substance dispense). Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V14",
+            "meaning": "MFA was used (required for a controlled-substance dispense)",
+            "reads": "context.mfaUsed"
+          }
+        },
+        "V8": {
+          "allowed_forms": [
+            "obligation"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "obligation",
+            "rationale": "A descriptive quantity threshold without a suitable duty target is completed as an explicitly authored additional review, not as a minimum transaction size or lifecycle waiver.",
+            "required_fact": "dispenseMedicationV8ReviewCompleted",
+            "statement": "When the copay amount crosses a money threshold, the additional review recorded by dispenseMedicationV8ReviewCompleted must be complete; smaller requests do not need this additional review.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "threshold": {
+              "type": "Long",
+              "values": [
+                1000,
+                10000,
+                5000
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "threshold": 1000
+            },
+            {
+              "threshold": 5000
+            },
+            {
+              "threshold": 10000
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.copayAmount"
+              },
+              {
+                "name": "threshold",
+                "op": "parameter"
+              }
+            ],
+            "op": "gt"
+          },
+          "requirement": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.copayAmount"
+                      },
+                      {
+                        "name": "threshold",
+                        "op": "parameter"
+                      }
+                    ],
+                    "op": "gt"
+                  }
+                ],
+                "op": "not"
+              },
+              {
+                "op": "field",
+                "path": "context.dispenseMedicationV8ReviewCompleted"
+              }
+            ],
+            "op": "any"
+          },
+          "revision_notes": [
+            "USD-cent thresholds for synthetic patient copayment review bands, not clinical or insurance standards: $10, $50, $100. These are synthetic organization policy choices.",
+            "When the copay amount crosses a money threshold, the additional review recorded by dispenseMedicationV8ReviewCompleted must be complete; smaller requests do not need this additional review.",
+            "Composition rationale: A descriptive quantity threshold without a suitable duty target is completed as an explicitly authored additional review, not as a minimum transaction size or lifecycle waiver."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "obligation",
+              "rationale": "A descriptive quantity threshold without a suitable duty target is completed as an explicitly authored additional review, not as a minimum transaction size or lifecycle waiver.",
+              "required_fact": "dispenseMedicationV8ReviewCompleted",
+              "statement": "When the copay amount crosses a money threshold, the additional review recorded by dispenseMedicationV8ReviewCompleted must be complete; smaller requests do not need this additional review.",
+              "target": "@action"
+            },
+            "id": "V8",
+            "meaning": "the copay amount crosses a money threshold",
+            "reads": "DispenseRecord.copayAmount"
+          }
+        },
+        "V9": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the request comes from the pharmacy network. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "op": "field",
+            "path": "context.onPharmacyNetwork"
+          },
+          "revision_notes": [
+            "Authorization requires that the request comes from the pharmacy network. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the request comes from the pharmacy network. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V9",
+            "meaning": "the request comes from the pharmacy network",
+            "reads": "context.onPharmacyNetwork"
+          }
+        }
+      },
+      "bases": {
+        "G1": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal"
+              },
+              {
+                "op": "field",
+                "path": "resource.prescription.verifiedBy"
+              }
+            ],
+            "op": "ne"
+          },
+          "signature": "V1",
+          "source": {
+            "id": "G1",
+            "meaning": "the pharmacist who verified a prescription may not be the one who dispenses it (two-person control)",
+            "reads": "principal vs DispenseRecord.prescription.verifiedBy",
+            "signature": "V1"
+          }
+        },
+        "G4": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.dispenseAuthority"
+              },
+              {
+                "op": "field",
+                "path": "resource.prescription.scheduleLevel"
+              }
+            ],
+            "op": "ge"
+          },
+          "signature": "V6",
+          "source": {
+            "id": "G4",
+            "meaning": "the pharmacist's dispensing authority must dominate the drug's DEA schedule level",
+            "reads": "user.dispenseAuthority vs DispenseRecord.prescription.scheduleLevel",
+            "signature": "V6"
+          }
+        },
+        "G5": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.prescription.status"
+              },
+              {
+                "id": "verified",
+                "op": "entity",
+                "type": "PrescriptionStatusValue"
+              }
+            ],
+            "op": "eq"
+          },
+          "signature": "V11",
+          "source": {
+            "id": "G5",
+            "meaning": "a prescription may be dispensed only after it has been verified",
+            "reads": "DispenseRecord.prescription.status",
+            "signature": "V11"
+          }
+        }
+      },
+      "domain_gate": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2000-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  },
+                  {
+                    "op": "field",
+                    "path": "context.currentTime"
+                  }
+                ],
+                "op": "time_le"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.currentTime"
+                  },
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2100-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  }
+                ],
+                "op": "time_le"
+              }
+            ],
+            "op": "all"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.dispenseAuthority"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.dispenseAuthority"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 3
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.dispenseAuthority"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 4
+                  }
+                ],
+                "op": "eq"
+              }
+            ],
+            "op": "any"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.copayAmount"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "ge"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.copayAmount"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1000000000
+                  }
+                ],
+                "op": "le"
+              }
+            ],
+            "op": "all"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.prescription.scheduleLevel"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.prescription.scheduleLevel"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 2
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.prescription.scheduleLevel"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 3
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.prescription.scheduleLevel"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 4
+                  }
+                ],
+                "op": "eq"
+              }
+            ],
+            "op": "any"
+          }
+        ],
+        "op": "all"
+      },
+      "eligibility": {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "StaffPharmacist",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "PharmacistInCharge",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          }
+        ],
+        "op": "any"
+      },
+      "field_bindings": {
+        "DispenseRecord.copayAmount": "resource.copayAmount",
+        "DispenseRecord.prescription.scheduleLevel": "resource.prescription.scheduleLevel",
+        "DispenseRecord.prescription.status": "resource.prescription.status",
+        "DispenseRecord.prescription.verifiedBy": "resource.prescription.verifiedBy",
+        "context.currentTime": "context.currentTime",
+        "context.emergencyOverride": "context.emergencyOverride",
+        "context.mfaUsed": "context.mfaUsed",
+        "context.onPharmacyNetwork": "context.onPharmacyNetwork",
+        "user.dispenseAuthority": "principal.dispenseAuthority"
+      },
+      "overrides": {
+        "G3": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "context.emergencyOverride"
+              },
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "principal.roles"
+                      },
+                      {
+                        "id": "PharmacistInCharge",
+                        "op": "entity",
+                        "type": "Role"
+                      }
+                    ],
+                    "op": "contains"
+                  }
+                ],
+                "op": "any"
+              }
+            ],
+            "op": "all"
+          },
+          "source": {
+            "id": "G3",
+            "meaning": "a pharmacist-in-charge emergency override lets the verifying pharmacist also dispense on a single-pharmacist shift",
+            "overrides": [
+              "G1"
+            ],
+            "reads": "context.emergencyOverride",
+            "requires_adjudication": true
+          },
+          "targets": [
+            "G1"
+          ]
+        }
+      },
+      "resource_type": "DispenseRecord"
+    },
+    "verifyPrescription": {
+      "atoms": {
+        "V10": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the request falls within pharmacy operating hours. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "end_ms": {
+              "type": "Long",
+              "values": [
+                57600000,
+                61200000,
+                64800000
+              ]
+            },
+            "start_ms": {
+              "type": "Long",
+              "values": [
+                28800000,
+                32400000,
+                36000000
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "end_ms": 61200000,
+              "start_ms": 32400000
+            },
+            {
+              "end_ms": 64800000,
+              "start_ms": 28800000
+            },
+            {
+              "end_ms": 57600000,
+              "start_ms": 36000000
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "context.currentTime"
+                      }
+                    ],
+                    "op": "utc_time_ms"
+                  },
+                  {
+                    "name": "start_ms",
+                    "op": "parameter"
+                  }
+                ],
+                "op": "ge"
+              },
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "context.currentTime"
+                      }
+                    ],
+                    "op": "utc_time_ms"
+                  },
+                  {
+                    "name": "end_ms",
+                    "op": "parameter"
+                  }
+                ],
+                "op": "lt"
+              }
+            ],
+            "op": "all"
+          },
+          "revision_notes": [
+            "Authorization requires that the request falls within pharmacy operating hours. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the request falls within pharmacy operating hours. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V10",
+            "meaning": "the request falls within pharmacy operating hours",
+            "reads": "context.currentTime"
+          }
+        },
+        "V14": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the prescription-drug-monitoring database was checked. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "op": "field",
+            "path": "context.pdmpChecked"
+          },
+          "revision_notes": [
+            "Authorization requires that the prescription-drug-monitoring database was checked. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the prescription-drug-monitoring database was checked. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V14",
+            "meaning": "the prescription-drug-monitoring database was checked",
+            "reads": "context.pdmpChecked"
+          }
+        },
+        "V2": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the requester holds a particular role. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.roles"
+                  },
+                  {
+                    "id": "PharmacistInCharge",
+                    "op": "entity",
+                    "type": "Role"
+                  }
+                ],
+                "op": "contains"
+              }
+            ],
+            "op": "any"
+          },
+          "revision_notes": [
+            "Authorization requires that the requester holds a particular role. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the requester holds a particular role. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V2",
+            "meaning": "the requester holds a particular role",
+            "reads": "principal is PharmacistInCharge"
+          }
+        },
+        "V5": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the prescriber's DEA registration number matches an allowed pattern. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "pattern": {
+              "type": "String",
+              "values": [
+                "AB*",
+                "BC*",
+                "FM*"
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "pattern": "AB*"
+            },
+            {
+              "pattern": "BC*"
+            },
+            {
+              "pattern": "FM*"
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.prescriberDEA"
+              },
+              {
+                "name": "pattern",
+                "op": "parameter"
+              }
+            ],
+            "op": "like"
+          },
+          "revision_notes": [
+            "Authorization requires that the prescriber's DEA registration number matches an allowed pattern. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the prescriber's DEA registration number matches an allowed pattern. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V5",
+            "meaning": "the prescriber's DEA registration number matches an allowed pattern",
+            "reads": "Prescription.prescriberDEA"
+          }
+        },
+        "V6": {
+          "allowed_forms": [
+            "obligation"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "obligation",
+            "rationale": "A descriptive quantity threshold without a suitable duty target is completed as an explicitly authored additional review, not as a minimum transaction size or lifecycle waiver.",
+            "required_fact": "verifyPrescriptionV6ReviewCompleted",
+            "statement": "When the refills remaining crosses a threshold, the additional review recorded by verifyPrescriptionV6ReviewCompleted must be complete; smaller requests do not need this additional review.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "threshold": {
+              "type": "Long",
+              "values": [
+                0,
+                2,
+                5
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "threshold": 0
+            },
+            {
+              "threshold": 2
+            },
+            {
+              "threshold": 5
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.refillsRemaining"
+              },
+              {
+                "name": "threshold",
+                "op": "parameter"
+              }
+            ],
+            "op": "gt"
+          },
+          "requirement": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.refillsRemaining"
+                      },
+                      {
+                        "name": "threshold",
+                        "op": "parameter"
+                      }
+                    ],
+                    "op": "gt"
+                  }
+                ],
+                "op": "not"
+              },
+              {
+                "op": "field",
+                "path": "context.verifyPrescriptionV6ReviewCompleted"
+              }
+            ],
+            "op": "any"
+          },
+          "revision_notes": [
+            "Declared synthetic review/acceptance bands measured in remaining authorized refills in a synthetic prescription record. Source-explicit refill > 0 and production-release defect == 0 remain unchanged.",
+            "When the refills remaining crosses a threshold, the additional review recorded by verifyPrescriptionV6ReviewCompleted must be complete; smaller requests do not need this additional review.",
+            "Composition rationale: A descriptive quantity threshold without a suitable duty target is completed as an explicitly authored additional review, not as a minimum transaction size or lifecycle waiver."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "obligation",
+              "rationale": "A descriptive quantity threshold without a suitable duty target is completed as an explicitly authored additional review, not as a minimum transaction size or lifecycle waiver.",
+              "required_fact": "verifyPrescriptionV6ReviewCompleted",
+              "statement": "When the refills remaining crosses a threshold, the additional review recorded by verifyPrescriptionV6ReviewCompleted must be complete; smaller requests do not need this additional review.",
+              "target": "@action"
+            },
+            "id": "V6",
+            "meaning": "the refills remaining crosses a threshold",
+            "reads": "Prescription.refillsRemaining"
+          }
+        }
+      },
+      "bases": {
+        "G1": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal"
+              },
+              {
+                "op": "field",
+                "path": "resource.enteredBy"
+              }
+            ],
+            "op": "ne"
+          },
+          "signature": "V1",
+          "source": {
+            "id": "G1",
+            "meaning": "the technician who entered a prescription may not be the pharmacist who verifies it",
+            "reads": "principal vs Prescription.enteredBy",
+            "signature": "V1"
+          }
+        },
+        "G5": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.status"
+              },
+              {
+                "id": "received",
+                "op": "entity",
+                "type": "PrescriptionStatusValue"
+              }
+            ],
+            "op": "eq"
+          },
+          "signature": "V11",
+          "source": {
+            "id": "G5",
+            "meaning": "a prescription may be verified only while it is in the received stage",
+            "reads": "Prescription.status",
+            "signature": "V11"
+          }
+        }
+      },
+      "domain_gate": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.refillsRemaining"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "ge"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.refillsRemaining"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 12
+                  }
+                ],
+                "op": "le"
+              }
+            ],
+            "op": "all"
+          }
+        ],
+        "op": "all"
+      },
+      "eligibility": {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "StaffPharmacist",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "PharmacistInCharge",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          }
+        ],
+        "op": "any"
+      },
+      "field_bindings": {
+        "Prescription.enteredBy": "resource.enteredBy",
+        "Prescription.prescriberDEA": "resource.prescriberDEA",
+        "Prescription.refillsRemaining": "resource.refillsRemaining",
+        "Prescription.status": "resource.status",
+        "context.currentTime": "context.currentTime",
+        "context.pdmpChecked": "context.pdmpChecked"
+      },
+      "overrides": {},
+      "resource_type": "Prescription"
+    }
+  },
+  "business_review_revision": "2026-10-23-r1",
+  "context": {
+    "currentTime": {
+      "type": "datetime"
+    },
+    "dispenseMedicationV8ReviewCompleted": {
+      "type": "Bool"
+    },
+    "emergencyOverride": {
+      "type": "Bool"
+    },
+    "mfaUsed": {
+      "type": "Bool"
+    },
+    "onPharmacyNetwork": {
+      "type": "Bool"
+    },
+    "pdmpChecked": {
+      "type": "Bool"
+    },
+    "verifyPrescriptionV6ReviewCompleted": {
+      "type": "Bool"
+    }
+  },
+  "contract": "complete-spec-v4",
+  "decisions": [
+    "All source identities denote User entities; role sets may overlap without implicit exclusivity.",
+    "All timestamps read by predicates are bounded inclusively to 2000-01-01 through 2100-01-01 UTC; requests outside the explicit domain gate deny.",
+    "Business revision v2: catalogs are declared synthetic organizational policies, not empirical norms. Selected-atom obligations are mandatory in both forms and cannot be waived by a base exception or override.",
+    "Money is nonnegative integer USD cents, at most 1,000,000,000. Counts are nonnegative integers at most 1,000,000 unless a narrower dictionary is declared.",
+    "PdmpQuery.note is source documentation, not an attribute.",
+    "Request context is treated as trusted input from the host; authorization does not attest network, emergency, signature, or scheduling facts.",
+    "Retained source repairs: exact lifecycle states, linked course roster, explicit promotion/filing facts, independent calibration expiry, comp expiry, and guarded override eligibility are intentional experiment definitions. Their typed ASTs and field descriptions, not the ambiguous source shorthand, are authoritative.",
+    "Rules operate on snapshots. A selected lifecycle base requires the exact named state unless its predicate explicitly lists alternatives.",
+    "Source business descriptions are retained for audit; the authored typed predicates and dictionaries define the experiment. No statutory compliance claim is made.",
+    "Source tag kinds are represented by Set<String>. Group membership is reflexive and transitive Cedar entity ancestry.",
+    "authorizeRefill/V6: Declared synthetic review/acceptance bands measured in remaining authorized refills in a synthetic prescription record. Source-explicit refill > 0 and production-release defect == 0 remain unchanged.",
+    "dispenseMedication/V8: USD-cent thresholds for synthetic patient copayment review bands, not clinical or insurance standards: $10, $50, $100. These are synthetic organization policy choices.",
+    "verifyPrescription/V6: Declared synthetic review/acceptance bands measured in remaining authorized refills in a synthetic prescription record. Source-explicit refill > 0 and production-release defect == 0 remain unchanged."
+  ],
+  "domain": "pharmacy_dispensing",
+  "entities": {
+    "DispenseRecord": {
+      "attributes": {
+        "copayAmount": {
+          "bounds": [
+            0,
+            1000000000
+          ],
+          "type": "Long",
+          "unit": "USD cents"
+        },
+        "dispensedBy": {
+          "type": "User"
+        },
+        "prescription": {
+          "type": "Prescription"
+        },
+        "quantity": {
+          "bounds": [
+            0,
+            1000000
+          ],
+          "type": "Long",
+          "unit": "integer units"
+        }
+      }
+    },
+    "Group": {
+      "attributes": {},
+      "member_of": [
+        "Group"
+      ]
+    },
+    "PdmpQuery": {
+      "attributes": {}
+    },
+    "Prescription": {
+      "attributes": {
+        "enteredBy": {
+          "type": "User"
+        },
+        "patient": {
+          "type": "User"
+        },
+        "prescriber": {
+          "type": "User"
+        },
+        "prescriberDEA": {
+          "type": "String"
+        },
+        "refillsRemaining": {
+          "bounds": [
+            0,
+            12
+          ],
+          "type": "Long",
+          "unit": "remaining authorized refills in a synthetic prescription record"
+        },
+        "scheduleLevel": {
+          "bounds": [
+            1,
+            4
+          ],
+          "levels": {
+            "scheduleII": 4,
+            "scheduleIII": 3,
+            "scheduleIV": 2,
+            "scheduleV": 1
+          },
+          "type": "Long"
+        },
+        "status": {
+          "type": "PrescriptionStatusValue"
+        },
+        "verifiedBy": {
+          "type": "User"
+        }
+      }
+    },
+    "PrescriptionStatusValue": {
+      "enum": [
+        "received",
+        "verified",
+        "dispensed",
+        "voided"
+      ]
+    },
+    "Role": {
+      "enum": [
+        "PharmacyTechnician",
+        "StaffPharmacist",
+        "PharmacistInCharge",
+        "Prescriber"
+      ]
+    },
+    "User": {
+      "attributes": {
+        "dispenseAuthority": {
+          "bounds": [
+            0,
+            4
+          ],
+          "levels": {
+            "nonControlled": 0,
+            "scheduleII": 4,
+            "scheduleIII_V": 3
+          },
+          "type": "Long"
+        },
+        "roles": {
+          "type": "Set<Role>"
+        },
+        "stateLicense": {
+          "type": "String"
+        }
+      }
+    }
+  },
+  "revision_contract": "business-composition-v4",
+  "source_action_chains": [
+    {
+      "chain": [
+        "verifyPrescription",
+        "authorizeRefill"
+      ],
+      "linked_by": [
+        "status",
+        "prescriber",
+        "enteredBy",
+        "verifiedBy"
+      ],
+      "shared_resource": "Prescription"
+    }
+  ],
+  "source_sha256": "2907de8ce880b86d975423e46cde808f78a30bb93dc0a767cb3b4f0643c07c22",
+  "status": "authored experimental assumptions; not human semantic approval",
+  "version": "business-registry-v4"
+}

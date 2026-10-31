@@ -1,0 +1,61 @@
+{
+  "domain": "expense_reimbursement",
+  "format_version": "complete-spec-v4",
+  "grouping": {
+    "applicability_triggers": "any",
+    "exception": "any",
+    "requirements": "all"
+  },
+  "parts": [
+    {
+      "anchor": "approveReport",
+      "bases": [
+        "G1",
+        "G4"
+      ],
+      "conditions": [],
+      "overrides": [
+        {
+          "id": "G3",
+          "targets": [
+            "G1"
+          ]
+        }
+      ]
+    },
+    {
+      "anchor": "disburseReimbursement",
+      "bases": [
+        "G1"
+      ],
+      "conditions": [
+        {
+          "atom": "V12",
+          "form": "require",
+          "parameters": {},
+          "target": "@action"
+        },
+        {
+          "atom": "V8",
+          "form": "applicability",
+          "parameters": {
+            "threshold": 500000
+          },
+          "target": "G1"
+        }
+      ],
+      "overrides": []
+    }
+  ],
+  "provenance": {
+    "arithmetic_safety_patches": [
+      "approveReport.V7"
+    ],
+    "kind": "less-specific-200 revised intent",
+    "source_case": "case-176",
+    "source_spec_sha256": "d4e8a2654186d02bc508177c466a06ee78c79e6c5cf57e3a28832a780e6a8977",
+    "transformation": "Drop only artificial 2000-2100 timestamp windows and catalog maxima 1000000/1000000000; retain all other gates."
+  },
+  "registry_sha256": "33a3aa161dfa7c2135ff2b779ed6885c6ec000a3b5429289c28d75cf0e5635f5",
+  "source_sha256": "2907de8ce880b86d975423e46cde808f78a30bb93dc0a767cb3b4f0643c07c22"
+}

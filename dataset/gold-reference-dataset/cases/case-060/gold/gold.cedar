@@ -1,0 +1,2 @@
+permit (principal is User, action == Action::"adjudicateCase", resource is Case)
+when { (true && ((principal.roles.contains(Role::"AdjudicationOfficer") || principal.roles.contains(Role::"SupervisoryOfficer"))) && (!(true) || !(principal.recusedCases.contains(resource))) && (!((principal == resource.applicant))) && (((context.adjudicateCaseScheduledStart <= context.currentTime) && (context.currentTime < context.adjudicateCaseScheduledEnd))) && ((principal.roles.contains(Role::"SupervisoryOfficer"))) && (context.onGovNetwork)) };

@@ -1,0 +1,66 @@
+{
+  "domain": "escrow_disbursement",
+  "format_version": "complete-spec-v4",
+  "grouping": {
+    "applicability_triggers": "any",
+    "exception": "any",
+    "requirements": "all"
+  },
+  "parts": [
+    {
+      "anchor": "approveClearToClose",
+      "bases": [
+        "G1"
+      ],
+      "conditions": [
+        {
+          "atom": "V4",
+          "form": "obligation",
+          "parameters": {},
+          "target": "@action"
+        },
+        {
+          "atom": "V6",
+          "form": "obligation",
+          "parameters": {
+            "threshold": 2
+          },
+          "target": "@action"
+        }
+      ],
+      "overrides": []
+    },
+    {
+      "anchor": "authorizeDisbursement",
+      "bases": [
+        "G4"
+      ],
+      "conditions": [
+        {
+          "atom": "V13",
+          "form": "prohibit",
+          "parameters": {
+            "label": "tax_lien"
+          },
+          "target": "@action"
+        },
+        {
+          "atom": "V9",
+          "form": "require",
+          "parameters": {},
+          "target": "@action"
+        }
+      ],
+      "overrides": []
+    }
+  ],
+  "provenance": {
+    "arithmetic_safety_patches": [],
+    "kind": "less-specific-200 revised intent",
+    "source_case": "case-012",
+    "source_spec_sha256": "fd08207c51734278e034e8f9aeed0f407cbbe2420fadf9788586e3729c2a8c56",
+    "transformation": "Drop only artificial 2000-2100 timestamp windows and catalog maxima 1000000/1000000000; retain all other gates."
+  },
+  "registry_sha256": "74f505c36be6d1654e9aa190f8dfe3d22762c3e5fbf911d2299e931de237e140",
+  "source_sha256": "2907de8ce880b86d975423e46cde808f78a30bb93dc0a767cb3b4f0643c07c22"
+}

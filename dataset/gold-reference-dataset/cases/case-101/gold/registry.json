@@ -1,0 +1,2085 @@
+{
+  "anchors": {
+    "approveClearToClose": {
+      "atoms": {
+        "V10": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the approval occurs on or before the scheduled closing date. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "context.currentTime"
+              },
+              {
+                "op": "field",
+                "path": "resource.closingDate"
+              }
+            ],
+            "op": "time_le"
+          },
+          "revision_notes": [
+            "Authorization requires that the approval occurs on or before the scheduled closing date. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the approval occurs on or before the scheduled closing date. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V10",
+            "meaning": "the approval occurs on or before the scheduled closing date",
+            "reads": "context.currentTime vs EscrowFile.closingDate"
+          }
+        },
+        "V12": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the title has been cleared of encumbrances for the file. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.titleCleared"
+              },
+              {
+                "op": "literal",
+                "value": true
+              }
+            ],
+            "op": "eq"
+          },
+          "revision_notes": [
+            "Authorization requires that the title has been cleared of encumbrances for the file. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the title has been cleared of encumbrances for the file. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V12",
+            "meaning": "the title has been cleared of encumbrances for the file",
+            "reads": "EscrowFile.titleCleared"
+          }
+        },
+        "V13": {
+          "allowed_forms": [
+            "prohibit"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "prohibit",
+            "rationale": "A conflict, self-dealing condition, hold, lock, or already-enabled flag blocks this operation instead of relaxing its safeguards.",
+            "statement": "Authorization is denied when the lien-status tag matches an outstanding-lien condition.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "label": {
+              "type": "String",
+              "values": [
+                "outstanding_lien",
+                "tax_lien"
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "label": "outstanding_lien"
+            },
+            {
+              "label": "tax_lien"
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.lienStatus"
+              },
+              {
+                "name": "label",
+                "op": "parameter"
+              }
+            ],
+            "op": "contains"
+          },
+          "revision_notes": [
+            "Authorization is denied when the lien-status tag matches an outstanding-lien condition.",
+            "Composition rationale: A conflict, self-dealing condition, hold, lock, or already-enabled flag blocks this operation instead of relaxing its safeguards."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "prohibit",
+              "rationale": "A conflict, self-dealing condition, hold, lock, or already-enabled flag blocks this operation instead of relaxing its safeguards.",
+              "statement": "Authorization is denied when the lien-status tag matches an outstanding-lien condition.",
+              "target": "@action"
+            },
+            "id": "V13",
+            "meaning": "the lien-status tag matches an outstanding-lien condition",
+            "reads": "EscrowFile.lienStatus"
+          }
+        },
+        "V14": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that dual-control confirmation has been captured for the request. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "op": "field",
+            "path": "context.dualControlVerified"
+          },
+          "revision_notes": [
+            "Authorization requires that dual-control confirmation has been captured for the request. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that dual-control confirmation has been captured for the request. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V14",
+            "meaning": "dual-control confirmation has been captured for the request",
+            "reads": "context.dualControlVerified"
+          }
+        },
+        "V3": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the file falls within the approver's regional hierarchy. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.region"
+              },
+              {
+                "op": "field",
+                "path": "principal.assignedGroup"
+              }
+            ],
+            "op": "in"
+          },
+          "revision_notes": [
+            "Authorization requires that the file falls within the approver's regional hierarchy. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the file falls within the approver's regional hierarchy. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V3",
+            "meaning": "the file falls within the approver's regional hierarchy",
+            "reads": "EscrowFile.region"
+          }
+        },
+        "V4": {
+          "allowed_forms": [
+            "obligation"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "obligation",
+            "rationale": "The source describes a trigger and an additional required consequence; encode that implication independently of bases.",
+            "statement": "When the party set includes a party requiring enhanced due diligence, its explicit additional requirement must hold. This does not waive or scope any base.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.parties"
+              },
+              {
+                "op": "field",
+                "path": "context.enhancedDueDiligenceParties"
+              }
+            ],
+            "op": "contains_any"
+          },
+          "requirement": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.parties"
+                      },
+                      {
+                        "op": "field",
+                        "path": "context.enhancedDueDiligenceParties"
+                      }
+                    ],
+                    "op": "contains_any"
+                  }
+                ],
+                "op": "not"
+              },
+              {
+                "op": "field",
+                "path": "context.enhancedDueDiligenceCompleted"
+              }
+            ],
+            "op": "any"
+          },
+          "revision_notes": [
+            "Trigger on intersection with the request-specific screened-party set, replacing the hard-coded person UID.",
+            "When this trigger holds, enhanced due diligence for every flagged party on this request is complete. This is a trusted request-specific host attestation.",
+            "When the party set includes a party requiring enhanced due diligence, its explicit additional requirement must hold. This does not waive or scope any base.",
+            "Composition rationale: The source describes a trigger and an additional required consequence; encode that implication independently of bases."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "obligation",
+              "rationale": "The source describes a trigger and an additional required consequence; encode that implication independently of bases.",
+              "statement": "When the party set includes a party requiring enhanced due diligence, its explicit additional requirement must hold. This does not waive or scope any base.",
+              "target": "@action"
+            },
+            "id": "V4",
+            "meaning": "the party set includes a party requiring enhanced due diligence",
+            "reads": "EscrowFile.parties"
+          }
+        },
+        "V5": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the file code matches or carries a controlled-transaction prefix. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "pattern": {
+              "type": "String",
+              "values": [
+                "CONTROLLED-*",
+                "SETTLEMENT-*"
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "pattern": "CONTROLLED-*"
+            },
+            {
+              "pattern": "SETTLEMENT-*"
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.fileCode"
+              },
+              {
+                "name": "pattern",
+                "op": "parameter"
+              }
+            ],
+            "op": "like"
+          },
+          "revision_notes": [
+            "Authorization requires that the file code matches or carries a controlled-transaction prefix. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the file code matches or carries a controlled-transaction prefix. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V5",
+            "meaning": "the file code matches or carries a controlled-transaction prefix",
+            "reads": "EscrowFile.fileCode"
+          }
+        },
+        "V6": {
+          "allowed_forms": [
+            "obligation"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "obligation",
+            "rationale": "The source describes a trigger and an additional required consequence; encode that implication independently of bases.",
+            "statement": "When the number of payees on the file crosses a threshold requiring manager clearance, its explicit additional requirement must hold. This does not waive or scope any base.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "threshold": {
+              "type": "Long",
+              "values": [
+                10,
+                2,
+                5
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "threshold": 2
+            },
+            {
+              "threshold": 5
+            },
+            {
+              "threshold": 10
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.payeeCount"
+              },
+              {
+                "name": "threshold",
+                "op": "parameter"
+              }
+            ],
+            "op": "gt"
+          },
+          "requirement": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.payeeCount"
+                      },
+                      {
+                        "name": "threshold",
+                        "op": "parameter"
+                      }
+                    ],
+                    "op": "gt"
+                  }
+                ],
+                "op": "not"
+              },
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "principal.roles"
+                      },
+                      {
+                        "id": "EscrowManager",
+                        "op": "entity",
+                        "type": "Role"
+                      }
+                    ],
+                    "op": "contains"
+                  }
+                ],
+                "op": "any"
+              }
+            ],
+            "op": "any"
+          },
+          "revision_notes": [
+            "Declared synthetic review/acceptance bands measured in payees per escrow file. Source-explicit refill > 0 and production-release defect == 0 remain unchanged.",
+            "When the number of payees on the file crosses a threshold requiring manager clearance, its explicit additional requirement must hold. This does not waive or scope any base.",
+            "Composition rationale: The source describes a trigger and an additional required consequence; encode that implication independently of bases."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "obligation",
+              "rationale": "The source describes a trigger and an additional required consequence; encode that implication independently of bases.",
+              "statement": "When the number of payees on the file crosses a threshold requiring manager clearance, its explicit additional requirement must hold. This does not waive or scope any base.",
+              "target": "@action"
+            },
+            "id": "V6",
+            "meaning": "the number of payees on the file crosses a threshold requiring manager clearance",
+            "reads": "EscrowFile.payeeCount"
+          }
+        },
+        "V8": {
+          "allowed_forms": [
+            "applicability"
+          ],
+          "allowed_targets": [
+            "G1"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "applicability",
+            "rationale": "Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional.",
+            "statement": "Whenever the amount held in escrow crosses a money threshold, enforce this duty: the escrow officer who opened the file may not be the one who approves it clear to close. Outside all selected triggers only this duty stops binding.",
+            "target": "G1"
+          },
+          "parameter_schema": {
+            "threshold": {
+              "type": "Long",
+              "values": [
+                100000000,
+                25000000,
+                5000000
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "threshold": 5000000
+            },
+            {
+              "threshold": 25000000
+            },
+            {
+              "threshold": 100000000
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.heldAmount"
+              },
+              {
+                "name": "threshold",
+                "op": "parameter"
+              }
+            ],
+            "op": "gt"
+          },
+          "revision_notes": [
+            "USD-cent thresholds for property settlement funds and disbursements: $50000, $250000, $1000000. These are synthetic organization policy choices.",
+            "Whenever the amount held in escrow crosses a money threshold, enforce this duty: the escrow officer who opened the file may not be the one who approves it clear to close. Outside all selected triggers only this duty stops binding.",
+            "Composition rationale: Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "applicability",
+              "rationale": "Authored organizational duty threshold, following the original invoice only-when convention. Lifecycle and other gates remain unconditional.",
+              "statement": "Whenever the amount held in escrow crosses a money threshold, enforce this duty: the escrow officer who opened the file may not be the one who approves it clear to close. Outside all selected triggers only this duty stops binding.",
+              "target": "G1"
+            },
+            "id": "V8",
+            "meaning": "the amount held in escrow crosses a money threshold",
+            "reads": "EscrowFile.heldAmount"
+          }
+        },
+        "V9": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the request originates on the corporate network. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "op": "field",
+            "path": "context.onCorporateNetwork"
+          },
+          "revision_notes": [
+            "Authorization requires that the request originates on the corporate network. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the request originates on the corporate network. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V9",
+            "meaning": "the request originates on the corporate network",
+            "reads": "context.onCorporateNetwork"
+          }
+        }
+      },
+      "bases": {
+        "G1": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal"
+              },
+              {
+                "op": "field",
+                "path": "resource.escrowOfficer"
+              }
+            ],
+            "op": "ne"
+          },
+          "signature": "V1",
+          "source": {
+            "id": "G1",
+            "meaning": "the escrow officer who opened the file may not be the one who approves it clear to close",
+            "reads": "principal vs EscrowFile.escrowOfficer",
+            "signature": "V1"
+          }
+        },
+        "G5": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.status"
+              },
+              {
+                "id": "funded",
+                "op": "entity",
+                "type": "EscrowFileStatusValue"
+              }
+            ],
+            "op": "eq"
+          },
+          "signature": "V11",
+          "source": {
+            "id": "G5",
+            "meaning": "a file may be cleared to close only after it has been funded",
+            "reads": "EscrowFile.status",
+            "signature": "V11"
+          }
+        }
+      },
+      "domain_gate": {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.heldAmount"
+              },
+              {
+                "op": "literal",
+                "value": 0
+              }
+            ],
+            "op": "ge"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.payeeCount"
+              },
+              {
+                "op": "literal",
+                "value": 0
+              }
+            ],
+            "op": "ge"
+          }
+        ],
+        "op": "all"
+      },
+      "eligibility": {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "TitleOfficer",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "EscrowManager",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          }
+        ],
+        "op": "any"
+      },
+      "field_bindings": {
+        "EscrowFile.closingDate": "resource.closingDate",
+        "EscrowFile.escrowOfficer": "resource.escrowOfficer",
+        "EscrowFile.fileCode": "resource.fileCode",
+        "EscrowFile.heldAmount": "resource.heldAmount",
+        "EscrowFile.lienStatus": "resource.lienStatus",
+        "EscrowFile.parties": "resource.parties",
+        "EscrowFile.payeeCount": "resource.payeeCount",
+        "EscrowFile.region": "resource.region",
+        "EscrowFile.status": "resource.status",
+        "EscrowFile.titleCleared": "resource.titleCleared",
+        "context.currentTime": "context.currentTime",
+        "context.dualControlVerified": "context.dualControlVerified",
+        "context.onCorporateNetwork": "context.onCorporateNetwork",
+        "user.assignedGroup": "principal.assignedGroup"
+      },
+      "overrides": {},
+      "resource_type": "EscrowFile"
+    },
+    "authorizeDisbursement": {
+      "atoms": {
+        "V10": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the disbursement occurs within the settlement window relative to the closing date. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "window_ms": {
+              "type": "Long",
+              "values": [
+                172800000,
+                259200000,
+                86400000
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "window_ms": 86400000
+            },
+            {
+              "window_ms": 172800000
+            },
+            {
+              "window_ms": 259200000
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "context.currentTime"
+                      },
+                      {
+                        "op": "field",
+                        "path": "resource.escrowFile.closingDate"
+                      }
+                    ],
+                    "op": "time_diff"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "ge"
+              },
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "context.currentTime"
+                      },
+                      {
+                        "op": "field",
+                        "path": "resource.escrowFile.closingDate"
+                      }
+                    ],
+                    "op": "time_diff"
+                  },
+                  {
+                    "name": "window_ms",
+                    "op": "parameter"
+                  }
+                ],
+                "op": "lt"
+              }
+            ],
+            "op": "all"
+          },
+          "revision_notes": [
+            "Authorization requires that the disbursement occurs within the settlement window relative to the closing date. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the disbursement occurs within the settlement window relative to the closing date. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V10",
+            "meaning": "the disbursement occurs within the settlement window relative to the closing date",
+            "reads": "context.currentTime vs Disbursement.escrowFile.closingDate"
+          }
+        },
+        "V12": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the title has been cleared of encumbrances before funds are released. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.escrowFile.titleCleared"
+              },
+              {
+                "op": "literal",
+                "value": true
+              }
+            ],
+            "op": "eq"
+          },
+          "revision_notes": [
+            "Authorization requires that the title has been cleared of encumbrances before funds are released. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the title has been cleared of encumbrances before funds are released. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V12",
+            "meaning": "the title has been cleared of encumbrances before funds are released",
+            "reads": "Disbursement.escrowFile.titleCleared"
+          }
+        },
+        "V13": {
+          "allowed_forms": [
+            "prohibit"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "prohibit",
+            "rationale": "A conflict, self-dealing condition, hold, lock, or already-enabled flag blocks this operation instead of relaxing its safeguards.",
+            "statement": "Authorization is denied when the lien-status tag matches an outstanding-lien condition that blocks release.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "label": {
+              "type": "String",
+              "values": [
+                "outstanding_lien",
+                "tax_lien"
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "label": "outstanding_lien"
+            },
+            {
+              "label": "tax_lien"
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.escrowFile.lienStatus"
+              },
+              {
+                "name": "label",
+                "op": "parameter"
+              }
+            ],
+            "op": "contains"
+          },
+          "revision_notes": [
+            "A selected outstanding-lien label blocks release even when a base is waived.",
+            "Authorization is denied when the lien-status tag matches an outstanding-lien condition that blocks release.",
+            "Composition rationale: A conflict, self-dealing condition, hold, lock, or already-enabled flag blocks this operation instead of relaxing its safeguards."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "prohibit",
+              "rationale": "A conflict, self-dealing condition, hold, lock, or already-enabled flag blocks this operation instead of relaxing its safeguards.",
+              "statement": "Authorization is denied when the lien-status tag matches an outstanding-lien condition that blocks release.",
+              "target": "@action"
+            },
+            "id": "V13",
+            "meaning": "the lien-status tag matches an outstanding-lien condition that blocks release",
+            "reads": "Disbursement.escrowFile.lienStatus"
+          }
+        },
+        "V14": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that dual-control confirmation has been captured for the wire. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "op": "field",
+            "path": "context.dualControlVerified"
+          },
+          "revision_notes": [
+            "Authorization requires that dual-control confirmation has been captured for the wire. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that dual-control confirmation has been captured for the wire. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V14",
+            "meaning": "dual-control confirmation has been captured for the wire",
+            "reads": "context.dualControlVerified"
+          }
+        },
+        "V2": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the principal holds the EscrowManager role required for large releases. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.roles"
+                  },
+                  {
+                    "id": "EscrowManager",
+                    "op": "entity",
+                    "type": "Role"
+                  }
+                ],
+                "op": "contains"
+              }
+            ],
+            "op": "any"
+          },
+          "revision_notes": [
+            "Authorization requires that the principal holds the EscrowManager role required for large releases. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the principal holds the EscrowManager role required for large releases. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V2",
+            "meaning": "the principal holds the EscrowManager role required for large releases",
+            "reads": "principal's role"
+          }
+        },
+        "V3": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the file falls within the authorizing officer's regional hierarchy. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.escrowFile.region"
+              },
+              {
+                "op": "field",
+                "path": "principal.assignedGroup"
+              }
+            ],
+            "op": "in"
+          },
+          "revision_notes": [
+            "Authorization requires that the file falls within the authorizing officer's regional hierarchy. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the file falls within the authorizing officer's regional hierarchy. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V3",
+            "meaning": "the file falls within the authorizing officer's regional hierarchy",
+            "reads": "Disbursement.escrowFile.region"
+          }
+        },
+        "V4": {
+          "allowed_forms": [
+            "obligation"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "obligation",
+            "rationale": "The source describes a trigger and an additional required consequence; encode that implication independently of bases.",
+            "statement": "When the party set includes a payee requiring enhanced due diligence, its explicit additional requirement must hold. This does not waive or scope any base.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.escrowFile.parties"
+              },
+              {
+                "op": "field",
+                "path": "context.enhancedDueDiligenceParties"
+              }
+            ],
+            "op": "contains_any"
+          },
+          "requirement": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.escrowFile.parties"
+                      },
+                      {
+                        "op": "field",
+                        "path": "context.enhancedDueDiligenceParties"
+                      }
+                    ],
+                    "op": "contains_any"
+                  }
+                ],
+                "op": "not"
+              },
+              {
+                "op": "field",
+                "path": "context.enhancedDueDiligenceCompleted"
+              }
+            ],
+            "op": "any"
+          },
+          "revision_notes": [
+            "Trigger on intersection with the request-specific screened-party set, replacing the hard-coded person UID.",
+            "When this trigger holds, enhanced due diligence for every flagged party on this request is complete. This is a trusted request-specific host attestation.",
+            "When the party set includes a payee requiring enhanced due diligence, its explicit additional requirement must hold. This does not waive or scope any base.",
+            "Composition rationale: The source describes a trigger and an additional required consequence; encode that implication independently of bases."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "obligation",
+              "rationale": "The source describes a trigger and an additional required consequence; encode that implication independently of bases.",
+              "statement": "When the party set includes a payee requiring enhanced due diligence, its explicit additional requirement must hold. This does not waive or scope any base.",
+              "target": "@action"
+            },
+            "id": "V4",
+            "meaning": "the party set includes a payee requiring enhanced due diligence",
+            "reads": "Disbursement.escrowFile.parties"
+          }
+        },
+        "V5": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the file code matches or carries a controlled-transaction prefix. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "pattern": {
+              "type": "String",
+              "values": [
+                "CONTROLLED-*",
+                "SETTLEMENT-*"
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "pattern": "CONTROLLED-*"
+            },
+            {
+              "pattern": "SETTLEMENT-*"
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.escrowFile.fileCode"
+              },
+              {
+                "name": "pattern",
+                "op": "parameter"
+              }
+            ],
+            "op": "like"
+          },
+          "revision_notes": [
+            "Authorization requires that the file code matches or carries a controlled-transaction prefix. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the file code matches or carries a controlled-transaction prefix. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V5",
+            "meaning": "the file code matches or carries a controlled-transaction prefix",
+            "reads": "Disbursement.escrowFile.fileCode"
+          }
+        },
+        "V7": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the remaining escrow balance after the disbursement must stay non-negative. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.escrowFile.heldAmount"
+                  },
+                  {
+                    "op": "field",
+                    "path": "resource.amount"
+                  }
+                ],
+                "op": "sub"
+              },
+              {
+                "op": "literal",
+                "value": 0
+              }
+            ],
+            "op": "ge"
+          },
+          "revision_notes": [
+            "Authorization requires that the remaining escrow balance after the disbursement must stay non-negative. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the remaining escrow balance after the disbursement must stay non-negative. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V7",
+            "meaning": "the remaining escrow balance after the disbursement must stay non-negative",
+            "reads": "Disbursement.escrowFile.heldAmount - Disbursement.amount"
+          }
+        },
+        "V8": {
+          "allowed_forms": [
+            "obligation"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "obligation",
+            "rationale": "Use a stricter existing managerial role rather than restating ordinary eligibility or inventing a qualification.",
+            "required_roles": [
+              "EscrowManager"
+            ],
+            "statement": "Above the selected disbursement threshold the requester must be an EscrowManager; a SeniorEscrowOfficer alone is insufficient. Every base remains binding.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "threshold": {
+              "type": "Long",
+              "values": [
+                100000000,
+                25000000,
+                5000000
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "threshold": 5000000
+            },
+            {
+              "threshold": 25000000
+            },
+            {
+              "threshold": 100000000
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.amount"
+              },
+              {
+                "name": "threshold",
+                "op": "parameter"
+              }
+            ],
+            "op": "gt"
+          },
+          "requirement": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.amount"
+                      },
+                      {
+                        "name": "threshold",
+                        "op": "parameter"
+                      }
+                    ],
+                    "op": "gt"
+                  }
+                ],
+                "op": "not"
+              },
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "principal.roles"
+                      },
+                      {
+                        "id": "EscrowManager",
+                        "op": "entity",
+                        "type": "Role"
+                      }
+                    ],
+                    "op": "contains"
+                  }
+                ],
+                "op": "any"
+              }
+            ],
+            "op": "any"
+          },
+          "revision_notes": [
+            "USD-cent thresholds for property settlement funds and disbursements: $50000, $250000, $1000000. These are synthetic organization policy choices.",
+            "Above the selected disbursement threshold the requester must be an EscrowManager; a SeniorEscrowOfficer alone is insufficient. Every base remains binding.",
+            "Composition rationale: Use a stricter existing managerial role rather than restating ordinary eligibility or inventing a qualification."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "obligation",
+              "rationale": "Use a stricter existing managerial role rather than restating ordinary eligibility or inventing a qualification.",
+              "required_roles": [
+                "EscrowManager"
+              ],
+              "statement": "Above the selected disbursement threshold the requester must be an EscrowManager; a SeniorEscrowOfficer alone is insufficient. Every base remains binding.",
+              "target": "@action"
+            },
+            "id": "V8",
+            "meaning": "the disbursement amount crosses a money threshold requiring elevated authority",
+            "reads": "Disbursement.amount"
+          }
+        },
+        "V9": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the request originates on the corporate network. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "op": "field",
+            "path": "context.onCorporateNetwork"
+          },
+          "revision_notes": [
+            "Authorization requires that the request originates on the corporate network. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the request originates on the corporate network. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V9",
+            "meaning": "the request originates on the corporate network",
+            "reads": "context.onCorporateNetwork"
+          }
+        }
+      },
+      "bases": {
+        "G4": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.authorityLevel"
+              },
+              {
+                "op": "field",
+                "path": "resource.escrowFile.disbursementTier"
+              }
+            ],
+            "op": "ge"
+          },
+          "signature": "V6",
+          "source": {
+            "id": "G4",
+            "meaning": "the officer's granted authority level must dominate the file's disbursement tier",
+            "reads": "principal.authorityLevel vs Disbursement.escrowFile.disbursementTier",
+            "signature": "V6"
+          }
+        },
+        "G5": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.escrowFile.status"
+              },
+              {
+                "id": "cleared_to_close",
+                "op": "entity",
+                "type": "EscrowFileStatusValue"
+              }
+            ],
+            "op": "eq"
+          },
+          "signature": "V11",
+          "source": {
+            "id": "G5",
+            "meaning": "funds may be disbursed only after the file has been cleared to close",
+            "reads": "Disbursement.escrowFile.status",
+            "signature": "V11"
+          }
+        }
+      },
+      "domain_gate": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2000-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  },
+                  {
+                    "op": "field",
+                    "path": "context.currentTime"
+                  }
+                ],
+                "op": "time_le"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.currentTime"
+                  },
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2100-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  }
+                ],
+                "op": "time_le"
+              }
+            ],
+            "op": "all"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.authorityLevel"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.authorityLevel"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.authorityLevel"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 2
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.authorityLevel"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 3
+                  }
+                ],
+                "op": "eq"
+              }
+            ],
+            "op": "any"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.amount"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "ge"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.amount"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1000000000
+                  }
+                ],
+                "op": "le"
+              }
+            ],
+            "op": "all"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2000-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  },
+                  {
+                    "op": "field",
+                    "path": "resource.escrowFile.closingDate"
+                  }
+                ],
+                "op": "time_le"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.escrowFile.closingDate"
+                  },
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2100-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  }
+                ],
+                "op": "time_le"
+              }
+            ],
+            "op": "all"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.escrowFile.disbursementTier"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.escrowFile.disbursementTier"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.escrowFile.disbursementTier"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 2
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.escrowFile.disbursementTier"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 3
+                  }
+                ],
+                "op": "eq"
+              }
+            ],
+            "op": "any"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.escrowFile.heldAmount"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "ge"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.escrowFile.heldAmount"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1000000000
+                  }
+                ],
+                "op": "le"
+              }
+            ],
+            "op": "all"
+          }
+        ],
+        "op": "all"
+      },
+      "eligibility": {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "SeniorEscrowOfficer",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "EscrowManager",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          }
+        ],
+        "op": "any"
+      },
+      "field_bindings": {
+        "Disbursement.amount": "resource.amount",
+        "Disbursement.escrowFile.closingDate": "resource.escrowFile.closingDate",
+        "Disbursement.escrowFile.disbursementTier": "resource.escrowFile.disbursementTier",
+        "Disbursement.escrowFile.fileCode": "resource.escrowFile.fileCode",
+        "Disbursement.escrowFile.heldAmount": "resource.escrowFile.heldAmount",
+        "Disbursement.escrowFile.lienStatus": "resource.escrowFile.lienStatus",
+        "Disbursement.escrowFile.parties": "resource.escrowFile.parties",
+        "Disbursement.escrowFile.region": "resource.escrowFile.region",
+        "Disbursement.escrowFile.status": "resource.escrowFile.status",
+        "Disbursement.escrowFile.titleCleared": "resource.escrowFile.titleCleared",
+        "context.currentTime": "context.currentTime",
+        "context.dualControlVerified": "context.dualControlVerified",
+        "context.emergencyDeclared": "context.emergencyDeclared",
+        "context.onCorporateNetwork": "context.onCorporateNetwork",
+        "principal.authorityLevel": "principal.authorityLevel",
+        "user.assignedGroup": "principal.assignedGroup"
+      },
+      "overrides": {
+        "G3": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "context.emergencyDeclared"
+              },
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "principal.roles"
+                      },
+                      {
+                        "id": "SeniorEscrowOfficer",
+                        "op": "entity",
+                        "type": "Role"
+                      }
+                    ],
+                    "op": "contains"
+                  },
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "principal.roles"
+                      },
+                      {
+                        "id": "EscrowManager",
+                        "op": "entity",
+                        "type": "Role"
+                      }
+                    ],
+                    "op": "contains"
+                  }
+                ],
+                "op": "any"
+              }
+            ],
+            "op": "all"
+          },
+          "source": {
+            "id": "G3",
+            "meaning": "a declared settlement emergency lets an officer authorize a disbursement for a tier above their granted authority, subject to audit adjudication",
+            "overrides": [
+              "G4"
+            ],
+            "reads": "context.emergencyDeclared",
+            "requires_adjudication": true
+          },
+          "targets": [
+            "G4"
+          ]
+        }
+      },
+      "resource_type": "Disbursement"
+    }
+  },
+  "business_review_revision": "2026-10-23-r1",
+  "context": {
+    "currentTime": {
+      "type": "datetime"
+    },
+    "dualControlVerified": {
+      "type": "Bool"
+    },
+    "emergencyDeclared": {
+      "type": "Bool"
+    },
+    "enhancedDueDiligenceCompleted": {
+      "description": "enhanced due diligence for every flagged party on this request is complete",
+      "type": "Bool"
+    },
+    "enhancedDueDiligenceParties": {
+      "description": "screening system identifies all parties requiring enhanced due diligence for this request",
+      "type": "Set<User>"
+    },
+    "onCorporateNetwork": {
+      "type": "Bool"
+    }
+  },
+  "contract": "complete-spec-v4",
+  "decisions": [
+    "Added User.assignedGroup: assigned hierarchy scope for resource group conditions",
+    "Added User.authorityLevel: source G4 principal attribute; uses the resource dominance scale",
+    "Added context.enhancedDueDiligenceCompleted: enhanced due diligence for every flagged party on this request is complete",
+    "Added context.enhancedDueDiligenceParties: screening system identifies all parties requiring enhanced due diligence for this request",
+    "All source identities denote User entities; role sets may overlap without implicit exclusivity.",
+    "All timestamps read by predicates are bounded inclusively to 2000-01-01 through 2100-01-01 UTC; requests outside the explicit domain gate deny.",
+    "AuditLog.note is source documentation, not an attribute.",
+    "Business revision v2: catalogs are declared synthetic organizational policies, not empirical norms. Selected-atom obligations are mandatory in both forms and cannot be waived by a base exception or override.",
+    "Money is nonnegative integer USD cents, at most 1,000,000,000. Counts are nonnegative integers at most 1,000,000 unless a narrower dictionary is declared.",
+    "Request context is treated as trusted input from the host; authorization does not attest network, emergency, signature, or scheduling facts.",
+    "Retained source repairs: exact lifecycle states, linked course roster, explicit promotion/filing facts, independent calibration expiry, comp expiry, and guarded override eligibility are intentional experiment definitions. Their typed ASTs and field descriptions, not the ambiguous source shorthand, are authoritative.",
+    "Rules operate on snapshots. A selected lifecycle base requires the exact named state unless its predicate explicitly lists alternatives.",
+    "Source business descriptions are retained for audit; the authored typed predicates and dictionaries define the experiment. No statutory compliance claim is made.",
+    "Source tag kinds are represented by Set<String>. Group membership is reflexive and transitive Cedar entity ancestry.",
+    "approveClearToClose/V4: This implication is mandatory whenever the atom is selected, in either form; it survives all base exceptions and overrides.",
+    "approveClearToClose/V4: Trigger on intersection with the request-specific screened-party set, replacing the hard-coded person UID.",
+    "approveClearToClose/V4: When this trigger holds, enhanced due diligence for every flagged party on this request is complete. This is a trusted request-specific host attestation.",
+    "approveClearToClose/V6: Declared synthetic review/acceptance bands measured in payees per escrow file. Source-explicit refill > 0 and production-release defect == 0 remain unchanged.",
+    "approveClearToClose/V6: This implication is mandatory whenever the atom is selected, in either form; it survives all base exceptions and overrides.",
+    "approveClearToClose/V6: When this trigger holds, the requester must hold one of: EscrowManager.",
+    "approveClearToClose/V8: USD-cent thresholds for property settlement funds and disbursements: $50000, $250000, $1000000. These are synthetic organization policy choices.",
+    "authorizeDisbursement/V13: A selected outstanding-lien label blocks release even when a base is waived.",
+    "authorizeDisbursement/V13: This implication is mandatory whenever the atom is selected, in either form; it survives all base exceptions and overrides.",
+    "authorizeDisbursement/V4: This implication is mandatory whenever the atom is selected, in either form; it survives all base exceptions and overrides.",
+    "authorizeDisbursement/V4: Trigger on intersection with the request-specific screened-party set, replacing the hard-coded person UID.",
+    "authorizeDisbursement/V4: When this trigger holds, enhanced due diligence for every flagged party on this request is complete. This is a trusted request-specific host attestation.",
+    "authorizeDisbursement/V8: This implication is mandatory whenever the atom is selected, in either form; it survives all base exceptions and overrides.",
+    "authorizeDisbursement/V8: USD-cent thresholds for property settlement funds and disbursements: $50000, $250000, $1000000. These are synthetic organization policy choices.",
+    "authorizeDisbursement/V8: When this trigger holds, the requester must hold one of: SeniorEscrowOfficer, EscrowManager."
+  ],
+  "domain": "escrow_disbursement",
+  "entities": {
+    "AuditLog": {
+      "attributes": {}
+    },
+    "Disbursement": {
+      "attributes": {
+        "amount": {
+          "bounds": [
+            0,
+            1000000000
+          ],
+          "type": "Long",
+          "unit": "USD cents"
+        },
+        "authorizedBy": {
+          "type": "User"
+        },
+        "escrowFile": {
+          "type": "EscrowFile"
+        },
+        "wiredAt": {
+          "type": "datetime"
+        }
+      }
+    },
+    "EscrowFile": {
+      "attributes": {
+        "closingDate": {
+          "type": "datetime"
+        },
+        "disbursementTier": {
+          "bounds": [
+            0,
+            3
+          ],
+          "description": "Synthetic ordinal scale; the same integer rank denotes the required authority tier when used by G4. No physical magnitude or external standard is implied.",
+          "levels": {
+            "manager_review": 3,
+            "routine": 0,
+            "senior_review": 2,
+            "supervised": 1
+          },
+          "type": "Long"
+        },
+        "escrowOfficer": {
+          "type": "User"
+        },
+        "fileCode": {
+          "type": "String"
+        },
+        "heldAmount": {
+          "bounds": [
+            0,
+            1000000000
+          ],
+          "type": "Long",
+          "unit": "USD cents"
+        },
+        "lienStatus": {
+          "representation": "zero or more label strings",
+          "type": "Set<String>"
+        },
+        "parties": {
+          "type": "Set<User>"
+        },
+        "payeeCount": {
+          "bounds": [
+            0,
+            1000000
+          ],
+          "type": "Long",
+          "unit": "payees per escrow file"
+        },
+        "region": {
+          "type": "Group"
+        },
+        "status": {
+          "type": "EscrowFileStatusValue"
+        },
+        "titleCleared": {
+          "type": "Bool"
+        }
+      }
+    },
+    "EscrowFileStatusValue": {
+      "enum": [
+        "opened",
+        "funded",
+        "cleared_to_close",
+        "disbursed",
+        "reconciled"
+      ]
+    },
+    "Group": {
+      "attributes": {},
+      "member_of": [
+        "Group"
+      ]
+    },
+    "Role": {
+      "enum": [
+        "EscrowOfficer",
+        "SeniorEscrowOfficer",
+        "EscrowManager",
+        "TitleOfficer",
+        "Auditor"
+      ]
+    },
+    "User": {
+      "attributes": {
+        "assignedGroup": {
+          "description": "assigned hierarchy scope for resource group conditions",
+          "type": "Group"
+        },
+        "authorityLevel": {
+          "bounds": [
+            0,
+            3
+          ],
+          "description": "Synthetic ordinal scale; the same integer rank denotes the required authority tier when used by G4. No physical magnitude or external standard is implied.",
+          "levels": {
+            "manager_review": 3,
+            "routine": 0,
+            "senior_review": 2,
+            "supervised": 1
+          },
+          "type": "Long"
+        },
+        "roles": {
+          "type": "Set<Role>"
+        }
+      }
+    }
+  },
+  "revision_contract": "business-composition-v4",
+  "source_action_chains": [
+    {
+      "chain": [
+        "approveClearToClose",
+        "authorizeDisbursement"
+      ],
+      "linked_by": [
+        "status",
+        "escrowOfficer",
+        "disbursementTier"
+      ],
+      "shared_resource": "EscrowFile"
+    }
+  ],
+  "source_sha256": "2907de8ce880b86d975423e46cde808f78a30bb93dc0a767cb3b4f0643c07c22",
+  "status": "authored experimental assumptions; not human semantic approval",
+  "version": "business-registry-v4"
+}

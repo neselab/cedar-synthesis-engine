@@ -1,0 +1,38 @@
+{
+  "domain": "kubernetes_rbac",
+  "format_version": "complete-spec-v4",
+  "grouping": {
+    "applicability_triggers": "any",
+    "exception": "any",
+    "requirements": "all"
+  },
+  "parts": [
+    {
+      "anchor": "readSecret",
+      "bases": [
+        "G4",
+        "G5"
+      ],
+      "conditions": [
+        {
+          "atom": "V9",
+          "form": "require",
+          "parameters": {
+            "cidr": "10.0.0.0/8"
+          },
+          "target": "@action"
+        }
+      ],
+      "overrides": []
+    }
+  ],
+  "provenance": {
+    "arithmetic_safety_patches": [],
+    "kind": "less-specific-200 revised intent",
+    "source_case": "case-174",
+    "source_spec_sha256": "43b1917743921003a0daf1186866607b672a51a55ff364d5b48033f1485b56e7",
+    "transformation": "Drop only artificial 2000-2100 timestamp windows and catalog maxima 1000000/1000000000; retain all other gates."
+  },
+  "registry_sha256": "38437ac2a32d0ea9b77cf3976abe08683b51805688d856391c7884e18d4d26aa",
+  "source_sha256": "2907de8ce880b86d975423e46cde808f78a30bb93dc0a767cb3b4f0643c07c22"
+}

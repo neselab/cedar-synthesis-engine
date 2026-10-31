@@ -1,0 +1,1748 @@
+{
+  "anchors": {
+    "approveChange": {
+      "atoms": {
+        "V10": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the requested maintenance window lies within the approvable scheduling horizon. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "horizon_ms": {
+              "type": "Long",
+              "values": [
+                1209600000,
+                2592000000,
+                604800000
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "horizon_ms": 604800000
+            },
+            {
+              "horizon_ms": 1209600000
+            },
+            {
+              "horizon_ms": 2592000000
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.maintenanceWindowStart"
+                      },
+                      {
+                        "op": "field",
+                        "path": "context.currentTime"
+                      }
+                    ],
+                    "op": "time_diff"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "ge"
+              },
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.maintenanceWindowStart"
+                      },
+                      {
+                        "op": "field",
+                        "path": "context.currentTime"
+                      }
+                    ],
+                    "op": "time_diff"
+                  },
+                  {
+                    "name": "horizon_ms",
+                    "op": "parameter"
+                  }
+                ],
+                "op": "le"
+              }
+            ],
+            "op": "all"
+          },
+          "revision_notes": [
+            "Authorization requires that the requested maintenance window lies within the approvable scheduling horizon. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the requested maintenance window lies within the approvable scheduling horizon. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V10",
+            "meaning": "the requested maintenance window lies within the approvable scheduling horizon",
+            "reads": "ChangeRequest.maintenanceWindowStart"
+          }
+        },
+        "V12": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the emergency-change flag is set on the request. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.emergencyChange"
+              },
+              {
+                "op": "literal",
+                "value": true
+              }
+            ],
+            "op": "eq"
+          },
+          "revision_notes": [
+            "Authorization requires that the emergency-change flag is set on the request. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the emergency-change flag is set on the request. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V12",
+            "meaning": "the emergency-change flag is set on the request",
+            "reads": "ChangeRequest.emergencyChange"
+          }
+        },
+        "V13": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the change-category tag marks a core or transport change. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "label": {
+              "type": "String",
+              "values": [
+                "core",
+                "transport"
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "label": "core"
+            },
+            {
+              "label": "transport"
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.changeCategory"
+              },
+              {
+                "name": "label",
+                "op": "parameter"
+              }
+            ],
+            "op": "contains"
+          },
+          "revision_notes": [
+            "Authorization requires that the change-category tag marks a core or transport change. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the change-category tag marks a core or transport change. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V13",
+            "meaning": "the change-category tag marks a core or transport change",
+            "reads": "ChangeRequest.changeCategory"
+          }
+        },
+        "V2": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the approver holds the CAB-approver role required for high-risk changes. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.roles"
+                  },
+                  {
+                    "id": "CABApprover",
+                    "op": "entity",
+                    "type": "Role"
+                  }
+                ],
+                "op": "contains"
+              }
+            ],
+            "op": "any"
+          },
+          "revision_notes": [
+            "Authorization requires that the approver holds the CAB-approver role required for high-risk changes. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the approver holds the CAB-approver role required for high-risk changes. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V2",
+            "meaning": "the approver holds the CAB-approver role required for high-risk changes",
+            "reads": "principal.role"
+          }
+        },
+        "V5": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the change code carries a restricted-element prefix. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "pattern": {
+              "type": "String",
+              "values": [
+                "CORE-*",
+                "TRANSPORT-*"
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "pattern": "CORE-*"
+            },
+            {
+              "pattern": "TRANSPORT-*"
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.changeCode"
+              },
+              {
+                "name": "pattern",
+                "op": "parameter"
+              }
+            ],
+            "op": "like"
+          },
+          "revision_notes": [
+            "Authorization requires that the change code carries a restricted-element prefix. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the change code carries a restricted-element prefix. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V5",
+            "meaning": "the change code carries a restricted-element prefix",
+            "reads": "ChangeRequest.changeCode"
+          }
+        },
+        "V7": {
+          "allowed_forms": [
+            "obligation"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "obligation",
+            "rationale": "A descriptive quantity threshold without a suitable duty target is completed as an explicitly authored additional review, not as a minimum transaction size or lifecycle waiver.",
+            "required_fact": "approveChangeV7ReviewCompleted",
+            "statement": "When the affected-node count plus rollback-step count crosses a combined complexity threshold, the additional review recorded by approveChangeV7ReviewCompleted must be complete; smaller requests do not need this additional review.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "threshold": {
+              "type": "Long",
+              "values": [
+                10,
+                150,
+                50
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "threshold": 10
+            },
+            {
+              "threshold": 50
+            },
+            {
+              "threshold": 150
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.affectedNodeCount"
+                  },
+                  {
+                    "op": "field",
+                    "path": "resource.rollbackStepCount"
+                  }
+                ],
+                "op": "add"
+              },
+              {
+                "name": "threshold",
+                "op": "parameter"
+              }
+            ],
+            "op": "gt"
+          },
+          "requirement": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "op": "field",
+                            "path": "resource.affectedNodeCount"
+                          },
+                          {
+                            "op": "field",
+                            "path": "resource.rollbackStepCount"
+                          }
+                        ],
+                        "op": "add"
+                      },
+                      {
+                        "name": "threshold",
+                        "op": "parameter"
+                      }
+                    ],
+                    "op": "gt"
+                  }
+                ],
+                "op": "not"
+              },
+              {
+                "op": "field",
+                "path": "context.approveChangeV7ReviewCompleted"
+              }
+            ],
+            "op": "any"
+          },
+          "revision_notes": [
+            "Declared complexity points: one point per affected node plus one per rollback step; a synthetic scoring rule, not a physical unit.",
+            "When the affected-node count plus rollback-step count crosses a combined complexity threshold, the additional review recorded by approveChangeV7ReviewCompleted must be complete; smaller requests do not need this additional review.",
+            "Composition rationale: A descriptive quantity threshold without a suitable duty target is completed as an explicitly authored additional review, not as a minimum transaction size or lifecycle waiver."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "obligation",
+              "rationale": "A descriptive quantity threshold without a suitable duty target is completed as an explicitly authored additional review, not as a minimum transaction size or lifecycle waiver.",
+              "required_fact": "approveChangeV7ReviewCompleted",
+              "statement": "When the affected-node count plus rollback-step count crosses a combined complexity threshold, the additional review recorded by approveChangeV7ReviewCompleted must be complete; smaller requests do not need this additional review.",
+              "target": "@action"
+            },
+            "id": "V7",
+            "meaning": "the affected-node count plus rollback-step count crosses a combined complexity threshold",
+            "reads": "ChangeRequest.affectedNodeCount + ChangeRequest.rollbackStepCount"
+          }
+        },
+        "V8": {
+          "allowed_forms": [
+            "obligation"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "obligation",
+            "rationale": "The source describes a trigger and an additional required consequence; encode that implication independently of bases.",
+            "statement": "When the estimated change cost crosses a money threshold requiring CAB sign-off, its explicit additional requirement must hold. This does not waive or scope any base.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "threshold": {
+              "type": "Long",
+              "values": [
+                100000,
+                1000000,
+                10000000
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "threshold": 100000
+            },
+            {
+              "threshold": 1000000
+            },
+            {
+              "threshold": 10000000
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.estimatedCost"
+              },
+              {
+                "name": "threshold",
+                "op": "parameter"
+              }
+            ],
+            "op": "gt"
+          },
+          "requirement": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.estimatedCost"
+                      },
+                      {
+                        "name": "threshold",
+                        "op": "parameter"
+                      }
+                    ],
+                    "op": "gt"
+                  }
+                ],
+                "op": "not"
+              },
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "principal.roles"
+                      },
+                      {
+                        "id": "CABApprover",
+                        "op": "entity",
+                        "type": "Role"
+                      }
+                    ],
+                    "op": "contains"
+                  }
+                ],
+                "op": "any"
+              }
+            ],
+            "op": "any"
+          },
+          "revision_notes": [
+            "USD-cent thresholds for planned infrastructure change costs: $1000, $10000, $100000. These are synthetic organization policy choices.",
+            "When the estimated change cost crosses a money threshold requiring CAB sign-off, its explicit additional requirement must hold. This does not waive or scope any base.",
+            "Composition rationale: The source describes a trigger and an additional required consequence; encode that implication independently of bases."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "obligation",
+              "rationale": "The source describes a trigger and an additional required consequence; encode that implication independently of bases.",
+              "statement": "When the estimated change cost crosses a money threshold requiring CAB sign-off, its explicit additional requirement must hold. This does not waive or scope any base.",
+              "target": "@action"
+            },
+            "id": "V8",
+            "meaning": "the estimated change cost crosses a money threshold requiring CAB sign-off",
+            "reads": "ChangeRequest.estimatedCost"
+          }
+        }
+      },
+      "bases": {
+        "G4": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.authorityLevel"
+              },
+              {
+                "op": "field",
+                "path": "resource.changeRisk"
+              }
+            ],
+            "op": "ge"
+          },
+          "signature": "V6",
+          "source": {
+            "id": "G4",
+            "meaning": "the approver's granted change authority level must dominate the change request's assessed risk level",
+            "reads": "principal.authorityLevel vs ChangeRequest.changeRisk",
+            "signature": "V6"
+          }
+        },
+        "G5": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.status"
+              },
+              {
+                "id": "assessed",
+                "op": "entity",
+                "type": "ChangeRequestStatusValue"
+              }
+            ],
+            "op": "eq"
+          },
+          "signature": "V11",
+          "source": {
+            "id": "G5",
+            "meaning": "a change may be approved only after it has been assessed",
+            "reads": "ChangeRequest.status",
+            "signature": "V11"
+          }
+        }
+      },
+      "domain_gate": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.authorityLevel"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.authorityLevel"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.authorityLevel"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 2
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.authorityLevel"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 3
+                  }
+                ],
+                "op": "eq"
+              }
+            ],
+            "op": "any"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.affectedNodeCount"
+              },
+              {
+                "op": "literal",
+                "value": 0
+              }
+            ],
+            "op": "ge"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.changeRisk"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.changeRisk"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.changeRisk"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 2
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.changeRisk"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 3
+                  }
+                ],
+                "op": "eq"
+              }
+            ],
+            "op": "any"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.estimatedCost"
+              },
+              {
+                "op": "literal",
+                "value": 0
+              }
+            ],
+            "op": "ge"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.rollbackStepCount"
+              },
+              {
+                "op": "literal",
+                "value": 0
+              }
+            ],
+            "op": "ge"
+          }
+        ],
+        "op": "all"
+      },
+      "eligibility": {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "ChangeManager",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "CABApprover",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          }
+        ],
+        "op": "any"
+      },
+      "field_bindings": {
+        "ChangeRequest.affectedNodeCount": "resource.affectedNodeCount",
+        "ChangeRequest.changeCategory": "resource.changeCategory",
+        "ChangeRequest.changeCode": "resource.changeCode",
+        "ChangeRequest.changeRisk": "resource.changeRisk",
+        "ChangeRequest.emergencyChange": "resource.emergencyChange",
+        "ChangeRequest.estimatedCost": "resource.estimatedCost",
+        "ChangeRequest.maintenanceWindowStart": "resource.maintenanceWindowStart",
+        "ChangeRequest.rollbackStepCount": "resource.rollbackStepCount",
+        "ChangeRequest.status": "resource.status",
+        "context.currentTime": "context.currentTime",
+        "context.majorIncidentDeclared": "context.majorIncidentDeclared",
+        "principal.authorityLevel": "principal.authorityLevel"
+      },
+      "overrides": {
+        "G3": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "context.majorIncidentDeclared"
+              },
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "principal.roles"
+                      },
+                      {
+                        "id": "ChangeManager",
+                        "op": "entity",
+                        "type": "Role"
+                      }
+                    ],
+                    "op": "contains"
+                  }
+                ],
+                "op": "any"
+              }
+            ],
+            "op": "all"
+          },
+          "source": {
+            "id": "G3",
+            "meaning": "a declared major incident lets a change manager approve a change above their granted authority level, overriding authority dominance",
+            "overrides": [
+              "G4"
+            ],
+            "reads": "context.majorIncidentDeclared",
+            "requires_adjudication": true
+          },
+          "targets": [
+            "G4"
+          ]
+        }
+      },
+      "resource_type": "ChangeRequest"
+    },
+    "implementChange": {
+      "atoms": {
+        "V10": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the implementation begins within the change's approved maintenance window. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "window_ms": {
+              "type": "Long",
+              "values": [
+                14400000,
+                28800000,
+                7200000
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "window_ms": 7200000
+            },
+            {
+              "window_ms": 14400000
+            },
+            {
+              "window_ms": 28800000
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "context.currentTime"
+                      },
+                      {
+                        "op": "field",
+                        "path": "resource.maintenanceWindowStart"
+                      }
+                    ],
+                    "op": "time_diff"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "ge"
+              },
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "context.currentTime"
+                      },
+                      {
+                        "op": "field",
+                        "path": "resource.maintenanceWindowStart"
+                      }
+                    ],
+                    "op": "time_diff"
+                  },
+                  {
+                    "name": "window_ms",
+                    "op": "parameter"
+                  }
+                ],
+                "op": "lt"
+              }
+            ],
+            "op": "all"
+          },
+          "revision_notes": [
+            "Authorization requires that the implementation begins within the change's approved maintenance window. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the implementation begins within the change's approved maintenance window. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V10",
+            "meaning": "the implementation begins within the change's approved maintenance window",
+            "reads": "context.currentTime vs ChangeRequest.maintenanceWindowStart"
+          }
+        },
+        "V12": {
+          "allowed_forms": [
+            "exception"
+          ],
+          "allowed_targets": [
+            "V10"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "exception",
+            "rationale": "The source explicitly says emergency change relaxes the standard schedule; it does not waive separation of duty, lifecycle, network, or senior-engineer obligations.",
+            "statement": "An emergency change waives only the selected approved-maintenance-window requirement V10. Every other requirement remains binding.",
+            "target": "V10"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.emergencyChange"
+              },
+              {
+                "op": "literal",
+                "value": true
+              }
+            ],
+            "op": "eq"
+          },
+          "revision_notes": [
+            "The emergency flag is a trigger only. The selected explicit form/target defines its effect; it does not implicitly waive V10 or invent a schedule override.",
+            "An emergency change waives only the selected approved-maintenance-window requirement V10. Every other requirement remains binding.",
+            "Composition rationale: The source explicitly says emergency change relaxes the standard schedule; it does not waive separation of duty, lifecycle, network, or senior-engineer obligations."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "exception",
+              "rationale": "The source explicitly says emergency change relaxes the standard schedule; it does not waive separation of duty, lifecycle, network, or senior-engineer obligations.",
+              "statement": "An emergency change waives only the selected approved-maintenance-window requirement V10. Every other requirement remains binding.",
+              "target": "V10"
+            },
+            "id": "V12",
+            "meaning": "the emergency-change flag is set, relaxing the standard schedule",
+            "reads": "ChangeRequest.emergencyChange"
+          }
+        },
+        "V14": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that a change-freeze waiver is present on the request environment. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "op": "field",
+            "path": "context.freezeWaiverGranted"
+          },
+          "revision_notes": [
+            "Authorization requires that a change-freeze waiver is present on the request environment. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that a change-freeze waiver is present on the request environment. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V14",
+            "meaning": "a change-freeze waiver is present on the request environment",
+            "reads": "context.freezeWaiverGranted"
+          }
+        },
+        "V5": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the change code matches the engineer's assigned work-package prefix. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "pattern": {
+              "type": "String",
+              "values": [
+                "CORE-*",
+                "TRANSPORT-*"
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "pattern": "CORE-*"
+            },
+            {
+              "pattern": "TRANSPORT-*"
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "principal.assignedCodePattern"
+                  },
+                  {
+                    "name": "pattern",
+                    "op": "parameter"
+                  }
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.changeCode"
+                  },
+                  {
+                    "name": "pattern",
+                    "op": "parameter"
+                  }
+                ],
+                "op": "like"
+              }
+            ],
+            "op": "all"
+          },
+          "revision_notes": [
+            "Authorization requires that the change code matches the engineer's assigned work-package prefix. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the change code matches the engineer's assigned work-package prefix. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V5",
+            "meaning": "the change code matches the engineer's assigned work-package prefix",
+            "reads": "ChangeRequest.changeCode"
+          }
+        },
+        "V6": {
+          "allowed_forms": [
+            "obligation"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "obligation",
+            "rationale": "The source describes a trigger and an additional required consequence; encode that implication independently of bases.",
+            "statement": "When the affected-node count crosses a threshold requiring a senior engineer, its explicit additional requirement must hold. This does not waive or scope any base.",
+            "target": "@action"
+          },
+          "parameter_schema": {
+            "threshold": {
+              "type": "Long",
+              "values": [
+                100,
+                25,
+                5
+              ]
+            }
+          },
+          "parameter_sets": [
+            {
+              "threshold": 5
+            },
+            {
+              "threshold": 25
+            },
+            {
+              "threshold": 100
+            }
+          ],
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.affectedNodeCount"
+              },
+              {
+                "name": "threshold",
+                "op": "parameter"
+              }
+            ],
+            "op": "gt"
+          },
+          "requirement": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "resource.affectedNodeCount"
+                      },
+                      {
+                        "name": "threshold",
+                        "op": "parameter"
+                      }
+                    ],
+                    "op": "gt"
+                  }
+                ],
+                "op": "not"
+              },
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "principal.roles"
+                      },
+                      {
+                        "id": "SeniorEngineer",
+                        "op": "entity",
+                        "type": "Role"
+                      }
+                    ],
+                    "op": "contains"
+                  }
+                ],
+                "op": "any"
+              }
+            ],
+            "op": "any"
+          },
+          "revision_notes": [
+            "Declared synthetic review/acceptance bands measured in network nodes affected by a change. Source-explicit refill > 0 and production-release defect == 0 remain unchanged.",
+            "When the affected-node count crosses a threshold requiring a senior engineer, its explicit additional requirement must hold. This does not waive or scope any base.",
+            "Composition rationale: The source describes a trigger and an additional required consequence; encode that implication independently of bases."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "obligation",
+              "rationale": "The source describes a trigger and an additional required consequence; encode that implication independently of bases.",
+              "statement": "When the affected-node count crosses a threshold requiring a senior engineer, its explicit additional requirement must hold. This does not waive or scope any base.",
+              "target": "@action"
+            },
+            "id": "V6",
+            "meaning": "the affected-node count crosses a threshold requiring a senior engineer",
+            "reads": "ChangeRequest.affectedNodeCount"
+          }
+        },
+        "V9": {
+          "allowed_forms": [
+            "require"
+          ],
+          "allowed_targets": [
+            "@action"
+          ],
+          "business_semantics": {
+            "enabled": true,
+            "kind": "require",
+            "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+            "statement": "Authorization requires that the implementation is executed from the out-of-band network management plane. Preserve every other selected requirement.",
+            "target": "@action"
+          },
+          "parameter_schema": {},
+          "parameter_sets": [
+            {}
+          ],
+          "predicate": {
+            "op": "field",
+            "path": "context.onManagementNetwork"
+          },
+          "revision_notes": [
+            "Authorization requires that the implementation is executed from the out-of-band network management plane. Preserve every other selected requirement.",
+            "Composition rationale: Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base."
+          ],
+          "sampling_enabled": true,
+          "source": {
+            "business_semantics": {
+              "enabled": true,
+              "kind": "require",
+              "rationale": "Selected identity, membership, qualification, network, time, state, or category requirements are access gates; their failure never disables a base.",
+              "statement": "Authorization requires that the implementation is executed from the out-of-band network management plane. Preserve every other selected requirement.",
+              "target": "@action"
+            },
+            "id": "V9",
+            "meaning": "the implementation is executed from the out-of-band network management plane",
+            "reads": "context.onManagementNetwork"
+          }
+        }
+      },
+      "bases": {
+        "G1": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal"
+              },
+              {
+                "op": "field",
+                "path": "resource.approver"
+              }
+            ],
+            "op": "ne"
+          },
+          "signature": "V1",
+          "source": {
+            "id": "G1",
+            "meaning": "the person who approved the change may not be the one who implements it (separation of duty)",
+            "reads": "principal vs ChangeRequest.approver",
+            "signature": "V1"
+          }
+        },
+        "G5": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "resource.status"
+              },
+              {
+                "id": "approved",
+                "op": "entity",
+                "type": "ChangeRequestStatusValue"
+              }
+            ],
+            "op": "eq"
+          },
+          "signature": "V11",
+          "source": {
+            "id": "G5",
+            "meaning": "a change may be implemented only after it has been approved",
+            "reads": "ChangeRequest.status",
+            "signature": "V11"
+          }
+        }
+      },
+      "domain_gate": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2000-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  },
+                  {
+                    "op": "field",
+                    "path": "context.currentTime"
+                  }
+                ],
+                "op": "time_le"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "context.currentTime"
+                  },
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2100-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  }
+                ],
+                "op": "time_le"
+              }
+            ],
+            "op": "all"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.affectedNodeCount"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 0
+                  }
+                ],
+                "op": "ge"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.affectedNodeCount"
+                  },
+                  {
+                    "op": "literal",
+                    "value": 1000000
+                  }
+                ],
+                "op": "le"
+              }
+            ],
+            "op": "all"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2000-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  },
+                  {
+                    "op": "field",
+                    "path": "resource.maintenanceWindowStart"
+                  }
+                ],
+                "op": "time_le"
+              },
+              {
+                "args": [
+                  {
+                    "op": "field",
+                    "path": "resource.maintenanceWindowStart"
+                  },
+                  {
+                    "args": [
+                      {
+                        "op": "literal",
+                        "value": "2100-01-01T00:00:00Z"
+                      }
+                    ],
+                    "op": "datetime"
+                  }
+                ],
+                "op": "time_le"
+              }
+            ],
+            "op": "all"
+          }
+        ],
+        "op": "all"
+      },
+      "eligibility": {
+        "args": [
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "NetworkEngineer",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          },
+          {
+            "args": [
+              {
+                "op": "field",
+                "path": "principal.roles"
+              },
+              {
+                "id": "SeniorEngineer",
+                "op": "entity",
+                "type": "Role"
+              }
+            ],
+            "op": "contains"
+          }
+        ],
+        "op": "any"
+      },
+      "field_bindings": {
+        "ChangeRequest.affectedNodeCount": "resource.affectedNodeCount",
+        "ChangeRequest.approver": "resource.approver",
+        "ChangeRequest.changeCode": "resource.changeCode",
+        "ChangeRequest.emergencyChange": "resource.emergencyChange",
+        "ChangeRequest.maintenanceWindowStart": "resource.maintenanceWindowStart",
+        "ChangeRequest.status": "resource.status",
+        "context.currentTime": "context.currentTime",
+        "context.freezeWaiverGranted": "context.freezeWaiverGranted",
+        "context.majorIncidentDeclared": "context.majorIncidentDeclared",
+        "context.onManagementNetwork": "context.onManagementNetwork",
+        "user.assignedCodePattern": "principal.assignedCodePattern"
+      },
+      "overrides": {
+        "G3": {
+          "predicate": {
+            "args": [
+              {
+                "op": "field",
+                "path": "context.majorIncidentDeclared"
+              },
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "principal.roles"
+                      },
+                      {
+                        "id": "NetworkEngineer",
+                        "op": "entity",
+                        "type": "Role"
+                      }
+                    ],
+                    "op": "contains"
+                  },
+                  {
+                    "args": [
+                      {
+                        "op": "field",
+                        "path": "principal.roles"
+                      },
+                      {
+                        "id": "SeniorEngineer",
+                        "op": "entity",
+                        "type": "Role"
+                      }
+                    ],
+                    "op": "contains"
+                  }
+                ],
+                "op": "any"
+              }
+            ],
+            "op": "all"
+          },
+          "source": {
+            "id": "G3",
+            "meaning": "a declared major incident lets the approving engineer also implement the change, overriding separation of duty",
+            "overrides": [
+              "G1"
+            ],
+            "reads": "context.majorIncidentDeclared",
+            "requires_adjudication": true
+          },
+          "targets": [
+            "G1"
+          ]
+        }
+      },
+      "resource_type": "ChangeRequest"
+    }
+  },
+  "business_review_revision": "2026-10-23-r1",
+  "context": {
+    "approveChangeV7ReviewCompleted": {
+      "type": "Bool"
+    },
+    "currentTime": {
+      "type": "datetime"
+    },
+    "freezeWaiverGranted": {
+      "type": "Bool"
+    },
+    "majorIncidentDeclared": {
+      "type": "Bool"
+    },
+    "onManagementNetwork": {
+      "type": "Bool"
+    }
+  },
+  "contract": "complete-spec-v4",
+  "decisions": [
+    "Added User.assignedCodePattern: assigned pattern must equal the selected literal before matching the resource code",
+    "Added User.authorityLevel: source G4 principal attribute; uses the resource dominance scale",
+    "All source identities denote User entities; role sets may overlap without implicit exclusivity.",
+    "All timestamps read by predicates are bounded inclusively to 2000-01-01 through 2100-01-01 UTC; requests outside the explicit domain gate deny.",
+    "Business revision v2: catalogs are declared synthetic organizational policies, not empirical norms. Selected-atom obligations are mandatory in both forms and cannot be waived by a base exception or override.",
+    "ChangeLog.note is source documentation, not an attribute.",
+    "Money is nonnegative integer USD cents, at most 1,000,000,000. Counts are nonnegative integers at most 1,000,000 unless a narrower dictionary is declared.",
+    "Request context is treated as trusted input from the host; authorization does not attest network, emergency, signature, or scheduling facts.",
+    "Retained source repairs: exact lifecycle states, linked course roster, explicit promotion/filing facts, independent calibration expiry, comp expiry, and guarded override eligibility are intentional experiment definitions. Their typed ASTs and field descriptions, not the ambiguous source shorthand, are authoritative.",
+    "Rules operate on snapshots. A selected lifecycle base requires the exact named state unless its predicate explicitly lists alternatives.",
+    "Source business descriptions are retained for audit; the authored typed predicates and dictionaries define the experiment. No statutory compliance claim is made.",
+    "Source tag kinds are represented by Set<String>. Group membership is reflexive and transitive Cedar entity ancestry.",
+    "approveChange/V7: Declared complexity points: one point per affected node plus one per rollback step; a synthetic scoring rule, not a physical unit.",
+    "approveChange/V8: This implication is mandatory whenever the atom is selected, in either form; it survives all base exceptions and overrides.",
+    "approveChange/V8: USD-cent thresholds for planned infrastructure change costs: $1000, $10000, $100000. These are synthetic organization policy choices.",
+    "approveChange/V8: When this trigger holds, the requester must hold one of: CABApprover.",
+    "implementChange/V12: The emergency flag is a trigger only. The selected explicit form/target defines its effect; it does not implicitly waive V10 or invent a schedule override.",
+    "implementChange/V6: Declared synthetic review/acceptance bands measured in network nodes affected by a change. Source-explicit refill > 0 and production-release defect == 0 remain unchanged.",
+    "implementChange/V6: This implication is mandatory whenever the atom is selected, in either form; it survives all base exceptions and overrides.",
+    "implementChange/V6: When this trigger holds, the requester must hold one of: SeniorEngineer."
+  ],
+  "domain": "network_change_approval",
+  "entities": {
+    "ChangeLog": {
+      "attributes": {}
+    },
+    "ChangeRequest": {
+      "attributes": {
+        "affectedNodeCount": {
+          "bounds": [
+            0,
+            1000000
+          ],
+          "type": "Long",
+          "unit": "network nodes affected by a change"
+        },
+        "approver": {
+          "type": "User"
+        },
+        "changeCategory": {
+          "representation": "zero or more label strings",
+          "type": "Set<String>"
+        },
+        "changeCode": {
+          "type": "String"
+        },
+        "changeRisk": {
+          "bounds": [
+            0,
+            3
+          ],
+          "description": "Synthetic ordinal scale; the same integer rank denotes the required authority tier when used by G4. No physical magnitude or external standard is implied.",
+          "levels": {
+            "critical": 3,
+            "high": 2,
+            "low": 0,
+            "moderate": 1
+          },
+          "type": "Long"
+        },
+        "emergencyChange": {
+          "type": "Bool"
+        },
+        "estimatedCost": {
+          "bounds": [
+            0,
+            1000000000
+          ],
+          "type": "Long",
+          "unit": "USD cents"
+        },
+        "implementer": {
+          "type": "User"
+        },
+        "maintenanceWindowStart": {
+          "type": "datetime"
+        },
+        "requester": {
+          "type": "User"
+        },
+        "rollbackStepCount": {
+          "bounds": [
+            0,
+            1000000
+          ],
+          "type": "Long",
+          "unit": "integer units"
+        },
+        "status": {
+          "type": "ChangeRequestStatusValue"
+        }
+      }
+    },
+    "ChangeRequestStatusValue": {
+      "enum": [
+        "draft",
+        "assessed",
+        "approved",
+        "scheduled",
+        "implemented",
+        "closed"
+      ]
+    },
+    "Group": {
+      "attributes": {},
+      "member_of": [
+        "Group"
+      ]
+    },
+    "Implementation": {
+      "attributes": {
+        "change": {
+          "type": "ChangeRequest"
+        },
+        "implementedAt": {
+          "type": "datetime"
+        },
+        "implementedBy": {
+          "type": "User"
+        }
+      }
+    },
+    "Role": {
+      "enum": [
+        "NetworkEngineer",
+        "SeniorEngineer",
+        "ChangeManager",
+        "CABApprover",
+        "Auditor"
+      ]
+    },
+    "User": {
+      "attributes": {
+        "assignedCodePattern": {
+          "description": "assigned pattern must equal the selected literal before matching the resource code",
+          "type": "String"
+        },
+        "authorityLevel": {
+          "bounds": [
+            0,
+            3
+          ],
+          "description": "Synthetic ordinal scale; the same integer rank denotes the required authority tier when used by G4. No physical magnitude or external standard is implied.",
+          "levels": {
+            "critical": 3,
+            "high": 2,
+            "low": 0,
+            "moderate": 1
+          },
+          "type": "Long"
+        },
+        "roles": {
+          "type": "Set<Role>"
+        }
+      }
+    }
+  },
+  "revision_contract": "business-composition-v4",
+  "source_action_chains": [
+    {
+      "chain": [
+        "approveChange",
+        "implementChange"
+      ],
+      "linked_by": [
+        "status",
+        "approver",
+        "implementer"
+      ],
+      "shared_resource": "ChangeRequest"
+    }
+  ],
+  "source_sha256": "2907de8ce880b86d975423e46cde808f78a30bb93dc0a767cb3b4f0643c07c22",
+  "status": "authored experimental assumptions; not human semantic approval",
+  "version": "business-registry-v4"
+}

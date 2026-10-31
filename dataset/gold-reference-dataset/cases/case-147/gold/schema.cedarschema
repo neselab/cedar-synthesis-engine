@@ -1,0 +1,17 @@
+entity AuditLog {  };
+entity Claim { approver: User, claimAmount: Long, claimCode: String, deductible: Long, filedAt: datetime, fraudHold: Bool, handler: User, lineItemCount: Long, status: ClaimStatusValue };
+entity ClaimStatusValue enum ["filed", "reviewed", "approved", "paid"];
+entity Group in [Group] {  };
+entity Payout { amount: Long, claim: Claim, issuer: User };
+entity Role enum ["Adjuster", "Reviewer", "ClaimsManager", "PayoutOfficer", "FraudAnalyst", "Auditor"];
+entity User { roles: Set<Role> };
+action issuePayout appliesTo { principal: [User], resource: [Payout], context: {
+    approveClaimScheduledEnd: datetime,
+    approveClaimScheduledStart: datetime,
+    catastropheDeclared: Bool,
+    currentTime: datetime,
+    issuePayoutScheduledEnd: datetime,
+    issuePayoutScheduledStart: datetime,
+    onCorporateNetwork: Bool,
+  },
+};

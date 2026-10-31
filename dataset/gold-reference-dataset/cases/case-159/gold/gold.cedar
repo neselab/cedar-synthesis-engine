@@ -1,0 +1,2 @@
+permit (principal is User, action == Action::"adjustSetpoint", resource is Actuator)
+when { (true && ((principal.roles.contains(Role::"ZoneController") || principal.roles.contains(Role::"MaintenanceTech") || principal.roles.contains(Role::"FacilityManager"))) && (!(true) || (resource.status == ActuatorStatusValue::"online") || ((context.maintenanceOverride && (principal.roles.contains(Role::"MaintenanceTech"))) && (resource.status == ActuatorStatusValue::"maintenance"))) && ((principal == resource.owner)) && (context.occupancyDetected)) };

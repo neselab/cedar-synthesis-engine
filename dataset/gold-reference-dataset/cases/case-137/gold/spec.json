@@ -1,0 +1,58 @@
+{
+  "domain": "wire_transfer",
+  "format_version": "complete-spec-v4",
+  "grouping": {
+    "applicability_triggers": "any",
+    "exception": "any",
+    "requirements": "all"
+  },
+  "parts": [
+    {
+      "anchor": "approveWire",
+      "bases": [
+        "G1"
+      ],
+      "conditions": [
+        {
+          "atom": "V4",
+          "form": "require",
+          "parameters": {},
+          "target": "@action"
+        },
+        {
+          "atom": "V7",
+          "form": "applicability",
+          "parameters": {
+            "threshold": 7500000
+          },
+          "target": "G1"
+        },
+        {
+          "atom": "V8",
+          "form": "applicability",
+          "parameters": {
+            "threshold": 5000000
+          },
+          "target": "G1"
+        },
+        {
+          "atom": "V9",
+          "form": "require",
+          "parameters": {},
+          "target": "@action"
+        }
+      ],
+      "overrides": []
+    }
+  ],
+  "provenance": {
+    "arithmetic_safety_revision": "For nonnegative amount and fee, amount + fee > threshold iff amount > threshold or fee > threshold - amount; subtraction cannot overflow.",
+    "kind": "less-specific-20 revised intent",
+    "source_case": "case-137",
+    "source_cohort_sha256": "dc765eca4c9085f9dbd4ad236e51e49541a2c1b43c7fdc65bc46c0daed92721c",
+    "source_spec_sha256": "78b9bbdada4ba71a31b4062c530b7d7095a9ef2d5cc57d80ff69cfad05de05c7",
+    "transformation": "Drop artificial 2000-2100 timestamp windows and catalog maxima; retain nonnegative and enumerated-level guards."
+  },
+  "registry_sha256": "323ff3584b950112b9330f55a80a3952e2a95b205678bfc93c2538bfd23b890d",
+  "source_sha256": "2907de8ce880b86d975423e46cde808f78a30bb93dc0a767cb3b4f0643c07c22"
+}

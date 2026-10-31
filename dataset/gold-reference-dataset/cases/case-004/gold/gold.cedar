@@ -1,0 +1,2 @@
+permit (principal is User, action == Action::"modifyResource", resource is CloudResource)
+when { ((((context.sessionAge >= 0) && (context.sessionAge <= 604800))) && ((principal.roles.contains(Role::"Owner") || principal.roles.contains(Role::"Developer") || principal.roles.contains(Role::"Operator"))) && (!(true) || ((resource.environment != CloudResourceEnvironmentValue::"prod") || resource.promoted)) && ((context.sessionAge <= 1800)) && (resource.tags.contains("production")) && (context.sourceIp.isInRange(ip("192.168.0.0/16")))) };

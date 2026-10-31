@@ -1,0 +1,19 @@
+entity Group in [Group] {  };
+entity LabOrder { orderingProvider: User, patient: User, status: LabOrderStatusValue, testCode: String };
+entity LabOrderStatusValue enum ["ordered", "collected", "resulted"];
+entity LabResult { criticalFlag: Bool, criticalNotifiedAt: datetime, orderingProvider: User, patient: User, portalReleaseAt: datetime, sensitivity: Long, status: LabResultStatusValue, verifiedBy: User };
+entity LabResultStatusValue enum ["pending", "verified", "criticalHold", "released", "portalReleased"];
+entity Role enum ["MedicalTechnologist", "Pathologist", "OrderingProvider", "LabDirector"];
+entity User { credentialLevel: Long, roles: Set<Role> };
+action releaseResult appliesTo { principal: [User], resource: [LabResult], context: {
+    coverageAuthorized: Bool,
+    criticalAcknowledged: Bool,
+    criticalReleaseReviewCompleted: Bool,
+    currentTime: datetime,
+    emergencyRelease: Bool,
+    mfaUsed: Bool,
+    onHospitalNetwork: Bool,
+    releaseResultScheduledEnd: datetime,
+    releaseResultScheduledStart: datetime,
+  },
+};

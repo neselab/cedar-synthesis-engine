@@ -1,0 +1,2 @@
+permit (principal is User, action == Action::"approveCommission", resource is CommissionRequest)
+when { (true && ((principal.roles.contains(Role::"FacilityManager"))) && (!(true) || (principal != resource.requestedBy)) && (!(true) || (resource.status == CommissionRequestStatusValue::"requested")) && (((context.approveCommissionScheduledStart <= context.currentTime) && (context.currentTime < context.approveCommissionScheduledEnd))) && ((principal.memberOf in resource.device.zoneGroup)) && (context.onSiteNetwork)) };

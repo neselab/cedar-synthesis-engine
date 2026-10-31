@@ -1,0 +1,5 @@
+permit (principal is User, action == Action::"authorizeSwitching", resource is SwitchingOrder)
+when { ((((resource.voltageLevel == 0) || (resource.voltageLevel == 1) || (resource.voltageLevel == 2) || (resource.voltageLevel == 3))) && ((principal.roles.contains(Role::"Planner") || principal.roles.contains(Role::"ShiftSupervisor"))) && (!(true) || (principal != resource.executor)) && (!((resource.voltageLevel >= 2)) || (principal.roles.contains(Role::"ShiftSupervisor"))) && (context.onScadaNetwork)) };
+
+permit (principal is User, action == Action::"executeSwitching", resource is SwitchingOrder)
+when { (((resource.circuitCount >= 0)) && ((principal.roles.contains(Role::"Operator") || principal.roles.contains(Role::"ControlRoomOperator"))) && (!(true) || (resource.status == SwitchingOrderStatusValue::"authorized") || (context.outageEmergencyDeclared && (principal.roles.contains(Role::"ControlRoomOperator")))) && (!((resource.circuitCount > 3)) || (principal.roles.contains(Role::"ControlRoomOperator")))) };

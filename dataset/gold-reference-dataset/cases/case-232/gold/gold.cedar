@@ -1,0 +1,2 @@
+permit (principal is User, action == Action::"watchContent", resource is Content)
+when { ((((principal.subscriptionTier == 0) || (principal.subscriptionTier == 1) || (principal.subscriptionTier == 2)) && ((resource.requiredTier == 0) || (resource.requiredTier == 1) || (resource.requiredTier == 2))) && ((principal.roles.contains(Role::"Subscriber"))) && (!(true) || (principal.subscriptionTier >= resource.requiredTier)) && ((resource.embargoUntil <= context.currentTime)) && (resource.labels.contains("review_required")) && (context.deviceTrusted)) };

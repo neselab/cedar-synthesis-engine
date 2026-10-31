@@ -1,0 +1,38 @@
+# Smart building authorization requirements
+
+Case: case-049
+Domain: smart_building
+Selected actions: overrideSchedule
+
+## Purpose
+
+Determine whether a user may perform each of these operations: override a zone schedule.
+Each request names one user, one action, one resource, and trusted context supplied by the host application. Decide whether to allow that request using the current recorded facts.
+The permissions do not perform state changes or assert an execution order between actions.
+
+## How permissions apply
+
+For each action, allow access if and only if the stated requester and resource types match and ALL requirements in that action section hold. Otherwise deny access. Deny requests for actions not listed here.
+Each unless clause waives only the requirement in its own sentence. It never grants access or waives other requirements.
+If a condition in an If sentence is false, only that sentence imposes no additional duty; every other requirement still applies.
+Users may hold multiple roles. Role membership and ownership are distinct facts. Money is expressed in integer USD cents. Times are UTC. Daily time windows recur every day of the week.
+Brackets identify exact fields or entity types. Role and status values identify entities of their declared types. True and false are Boolean values. Every listed interval includes only the endpoints explicitly stated.
+Optional-field presence is explicit in the rules. A guarded predicate is false if a field it needs is missing; preserve the enclosing negation, condition, or waiver. Requirements about presence remain binding.
+The separately supplied Cedar schema defines entity types, fields, optionality, action types, and valid enum vocabulary. Use that schema unchanged. Its declarations alone add no authorization requirements; declaring schedule fields does not impose a time window.
+
+## Permission to override a zone schedule
+Action: overrideSchedule
+Requester type: User.
+Resource type: Zone.
+
+Allow this action if and only if all the following requirements hold:
+
+- Access requires that at least one of [the user has the "ZoneController" role; the user has the "FacilityManager" role].
+- Access requires that the user's control tier [principal.controlTier] is one of [0; 1; 2].
+- Access requires that the zone's criticality [resource.criticality] is one of [0; 1; 2].
+- Access requires that the user's control tier [principal.controlTier] is at least the zone's criticality [resource.criticality].
+- Access requires that the user [principal] equals the zone's controller [resource.controller].
+- Access requires that the zone's status [resource.status] equals the "active" status [ZoneStatusValue].
+- Access requires that the request's occupancy detected flag [context.occupancyDetected] is true.
+- Access requires that the user has the "FacilityManager" role.
+

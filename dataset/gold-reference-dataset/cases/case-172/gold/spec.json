@@ -1,0 +1,62 @@
+{
+  "domain": "marketplace_seller",
+  "format_version": "complete-spec-v4",
+  "grouping": {
+    "applicability_triggers": "any",
+    "exception": "any",
+    "requirements": "all"
+  },
+  "parts": [
+    {
+      "anchor": "approvePayout",
+      "bases": [
+        "G1"
+      ],
+      "conditions": [
+        {
+          "atom": "V8",
+          "form": "applicability",
+          "parameters": {
+            "threshold": 50000
+          },
+          "target": "G1"
+        }
+      ],
+      "overrides": [
+        {
+          "id": "G3",
+          "targets": [
+            "G1"
+          ]
+        }
+      ]
+    },
+    {
+      "anchor": "disbursePayout",
+      "bases": [
+        "G2",
+        "G5"
+      ],
+      "conditions": [
+        {
+          "atom": "V8",
+          "form": "obligation",
+          "parameters": {
+            "threshold": 500000
+          },
+          "target": "@action"
+        }
+      ],
+      "overrides": []
+    }
+  ],
+  "provenance": {
+    "kind": "less-specific-20 revised intent",
+    "source_case": "case-172",
+    "source_cohort_sha256": "dc765eca4c9085f9dbd4ad236e51e49541a2c1b43c7fdc65bc46c0daed92721c",
+    "source_spec_sha256": "2d36ef7ed40d6dc9391b4895593ed497e639909f952217b360a7444fd624c3ae",
+    "transformation": "Drop artificial 2000-2100 timestamp windows and catalog maxima; retain nonnegative and enumerated-level guards."
+  },
+  "registry_sha256": "b0b348eee861b47883f46844edb9009781cf7cf7573e1bbaf93728a8c52c728e",
+  "source_sha256": "2907de8ce880b86d975423e46cde808f78a30bb93dc0a767cb3b4f0643c07c22"
+}

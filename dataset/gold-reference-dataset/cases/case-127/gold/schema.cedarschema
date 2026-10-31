@@ -1,0 +1,11 @@
+entity Document { classification: Long, labels: Set<String>, owner: User, shareList: Set<User>, status: DocumentStatusValue, versionLocked: Bool };
+entity DocumentStatusValue enum ["draft", "published", "archived"];
+entity Group in [Group] {  };
+entity Role enum ["Author", "Editor", "Viewer", "ComplianceOfficer"];
+entity User { clearance: Long, roles: Set<Role> };
+entity Workspace { members: Set<User> };
+action viewDocument appliesTo { principal: [User], resource: [Document], context: {
+    currentTime: datetime,
+    onCorpNetwork: Bool,
+  },
+};
